@@ -1,0 +1,107 @@
+<main class="signin-page">
+  <div class="signin-container">
+    <div class="signin-card">
+      <div class="logo">
+        <span class="logo-icon">🌸</span>
+        <span class="logo-text">Bloom & Blossom</span>
+      </div>
+
+      @if (!isSignUp) {
+        <!-- Sign In Form -->
+        <form class="auth-form" (ngSubmit)="onLogin()">
+          <h1>Welcome Back</h1>
+          <p class="subtitle">Sign in to your account</p>
+
+          <div class="form-group">
+            <label for="email">Email Address</label>
+            <input type="email" id="email" [(ngModel)]="loginData.email" name="email" placeholder="you@example.com" required>
+          </div>
+
+          <div class="form-group">
+            <label for="password">Password</label>
+            <input type="password" id="password" [(ngModel)]="loginData.password" name="password" placeholder="Enter your password" required>
+          </div>
+
+          <div class="form-options">
+            <label class="remember-me">
+              <input type="checkbox">
+              <span>Remember me</span>
+            </label>
+            <a href="#" class="forgot-password">Forgot password?</a>
+          </div>
+
+          <button type="submit" class="btn-submit">Sign In</button>
+
+          <div class="divider">
+            <span>or continue with</span>
+          </div>
+
+          <div class="social-login">
+            <button type="button" class="btn-social google">
+              <span>G</span> Google
+            </button>
+            <button type="button" class="btn-social facebook">
+              <span>f</span> Facebook
+            </button>
+          </div>
+
+          <p class="switch-mode">
+            Don't have an account?
+            <button type="button" (click)="toggleMode()">Sign Up</button>
+          </p>
+        </form>
+      } @else {
+        <!-- Sign Up Form -->
+        <form class="auth-form" (ngSubmit)="onSignup()">
+          <h1>Create Account</h1>
+          <p class="subtitle">Join our flower family</p>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="firstName">First Name</label>
+              <input type="text" id="firstName" [(ngModel)]="signupData.firstName" name="firstName" placeholder="John" required>
+            </div>
+            <div class="form-group">
+              <label for="lastName">Last Name</label>
+              <input type="text" id="lastName" [(ngModel)]="signupData.lastName" name="lastName" placeholder="Doe" required>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="signupEmail">Email Address</label>
+            <input type="email" id="signupEmail" [(ngModel)]="signupData.email" name="email" placeholder="you@example.com" required>
+          </div>
+
+          <div class="form-group">
+            <label for="signupPassword">Password</label>
+            <input type="password" id="signupPassword" [(ngModel)]="signupData.password" name="password" placeholder="Create a password" required>
+          </div>
+
+          <div class="form-group">
+            <label for="confirmPassword">Confirm Password</label>
+            <input type="password" id="confirmPassword" [(ngModel)]="signupData.confirmPassword" name="confirmPassword" placeholder="Confirm your password" required>
+          </div>
+
+          <label class="terms">
+            <input type="checkbox" required>
+            <span>I agree to the <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a></span>
+          </label>
+
+          <button type="submit" class="btn-submit">Create Account</button>
+
+          <p class="switch-mode">
+            Already have an account?
+            <button type="button" (click)="toggleMode()">Sign In</button>
+          </p>
+        </form>
+      }
+    </div>
+
+    <div class="signin-image">
+      <div class="image-overlay">
+        <h2>Beautiful Flowers for Every Occasion</h2>
+        <p>Join thousands of happy customers who trust us for their floral needs.</p>
+      </div>
+    </div>
+  </div>
+</main>

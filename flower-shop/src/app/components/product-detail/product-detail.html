@@ -1,0 +1,91 @@
+<main class="product-detail">
+  @if (product) {
+    <div class="container">
+      <div class="breadcrumb">
+        <a routerLink="/">Home</a>
+        <span>/</span>
+        <a routerLink="/products">Shop</a>
+        <span>/</span>
+        <span>{{ product.name }}</span>
+      </div>
+
+      <div class="product-content">
+        <div class="product-gallery">
+          <img [src]="product.image" [alt]="product.name" class="main-image">
+        </div>
+
+        <div class="product-info">
+          <span class="category-badge">{{ product.category }}</span>
+          <h1>{{ product.name }}</h1>
+
+          <div class="rating-row">
+            <span class="stars">
+              @for (star of [1, 2, 3, 4, 5]; track star) {
+                <span [class.filled]="star <= product.rating">⭐</span>
+              }
+            </span>
+            <span class="rating-text">{{ product.rating }} out of 5</span>
+          </div>
+
+          <p class="price">₹{{ product.price.toFixed(2) }}</p>
+
+          <p class="description">{{ product.description }}</p>
+
+          <div class="features">
+            <div class="feature">
+              <span class="icon">🌿</span>
+              <span>Fresh Guarantee</span>
+            </div>
+            <div class="feature">
+              <span class="icon">🚚</span>
+              <span>Free Shipping $50+</span>
+            </div>
+            <div class="feature">
+              <span class="icon">🎁</span>
+              <span>Gift Wrapping</span>
+            </div>
+          </div>
+
+          <div class="add-to-cart-section">
+            <div class="quantity-selector">
+              <button (click)="decreaseQuantity()" [disabled]="quantity <= 1">−</button>
+              <span>{{ quantity }}</span>
+              <button (click)="increaseQuantity()">+</button>
+            </div>
+
+            <button class="btn-add-to-cart" (click)="addToCart()">
+              Add to Cart - ₹{{ (product.price * quantity).toFixed(2) }}
+            </button>
+          </div>
+
+          <div class="stock-status" [class.in-stock]="product.inStock">
+            @if (product.inStock) {
+              <span>✓ In Stock - Ready to Ship</span>
+            } @else {
+              <span>✗ Out of Stock</span>
+            }
+          </div>
+        </div>
+      </div>
+
+      @if (relatedProducts.length > 0) {
+        <section class="related-products">
+          <h2>You May Also Like</h2>
+          <div class="product-grid">
+            @for (item of relatedProducts; track item.id) {
+              <a [routerLink]="['/products', item.id]" class="product-card">
+                <div class="product-image">
+                  <img [src]="item.image" [alt]="item.name">
+                </div>
+                <div class="product-info">
+                  <h3>{{ item.name }}</h3>
+                  <span class="price">₹{{ item.price.toFixed(2) }}</span>
+                </div>
+              </a>
+            }
+          </div>
+        </section>
+      }
+    </div>
+  }
+</main>
