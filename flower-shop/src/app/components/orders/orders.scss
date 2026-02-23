@@ -1,0 +1,217 @@
+.orders-page {
+  min-height: 100vh;
+  background: #f9f9f9;
+  padding: 6rem 1rem 3rem;
+
+  .container {
+    max-width: 760px;
+    margin: 0 auto;
+  }
+
+  .page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 2rem;
+
+    h1 {
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: #1a1a1a;
+    }
+
+    .back-link {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      color: #666;
+      text-decoration: none;
+      font-size: 0.9rem;
+      font-weight: 500;
+      transition: color 0.15s ease;
+
+      &:hover { color: #111; }
+    }
+  }
+
+  .loading-state {
+    text-align: center;
+    padding: 4rem 0;
+
+    .spinner {
+      width: 36px;
+      height: 36px;
+      border: 3px solid #eee;
+      border-top-color: #333;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      margin: 0 auto 1rem;
+    }
+
+    p { color: #999; font-size: 0.95rem; }
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 5rem 0;
+
+    svg { margin-bottom: 1.5rem; }
+
+    h2 {
+      font-size: 1.4rem;
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 0.5rem;
+    }
+
+    p {
+      color: #888;
+      margin-bottom: 1.5rem;
+      font-size: 0.95rem;
+    }
+
+    .btn-shop {
+      display: inline-block;
+      background: #1a1a1a;
+      color: white;
+      text-decoration: none;
+      padding: 0.7rem 1.5rem;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 0.95rem;
+      transition: background 0.15s ease;
+
+      &:hover { background: #333; }
+    }
+  }
+
+  .orders-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .order-card {
+    background: white;
+    border: 1px solid #eee;
+    border-radius: 12px;
+    overflow: hidden;
+
+    .order-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1rem 1.25rem;
+      border-bottom: 1px solid #f0f0f0;
+
+      .order-meta {
+        display: flex;
+        flex-direction: column;
+        gap: 0.2rem;
+      }
+
+      .order-id {
+        font-weight: 700;
+        font-size: 0.95rem;
+        color: #1a1a1a;
+        font-family: monospace;
+        letter-spacing: 0.02em;
+      }
+
+      .order-date {
+        font-size: 0.8rem;
+        color: #999;
+      }
+
+      .order-status {
+        background: #e8f5e9;
+        color: #2e7d32;
+        font-size: 0.8rem;
+        font-weight: 600;
+        padding: 0.3rem 0.75rem;
+        border-radius: 999px;
+        text-transform: capitalize;
+      }
+    }
+
+    .order-items {
+      padding: 0.5rem 1.25rem;
+
+      .order-item {
+        display: flex;
+        align-items: center;
+        padding: 0.75rem 0;
+        border-bottom: 1px solid #f8f8f8;
+        gap: 0.85rem;
+
+        &:last-child { border-bottom: none; }
+
+        .item-image {
+          width: 52px;
+          height: 52px;
+          border-radius: 8px;
+          object-fit: cover;
+          flex-shrink: 0;
+          background: #f5f5f5;
+        }
+
+        .item-details {
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          gap: 0.2rem;
+        }
+
+        .item-name {
+          font-size: 0.9rem;
+          font-weight: 500;
+          color: #1a1a1a;
+        }
+
+        .item-qty {
+          font-size: 0.8rem;
+          color: #999;
+        }
+
+        .item-price {
+          font-size: 0.9rem;
+          font-weight: 600;
+          color: #1a1a1a;
+          min-width: 4rem;
+          text-align: right;
+          flex-shrink: 0;
+        }
+      }
+    }
+
+    .order-footer {
+      padding: 0.85rem 1.25rem;
+      background: #fafafa;
+      border-top: 1px solid #f0f0f0;
+      display: flex;
+      justify-content: flex-end;
+
+      .order-total {
+        font-weight: 700;
+        font-size: 1rem;
+        color: #1a1a1a;
+      }
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .orders-page {
+    .page-header {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.75rem;
+
+      h1 { font-size: 1.5rem; }
+    }
+  }
+}

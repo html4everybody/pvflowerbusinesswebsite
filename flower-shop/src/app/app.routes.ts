@@ -5,6 +5,7 @@ import { Cart } from './components/cart/cart';
 import { Checkout } from './components/checkout/checkout';
 import { Contact } from './components/contact/contact';
 import { Signin } from './components/signin/signin';
+import { Orders } from './components/orders/orders';
 
 export const routes: Routes = [
   { path: '', component: Home },
@@ -13,5 +14,6 @@ export const routes: Routes = [
   { path: 'checkout', component: Checkout },
   { path: 'contact', component: Contact },
   { path: 'signin', component: Signin },
+  { path: 'orders', component: Orders },
   { path: '**', redirectTo: '' }
 ];
