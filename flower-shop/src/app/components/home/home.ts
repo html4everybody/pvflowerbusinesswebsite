@@ -2,6 +2,7 @@ import { Component, OnInit, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { ProductService } from '../../services/product';
 import { CartService } from '../../services/cart';
+import { FeedbackService } from '../../services/feedback';
 import { Product } from '../../models/product.model';
 
 @Component({
@@ -21,7 +22,8 @@ export class Home implements OnInit {
 
   constructor(
     private productService: ProductService,
-    private cartService: CartService
+    private cartService: CartService,
+    private feedbackService: FeedbackService
   ) {}
 
   ngOnInit(): void {
@@ -45,12 +47,14 @@ export class Home implements OnInit {
   addToCart(product: Product): void {
     this.cartQuantities[product.id] = 1;
     this.cartService.addToCart(product);
+    this.feedbackService.addToCartFeedback();
     this.showToast(product.name, 'added');
   }
 
   incrementQuantity(product: Product): void {
     this.cartQuantities[product.id] = (this.cartQuantities[product.id] || 0) + 1;
     this.cartService.addToCart(product);
+    this.feedbackService.addToCartFeedback();
   }
 
   decrementQuantity(product: Product): void {
@@ -58,6 +62,7 @@ export class Home implements OnInit {
     if (current <= 1) {
       delete this.cartQuantities[product.id];
       this.cartService.removeFromCart(product.id);
+      this.feedbackService.removeFromCartFeedback();
       this.showToast(product.name, 'removed');
     } else {
       this.cartQuantities[product.id] = current - 1;

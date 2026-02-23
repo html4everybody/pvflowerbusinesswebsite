@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { RouterLink, ActivatedRoute } from '@angular/router';
 import { ProductService } from '../../services/product';
 import { CartService } from '../../services/cart';
+import { FeedbackService } from '../../services/feedback';
 import { Product } from '../../models/product.model';
 
 @Component({
@@ -22,7 +23,8 @@ export class Products implements OnInit {
   constructor(
     private productService: ProductService,
     private cartService: CartService,
-    private route: ActivatedRoute
+    private route: ActivatedRoute,
+    private feedbackService: FeedbackService
   ) {}
 
   ngOnInit(): void {
@@ -95,11 +97,13 @@ export class Products implements OnInit {
   addToCart(product: Product): void {
     this.cartQuantities[product.id] = 1;
     this.cartService.addToCart(product);
+    this.feedbackService.addToCartFeedback();
   }
 
   incrementQuantity(product: Product): void {
     this.cartQuantities[product.id] = (this.cartQuantities[product.id] || 0) + 1;
     this.cartService.addToCart(product);
+    this.feedbackService.addToCartFeedback();
   }
 
   decrementQuantity(product: Product): void {
@@ -107,6 +111,7 @@ export class Products implements OnInit {
     if (current <= 1) {
       delete this.cartQuantities[product.id];
       this.cartService.removeFromCart(product.id);
+      this.feedbackService.removeFromCartFeedback();
     } else {
       this.cartQuantities[product.id] = current - 1;
       this.cartService.updateQuantity(product.id, current - 1);
