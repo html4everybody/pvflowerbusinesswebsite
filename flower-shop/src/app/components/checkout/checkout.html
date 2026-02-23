@@ -1,6 +1,6 @@
 <main class="checkout-page">
   <div class="container">
-    @if (!orderPlaced) {
+    @if (!orderPlaced()) {
       <h1>Checkout</h1>
 
       <div class="checkout-content">
@@ -87,8 +87,12 @@
             </div>
           </section>
 
-          <button type="submit" class="btn-place-order">
-            Place Order - ₹{{ getTotal().toFixed(2) }}
+          @if (errorMessage()) {
+            <div class="error-msg">{{ errorMessage() }}</div>
+          }
+
+          <button type="submit" class="btn-place-order" [disabled]="loading()">
+            {{ loading() ? 'Placing Order...' : 'Place Order - $' + getTotal().toFixed(2) }}
           </button>
         </form>
 
@@ -134,7 +138,7 @@
       <div class="order-success">
         <div class="success-icon">✓</div>
         <h1>Thank You!</h1>
-        <p class="order-number">Order #{{ orderNumber }}</p>
+        <p class="order-number">Order #{{ orderNumber() }}</p>
         <p class="success-message">
           Your order has been placed successfully. We'll send you a confirmation email shortly.
         </p>

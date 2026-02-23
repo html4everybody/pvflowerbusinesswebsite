@@ -3,6 +3,7 @@ import { RouterLink } from '@angular/router';
 import { ProductService } from '../../services/product';
 import { CartService } from '../../services/cart';
 import { FeedbackService } from '../../services/feedback';
+import { SearchService } from '../../services/search';
 import { Product } from '../../models/product.model';
 
 @Component({
@@ -13,7 +14,6 @@ import { Product } from '../../models/product.model';
 })
 export class Home implements OnInit {
   products: Product[] = [];
-  filteredProducts: Product[] = [];
   categories: string[] = [];
   selectedCategory: string = 'All';
   cartQuantities: { [productId: number]: number } = {};
@@ -26,13 +26,20 @@ export class Home implements OnInit {
   constructor(
     private productService: ProductService,
     private cartService: CartService,
-    private feedbackService: FeedbackService
+    private feedbackService: FeedbackService,
+    public searchService: SearchService
   ) {}
 
   ngOnInit(): void {
     this.products = this.productService.getProducts();
     this.categories = this.productService.getCategories();
-    this.filteredProducts = this.products;
+  }
+
+  get filteredProducts(): Product[] {
+    const q = this.searchService.query().toLowerCase().trim();
+    return this.products
+      .filter(p => this.selectedCategory === 'All' || p.category === this.selectedCategory)
+      .filter(p => !q || p.name.toLowerCase().includes(q) || p.description.toLowerCase().includes(q));
   }
 
   scrollToCollection(): void {
@@ -41,9 +48,6 @@ export class Home implements OnInit {
 
   selectCategory(category: string): void {
     this.selectedCategory = category;
-    this.filteredProducts = category === 'All'
-      ? this.products
-      : this.products.filter(p => p.category === category);
   }
 
   getQuantity(productId: number): number {

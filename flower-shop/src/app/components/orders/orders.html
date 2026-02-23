@@ -1,0 +1,68 @@
+<main class="orders-page">
+  <div class="container">
+    <div class="page-header">
+      <h1>My Orders</h1>
+      <a routerLink="/" class="back-link">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="19" y1="12" x2="5" y2="12"></line>
+          <polyline points="12 19 5 12 12 5"></polyline>
+        </svg>
+        Continue Shopping
+      </a>
+    </div>
+
+    @if (loading()) {
+      <div class="loading-state">
+        <div class="spinner"></div>
+        <p>Loading your orders...</p>
+      </div>
+    } @else if (orders().length === 0) {
+      <div class="empty-state">
+        <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#ddd" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+          <polyline points="14 2 14 8 20 8"></polyline>
+          <line x1="16" y1="13" x2="8" y2="13"></line>
+          <line x1="16" y1="17" x2="8" y2="17"></line>
+        </svg>
+        <h2>No orders yet</h2>
+        <p>Your order history will appear here once you place an order.</p>
+        <a routerLink="/" class="btn-shop">Browse Flowers</a>
+      </div>
+    } @else {
+      <div class="orders-list">
+        @for (order of orders(); track order.id) {
+          <div class="order-card">
+            <div class="order-header">
+              <div class="order-meta">
+                <span class="order-id">{{ order.id }}</span>
+                @if (order.created_at) {
+                  <span class="order-date">{{ formatDate(order.created_at) }}</span>
+                }
+              </div>
+              <span class="order-status">{{ order.status }}</span>
+            </div>
+
+            @if (order.items && order.items.length > 0) {
+              <div class="order-items">
+                @for (item of order.items; track item.id) {
+                  <div class="order-item">
+                    <img [src]="item.image" [alt]="item.name" class="item-image">
+                    <div class="item-details">
+                      <span class="item-name">{{ item.name }}</span>
+                      <span class="item-qty">× {{ item.quantity }}</span>
+                    </div>
+                    <span class="item-price">${{ (item.price * item.quantity).toFixed(2) }}</span>
+                  </div>
+                }
+              </div>
+            }
+
+            <div class="order-footer">
+              <span class="order-total">Total: ${{ order.total.toFixed(2) }}</span>
+            </div>
+          </div>
+        }
+      </div>
+    }
+  </div>
+</main>
