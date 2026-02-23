@@ -1,13 +1,13 @@
 <header class="header">
   <div class="container">
-    <a routerLink="/" class="logo" (click)="closeMenu()">
+    <a routerLink="/" class="logo" (click)="scrollToTop()">
       <span class="logo-icon">🌸</span>
-      <span class="logo-text">Bloom & Blossom</span>
+      <span class="logo-text">FloranFlowers</span>
     </a>
 
     <div class="header-actions">
       <nav class="nav" [class.open]="menuOpen">
-        <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" (click)="closeMenu()">Home</a>
+        <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" (click)="scrollToTop()">Home</a>
         <a routerLink="/contact" routerLinkActive="active" (click)="closeMenu()">Contact Us</a>
         <a routerLink="/signin" class="nav-signin" (click)="closeMenu()">Sign In</a>
       </nav>

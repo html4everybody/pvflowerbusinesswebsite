@@ -20,4 +20,9 @@ export class Header {
   closeMenu(): void {
     this.menuOpen = false;
   }
+
+  scrollToTop(): void {
+    this.menuOpen = false;
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
 }
