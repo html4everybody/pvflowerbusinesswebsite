@@ -10,7 +10,7 @@ import { Footer } from './components/footer/footer';
   styleUrl: './app.scss'
 })
 export class App implements OnInit {
-  title = 'Bloom & Blossom';
+  title = 'FloranFlowers';
 
   constructor(private router: Router) {}
 

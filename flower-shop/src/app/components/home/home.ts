@@ -13,6 +13,9 @@ import { Product } from '../../models/product.model';
 })
 export class Home implements OnInit {
   products: Product[] = [];
+  filteredProducts: Product[] = [];
+  categories: string[] = [];
+  selectedCategory: string = 'All';
   cartQuantities: { [productId: number]: number } = {};
 
   toastVisible = signal(false);
@@ -27,7 +30,20 @@ export class Home implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.products = this.productService.getProducts().slice(0, 10);
+    this.products = this.productService.getProducts();
+    this.categories = this.productService.getCategories();
+    this.filteredProducts = this.products;
+  }
+
+  scrollToCollection(): void {
+    document.getElementById('collection')?.scrollIntoView({ behavior: 'smooth' });
+  }
+
+  selectCategory(category: string): void {
+    this.selectedCategory = category;
+    this.filteredProducts = category === 'All'
+      ? this.products
+      : this.products.filter(p => p.category === category);
   }
 
   getQuantity(productId: number): number {
