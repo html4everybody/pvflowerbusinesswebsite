@@ -2,6 +2,7 @@ import { Component, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../services/auth';
+import { ToastService } from '../../services/toast';
 
 @Component({
   selector: 'app-signin',
@@ -18,7 +19,7 @@ export class Signin {
   loginData = { email: '', password: '' };
   signupData = { firstName: '', lastName: '', email: '', password: '', confirmPassword: '' };
 
-  constructor(private authService: AuthService, private router: Router) {}
+  constructor(private authService: AuthService, private router: Router, private toastService: ToastService) {}
 
   toggleMode(): void {
     this.isSignUp.set(!this.isSignUp());
@@ -34,6 +35,8 @@ export class Signin {
     this.authService.login(this.loginData.email, this.loginData.password).subscribe({
       next: () => {
         this.loading.set(false);
+        const user = this.authService.user();
+        this.toastService.show(`Hi ${user.firstName}, signed in successfully!`);
         this.router.navigate(['/']);
       },
       error: (err) => {

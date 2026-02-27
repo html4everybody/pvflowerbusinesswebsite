@@ -295,7 +295,7 @@ def clear_cart(user_id: str):
 
 @app.get("/api/orders")
 def get_user_orders(email: str):
-    orders_result = supabase.table("orders").select("*").eq("customer_email", email).execute()
+    orders_result = supabase.table("orders").select("*").eq("customer_email", email).order("created_at", desc=True).execute()
     orders = orders_result.data
     if not orders:
         return []
@@ -309,6 +309,16 @@ def get_user_orders(email: str):
     for order in orders:
         order["items"] = items_by_order.get(order["id"], [])
     return orders
+
+@app.patch("/api/orders/{order_id}/cancel")
+def cancel_order(order_id: str):
+    result = supabase.table("orders").select("status").eq("id", order_id).execute()
+    if not result.data:
+        raise HTTPException(status_code=404, detail="Order not found")
+    if result.data[0]["status"] != "confirmed":
+        raise HTTPException(status_code=400, detail="Only confirmed orders can be cancelled")
+    supabase.table("orders").update({"status": "cancelled"}).eq("id", order_id).execute()
+    return {"status": "cancelled"}
 
 @app.post("/api/orders")
 def create_order(req: OrderRequest):

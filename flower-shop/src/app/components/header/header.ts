@@ -48,6 +48,7 @@ export class Header {
 
   logout(): void {
     this.authService.logout();
+    sessionStorage.setItem('floran_toast', 'Logged out successfully.');
     window.location.href = '/';
   }
 }
