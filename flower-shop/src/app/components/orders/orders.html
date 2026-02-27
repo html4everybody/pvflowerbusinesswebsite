@@ -11,12 +11,29 @@
       </a>
     </div>
 
+    @if (!loading()) {
+      <div class="tabs">
+        <button class="tab-btn" [class.active]="activeTab() === 'active'" (click)="activeTab.set('active')">
+          My Orders
+          @if (activeOrders().length > 0) {
+            <span class="tab-badge">{{ activeOrders().length }}</span>
+          }
+        </button>
+        <button class="tab-btn" [class.active]="activeTab() === 'cancelled'" (click)="activeTab.set('cancelled')">
+          Cancelled Orders
+          @if (cancelledOrders().length > 0) {
+            <span class="tab-badge cancelled">{{ cancelledOrders().length }}</span>
+          }
+        </button>
+      </div>
+    }
+
     @if (loading()) {
       <div class="loading-state">
         <div class="spinner"></div>
         <p>Loading your orders...</p>
       </div>
-    } @else if (orders().length === 0) {
+    } @else if (visibleOrders().length === 0) {
       <div class="empty-state">
         <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#ddd" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
           <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
@@ -24,13 +41,18 @@
           <line x1="16" y1="13" x2="8" y2="13"></line>
           <line x1="16" y1="17" x2="8" y2="17"></line>
         </svg>
-        <h2>No orders yet</h2>
-        <p>Your order history will appear here once you place an order.</p>
-        <a routerLink="/" class="btn-shop">Browse Flowers</a>
+        @if (activeTab() === 'active') {
+          <h2>No orders yet</h2>
+          <p>Your order history will appear here once you place an order.</p>
+          <a routerLink="/" class="btn-shop">Browse Flowers</a>
+        } @else {
+          <h2>No cancelled orders</h2>
+          <p>You haven't cancelled any orders.</p>
+        }
       </div>
     } @else {
       <div class="orders-list">
-        @for (order of orders(); track order.id) {
+        @for (order of visibleOrders(); track order.id) {
           <div class="order-card">
             <div class="order-header">
               <div class="order-meta">
@@ -39,7 +61,7 @@
                   <span class="order-date">{{ formatDate(order.created_at) }}</span>
                 }
               </div>
-              <span class="order-status">{{ order.status }}</span>
+              <span class="order-status" [class.cancelled]="order.status === 'cancelled'">{{ order.status }}</span>
             </div>
 
             @if (order.items && order.items.length > 0) {
@@ -59,6 +81,19 @@
 
             <div class="order-footer">
               <span class="order-total">Total: ${{ order.total.toFixed(2) }}</span>
+              @if (order.status !== 'cancelled') {
+                <div class="cancel-wrap">
+                  <button
+                    class="btn-cancel"
+                    (click)="cancelOrder(order)"
+                    [disabled]="cancellingId() === order.id">
+                    {{ cancellingId() === order.id ? 'Cancelling...' : 'Cancel Order' }}
+                  </button>
+                  @if (cancelErrors()[order.id]) {
+                    <span class="cancel-error">{{ cancelErrors()[order.id] }}</span>
+                  }
+                </div>
+              }
             </div>
           </div>
         }

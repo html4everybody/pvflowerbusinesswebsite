@@ -8,7 +8,7 @@
 
       @if (!isSignUp()) {
         <!-- Sign In Form -->
-        <form class="auth-form" (ngSubmit)="onLogin()">
+        <form class="auth-form" #loginForm="ngForm" (ngSubmit)="onLogin()">
           <h1>Welcome Back</h1>
           <p class="subtitle">Sign in to your account</p>
 
@@ -23,13 +23,19 @@
           }
 
           <div class="form-group">
-            <label for="email">Email Address</label>
-            <input type="email" id="email" [(ngModel)]="loginData.email" name="email" placeholder="you@example.com" required>
+            <label for="email">Email Address <span class="required-star">*</span></label>
+            <input type="email" id="email" #loginEmail="ngModel" [(ngModel)]="loginData.email" name="email" placeholder="you@example.com" required>
+            @if (loginEmail.invalid && loginEmail.touched) {
+              <div class="field-error">Email address is required</div>
+            }
           </div>
 
           <div class="form-group">
-            <label for="password">Password</label>
-            <input type="password" id="password" [(ngModel)]="loginData.password" name="password" placeholder="Enter your password" required>
+            <label for="password">Password <span class="required-star">*</span></label>
+            <input type="password" id="password" #loginPassword="ngModel" [(ngModel)]="loginData.password" name="password" placeholder="Enter your password" required>
+            @if (loginPassword.invalid && loginPassword.touched) {
+              <div class="field-error">Password is required</div>
+            }
           </div>
 
           <div class="form-options">
@@ -44,7 +50,7 @@
             <div class="error-msg">{{ errorMessage() }}</div>
           }
 
-          <button type="submit" class="btn-submit" [disabled]="loading()">
+          <button type="submit" class="btn-submit" [disabled]="loading() || loginForm.invalid">
             {{ loading() ? 'Signing in...' : 'Sign In' }}
           </button>
 
@@ -68,34 +74,49 @@
         </form>
       } @else {
         <!-- Sign Up Form -->
-        <form class="auth-form" (ngSubmit)="onSignup()">
+        <form class="auth-form" #signupForm="ngForm" (ngSubmit)="onSignup()">
           <h1>Create Account</h1>
           <p class="subtitle">Join our flower family</p>
 
           <div class="form-row">
             <div class="form-group">
-              <label for="firstName">First Name</label>
-              <input type="text" id="firstName" [(ngModel)]="signupData.firstName" name="firstName" placeholder="John" required>
+              <label for="firstName">First Name <span class="required-star">*</span></label>
+              <input type="text" id="firstName" #firstNameField="ngModel" [(ngModel)]="signupData.firstName" name="firstName" placeholder="John" required>
+              @if (firstNameField.invalid && firstNameField.touched) {
+                <div class="field-error">First name is required</div>
+              }
             </div>
             <div class="form-group">
-              <label for="lastName">Last Name</label>
-              <input type="text" id="lastName" [(ngModel)]="signupData.lastName" name="lastName" placeholder="Doe" required>
+              <label for="lastName">Last Name <span class="required-star">*</span></label>
+              <input type="text" id="lastName" #lastNameField="ngModel" [(ngModel)]="signupData.lastName" name="lastName" placeholder="Doe" required>
+              @if (lastNameField.invalid && lastNameField.touched) {
+                <div class="field-error">Last name is required</div>
+              }
             </div>
           </div>
 
           <div class="form-group">
-            <label for="signupEmail">Email Address</label>
-            <input type="email" id="signupEmail" [(ngModel)]="signupData.email" name="email" placeholder="you@example.com" required>
+            <label for="signupEmail">Email Address <span class="required-star">*</span></label>
+            <input type="email" id="signupEmail" #signupEmail="ngModel" [(ngModel)]="signupData.email" name="email" placeholder="you@example.com" required>
+            @if (signupEmail.invalid && signupEmail.touched) {
+              <div class="field-error">Email address is required</div>
+            }
           </div>
 
           <div class="form-group">
-            <label for="signupPassword">Password</label>
-            <input type="password" id="signupPassword" [(ngModel)]="signupData.password" name="password" placeholder="Create a password" required>
+            <label for="signupPassword">Password <span class="required-star">*</span></label>
+            <input type="password" id="signupPassword" #signupPassword="ngModel" [(ngModel)]="signupData.password" name="password" placeholder="Create a password" required>
+            @if (signupPassword.invalid && signupPassword.touched) {
+              <div class="field-error">Password is required</div>
+            }
           </div>
 
           <div class="form-group">
-            <label for="confirmPassword">Confirm Password</label>
-            <input type="password" id="confirmPassword" [(ngModel)]="signupData.confirmPassword" name="confirmPassword" placeholder="Confirm your password" required>
+            <label for="confirmPassword">Confirm Password <span class="required-star">*</span></label>
+            <input type="password" id="confirmPassword" #confirmPasswordField="ngModel" [(ngModel)]="signupData.confirmPassword" name="confirmPassword" placeholder="Confirm your password" required>
+            @if (confirmPasswordField.invalid && confirmPasswordField.touched) {
+              <div class="field-error">Please confirm your password</div>
+            }
           </div>
 
           <label class="terms">
@@ -107,7 +128,7 @@
             <div class="error-msg">{{ errorMessage() }}</div>
           }
 
-          <button type="submit" class="btn-submit" [disabled]="loading()">
+          <button type="submit" class="btn-submit" [disabled]="loading() || signupForm.invalid">
             {{ loading() ? 'Creating account...' : 'Create Account' }}
           </button>
 

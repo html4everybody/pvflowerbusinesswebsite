@@ -95,6 +95,21 @@
         &::placeholder {
           color: #b2bec3;
         }
+
+        &.ng-invalid.ng-touched {
+          border-color: #e53e3e;
+        }
+      }
+
+      .required-star {
+        color: #e53e3e;
+        margin-left: 2px;
+      }
+
+      .field-error {
+        color: #e53e3e;
+        font-size: 0.8rem;
+        margin-top: 0.35rem;
       }
     }
 
@@ -202,8 +217,13 @@
       cursor: pointer;
       transition: background 0.15s ease;
 
-      &:hover {
+      &:hover:not(:disabled) {
         background: #333;
+      }
+
+      &:disabled {
+        background: #999;
+        cursor: not-allowed;
       }
     }
 

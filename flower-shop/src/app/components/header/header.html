@@ -19,11 +19,18 @@
             (input)="searchService.query.set($any($event).target.value)"
             class="nav-search-input">
         </div>
+        @if (authService.user()) {
+          <span class="nav-user-greeting">Hi, {{ authService.user().firstName }}</span>
+        }
+
         <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" (click)="scrollToTop()">Home</a>
         <a routerLink="/contact" routerLinkActive="active" (click)="closeMenu()">Contact Us</a>
 
         @if (!authService.user()) {
           <a routerLink="/signin" class="nav-signin" (click)="closeMenu()">Sign In</a>
+        } @else {
+          <a routerLink="/orders" class="nav-orders-link" (click)="closeMenu()">My Orders</a>
+          <button class="nav-logout-btn" (click)="logout()">Logout</button>
         }
       </nav>
 

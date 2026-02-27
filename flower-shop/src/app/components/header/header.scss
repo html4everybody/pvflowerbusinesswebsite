@@ -61,6 +61,9 @@
     }
 
     .nav-signin { display: none; }
+    .nav-user-greeting { display: none; }
+    .nav-orders-link { display: none; }
+    .nav-logout-btn { display: none; }
 
     .nav-search {
       display: flex;
@@ -299,6 +302,8 @@
 
     .signin-link { display: none; }
 
+    .user-menu-wrapper { display: none; }
+
     .hamburger { display: flex; }
 
     .nav {
@@ -340,6 +345,46 @@
         color: #333;
         font-weight: 600;
       }
+
+      .nav-user-greeting {
+        padding: 0.8rem 1.5rem 0.4rem;
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: #333;
+      }
+
+      .nav-orders-link {
+        display: flex;
+        padding: 0.9rem 1.5rem;
+        text-decoration: none;
+        color: #555;
+        font-weight: 500;
+        font-size: 1rem;
+        border-left: 3px solid transparent;
+        transition: background 0.15s ease;
+
+        &:hover { background: #f5f5f5; }
+      }
+
+      .nav-logout-btn {
+        display: flex;
+        width: 100%;
+        padding: 0.9rem 1.5rem;
+        background: none;
+        border: none;
+        color: #e53e3e;
+        font-weight: 500;
+        font-size: 1rem;
+        cursor: pointer;
+        text-align: left;
+        transition: background 0.15s ease;
+
+        &:hover { background: #fff5f5; }
+      }
+
+      .nav-user-greeting { display: block; }
+      .nav-orders-link { display: flex; }
+      .nav-logout-btn { display: flex; }
 
       .nav-search { display: none; }
     }
