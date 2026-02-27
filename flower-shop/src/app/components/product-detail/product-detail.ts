@@ -3,6 +3,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ProductService } from '../../services/product';
 import { CartService } from '../../services/cart';
 import { FeedbackService } from '../../services/feedback';
+import { ToastService } from '../../services/toast';
 import { Product } from '../../models/product.model';
 
 @Component({
@@ -21,7 +22,8 @@ export class ProductDetail implements OnInit {
     private router: Router,
     private productService: ProductService,
     private cartService: CartService,
-    private feedbackService: FeedbackService
+    private feedbackService: FeedbackService,
+    private toastService: ToastService
   ) {}
 
   ngOnInit(): void {
@@ -55,6 +57,7 @@ export class ProductDetail implements OnInit {
     if (this.product) {
       this.cartService.addToCart(this.product, this.quantity);
       this.feedbackService.addToCartFeedback();
+      this.toastService.show(`${this.product.name} added to cart!`);
       this.quantity = 1;
     }
   }
