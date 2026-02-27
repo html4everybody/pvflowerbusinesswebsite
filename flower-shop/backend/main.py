@@ -168,6 +168,12 @@ class OrderRequest(BaseModel):
     items: list[OrderItem]
     total: float
     customer: dict
+    delivery_type: Optional[str] = "immediate"
+    delivery_datetime: Optional[str] = None
+
+class UpdateDeliveryRequest(BaseModel):
+    delivery_type: str
+    delivery_datetime: Optional[str] = None
 
 class CartItemRequest(BaseModel):
     user_id: str
@@ -310,6 +316,19 @@ def get_user_orders(email: str):
         order["items"] = items_by_order.get(order["id"], [])
     return orders
 
+@app.patch("/api/orders/{order_id}/delivery")
+def update_delivery(order_id: str, req: UpdateDeliveryRequest):
+    result = supabase.table("orders").select("status").eq("id", order_id).execute()
+    if not result.data:
+        raise HTTPException(status_code=404, detail="Order not found")
+    if result.data[0]["status"] == "cancelled":
+        raise HTTPException(status_code=400, detail="Cannot update delivery for a cancelled order")
+    supabase.table("orders").update({
+        "delivery_type": req.delivery_type,
+        "delivery_datetime": req.delivery_datetime
+    }).eq("id", order_id).execute()
+    return {"status": "updated"}
+
 @app.patch("/api/orders/{order_id}/cancel")
 def cancel_order(order_id: str):
     result = supabase.table("orders").select("status").eq("id", order_id).execute()
@@ -329,7 +348,9 @@ def create_order(req: OrderRequest):
         "customer_email": req.customer.get("email", ""),
         "customer_name": req.customer.get("name", ""),
         "total": req.total,
-        "status": "confirmed"
+        "status": "confirmed",
+        "delivery_type": req.delivery_type,
+        "delivery_datetime": req.delivery_datetime
     }).execute()
 
     if req.items:

@@ -17,6 +17,9 @@ export class Checkout {
   orderNumber = signal('');
   loading = signal(false);
   errorMessage = signal('');
+  deliveryType = signal<'immediate' | 'scheduled'>('immediate');
+
+  minDate = new Date().toISOString().split('T')[0];
 
   formData = {
     firstName: '',
@@ -31,7 +34,9 @@ export class Checkout {
     cardNumber: '',
     expiry: '',
     cvv: '',
-    giftMessage: ''
+    giftMessage: '',
+    deliveryDate: '',
+    deliveryTime: ''
   };
 
   constructor(
@@ -69,6 +74,10 @@ export class Checkout {
     const user = this.authService.user();
     const customerEmail = user ? user.email : this.formData.email;
 
+    const deliveryDatetime = this.deliveryType() === 'scheduled' && this.formData.deliveryDate && this.formData.deliveryTime
+      ? `${this.formData.deliveryDate}T${this.formData.deliveryTime}`
+      : null;
+
     const payload = {
       items: this.cartService.getCartItems().map(item => ({
         productId: item.product.id,
@@ -85,7 +94,9 @@ export class Checkout {
         city: this.formData.city,
         state: this.formData.state,
         zip: this.formData.zip
-      }
+      },
+      delivery_type: this.deliveryType(),
+      delivery_datetime: deliveryDatetime
     };
 
     this.http.post<{ orderId: string; status: string }>(`${environment.apiUrl}/api/orders`, payload).subscribe({
