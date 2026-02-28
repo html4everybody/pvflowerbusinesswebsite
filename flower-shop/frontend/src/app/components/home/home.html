@@ -1,0 +1,227 @@
+<main class="home">
+
+  <!-- ── Hero Section (Parallax) ──────────────────────────────────────────── -->
+  <section class="hero">
+    <div class="hero-parallax"></div>
+    <div class="petals" aria-hidden="true">
+      <span class="petal p1">🌸</span>
+      <span class="petal p2">🌺</span>
+      <span class="petal p3">🌷</span>
+      <span class="petal p4">🌸</span>
+      <span class="petal p5">🏵️</span>
+      <span class="petal p6">🌺</span>
+      <span class="petal p7">🌷</span>
+      <span class="petal p8">🌸</span>
+    </div>
+    <div class="hero-content">
+      <span class="hero-tag">✨ Premium Flower Shop</span>
+      <h1>Nature's Beauty,<br><em>Delivered Fresh</em></h1>
+      <p>Handpicked blooms for every occasion — birthdays, weddings, anniversaries, or just because.</p>
+      <div class="hero-actions">
+        <button class="btn-shop-now" (click)="scrollToCollection()">
+          Shop Collection
+          <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <polyline points="19 12 12 19 5 12"></polyline>
+          </svg>
+        </button>
+        <a routerLink="/builder" class="btn-builder">🎨 Build Your Bouquet</a>
+        <a routerLink="/contact" class="btn-outline">Custom Order</a>
+      </div>
+      <div class="hero-trust">
+        <span>🌿 Same-day delivery</span>
+        <span class="dot">•</span>
+        <span>⭐ 4.9 rated</span>
+        <span class="dot">•</span>
+        <span>🎁 100+ varieties</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Features Strip ─────────────────────────────────────────────────────── -->
+  <section class="features">
+    <div class="container">
+      <div class="feature-grid">
+        <div class="feature-card" appFadeIn [fadeDelay]="0">
+          <span class="feature-icon">🚚</span>
+          <div><h3>Same-Day Delivery</h3><p>Fresh to your door within hours</p></div>
+        </div>
+        <div class="feature-card" appFadeIn [fadeDelay]="100">
+          <span class="feature-icon">🌿</span>
+          <div><h3>Farm-Fresh Blooms</h3><p>Directly sourced, always fresh</p></div>
+        </div>
+        <div class="feature-card" appFadeIn [fadeDelay]="200">
+          <span class="feature-icon">🎁</span>
+          <div><h3>Gift Wrapping</h3><p>Beautifully packed, every time</p></div>
+        </div>
+        <div class="feature-card" appFadeIn [fadeDelay]="300">
+          <span class="feature-icon">♻️</span>
+          <div><h3>Eco Friendly</h3><p>Sustainable packaging always</p></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Collection Section ─────────────────────────────────────────────────── -->
+  <section class="all-products" id="collection">
+    <div class="container">
+      <div class="section-header" appFadeIn>
+        <span class="section-tag">Our Collection</span>
+        <h2>Fresh Blooms for Every Moment</h2>
+        <p>Explore handpicked arrangements across every occasion and style</p>
+      </div>
+
+      <!-- Category Filters -->
+      <div class="category-filters" appFadeIn [fadeDelay]="100">
+        <button class="filter-pill" [class.active]="selectedCategory === 'All'" (click)="selectCategory('All')">🌸 All</button>
+        @for (cat of categories; track cat) {
+          <button class="filter-pill" [class.active]="selectedCategory === cat" (click)="selectCategory(cat)">{{ cat }}</button>
+        }
+      </div>
+
+      <!-- Active Search Filters -->
+      @if (searchService.hasActiveFilters()) {
+        <div class="active-search-bar">
+          <span class="results-count">{{ filteredProducts.length }} result{{ filteredProducts.length !== 1 ? 's' : '' }} found</span>
+          <div class="active-chips">
+            @if (searchService.query()) {
+              <span class="filter-tag">
+                🔍 "{{ searchService.query() }}"
+                <button (click)="searchService.query.set('')">×</button>
+              </span>
+            }
+            @if (searchService.selectedOccasion()) {
+              <span class="filter-tag">
+                🎉 {{ searchService.selectedOccasion() }}
+                <button (click)="searchService.selectedOccasion.set('')">×</button>
+              </span>
+            }
+            @if (searchService.selectedColor()) {
+              <span class="filter-tag">
+                🎨 {{ searchService.selectedColor() }}
+                <button (click)="searchService.selectedColor.set('')">×</button>
+              </span>
+            }
+            @if (searchService.priceRange() !== 'all') {
+              <span class="filter-tag">
+                💰 {{ searchService.priceLabels[searchService.priceRange()] }}
+                <button (click)="searchService.priceRange.set('all')">×</button>
+              </span>
+            }
+          </div>
+          <button class="clear-filters-btn" (click)="searchService.clearAll()">Clear all</button>
+        </div>
+      }
+
+      <!-- Product Grid — 3D Flip Cards -->
+      <div class="product-grid">
+        @for (product of filteredProducts; track product.id) {
+          <div class="product-card" appFadeIn [fadeDelay]="($index % 5) * 60">
+
+            @if (isLowStock(product.id)) {
+              <span class="urgency-badge">🔥 Only {{ lowStockCount(product.id) }} left!</span>
+            }
+
+            <div class="card-inner">
+              <!-- Front -->
+              <div class="card-front">
+                <div class="front-image">
+                  <img [src]="product.image" [alt]="product.name" loading="lazy">
+                  <span class="category-badge">{{ product.category }}</span>
+                  <span class="rating-badge">⭐ {{ product.rating }}</span>
+                  <button
+                    class="wishlist-btn"
+                    [class.active]="wishlistService.has(product.id)"
+                    (click)="wishlistService.toggle(product); $event.stopPropagation()"
+                    [title]="wishlistService.has(product.id) ? 'Remove from wishlist' : 'Save to wishlist'">
+                    @if (wishlistService.has(product.id)) {
+                      <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+                      </svg>
+                    } @else {
+                      <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+                      </svg>
+                    }
+                  </button>
+                </div>
+                <div class="front-info">
+                  <h3>{{ product.name }}</h3>
+                  <span class="price">₹{{ product.price.toFixed(2) }}</span>
+                </div>
+              </div>
+
+              <!-- Back -->
+              <div class="card-back">
+                <div class="back-content">
+                  <span class="back-category">{{ product.category }}</span>
+                  <h3>{{ product.name }}</h3>
+                  <p class="back-desc">{{ product.description }}</p>
+                  <div class="back-meta">
+                    <span class="back-rating">⭐ {{ product.rating }}</span>
+                    <span class="back-price">₹{{ product.price.toFixed(2) }}</span>
+                  </div>
+                  <div class="back-actions">
+                    @if (getQuantity(product.id) === 0) {
+                      <button class="btn-add-back" (click)="addToCart(product); $event.stopPropagation()">
+                        Add to Cart
+                      </button>
+                    } @else {
+                      <div class="quantity-control">
+                        <button class="qty-btn" (click)="decrementQuantity(product); $event.stopPropagation()">−</button>
+                        <span class="qty-value">{{ getQuantity(product.id) }}</span>
+                        <button class="qty-btn" (click)="incrementQuantity(product); $event.stopPropagation()">+</button>
+                      </div>
+                    }
+                    <a [routerLink]="['/products', product.id]" class="btn-view-back">View →</a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+
+      @if (filteredProducts.length === 0) {
+        <div class="empty-state" appFadeIn>
+          <span>🌾</span>
+          <p>No flowers found. Try a different search or category.</p>
+        </div>
+      }
+    </div>
+  </section>
+
+  <!-- ── Newsletter Section ─────────────────────────────────────────────────── -->
+  <section class="newsletter">
+    <div class="newsletter-deco" aria-hidden="true">
+      <span>🌸</span><span>🌺</span><span>🌷</span><span>🌸</span><span>🌺</span>
+    </div>
+    <div class="container">
+      <div class="newsletter-content" appFadeIn>
+        <span class="newsletter-tag">💌 Stay Connected</span>
+        <h2>Stay in Bloom</h2>
+        <p>Get exclusive offers, seasonal collections & flower care tips in your inbox.</p>
+        <form class="newsletter-form" (submit)="$event.preventDefault()">
+          <input type="email" placeholder="your@email.com" required>
+          <button type="submit" class="btn-subscribe">Subscribe</button>
+        </form>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- ── Cart Toast ──────────────────────────────────────────────────────────── -->
+<div class="cart-toast" [class.show]="toastVisible()" [class.removed]="toastType() === 'removed'">
+  <div class="toast-icon">
+    @if (toastType() === 'added') {
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+    } @else {
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path></svg>
+    }
+  </div>
+  <div class="toast-text">
+    <span class="toast-title">{{ toastType() === 'added' ? 'Added to Cart!' : 'Removed from Cart' }}</span>
+    <span class="toast-name">{{ toastProductName() }}</span>
+  </div>
+</div>

@@ -1,0 +1,354 @@
+.wishlist-page {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 6rem 1.5rem 4rem;
+  min-height: 80vh;
+}
+
+// ── Header ─────────────────────────────────────────────────────────────────
+.wishlist-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 2.5rem;
+
+  .header-left {
+    display: flex;
+    align-items: baseline;
+    gap: 0.75rem;
+
+    h1 {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--text);
+      margin: 0;
+    }
+
+    .item-count {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+  }
+
+  .shared-banner {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    background: var(--accent-light);
+    border: 1px solid rgba(200, 75, 122, 0.2);
+    border-radius: var(--radius-md);
+    padding: 0.65rem 1rem;
+    font-size: 0.88rem;
+    color: var(--accent);
+    font-weight: 500;
+    flex-wrap: wrap;
+  }
+
+  .header-actions {
+    display: flex;
+    gap: 0.65rem;
+    flex-wrap: wrap;
+  }
+}
+
+// ── Buttons ────────────────────────────────────────────────────────────────
+.btn-share, .btn-add-all, .btn-save-all {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.2s ease;
+}
+
+.btn-share {
+  background: white;
+  color: #555;
+  border: 1.5px solid var(--border);
+
+  &:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    box-shadow: 0 2px 8px rgba(200, 75, 122, 0.12);
+  }
+}
+
+.btn-add-all {
+  background: var(--accent);
+  color: white;
+  border: 1.5px solid var(--accent);
+
+  &:hover {
+    background: #b83770;
+    box-shadow: 0 3px 12px rgba(200, 75, 122, 0.35);
+    transform: translateY(-1px);
+  }
+}
+
+.btn-save-all {
+  background: var(--accent);
+  color: white;
+  border: 1.5px solid var(--accent);
+  margin-left: 0.25rem;
+
+  &:hover {
+    background: #b83770;
+    box-shadow: 0 3px 10px rgba(200, 75, 122, 0.3);
+  }
+}
+
+// ── Product Grid ───────────────────────────────────────────────────────────
+.wishlist-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 1.25rem;
+}
+
+// ── Card ───────────────────────────────────────────────────────────────────
+.wishlist-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+  display: flex;
+  flex-direction: column;
+
+  &:hover {
+    box-shadow: var(--shadow-md);
+    transform: translateY(-3px);
+  }
+
+  .card-image-link {
+    display: block;
+    position: relative;
+    aspect-ratio: 1 / 1;
+    overflow: hidden;
+
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.35s ease;
+    }
+
+    &:hover img {
+      transform: scale(1.06);
+    }
+
+    .card-category {
+      position: absolute;
+      top: 0.6rem;
+      left: 0.6rem;
+      background: rgba(255, 255, 255, 0.9);
+      backdrop-filter: blur(4px);
+      color: var(--accent);
+      font-size: 0.68rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      padding: 0.2rem 0.55rem;
+      border-radius: var(--radius-full);
+    }
+  }
+
+  .card-info {
+    padding: 0.9rem 0.9rem 0.5rem;
+    flex: 1;
+
+    h3 {
+      font-size: 0.92rem;
+      font-weight: 600;
+      color: var(--text);
+      margin: 0 0 0.3rem;
+      line-height: 1.35;
+
+      a {
+        text-decoration: none;
+        color: inherit;
+        transition: color 0.15s ease;
+
+        &:hover { color: var(--accent); }
+      }
+    }
+
+    .card-rating {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-bottom: 0.35rem;
+    }
+
+    .card-price {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--accent);
+      margin: 0;
+    }
+  }
+
+  .card-actions {
+    padding: 0.75rem 0.9rem 0.9rem;
+    display: flex;
+    gap: 0.5rem;
+
+    button {
+      flex: 1;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.35rem;
+      padding: 0.48rem 0.5rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+      transition: all 0.18s ease;
+      white-space: nowrap;
+    }
+
+    .btn-cart {
+      background: var(--accent);
+      color: white;
+      border: 1.5px solid var(--accent);
+
+      &:hover {
+        background: #b83770;
+        box-shadow: 0 2px 8px rgba(200, 75, 122, 0.3);
+      }
+    }
+
+    .btn-remove {
+      background: transparent;
+      color: var(--text-muted);
+      border: 1.5px solid var(--border);
+
+      &:hover {
+        background: #fff5f5;
+        color: var(--error);
+        border-color: var(--error);
+      }
+    }
+
+    .btn-save {
+      background: transparent;
+      color: var(--text-muted);
+      border: 1.5px solid var(--border);
+
+      &:hover:not(.saved) {
+        color: var(--accent);
+        border-color: var(--accent);
+        background: var(--accent-light);
+      }
+
+      &.saved {
+        color: var(--accent);
+        border-color: var(--accent);
+        background: var(--accent-light);
+        cursor: default;
+      }
+    }
+  }
+}
+
+// ── Empty State ─────────────────────────────────────────────────────────────
+.empty-wishlist {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 5rem 1rem;
+  text-align: center;
+
+  svg {
+    color: #ddd;
+  }
+
+  h2 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--text);
+    margin: 0;
+  }
+
+  p {
+    color: var(--text-muted);
+    font-size: 0.95rem;
+    margin: 0;
+  }
+
+  .btn-browse {
+    display: inline-block;
+    background: var(--accent);
+    color: white;
+    text-decoration: none;
+    padding: 0.65rem 1.75rem;
+    border-radius: var(--radius-sm);
+    font-weight: 600;
+    font-size: 0.9rem;
+    margin-top: 0.5rem;
+    transition: background 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+
+    &:hover {
+      background: #b83770;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 14px rgba(200, 75, 122, 0.35);
+    }
+  }
+}
+
+// ── Share Toast ────────────────────────────────────────────────────────────
+.share-toast {
+  position: fixed;
+  bottom: 2rem;
+  left: 50%;
+  transform: translateX(-50%) translateY(120%);
+  background: #1a1a1a;
+  color: white;
+  padding: 0.65rem 1.25rem;
+  border-radius: var(--radius-full);
+  font-size: 0.85rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.25);
+  transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s ease;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 9999;
+
+  &.show {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+  }
+}
+
+// ── Responsive ─────────────────────────────────────────────────────────────
+@media (max-width: 600px) {
+  .wishlist-page {
+    padding: 5rem 1rem 3rem;
+  }
+
+  .wishlist-header {
+    flex-direction: column;
+    gap: 0.75rem;
+
+    .header-left h1 { font-size: 1.6rem; }
+  }
+
+  .wishlist-grid {
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 0.85rem;
+  }
+}

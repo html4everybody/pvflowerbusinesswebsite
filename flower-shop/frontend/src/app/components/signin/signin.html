@@ -1,0 +1,150 @@
+<main class="signin-page">
+  <div class="signin-container">
+    <div class="signin-card">
+      <div class="logo">
+        <span class="logo-icon">🌸</span>
+        <span class="logo-text">FloranFlowers</span>
+      </div>
+
+      @if (!isSignUp()) {
+        <!-- Sign In Form -->
+        <form class="auth-form" #loginForm="ngForm" (ngSubmit)="onLogin()">
+          <h1>Welcome Back</h1>
+          <p class="subtitle">Sign in to your account</p>
+
+          @if (successMessage()) {
+            <div class="success-banner">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                <polyline points="22 4 12 14.01 9 11.01"></polyline>
+              </svg>
+              {{ successMessage() }}
+            </div>
+          }
+
+          <div class="form-group">
+            <label for="email">Email Address <span class="required-star">*</span></label>
+            <input type="email" id="email" #loginEmail="ngModel" [(ngModel)]="loginData.email" name="email" placeholder="you@example.com" required>
+            @if (loginEmail.invalid && loginEmail.touched) {
+              <div class="field-error">Email address is required</div>
+            }
+          </div>
+
+          <div class="form-group">
+            <label for="password">Password <span class="required-star">*</span></label>
+            <input type="password" id="password" #loginPassword="ngModel" [(ngModel)]="loginData.password" name="password" placeholder="Enter your password" required>
+            @if (loginPassword.invalid && loginPassword.touched) {
+              <div class="field-error">Password is required</div>
+            }
+          </div>
+
+          <div class="form-options">
+            <label class="remember-me">
+              <input type="checkbox">
+              <span>Remember me</span>
+            </label>
+            <a href="#" class="forgot-password">Forgot password?</a>
+          </div>
+
+          @if (errorMessage()) {
+            <div class="error-msg">{{ errorMessage() }}</div>
+          }
+
+          <button type="submit" class="btn-submit" [disabled]="loading() || loginForm.invalid">
+            {{ loading() ? 'Signing in...' : 'Sign In' }}
+          </button>
+
+          <div class="divider">
+            <span>or continue with</span>
+          </div>
+
+          <div class="social-login">
+            <button type="button" class="btn-social google">
+              <span>G</span> Google
+            </button>
+            <button type="button" class="btn-social facebook">
+              <span>f</span> Facebook
+            </button>
+          </div>
+
+          <p class="switch-mode">
+            Don't have an account?
+            <button type="button" (click)="toggleMode()">Sign Up</button>
+          </p>
+        </form>
+      } @else {
+        <!-- Sign Up Form -->
+        <form class="auth-form" #signupForm="ngForm" (ngSubmit)="onSignup()">
+          <h1>Create Account</h1>
+          <p class="subtitle">Join our flower family</p>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="firstName">First Name <span class="required-star">*</span></label>
+              <input type="text" id="firstName" #firstNameField="ngModel" [(ngModel)]="signupData.firstName" name="firstName" placeholder="John" required>
+              @if (firstNameField.invalid && firstNameField.touched) {
+                <div class="field-error">First name is required</div>
+              }
+            </div>
+            <div class="form-group">
+              <label for="lastName">Last Name <span class="required-star">*</span></label>
+              <input type="text" id="lastName" #lastNameField="ngModel" [(ngModel)]="signupData.lastName" name="lastName" placeholder="Doe" required>
+              @if (lastNameField.invalid && lastNameField.touched) {
+                <div class="field-error">Last name is required</div>
+              }
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="signupEmail">Email Address <span class="required-star">*</span></label>
+            <input type="email" id="signupEmail" #signupEmail="ngModel" [(ngModel)]="signupData.email" name="email" placeholder="you@example.com" required>
+            @if (signupEmail.invalid && signupEmail.touched) {
+              <div class="field-error">Email address is required</div>
+            }
+          </div>
+
+          <div class="form-group">
+            <label for="signupPassword">Password <span class="required-star">*</span></label>
+            <input type="password" id="signupPassword" #signupPassword="ngModel" [(ngModel)]="signupData.password" name="password" placeholder="Create a password" required>
+            @if (signupPassword.invalid && signupPassword.touched) {
+              <div class="field-error">Password is required</div>
+            }
+          </div>
+
+          <div class="form-group">
+            <label for="confirmPassword">Confirm Password <span class="required-star">*</span></label>
+            <input type="password" id="confirmPassword" #confirmPasswordField="ngModel" [(ngModel)]="signupData.confirmPassword" name="confirmPassword" placeholder="Confirm your password" required>
+            @if (confirmPasswordField.invalid && confirmPasswordField.touched) {
+              <div class="field-error">Please confirm your password</div>
+            }
+          </div>
+
+          <label class="terms">
+            <input type="checkbox" required>
+            <span>I agree to the <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a></span>
+          </label>
+
+          @if (errorMessage()) {
+            <div class="error-msg">{{ errorMessage() }}</div>
+          }
+
+          <button type="submit" class="btn-submit" [disabled]="loading() || signupForm.invalid">
+            {{ loading() ? 'Creating account...' : 'Create Account' }}
+          </button>
+
+          <p class="switch-mode">
+            Already have an account?
+            <button type="button" (click)="toggleMode()">Sign In</button>
+          </p>
+        </form>
+      }
+    </div>
+
+    <div class="signin-image">
+      <div class="image-overlay">
+        <h2>Beautiful Flowers for Every Occasion</h2>
+        <p>Join thousands of happy customers who trust us for their floral needs.</p>
+      </div>
+    </div>
+  </div>
+</main>
