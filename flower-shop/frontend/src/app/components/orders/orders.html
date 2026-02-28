@@ -1,0 +1,185 @@
+<main class="orders-page">
+  <div class="container">
+    <div class="page-header">
+      <h1>My Orders</h1>
+      <a routerLink="/" class="back-link">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="19" y1="12" x2="5" y2="12"></line>
+          <polyline points="12 19 5 12 12 5"></polyline>
+        </svg>
+        Continue Shopping
+      </a>
+    </div>
+
+    @if (!loading()) {
+      <div class="tabs">
+        <button class="tab-btn" [class.active]="activeTab() === 'active'" (click)="activeTab.set('active')">
+          My Orders
+          @if (activeOrders().length > 0) {
+            <span class="tab-badge">{{ activeOrders().length }}</span>
+          }
+        </button>
+        <button class="tab-btn" [class.active]="activeTab() === 'cancelled'" (click)="activeTab.set('cancelled')">
+          Cancelled Orders
+          @if (cancelledOrders().length > 0) {
+            <span class="tab-badge cancelled">{{ cancelledOrders().length }}</span>
+          }
+        </button>
+      </div>
+    }
+
+    @if (loading()) {
+      <div class="loading-state">
+        <div class="spinner"></div>
+        <p>Loading your orders...</p>
+      </div>
+    } @else if (visibleOrders().length === 0) {
+      <div class="empty-state">
+        <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#ddd" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+          <polyline points="14 2 14 8 20 8"></polyline>
+          <line x1="16" y1="13" x2="8" y2="13"></line>
+          <line x1="16" y1="17" x2="8" y2="17"></line>
+        </svg>
+        @if (activeTab() === 'active') {
+          <h2>No orders yet</h2>
+          <p>Your order history will appear here once you place an order.</p>
+          <a routerLink="/" class="btn-shop">Browse Flowers</a>
+        } @else {
+          <h2>No cancelled orders</h2>
+          <p>You haven't cancelled any orders.</p>
+        }
+      </div>
+    } @else {
+      <div class="orders-list">
+        @for (order of visibleOrders(); track order.id) {
+          <div class="order-card">
+            <div class="order-header">
+              <div class="order-meta">
+                <span class="order-id">{{ order.id }}</span>
+                @if (order.created_at) {
+                  <span class="order-date">{{ formatDate(order.created_at) }}</span>
+                }
+              </div>
+              <span class="order-status" [class.cancelled]="order.status === 'cancelled'">{{ order.status }}</span>
+            </div>
+
+            @if (order.items && order.items.length > 0) {
+              <div class="order-items">
+                @for (item of order.items; track item.id) {
+                  <div class="order-item">
+                    <img [src]="item.image" [alt]="item.name" class="item-image">
+                    <div class="item-details">
+                      <span class="item-name">{{ item.name }}</span>
+                      <span class="item-qty">× {{ item.quantity }}</span>
+                    </div>
+                    <span class="item-price">${{ (item.price * item.quantity).toFixed(2) }}</span>
+                  </div>
+                }
+              </div>
+            }
+
+            <div class="order-delivery" [class.delivery-scheduled]="order.delivery_type === 'scheduled'">
+              @if (formatDelivery(order); as delivery) {
+                <div class="delivery-icon">
+                  @if (order.delivery_type === 'scheduled') {
+                    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                      <line x1="16" y1="2" x2="16" y2="6"></line>
+                      <line x1="8" y1="2" x2="8" y2="6"></line>
+                      <line x1="3" y1="10" x2="21" y2="10"></line>
+                    </svg>
+                  } @else {
+                    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <circle cx="12" cy="12" r="10"></circle>
+                      <polyline points="12 6 12 12 16 14"></polyline>
+                    </svg>
+                  }
+                </div>
+                <div class="delivery-info">
+                  <span class="delivery-label">{{ delivery.label }}</span>
+                  <span class="delivery-detail">{{ delivery.detail }}</span>
+                </div>
+                @if (order.status !== 'cancelled') {
+                  <button class="btn-edit-delivery" (click)="startEditDelivery(order)" [class.active]="editingDeliveryId() === order.id" title="Edit delivery schedule">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                    </svg>
+                  </button>
+                }
+              }
+            </div>
+
+            @if (editingDeliveryId() === order.id) {
+              <div class="delivery-edit-panel">
+                <div class="dec-options">
+                  <div class="dec-card" [class.selected]="editDelivery().type === 'immediate'" (click)="setEditType('immediate')">
+                    <div class="dec-radio" [class.filled]="editDelivery().type === 'immediate'"></div>
+                    <div>
+                      <strong>Immediately</strong>
+                      <span>As soon as possible</span>
+                    </div>
+                  </div>
+                  <div class="dec-card" [class.selected]="editDelivery().type === 'scheduled'" (click)="setEditType('scheduled')">
+                    <div class="dec-radio" [class.filled]="editDelivery().type === 'scheduled'"></div>
+                    <div>
+                      <strong>Schedule</strong>
+                      <span>Pick date & time</span>
+                    </div>
+                  </div>
+                </div>
+
+                @if (editDelivery().type === 'scheduled') {
+                  <div class="dec-fields">
+                    <div class="dec-field">
+                      <label>Date</label>
+                      <input type="date" [min]="minDate" [value]="editDelivery().date" (change)="setEditDate($any($event.target).value)">
+                    </div>
+                    <div class="dec-field">
+                      <label>Time Slot</label>
+                      <select [value]="editDelivery().time" (change)="setEditTime($any($event.target).value)">
+                        <option value="">Select a slot</option>
+                        @for (slot of timeSlots; track slot.key) {
+                          <option [value]="slot.key">{{ slot.label }}</option>
+                        }
+                      </select>
+                    </div>
+                  </div>
+                }
+
+                @if (deliverySaveError()) {
+                  <div class="dec-error">{{ deliverySaveError() }}</div>
+                }
+
+                <div class="dec-actions">
+                  <button class="btn-dec-save" (click)="saveDelivery(order)" [disabled]="savingDelivery()">
+                    {{ savingDelivery() ? 'Saving...' : 'Save Changes' }}
+                  </button>
+                  <button class="btn-dec-cancel" (click)="cancelEditDelivery()" [disabled]="savingDelivery()">Cancel</button>
+                </div>
+              </div>
+            }
+
+            <div class="order-footer">
+              <span class="order-total">Total: ${{ order.total.toFixed(2) }}</span>
+              @if (order.status !== 'cancelled') {
+                <div class="cancel-wrap">
+                  <button
+                    class="btn-cancel"
+                    (click)="cancelOrder(order)"
+                    [disabled]="cancellingId() === order.id">
+                    {{ cancellingId() === order.id ? 'Cancelling...' : 'Cancel Order' }}
+                  </button>
+                  @if (cancelErrors()[order.id]) {
+                    <span class="cancel-error">{{ cancelErrors()[order.id] }}</span>
+                  }
+                </div>
+              }
+            </div>
+          </div>
+        }
+      </div>
+    }
+  </div>
+</main>

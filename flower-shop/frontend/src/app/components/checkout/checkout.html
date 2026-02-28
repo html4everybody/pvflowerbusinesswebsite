@@ -1,0 +1,365 @@
+<main class="checkout-page">
+  <div class="container">
+    @if (!orderPlaced()) {
+
+      <div class="page-header">
+        <h1>Checkout</h1>
+        <p class="page-sub">Complete your order below</p>
+      </div>
+
+      <div class="checkout-content">
+        <form class="checkout-form" #checkoutForm="ngForm" (ngSubmit)="placeOrder()">
+
+          <!-- Shipping Information -->
+          <section class="form-section">
+            <div class="section-header">
+              <div class="section-badge">1</div>
+              <div>
+                <h2>Shipping Information</h2>
+                <p>Where should we deliver your flowers?</p>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="firstName">First Name <span class="required-star">*</span></label>
+                <input type="text" id="firstName" #firstNameField="ngModel" [(ngModel)]="formData.firstName" name="firstName" placeholder="John" required>
+                @if (firstNameField.invalid && firstNameField.touched) {
+                  <div class="field-error">First name is required</div>
+                }
+              </div>
+              <div class="form-group">
+                <label for="lastName">Last Name <span class="required-star">*</span></label>
+                <input type="text" id="lastName" #lastNameField="ngModel" [(ngModel)]="formData.lastName" name="lastName" placeholder="Doe" required>
+                @if (lastNameField.invalid && lastNameField.touched) {
+                  <div class="field-error">Last name is required</div>
+                }
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="email">Email <span class="required-star">*</span></label>
+                <input type="email" id="email" #emailField="ngModel" [(ngModel)]="formData.email" name="email" placeholder="you@example.com" required>
+                @if (emailField.invalid && emailField.touched) {
+                  <div class="field-error">Email is required</div>
+                }
+              </div>
+              <div class="form-group">
+                <label for="phone">Phone <span class="required-star">*</span></label>
+                <input type="tel" id="phone" #phoneField="ngModel" [(ngModel)]="formData.phone" name="phone" placeholder="1234567890" required>
+                @if (phoneField.invalid && phoneField.touched) {
+                  <div class="field-error">Phone number is required</div>
+                }
+              </div>
+            </div>
+
+            <div class="form-group full-width">
+              <label for="address">Street Address <span class="required-star">*</span></label>
+              <input type="text" id="address" #addressField="ngModel" [(ngModel)]="formData.address" name="address" placeholder="123 Main Street, Apt 4B" required>
+              @if (addressField.invalid && addressField.touched) {
+                <div class="field-error">Address is required</div>
+              }
+            </div>
+
+            <div class="form-row three-col">
+              <div class="form-group">
+                <label for="city">City <span class="required-star">*</span></label>
+                <input type="text" id="city" #cityField="ngModel" [(ngModel)]="formData.city" name="city" placeholder="New York" required>
+                @if (cityField.invalid && cityField.touched) {
+                  <div class="field-error">City is required</div>
+                }
+              </div>
+              <div class="form-group">
+                <label for="state">State <span class="required-star">*</span></label>
+                <input type="text" id="state" #stateField="ngModel" [(ngModel)]="formData.state" name="state" placeholder="NY" required>
+                @if (stateField.invalid && stateField.touched) {
+                  <div class="field-error">State is required</div>
+                }
+              </div>
+              <div class="form-group">
+                <label for="zip">ZIP Code <span class="required-star">*</span></label>
+                <input type="text" id="zip" #zipField="ngModel" [(ngModel)]="formData.zip" name="zip" placeholder="10001" required>
+                @if (zipField.invalid && zipField.touched) {
+                  <div class="field-error">ZIP code is required</div>
+                }
+              </div>
+            </div>
+          </section>
+
+          <!-- Delivery Schedule -->
+          <section class="form-section">
+            <div class="section-header">
+              <div class="section-badge">2</div>
+              <div>
+                <h2>Delivery Schedule</h2>
+                <p>When would you like your flowers delivered?</p>
+              </div>
+            </div>
+
+            <div class="delivery-options">
+              <div class="delivery-card" [class.selected]="deliveryType() === 'immediate'" (click)="deliveryType.set('immediate')">
+                <div class="delivery-option-icon">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <polyline points="12 6 12 12 16 14"></polyline>
+                  </svg>
+                </div>
+                <div class="delivery-option-text">
+                  <strong>Deliver Immediately</strong>
+                  <span>As soon as possible — typically within 2–3 hours</span>
+                </div>
+                <div class="delivery-check">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                  </svg>
+                </div>
+              </div>
+
+              <div class="delivery-card" [class.selected]="deliveryType() === 'scheduled'" (click)="deliveryType.set('scheduled')">
+                <div class="delivery-option-icon">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                    <line x1="16" y1="2" x2="16" y2="6"></line>
+                    <line x1="8" y1="2" x2="8" y2="6"></line>
+                    <line x1="3" y1="10" x2="21" y2="10"></line>
+                  </svg>
+                </div>
+                <div class="delivery-option-text">
+                  <strong>Schedule for Later</strong>
+                  <span>Pick a specific date and delivery window</span>
+                </div>
+                <div class="delivery-check">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                  </svg>
+                </div>
+              </div>
+            </div>
+
+            @if (deliveryType() === 'scheduled') {
+              <div class="schedule-panel">
+                <div class="schedule-panel-label">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                    <line x1="16" y1="2" x2="16" y2="6"></line>
+                    <line x1="8" y1="2" x2="8" y2="6"></line>
+                    <line x1="3" y1="10" x2="21" y2="10"></line>
+                  </svg>
+                  Select your preferred delivery window
+                </div>
+                <div class="form-row">
+                  <div class="form-group">
+                    <label for="deliveryDate">Delivery Date <span class="required-star">*</span></label>
+                    <input type="date" id="deliveryDate" #deliveryDateField="ngModel"
+                      [(ngModel)]="formData.deliveryDate" name="deliveryDate"
+                      [min]="minDate"
+                      [required]="deliveryType() === 'scheduled'">
+                    @if (deliveryDateField.invalid && deliveryDateField.touched) {
+                      <div class="field-error">Please select a delivery date</div>
+                    }
+                  </div>
+                  <div class="form-group">
+                    <label for="deliveryTime">Delivery Time <span class="required-star">*</span></label>
+                    <select id="deliveryTime" #deliveryTimeField="ngModel"
+                      [(ngModel)]="formData.deliveryTime" name="deliveryTime"
+                      [required]="deliveryType() === 'scheduled'">
+                      <option value="">Select a time slot</option>
+                      <option value="09:00">9:00 AM – 11:00 AM</option>
+                      <option value="11:00">11:00 AM – 1:00 PM</option>
+                      <option value="13:00">1:00 PM – 3:00 PM</option>
+                      <option value="15:00">3:00 PM – 5:00 PM</option>
+                      <option value="17:00">5:00 PM – 7:00 PM</option>
+                    </select>
+                    @if (deliveryTimeField.invalid && deliveryTimeField.touched) {
+                      <div class="field-error">Please select a time slot</div>
+                    }
+                  </div>
+                </div>
+              </div>
+            }
+          </section>
+
+          <!-- Payment Information -->
+          <section class="form-section">
+            <div class="section-header">
+              <div class="section-badge">3</div>
+              <div>
+                <h2>Payment Information</h2>
+                <p>Your payment details are encrypted and secure</p>
+              </div>
+              <div class="card-icons">
+                <span class="card-chip">VISA</span>
+                <span class="card-chip">MC</span>
+                <span class="card-chip">AMEX</span>
+              </div>
+            </div>
+
+            <div class="form-group full-width">
+              <label for="cardName">Name on Card <span class="required-star">*</span></label>
+              <input type="text" id="cardName" #cardNameField="ngModel" [(ngModel)]="formData.cardName" name="cardName" placeholder="John Doe" required>
+              @if (cardNameField.invalid && cardNameField.touched) {
+                <div class="field-error">Name on card is required</div>
+              }
+            </div>
+
+            <div class="form-group full-width">
+              <label for="cardNumber">Card Number <span class="required-star">*</span></label>
+              <div class="input-with-icon">
+                <input type="text" id="cardNumber" #cardNumberField="ngModel" [(ngModel)]="formData.cardNumber" name="cardNumber" placeholder="1234  5678  9012  3456" required>
+                <svg class="field-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
+                  <line x1="1" y1="10" x2="23" y2="10"></line>
+                </svg>
+              </div>
+              @if (cardNumberField.invalid && cardNumberField.touched) {
+                <div class="field-error">Card number is required</div>
+              }
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="expiry">Expiry Date <span class="required-star">*</span></label>
+                <input type="text" id="expiry" #expiryField="ngModel" [(ngModel)]="formData.expiry" name="expiry" placeholder="MM / YY" required>
+                @if (expiryField.invalid && expiryField.touched) {
+                  <div class="field-error">Expiry date is required</div>
+                }
+              </div>
+              <div class="form-group">
+                <label for="cvv">
+                  CVV <span class="required-star">*</span>
+                  <span class="cvv-hint">3–4 digits on back</span>
+                </label>
+                <input type="text" id="cvv" #cvvField="ngModel" [(ngModel)]="formData.cvv" name="cvv" placeholder="•••" required>
+                @if (cvvField.invalid && cvvField.touched) {
+                  <div class="field-error">CVV is required</div>
+                }
+              </div>
+            </div>
+          </section>
+
+          <!-- Gift Message -->
+          <section class="form-section">
+            <div class="section-header">
+              <div class="section-badge">4</div>
+              <div>
+                <h2>Gift Message</h2>
+                <p>Optional — add a personal note to your order</p>
+              </div>
+            </div>
+            <div class="form-group full-width">
+              <textarea id="giftMessage" [(ngModel)]="formData.giftMessage" name="giftMessage" rows="3" placeholder="Write a heartfelt message for the recipient..."></textarea>
+            </div>
+          </section>
+
+          @if (errorMessage()) {
+            <div class="error-msg">{{ errorMessage() }}</div>
+          }
+
+          <button type="submit" class="btn-place-order" [disabled]="loading() || checkoutForm.invalid">
+            @if (loading()) {
+              <span>Placing Order...</span>
+            } @else {
+              <span>Place Order — ${{ getTotal().toFixed(2) }}</span>
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+                <polyline points="12 5 19 12 12 19"></polyline>
+              </svg>
+            }
+          </button>
+
+          <div class="trust-row">
+            <span class="trust-item">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+              SSL Secured
+            </span>
+            <span class="trust-item">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              Free Returns
+            </span>
+            <span class="trust-item">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+              Buyer Protected
+            </span>
+          </div>
+        </form>
+
+        <!-- Order Summary -->
+        <aside class="order-summary">
+          <div class="summary-title">
+            <h2>Order Summary</h2>
+            <span class="item-count">{{ cartService.cartCount() }} item{{ cartService.cartCount() !== 1 ? 's' : '' }}</span>
+          </div>
+
+          <div class="order-items">
+            @for (item of cartService.items(); track item.product.id) {
+              <div class="order-item">
+                <div class="item-img-wrap">
+                  <img [src]="item.product.image" [alt]="item.product.name">
+                  <span class="item-qty-badge">{{ item.quantity }}</span>
+                </div>
+                <div class="item-info">
+                  <span class="item-name">{{ item.product.name }}</span>
+                  <span class="item-unit">₹{{ item.product.price.toFixed(2) }} each</span>
+                </div>
+                <span class="item-price">₹{{ (item.product.price * item.quantity).toFixed(2) }}</span>
+              </div>
+            }
+          </div>
+
+          <div class="summary-details">
+            <div class="summary-row">
+              <span>Subtotal</span>
+              <span>₹{{ cartService.cartTotal().toFixed(2) }}</span>
+            </div>
+            <div class="summary-row">
+              <span>Shipping</span>
+              <span class="shipping-val">{{ getShipping() === 0 ? 'FREE' : '$' + getShipping().toFixed(2) }}</span>
+            </div>
+            @if (getShipping() === 0) {
+              <div class="free-shipping-badge">🎉 You qualify for free shipping!</div>
+            }
+            <div class="summary-row total">
+              <span>Total</span>
+              <span>₹{{ getTotal().toFixed(2) }}</span>
+            </div>
+          </div>
+
+          <div class="secure-checkout">
+            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+            <span>Secure & Encrypted Checkout</span>
+          </div>
+        </aside>
+      </div>
+
+    } @else {
+      <div class="order-success">
+        <div class="success-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="20 6 9 17 4 12"></polyline>
+          </svg>
+        </div>
+        <h1>Order Placed!</h1>
+        <p class="order-number">Order <strong>#{{ orderNumber() }}</strong></p>
+        <p class="success-message">
+          Thank you for your order. We'll send a confirmation email and have your flowers on the way soon.
+        </p>
+        <div class="success-details">
+          <div class="detail-item">
+            <span class="icon">📧</span>
+            <span>Confirmation email sent</span>
+          </div>
+          <div class="detail-item">
+            <span class="icon">🚚</span>
+            <span>Estimated delivery: 2–3 business days</span>
+          </div>
+          <div class="detail-item">
+            <span class="icon">🌸</span>
+            <span>Fresh flowers guaranteed</span>
+          </div>
+        </div>
+        <a routerLink="/" class="btn-continue">Continue Shopping</a>
+      </div>
+    }
+  </div>
+</main>

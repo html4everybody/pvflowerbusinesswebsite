@@ -1,0 +1,278 @@
+<div class="builder-page">
+
+  <!-- ── Top Bar ──────────────────────────────────────────────────────────── -->
+  <div class="builder-topbar">
+    <a routerLink="/" class="back-link">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="15 18 9 12 15 6"></polyline>
+      </svg>
+      Back
+    </a>
+    <div class="topbar-title">
+      <span class="topbar-icon">🌸</span>
+      <h1>Bouquet Builder</h1>
+    </div>
+    <div class="topbar-price">
+      <span class="price-label">Live Price</span>
+      <span class="price-value">${{ bouquet.totalPrice().toFixed(2) }}</span>
+    </div>
+  </div>
+
+  <!-- ── Main Layout ──────────────────────────────────────────────────────── -->
+  <div class="builder-layout">
+
+    <!-- ── LEFT: Flower Palette ─────────────────────────────────────────── -->
+    <aside class="palette">
+      <div class="palette-header">
+        <h2>Choose Flowers</h2>
+        <p>Click or drag into the bouquet</p>
+        <div class="palette-search">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+          <input type="text" placeholder="Search flowers..." (input)="filterPalette($event)">
+        </div>
+      </div>
+
+      <div class="palette-list">
+        @for (product of paletteProducts; track product.id) {
+          <div
+            class="palette-item"
+            [class.in-bouquet]="isInBouquet(product.id)"
+            draggable="true"
+            (dragstart)="onDragStart(product)"
+            (dragend)="onDragEnd()"
+            (click)="bouquet.addFlower(product)">
+            <img [src]="product.image" [alt]="product.name" loading="lazy">
+            <div class="item-info">
+              <span class="item-name">{{ product.name }}</span>
+              <span class="item-price">${{ product.price.toFixed(2) }}</span>
+            </div>
+            @if (isInBouquet(product.id)) {
+              <span class="in-bouquet-badge">×{{ getProductCount(product.id) }}</span>
+            } @else {
+              <button class="add-btn" (click)="bouquet.addFlower(product); $event.stopPropagation()">+</button>
+            }
+          </div>
+        }
+        @if (paletteProducts.length === 0) {
+          <p class="palette-empty">No flowers match your search.</p>
+        }
+      </div>
+    </aside>
+
+    <!-- ── CENTER: Canvas ─────────────────────────────────────────────────── -->
+    <div class="canvas-area">
+      <div
+        class="drop-zone"
+        [class.drag-over]="isDragOver"
+        [class.has-flowers]="bouquet.design().flowers.length > 0"
+        (dragover)="onDragOver($event)"
+        (dragleave)="onDragLeave()"
+        (drop)="onDrop($event)">
+
+        @if (bouquet.design().flowers.length === 0) {
+          <!-- Empty state -->
+          <div class="canvas-empty">
+            <div class="empty-icon">💐</div>
+            <p>Drag flowers here<br>or click any flower</p>
+            <span class="empty-hint">↑ from the palette on the left</span>
+          </div>
+        } @else {
+          <!-- Bouquet visual -->
+          <div class="bouquet-visual" [attr.data-style]="bouquet.design().style">
+
+            <!-- Flowers — explicitly positioned via trig -->
+            @for (flower of visualFlowers; track $index) {
+              <div
+                class="flower-bubble"
+                [style.left]="getFlowerLeft($index, visualFlowers.length)"
+                [style.bottom]="getFlowerBottom($index, visualFlowers.length)"
+                [style.z-index]="getFlowerZIndex($index, visualFlowers.length)">
+                <img [src]="flower.image" [alt]="flower.name">
+              </div>
+            }
+
+            <!-- Stem bundle -->
+            <div class="stem-bundle"></div>
+
+            <!-- Wrap -->
+            <div class="bouquet-wrap" [style.background]="bouquet.design().wrappingColor">
+              <div class="wrap-shine"></div>
+              <div class="wrap-ribbon"></div>
+              <div class="wrap-bow"></div>
+            </div>
+
+            <!-- Label -->
+            <div class="style-badge">{{ bouquet.design().style | titlecase }} · {{ bouquet.design().wrappingName }}</div>
+          </div>
+
+          <!-- Flower count indicator -->
+          <div class="flower-count-badge">
+            {{ bouquet.flowerCount() }} flower{{ bouquet.flowerCount() !== 1 ? 's' : '' }}
+          </div>
+        }
+      </div>
+
+      <!-- Selected flower chips (scrollable row) -->
+      @if (bouquet.design().flowers.length > 0) {
+        <div class="selected-flowers">
+          @for (f of bouquet.design().flowers; track f.productId) {
+            <div class="selected-chip">
+              <img [src]="f.image" [alt]="f.name">
+              <div class="chip-info">
+                <span class="chip-name">{{ f.name }}</span>
+                <span class="chip-price">${{ (f.price * f.count).toFixed(2) }}</span>
+              </div>
+              <div class="chip-controls">
+                <button class="chip-btn" (click)="bouquet.updateCount(f.productId, -1)">−</button>
+                <span class="chip-qty">{{ f.count }}</span>
+                <button class="chip-btn" (click)="bouquet.updateCount(f.productId, 1)">+</button>
+                <button class="chip-remove" (click)="bouquet.removeFlower(f.productId)">×</button>
+              </div>
+            </div>
+          }
+        </div>
+      }
+    </div>
+
+    <!-- ── RIGHT: Options + Price + Actions ──────────────────────────────── -->
+    <aside class="sidebar">
+
+      <!-- Arrangement Style -->
+      <div class="option-section">
+        <h3 class="option-title">
+          <span>✨</span> Arrangement Style
+        </h3>
+        <div class="style-grid">
+          @for (style of bouquet.styles; track style.id) {
+            <button
+              class="style-btn"
+              [class.active]="bouquet.design().style === style.id"
+              (click)="bouquet.setStyle(castStyle(style.id))">
+              <span class="style-icon">{{ style.icon }}</span>
+              <span class="style-label">{{ style.label }}</span>
+              <span class="style-desc">{{ style.desc }}</span>
+            </button>
+          }
+        </div>
+      </div>
+
+      <!-- Wrapping Color -->
+      <div class="option-section">
+        <h3 class="option-title">
+          <span>🎀</span> Wrapping
+          <span class="option-subtitle">{{ bouquet.design().wrappingName }}</span>
+        </h3>
+        <div class="wrap-swatches">
+          @for (w of bouquet.wrappings; track w.name) {
+            <button
+              class="wrap-swatch"
+              [class.active]="bouquet.design().wrappingColor === w.color"
+              [style.background]="w.color"
+              [title]="w.name"
+              (click)="bouquet.setWrapping(w.color, w.name)">
+              @if (bouquet.design().wrappingColor === w.color) {
+                <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5">
+                  <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+              }
+            </button>
+          }
+        </div>
+      </div>
+
+      <!-- Bouquet Size -->
+      <div class="option-section">
+        <h3 class="option-title"><span>📏</span> Size</h3>
+        <div class="size-options">
+          @for (size of bouquet.sizes; track size.id) {
+            <button
+              class="size-btn"
+              [class.active]="bouquet.design().size === size.id"
+              (click)="bouquet.setSize(castSize(size.id))">
+              <div class="size-info">
+                <span class="size-label">{{ size.label }}</span>
+                <span class="size-flowers">{{ size.flowers }} flowers</span>
+              </div>
+              <span class="size-price">+${{ size.basePrice.toFixed(2) }}</span>
+            </button>
+          }
+        </div>
+      </div>
+
+      <!-- Price Breakdown -->
+      <div class="price-summary">
+        <h3 class="option-title"><span>💰</span> Price Breakdown</h3>
+        @if (bouquet.design().flowers.length === 0) {
+          <p class="price-empty">Add flowers to see the breakdown</p>
+        } @else {
+          <div class="price-rows">
+            @for (f of bouquet.design().flowers; track f.productId) {
+              <div class="price-row">
+                <span>{{ f.name }} ×{{ f.count }}</span>
+                <span>${{ (f.price * f.count).toFixed(2) }}</span>
+              </div>
+            }
+            <div class="price-row muted">
+              <span>{{ bouquet.design().size | titlecase }} arrangement</span>
+              <span>+${{ bouquet.getSizeBasePrice(bouquet.design().size).toFixed(2) }}</span>
+            </div>
+          </div>
+          <div class="price-total">
+            <span>Total</span>
+            <span class="total-amount">${{ bouquet.totalPrice().toFixed(2) }}</span>
+          </div>
+        }
+      </div>
+
+      <!-- Actions -->
+      <div class="builder-actions">
+        <button class="btn-share" (click)="shareDesign()">
+          <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle>
+            <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+          </svg>
+          Share Design
+        </button>
+        <button class="btn-clear" (click)="bouquet.clearDesign()" [disabled]="bouquet.design().flowers.length === 0">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="3 6 5 6 21 6"></polyline>
+            <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path>
+          </svg>
+          Clear
+        </button>
+        <button
+          class="btn-add-cart"
+          [class.success]="addedToCart()"
+          [disabled]="bouquet.design().flowers.length === 0"
+          (click)="addToCart()">
+          @if (addedToCart()) {
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            Added to Cart!
+          } @else {
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle>
+              <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+            </svg>
+            Add to Cart · ${{ bouquet.totalPrice().toFixed(2) }}
+          }
+        </button>
+      </div>
+
+    </aside>
+  </div>
+
+  <!-- ── Share Toast ──────────────────────────────────────────────────────── -->
+  @if (shareVisible()) {
+    <div class="share-toast">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+      <div>
+        <strong>Link copied!</strong>
+        <span>Share your bouquet design with anyone</span>
+      </div>
+    </div>
+  }
+
+</div>
