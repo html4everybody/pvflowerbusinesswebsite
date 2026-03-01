@@ -118,17 +118,11 @@
         @for (product of filteredProducts; track product.id) {
           <div class="product-card" appFadeIn [fadeDelay]="($index % 5) * 60">
 
-            @if (isLowStock(product.id)) {
-              <span class="urgency-badge">🔥 Only {{ lowStockCount(product.id) }} left!</span>
-            }
-
             <div class="card-inner">
               <!-- Front -->
               <div class="card-front">
                 <div class="front-image">
                   <img [src]="product.image" [alt]="product.name" loading="lazy">
-                  <span class="category-badge">{{ product.category }}</span>
-                  <span class="rating-badge">⭐ {{ product.rating }}</span>
                   <button
                     class="wishlist-btn"
                     [class.active]="wishlistService.has(product.id)"
@@ -154,11 +148,9 @@
               <!-- Back -->
               <div class="card-back">
                 <div class="back-content">
-                  <span class="back-category">{{ product.category }}</span>
                   <h3>{{ product.name }}</h3>
                   <p class="back-desc">{{ product.description }}</p>
                   <div class="back-meta">
-                    <span class="back-rating">⭐ {{ product.rating }}</span>
                     <span class="back-price">₹{{ product.price.toFixed(2) }}</span>
                   </div>
                   <div class="back-actions">

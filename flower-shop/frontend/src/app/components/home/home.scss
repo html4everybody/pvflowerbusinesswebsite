@@ -402,7 +402,7 @@
 
       @media (max-width: 1200px) { grid-template-columns: repeat(4, 1fr); }
       @media (max-width: 900px)  { grid-template-columns: repeat(3, 1fr); }
-      @media (max-width: 600px)  { grid-template-columns: repeat(2, 1fr); gap: 0.9rem; }
+      @media (max-width: 600px)  { grid-template-columns: repeat(2, 1fr); gap: 0.75rem; }
     }
 
     // Product Card — 3D Flip
@@ -411,6 +411,8 @@
       cursor: pointer;
       height: 340px;
       position: relative;
+
+      @media (max-width: 600px) { height: 230px; }
 
       .urgency-badge {
         position: absolute;
@@ -534,6 +536,10 @@
           border-top: 1px solid var(--border);
           flex-shrink: 0;
 
+          @media (max-width: 600px) {
+            padding: 0.5rem 0.6rem;
+          }
+
           h3 {
             font-family: 'Poppins', sans-serif;
             font-size: 0.78rem;
@@ -543,6 +549,8 @@
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
+
+            @media (max-width: 600px) { font-size: 0.7rem; }
           }
 
           .price {
@@ -550,6 +558,8 @@
             font-weight: 800;
             color: var(--accent);
             flex-shrink: 0;
+
+            @media (max-width: 600px) { font-size: 0.82rem; }
           }
         }
       }
@@ -569,6 +579,8 @@
           display: flex;
           flex-direction: column;
           justify-content: space-between;
+
+          @media (max-width: 600px) { padding: 0.65rem 0.7rem; }
 
           .back-category {
             display: inline-block;
@@ -829,20 +841,20 @@
 // ── Cart Toast ────────────────────────────────────────────────────────────────
 .cart-toast {
   position: fixed;
-  bottom: 2rem;
-  right: 2rem;
+  top: 5rem;
+  right: 1.5rem;
   display: flex;
   align-items: center;
   gap: 0.75rem;
   background: white;
-  border: 1px solid var(--border);
+  border: 1px solid #b7e4c7;
   color: var(--text);
   padding: 0.8rem 1.2rem;
   border-radius: var(--radius-md);
-  box-shadow: var(--shadow-lg);
+  box-shadow: 0 8px 32px rgba(39, 174, 96, 0.15);
   z-index: 9999;
   opacity: 0;
-  transform: translateY(20px) scale(0.96);
+  transform: translateY(-12px) scale(0.96);
   pointer-events: none;
   transition: opacity 0.3s ease, transform 0.3s ease;
 
@@ -855,7 +867,7 @@
   .toast-icon {
     width: 34px;
     height: 34px;
-    background: var(--accent);
+    background: #27ae60;
     border-radius: 50%;
     display: flex;
     align-items: center;
@@ -872,7 +884,7 @@
     .toast-title {
       font-size: 0.8rem;
       font-weight: 700;
-      color: var(--accent);
+      color: #27ae60;
     }
 
     .toast-name {
