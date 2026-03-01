@@ -8,6 +8,13 @@ import { Signin } from './components/signin/signin';
 import { Orders } from './components/orders/orders';
 import { BouquetBuilder } from './components/bouquet-builder/bouquet-builder';
 import { Wishlist } from './components/wishlist/wishlist';
+import { OccasionPage } from './components/occasion-page/occasion-page';
+import { Subscription } from './components/subscription/subscription';
+import { MySubscriptions } from './components/my-subscriptions/my-subscriptions';
+import { CorporatePortal } from './components/corporate-portal/corporate-portal';
+import { CorporateOrder } from './components/corporate-order/corporate-order';
+import { MyCorporate } from './components/my-corporate/my-corporate';
+import { MyLoyalty } from './components/my-loyalty/my-loyalty';
 
 export const routes: Routes = [
   { path: '', component: Home },
@@ -19,5 +26,13 @@ export const routes: Routes = [
   { path: 'orders', component: Orders },
   { path: 'builder', component: BouquetBuilder },
   { path: 'wishlist', component: Wishlist },
+  { path: 'occasions', component: OccasionPage },
+  { path: 'occasions/:slug', component: OccasionPage },
+  { path: 'subscribe', component: Subscription },
+  { path: 'my-subscriptions', component: MySubscriptions },
+  { path: 'corporate', component: CorporatePortal },
+  { path: 'corporate-order', component: CorporateOrder },
+  { path: 'my-corporate', component: MyCorporate },
+  { path: 'my-loyalty', component: MyLoyalty },
   { path: '**', redirectTo: '' }
 ];

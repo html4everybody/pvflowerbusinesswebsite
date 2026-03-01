@@ -1,6 +1,8 @@
 <main class="product-detail">
   @if (product) {
     <div class="container">
+
+      <!-- Breadcrumb -->
       <div class="breadcrumb">
         <a routerLink="/">Home</a>
         <span>/</span>
@@ -9,41 +11,57 @@
         <span>{{ product.name }}</span>
       </div>
 
-      <div class="product-content">
+      <!-- Product Layout: Gallery + Info -->
+      <div class="product-layout">
+
+        <!-- Gallery -->
         <div class="product-gallery">
-          <img [src]="product.image" [alt]="product.name" class="main-image">
+          <div class="gallery-main"
+               (mouseenter)="zoomActive.set(true)"
+               (mouseleave)="zoomActive.set(false)"
+               (mousemove)="onMouseMove($event)"
+               (click)="openLightbox()">
+            <img [src]="gallery[activeImageIdx()]"
+                 [alt]="product.name"
+                 class="main-image"
+                 [class.zoomed]="zoomActive()"
+                 [style.transform-origin]="zoomOrigin()">
+            <div class="zoom-hint">🔍 Click to expand</div>
+          </div>
+          <div class="gallery-thumbs">
+            @for (img of gallery; track $index) {
+              <button class="thumb"
+                      [class.active]="activeImageIdx() === $index"
+                      (click)="selectImage($index)">
+                <img [src]="img" [alt]="product.name + ' view ' + ($index + 1)">
+              </button>
+            }
+          </div>
         </div>
 
+        <!-- Product Info -->
         <div class="product-info">
           <span class="category-badge">{{ product.category }}</span>
           <h1>{{ product.name }}</h1>
 
           <div class="rating-row">
             <span class="stars">
-              @for (star of [1, 2, 3, 4, 5]; track star) {
-                <span [class.filled]="star <= product.rating">⭐</span>
+              @for (star of [1,2,3,4,5]; track star) {
+                <span [class.filled]="star <= product.rating">★</span>
               }
             </span>
             <span class="rating-text">{{ product.rating }} out of 5</span>
+            <span class="reviews-link" (click)="activeTab.set('reviews')">
+              {{ reviews.length }} reviews
+            </span>
           </div>
 
           <p class="price">₹{{ product.price.toFixed(2) }}</p>
 
-          <p class="description">{{ product.description }}</p>
-
           <div class="features">
-            <div class="feature">
-              <span class="icon">🌿</span>
-              <span>Fresh Guarantee</span>
-            </div>
-            <div class="feature">
-              <span class="icon">🚚</span>
-              <span>Free Shipping $50+</span>
-            </div>
-            <div class="feature">
-              <span class="icon">🎁</span>
-              <span>Gift Wrapping</span>
-            </div>
+            <div class="feature"><span class="icon">🌿</span><span>Fresh Guarantee</span></div>
+            <div class="feature"><span class="icon">🚚</span><span>Free Shipping ₹50+</span></div>
+            <div class="feature"><span class="icon">🎁</span><span>Gift Wrapping</span></div>
           </div>
 
           <div class="add-to-cart-section">
@@ -54,14 +72,13 @@
             </div>
 
             <button class="btn-add-to-cart" (click)="addToCart()">
-              Add to Cart - ₹{{ (product.price * quantity).toFixed(2) }}
+              Add to Cart — ₹{{ (product.price * quantity).toFixed(2) }}
             </button>
 
-            <button
-              class="btn-wishlist"
-              [class.active]="wishlistService.has(product.id)"
-              (click)="wishlistService.toggle(product)"
-              [title]="wishlistService.has(product.id) ? 'Remove from wishlist' : 'Save to wishlist'">
+            <button class="btn-wishlist"
+                    [class.active]="wishlistService.has(product.id)"
+                    (click)="wishlistService.toggle(product)"
+                    [title]="wishlistService.has(product.id) ? 'Remove from wishlist' : 'Save to wishlist'">
               @if (wishlistService.has(product.id)) {
                 <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
@@ -78,7 +95,7 @@
 
           <div class="stock-status" [class.in-stock]="product.inStock">
             @if (product.inStock) {
-              <span>✓ In Stock - Ready to Ship</span>
+              <span>✓ In Stock — Ready to Ship</span>
             } @else {
               <span>✗ Out of Stock</span>
             }
@@ -86,6 +103,151 @@
         </div>
       </div>
 
+      <!-- Tabs: Description / Care Tips / Reviews -->
+      <div class="product-tabs">
+        <div class="tabs-nav">
+          <button [class.active]="activeTab() === 'description'"
+                  (click)="activeTab.set('description')">
+            Description
+          </button>
+          <button [class.active]="activeTab() === 'care'"
+                  (click)="activeTab.set('care')">
+            Care Tips
+          </button>
+          <button [class.active]="activeTab() === 'reviews'"
+                  (click)="activeTab.set('reviews')">
+            Reviews <span class="tab-count">{{ reviews.length }}</span>
+          </button>
+        </div>
+
+        <div class="tab-pane">
+
+          @if (activeTab() === 'description') {
+            <div class="tab-description">
+              <p>{{ product.description }}</p>
+              <div class="keyword-tags">
+                <span class="tag">{{ product.category }}</span>
+                <span class="tag">Fresh Flowers</span>
+                <span class="tag">Same-Day Delivery</span>
+                <span class="tag">Gift Ready</span>
+              </div>
+            </div>
+          }
+
+          @if (activeTab() === 'care') {
+            <div class="care-grid">
+              @for (tip of careTips; track tip.title) {
+                <div class="care-card">
+                  <span class="care-icon">{{ tip.icon }}</span>
+                  <h4>{{ tip.title }}</h4>
+                  <p>{{ tip.detail }}</p>
+                </div>
+              }
+            </div>
+          }
+
+          @if (activeTab() === 'reviews') {
+            <div class="tab-reviews">
+              <div class="rating-summary">
+                <div class="avg-block">
+                  <div class="avg-score">{{ avgRating.toFixed(1) }}</div>
+                  <div class="avg-stars">
+                    @for (star of [1,2,3,4,5]; track star) {
+                      <span [class.filled]="star <= avgRating">★</span>
+                    }
+                  </div>
+                  <div class="avg-label">{{ reviews.length }} reviews</div>
+                </div>
+                <div class="bar-chart">
+                  @for (n of [5,4,3,2,1]; track n) {
+                    <div class="bar-row">
+                      <span class="bar-label">{{ n }} ★</span>
+                      <div class="bar-track">
+                        <div class="bar-fill"
+                             [style.width.%]="reviews.length ? (ratingCounts[5-n] / reviews.length) * 100 : 0">
+                        </div>
+                      </div>
+                      <span class="bar-count">{{ ratingCounts[5-n] }}</span>
+                    </div>
+                  }
+                </div>
+              </div>
+
+              <div class="reviews-list">
+                @for (review of reviews; track review.id) {
+                  <div class="review-card">
+                    <div class="rev-header">
+                      <img [src]="review.avatar" [alt]="review.author" class="rev-avatar">
+                      <div class="rev-meta">
+                        <div class="rev-name-row">
+                          <span class="rev-author">{{ review.author }}</span>
+                          @if (review.verified) {
+                            <span class="rev-verified">✓ Verified Purchase</span>
+                          }
+                        </div>
+                        <div class="rev-stars">
+                          @for (star of [1,2,3,4,5]; track star) {
+                            <span [class.filled]="star <= review.rating">★</span>
+                          }
+                          <span class="rev-date">{{ review.date }}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <p class="rev-text">{{ review.text }}</p>
+                    @if (review.photos && review.photos.length > 0) {
+                      <div class="rev-photos">
+                        @for (photo of review.photos; track photo) {
+                          <img [src]="photo" alt="Customer photo" class="rev-photo">
+                        }
+                      </div>
+                    }
+                  </div>
+                }
+              </div>
+            </div>
+          }
+
+        </div>
+      </div>
+
+      <!-- Frequently Bought Together -->
+      @if (fbt.length > 0) {
+        <section class="fbt-section">
+          <h2>Frequently Bought Together</h2>
+          <div class="fbt-layout">
+            <div class="fbt-items">
+              <div class="fbt-item fbt-main">
+                <img [src]="product.image" [alt]="product.name">
+                <div class="fbt-item-info">
+                  <p class="fbt-item-name">{{ product.name }}</p>
+                  <p class="fbt-item-price">₹{{ product.price.toFixed(2) }}</p>
+                </div>
+              </div>
+              @for (item of fbt; track item.id) {
+                <span class="fbt-plus">+</span>
+                <div class="fbt-item" [class.unchecked]="!fbtChecked.has(item.id)">
+                  <input type="checkbox"
+                         [checked]="fbtChecked.has(item.id)"
+                         (change)="toggleFbt(item.id)"
+                         class="fbt-checkbox">
+                  <img [src]="item.image" [alt]="item.name">
+                  <div class="fbt-item-info">
+                    <p class="fbt-item-name">{{ item.name }}</p>
+                    <p class="fbt-item-price">₹{{ item.price.toFixed(2) }}</p>
+                  </div>
+                </div>
+              }
+            </div>
+            <div class="fbt-summary">
+              <p class="fbt-total-label">Total for selected items</p>
+              <p class="fbt-total-price">₹{{ fbtTotal.toFixed(2) }}</p>
+              <button class="btn-fbt-cart" (click)="addFbtToCart()">Add All to Cart</button>
+            </div>
+          </div>
+        </section>
+      }
+
+      <!-- Related Products -->
       @if (relatedProducts.length > 0) {
         <section class="related-products">
           <h2>You May Also Like</h2>
@@ -95,7 +257,7 @@
                 <div class="product-image">
                   <img [src]="item.image" [alt]="item.name">
                 </div>
-                <div class="product-info">
+                <div class="product-card-info">
                   <h3>{{ item.name }}</h3>
                   <span class="price">₹{{ item.price.toFixed(2) }}</span>
                 </div>
@@ -104,6 +266,26 @@
           </div>
         </section>
       }
+
+    </div>
+  }
+
+  <!-- Lightbox -->
+  @if (lightboxOpen()) {
+    <div class="lightbox-overlay" (click)="closeLightbox()">
+      <div class="lightbox-inner" (click)="$event.stopPropagation()">
+        <button class="lb-close" (click)="closeLightbox()">✕</button>
+        <button class="lb-prev" (click)="prevImage()">&#8249;</button>
+        <img [src]="gallery[activeImageIdx()]" [alt]="product?.name">
+        <button class="lb-next" (click)="nextImage()">&#8250;</button>
+        <div class="lb-dots">
+          @for (img of gallery; track $index) {
+            <span [class.active]="activeImageIdx() === $index"
+                  (click)="selectImage($index)">
+            </span>
+          }
+        </div>
+      </div>
     </div>
   }
 </main>

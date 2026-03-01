@@ -3,3 +3,5 @@ uvicorn[standard]
 supabase
 python-dotenv
 bcrypt
+twilio
+resend

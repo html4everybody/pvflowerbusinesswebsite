@@ -1,0 +1,354 @@
+.loyalty-page {
+  padding: 2.5rem 0 4rem;
+  min-height: calc(100vh - 62px);
+  background: var(--bg);
+
+  .container {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 0 1.5rem;
+  }
+}
+
+/* ── Loading / Empty ─────────────────────────────────── */
+.loyalty-loading,
+.loyalty-empty {
+  text-align: center;
+  padding: 5rem 1rem;
+  color: var(--text-muted, #888);
+
+  .spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid var(--border, #e0e0e0);
+    border-top-color: var(--accent, #e8a87c);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    margin: 0 auto 1rem;
+  }
+
+  .empty-icon {
+    font-size: 3rem;
+    display: block;
+    margin-bottom: 1rem;
+  }
+
+  h2 {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--text, #111);
+    margin: 0 0 0.5rem;
+  }
+
+  p { margin: 0 0 1.5rem; }
+}
+
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  background: var(--accent, #e8a87c);
+  color: white;
+  padding: 0.75rem 1.75rem;
+  border-radius: 10px;
+  text-decoration: none;
+  font-weight: 700;
+  font-size: 0.95rem;
+  transition: opacity 0.15s ease;
+
+  &:hover { opacity: 0.88; }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ── Loyalty Hero ────────────────────────────────────── */
+.loyalty-hero {
+  background: var(--card-bg, white);
+  border: 1px solid var(--border, #e8e8e8);
+  border-radius: 16px;
+  padding: 2rem 2.5rem;
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 3rem;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+
+  @media (max-width: 600px) {
+    flex-direction: column;
+    gap: 1.5rem;
+    padding: 1.5rem;
+    align-items: flex-start;
+  }
+
+  .hero-balance {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    flex-shrink: 0;
+
+    .balance-label {
+      font-size: 0.8rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-muted, #888);
+    }
+
+    .balance-number {
+      font-size: 3.5rem;
+      font-weight: 800;
+      color: var(--accent, #e8a87c);
+      line-height: 1;
+    }
+
+    .balance-subtext {
+      font-size: 0.82rem;
+      color: var(--text-muted, #888);
+    }
+  }
+
+  .hero-tier {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+
+    .tier-badge {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: var(--text, #111);
+    }
+
+    .tier-progress-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 0.3rem;
+    }
+
+    .tier-progress-bar {
+      height: 8px;
+      background: var(--border, #e8e8e8);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .tier-progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent, #e8a87c), #f5c68a);
+      border-radius: 999px;
+      transition: width 0.6s ease;
+    }
+
+    .tier-progress-label {
+      font-size: 0.78rem;
+      color: var(--text-muted, #888);
+    }
+
+    .total-earned {
+      font-size: 0.82rem;
+      color: var(--text-muted, #888);
+    }
+  }
+}
+
+/* ── Referral Card ───────────────────────────────────── */
+.referral-card {
+  background: var(--card-bg, white);
+  border: 1px solid var(--border, #e8e8e8);
+  border-radius: 14px;
+  padding: 1.75rem 2rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+
+  .referral-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 1.25rem;
+    gap: 1rem;
+
+    h2 {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--text, #111);
+      margin: 0 0 0.3rem;
+    }
+
+    p {
+      font-size: 0.85rem;
+      color: var(--text-muted, #666);
+      margin: 0;
+      line-height: 1.5;
+    }
+
+    .referral-icon {
+      font-size: 2rem;
+      flex-shrink: 0;
+    }
+  }
+
+  .referral-link-row {
+    display: flex;
+    gap: 0.75rem;
+
+    @media (max-width: 560px) {
+      flex-direction: column;
+    }
+  }
+
+  .referral-input {
+    flex: 1;
+    padding: 0.65rem 1rem;
+    border: 1.5px solid var(--border, #e0e0e0);
+    border-radius: 8px;
+    font-size: 0.85rem;
+    color: var(--text-muted, #666);
+    background: var(--bg, #f8f8f8);
+    cursor: text;
+    min-width: 0;
+  }
+
+  .btn-copy {
+    padding: 0.65rem 1.25rem;
+    border: none;
+    border-radius: 8px;
+    background: var(--accent, #e8a87c);
+    color: white;
+    font-size: 0.88rem;
+    font-weight: 700;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: opacity 0.15s ease, background 0.15s ease;
+    flex-shrink: 0;
+
+    &:hover { opacity: 0.88; }
+    &.copied { background: #22c55e; }
+  }
+
+  .referral-code-hint {
+    font-size: 0.78rem;
+    color: var(--text-muted, #888);
+    margin: 0.75rem 0 0;
+  }
+}
+
+/* ── How to Earn ─────────────────────────────────────── */
+.earn-section {
+  margin-bottom: 1.5rem;
+}
+
+.section-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text, #111);
+  margin: 0 0 1rem;
+}
+
+.earn-cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+
+  @media (max-width: 640px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.earn-card {
+  background: var(--card-bg, white);
+  border: 1px solid var(--border, #e8e8e8);
+  border-radius: 12px;
+  padding: 1.25rem 1.5rem;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+
+  .earn-icon {
+    font-size: 1.75rem;
+    display: block;
+    margin-bottom: 0.75rem;
+  }
+
+  h3 {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--text, #111);
+    margin: 0 0 0.35rem;
+  }
+
+  p {
+    font-size: 0.82rem;
+    color: var(--text-muted, #666);
+    margin: 0;
+    line-height: 1.5;
+  }
+}
+
+/* ── Transactions ────────────────────────────────────── */
+.transactions-section {
+  background: var(--card-bg, white);
+  border: 1px solid var(--border, #e8e8e8);
+  border-radius: 14px;
+  padding: 1.5rem 2rem;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+}
+
+.no-transactions {
+  text-align: center;
+  padding: 2rem;
+  color: var(--text-muted, #888);
+  font-size: 0.9rem;
+}
+
+.transactions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.txn-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.85rem 0;
+  border-bottom: 1px solid var(--border, #f0f0f0);
+
+  &:last-child { border-bottom: none; }
+
+  .txn-icon {
+    font-size: 1.3rem;
+    width: 36px;
+    text-align: center;
+    flex-shrink: 0;
+  }
+
+  .txn-info {
+    flex: 1;
+    min-width: 0;
+
+    .txn-desc {
+      display: block;
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: var(--text, #111);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .txn-date {
+      display: block;
+      font-size: 0.75rem;
+      color: var(--text-muted, #999);
+      margin-top: 0.15rem;
+    }
+  }
+
+  .txn-points {
+    font-size: 0.9rem;
+    font-weight: 700;
+    flex-shrink: 0;
+
+    &.positive { color: #16a34a; }
+    &.negative { color: #dc2626; }
+  }
+}

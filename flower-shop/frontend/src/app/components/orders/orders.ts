@@ -12,11 +12,18 @@ import { environment } from '../../../environments/environment';
   styleUrl: './orders.scss'
 })
 export class Orders implements OnInit {
+  readonly STATUS_ORDER = ['confirmed', 'preparing', 'out_for_delivery', 'delivered'] as const;
+  readonly STATUS_LABELS: Record<string, string> = {
+    confirmed: 'Confirmed', preparing: 'Preparing',
+    out_for_delivery: 'Out for Delivery', delivered: 'Delivered', cancelled: 'Cancelled'
+  };
+
   orders = signal<any[]>([]);
   loading = signal(true);
   cancellingId = signal<string | null>(null);
   cancelErrors = signal<Record<string, string>>({});
   activeTab = signal<'active' | 'cancelled'>('active');
+  advancingId = signal<string | null>(null);
 
   // Delivery edit state
   editingDeliveryId = signal<string | null>(null);
@@ -67,11 +74,15 @@ export class Orders implements OnInit {
     });
   }
 
+  statusIndex(status: string): number {
+    return this.STATUS_ORDER.indexOf(status as any);
+  }
+
   cancelOrder(order: any): void {
     this.cancelErrors.update(errs => ({ ...errs, [order.id]: '' }));
 
-    if (order.status === 'shipping') {
-      this.cancelErrors.update(errs => ({ ...errs, [order.id]: 'You cannot cancel this order as it is already being shipped.' }));
+    if (order.status === 'out_for_delivery') {
+      this.cancelErrors.update(errs => ({ ...errs, [order.id]: 'You cannot cancel this order as it is already out for delivery.' }));
       return;
     }
     if (order.status === 'delivered') {
@@ -91,6 +102,26 @@ export class Orders implements OnInit {
       error: () => {
         this.cancellingId.set(null);
         this.cancelErrors.update(errs => ({ ...errs, [order.id]: 'Something went wrong. Please try again.' }));
+      }
+    });
+  }
+
+  advanceStatus(order: any): void {
+    const idx = this.statusIndex(order.status);
+    if (idx < 0 || idx >= this.STATUS_ORDER.length - 1) return;
+    const nextStatus = this.STATUS_ORDER[idx + 1];
+    this.advancingId.set(order.id);
+    this.http.patch<{ status: string }>(`${environment.apiUrl}/api/orders/${order.id}/status`, { status: nextStatus }).subscribe({
+      next: (res) => {
+        this.orders.update(list =>
+          list.map(o => o.id === order.id ? { ...o, status: res.status } : o)
+        );
+        this.advancingId.set(null);
+        this.toastService.show(`Order status updated to: ${this.STATUS_LABELS[res.status]}`);
+      },
+      error: () => {
+        this.advancingId.set(null);
+        this.toastService.show('Could not update status. Please try again.');
       }
     });
   }
@@ -163,6 +194,11 @@ export class Orders implements OnInit {
     return new Date(dateStr).toLocaleDateString('en-US', {
       year: 'numeric', month: 'short', day: 'numeric'
     });
+  }
+
+  formatRecurrenceDate(dateStr: string): string {
+    return new Date(dateStr + 'T12:00:00').toLocaleDateString('en-US',
+      { month: 'long', day: 'numeric', year: 'numeric' });
   }
 
   formatDelivery(order: any): { label: string; detail: string } {

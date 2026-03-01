@@ -1,5 +1,12 @@
 <main class="signin-page">
   <div class="signin-container">
+
+    @if (referralCode()) {
+      <div class="referral-banner">
+        🎁 You've been invited! Create an account and get <strong>100 bonus loyalty points</strong> — worth ₹10 off your first order.
+      </div>
+    }
+
     <div class="signin-card">
       <div class="logo">
         <span class="logo-icon">🌸</span>

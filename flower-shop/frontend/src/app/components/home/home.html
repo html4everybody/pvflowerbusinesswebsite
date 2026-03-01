@@ -62,6 +62,64 @@
     </div>
   </section>
 
+  <!-- ── Occasions Section ─────────────────────────────────────────────────── -->
+  <section class="occasions-section" id="occasions">
+    <div class="container">
+      <div class="section-header" appFadeIn>
+        <span class="section-tag">✨ Shop by Occasion</span>
+        <h2>Every Moment Deserves Flowers</h2>
+        <p>Curated collections crafted for life's most meaningful moments</p>
+      </div>
+      <div class="occasion-cards">
+        <a routerLink="/occasions/birthday" class="occ-card occ-birthday" appFadeIn [fadeDelay]="0">
+          <div class="occ-img-overlay"></div>
+          <div class="occ-card-content">
+            <span class="occ-emoji">🎂</span>
+            <h3>Birthday</h3>
+            <p>Bright & joyful arrangements</p>
+            <span class="occ-cta-label">Shop Now →</span>
+          </div>
+        </a>
+        <a routerLink="/occasions/wedding" class="occ-card occ-wedding" appFadeIn [fadeDelay]="80">
+          <div class="occ-img-overlay"></div>
+          <div class="occ-card-content">
+            <span class="occ-emoji">💍</span>
+            <h3>Wedding</h3>
+            <p>Elegant bridal collections</p>
+            <span class="occ-cta-label">Shop Now →</span>
+          </div>
+        </a>
+        <a routerLink="/occasions/sympathy" class="occ-card occ-sympathy" appFadeIn [fadeDelay]="160">
+          <div class="occ-img-overlay"></div>
+          <div class="occ-card-content">
+            <span class="occ-emoji">🕊️</span>
+            <h3>Sympathy</h3>
+            <p>Gentle & comforting blooms</p>
+            <span class="occ-cta-label">Shop Now →</span>
+          </div>
+        </a>
+        <a routerLink="/occasions/romance" class="occ-card occ-romance" appFadeIn [fadeDelay]="240">
+          <div class="occ-img-overlay"></div>
+          <div class="occ-card-content">
+            <span class="occ-emoji">❤️</span>
+            <h3>Romance</h3>
+            <p>Roses & passion blooms</p>
+            <span class="occ-cta-label">Shop Now →</span>
+          </div>
+        </a>
+        <a routerLink="/occasions/corporate" class="occ-card occ-corporate" appFadeIn [fadeDelay]="320">
+          <div class="occ-img-overlay"></div>
+          <div class="occ-card-content">
+            <span class="occ-emoji">🏢</span>
+            <h3>Corporate</h3>
+            <p>Premium professional gifts</p>
+            <span class="occ-cta-label">Shop Now →</span>
+          </div>
+        </a>
+      </div>
+    </div>
+  </section>
+
   <!-- ── Collection Section ─────────────────────────────────────────────────── -->
   <section class="all-products" id="collection">
     <div class="container">
@@ -182,6 +240,123 @@
       }
     </div>
   </section>
+
+  <!-- ── Subscription Banner ───────────────────────────────────────────────── -->
+  <section class="sub-banner" appFadeIn>
+    <div class="container">
+      <div class="sub-banner-inner">
+        <div class="sub-banner-left">
+          <span class="sub-banner-tag">🌸 New — Flower Subscriptions</span>
+          <h2>Fresh Flowers, Every Week</h2>
+          <p>Weekly, bi-weekly, or monthly deliveries handpicked just for you. Pause, skip, or cancel anytime — no strings attached.</p>
+          <div class="sub-banner-plans">
+            <span>🌷 Weekly</span>
+            <span>🌸 Bi-Weekly</span>
+            <span>💐 Monthly</span>
+          </div>
+        </div>
+        <div class="sub-banner-right">
+          <a routerLink="/subscribe" class="btn-sub-start">
+            Start Subscription →
+          </a>
+          <a routerLink="/my-subscriptions" class="btn-sub-manage">Manage Existing</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Corporate Gifting Banner ──────────────────────────────────────────── -->
+  <section class="corp-banner" appFadeIn>
+    <div class="container">
+      <div class="corp-banner-inner">
+        <div class="corp-banner-left">
+          <span class="corp-banner-icon">🏢</span>
+          <div class="corp-banner-text">
+            <h3>Corporate Gifting Made Easy</h3>
+            <p>Bulk orders, custom branding & recurring deliveries for your team and clients.</p>
+          </div>
+        </div>
+        <a routerLink="/corporate" class="btn-corp-banner">
+          Corporate Gifting →
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Loyalty Banner ────────────────────────────────────────────────────── -->
+  <section class="loyalty-banner" appFadeIn>
+    <div class="container">
+      <div class="loyalty-banner-inner">
+        <span class="loyalty-banner-text">⭐ Earn 1 pt per ₹1 spent · Redeem for discounts · Refer friends for 200 pts</span>
+        <a routerLink="/my-loyalty" class="btn-loyalty-link">View My Points →</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Seasonal Offers Section ──────────────────────────────────────────── -->
+  @if (offers()) {
+    <section class="offers-section" appFadeIn>
+      <div class="container">
+        <div class="section-header" appFadeIn>
+          <span class="section-tag">🏷️ Current Offers</span>
+          <h2>Deals Just for You</h2>
+          <p>Copy a code and use it at checkout to save instantly</p>
+        </div>
+        <div class="offers-grid">
+          @for (offer of offers()!.seasonal_offers; track offer.id) {
+            <div class="offer-card">
+              <span class="offer-badge">{{ offer.badge }}</span>
+              <span class="offer-emoji">{{ offer.emoji }}</span>
+              <h3>{{ offer.title }}</h3>
+              <p>{{ offer.subtitle }}</p>
+              <div class="offer-code-row">
+                <code>{{ offer.code }}</code>
+                <button (click)="copyCode(offer.code)" [class.copied]="copiedCode() === offer.code">
+                  {{ copiedCode() === offer.code ? '✓ Copied' : 'Copy' }}
+                </button>
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Bundle Deals Section ───────────────────────────────────────────────── -->
+    <section class="bundles-section" appFadeIn>
+      <div class="container">
+        <div class="section-header" appFadeIn>
+          <span class="section-tag">🎁 Bundle Deals</span>
+          <h2>Better Together</h2>
+          <p>Curated combos — save 15% vs buying separately</p>
+        </div>
+        <div class="bundles-grid">
+          @for (bundle of offers()!.bundle_deals; track bundle.id) {
+            <div class="bundle-card">
+              <div class="bundle-top">
+                <span class="bundle-emoji">{{ bundle.emoji }}</span>
+                <span class="bundle-save-badge">Save {{ bundle.savings_pct }}%</span>
+              </div>
+              <h3>{{ bundle.name }}</h3>
+              <p>{{ bundle.description }}</p>
+              <div class="bundle-items">
+                @for (product of bundle.products; track product.id) {
+                  <div class="bundle-item">
+                    <img [src]="product.image" [alt]="product.name" loading="lazy">
+                    <span>{{ product.name }}</span>
+                  </div>
+                }
+              </div>
+              <div class="bundle-pricing">
+                <span class="original-price">₹{{ bundle.original_price.toFixed(2) }}</span>
+                <span class="bundle-price">₹{{ bundle.bundle_price.toFixed(2) }}</span>
+              </div>
+              <button class="btn-add-bundle" (click)="addBundleToCart(bundle)">Add Bundle to Cart →</button>
+            </div>
+          }
+        </div>
+      </div>
+    </section>
+  }
 
   <!-- ── Newsletter Section ─────────────────────────────────────────────────── -->
   <section class="newsletter">

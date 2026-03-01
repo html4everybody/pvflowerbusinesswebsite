@@ -1,0 +1,178 @@
+<main class="my-corp-page">
+  <div class="container">
+
+    <!-- Header -->
+    <div class="page-header">
+      <div class="page-header-left">
+        <h1>Corporate Orders</h1>
+        <p>Manage your bulk floral gifting orders</p>
+      </div>
+      <a routerLink="/corporate-order" class="btn-new-order">+ New Order</a>
+    </div>
+
+    <!-- Loading -->
+    @if (loading()) {
+      <div class="loading-state">
+        <div class="spinner"></div>
+        <p>Loading your corporate orders...</p>
+      </div>
+    }
+
+    <!-- Empty state -->
+    @if (!loading() && orders().length === 0) {
+      <div class="empty-state">
+        <span class="empty-icon">🏢</span>
+        <h2>No corporate orders yet</h2>
+        <p>Place your first bulk order to impress clients and reward your team.</p>
+        <a routerLink="/corporate-order" class="btn-start">Place First Order</a>
+      </div>
+    }
+
+    <!-- Active Orders -->
+    @if (!loading() && activeOrders.length > 0) {
+      <section class="orders-section">
+        <h2 class="section-title">
+          <span class="status-dot active"></span>
+          Active ({{ activeOrders.length }})
+        </h2>
+        <div class="order-cards">
+          @for (order of activeOrders; track order.id) {
+            <div class="order-card">
+              <div class="order-card-top">
+                <div class="order-badges">
+                  <span class="badge" [class]="'badge-' + order.status">{{ capitalize(order.status) }}</span>
+                  @if (order.is_recurring) {
+                    <span class="badge badge-recurring">🔄 Recurring</span>
+                  }
+                </div>
+                <span class="order-id">#{{ order.id }}</span>
+              </div>
+
+              <div class="order-info-grid">
+                <div class="order-info-item">
+                  <span class="info-label">Company</span>
+                  <span class="info-val">{{ order.company_name }}</span>
+                </div>
+                <div class="order-info-item">
+                  <span class="info-label">Product</span>
+                  <span class="info-val">{{ order.product_name }}</span>
+                </div>
+                <div class="order-info-item">
+                  <span class="info-label">Quantity</span>
+                  <span class="info-val">{{ order.quantity }} units</span>
+                </div>
+                <div class="order-info-item">
+                  <span class="info-label">Total</span>
+                  <span class="info-val accent">₹{{ order.final_amount.toFixed(2) }}
+                    @if (order.discount_pct > 0) {
+                      <span class="discount-tag">{{ order.discount_pct }}% off</span>
+                    }
+                  </span>
+                </div>
+                @if (order.is_recurring) {
+                  <div class="order-info-item">
+                    <span class="info-label">Schedule</span>
+                    <span class="info-val">{{ capitalize(order.recurring_frequency ?? '') }} on {{ capitalize(order.recurring_day ?? '') }}s</span>
+                  </div>
+                  <div class="order-info-item">
+                    <span class="info-label">Next Delivery</span>
+                    <span class="info-val accent">{{ formatDate(order.next_delivery) }}</span>
+                  </div>
+                } @else {
+                  <div class="order-info-item">
+                    <span class="info-label">Delivery Date</span>
+                    <span class="info-val accent">{{ formatDate(order.delivery_date) }}</span>
+                  </div>
+                }
+                <div class="order-info-item full-width">
+                  <span class="info-label">Delivery Address</span>
+                  <span class="info-val">{{ order.delivery_address }}</span>
+                </div>
+                @if (order.branding_message) {
+                  <div class="order-info-item full-width">
+                    <span class="info-label">Card Message</span>
+                    <span class="info-val italic">"{{ order.branding_message }}"</span>
+                  </div>
+                }
+              </div>
+
+              <div class="order-actions">
+                @if (order.is_recurring) {
+                  <button class="btn-skip"
+                          [disabled]="isLoading(order.id)"
+                          (click)="skip(order)">
+                    @if (actionId() === order.id + '-skip') { Skipping... } @else { Skip Next }
+                  </button>
+                }
+                <button class="btn-cancel"
+                        [disabled]="isLoading(order.id)"
+                        (click)="confirmCancel(order.id)">
+                  Cancel Order
+                </button>
+              </div>
+            </div>
+          }
+        </div>
+      </section>
+    }
+
+    <!-- Cancelled Orders -->
+    @if (!loading() && cancelledOrders.length > 0) {
+      <section class="orders-section">
+        <h2 class="section-title">
+          <span class="status-dot cancelled"></span>
+          Cancelled ({{ cancelledOrders.length }})
+        </h2>
+        <div class="order-cards">
+          @for (order of cancelledOrders; track order.id) {
+            <div class="order-card cancelled">
+              <div class="order-card-top">
+                <div class="order-badges">
+                  <span class="badge badge-cancelled">Cancelled</span>
+                </div>
+                <span class="order-id">#{{ order.id }}</span>
+              </div>
+              <div class="order-info-grid">
+                <div class="order-info-item">
+                  <span class="info-label">Company</span>
+                  <span class="info-val">{{ order.company_name }}</span>
+                </div>
+                <div class="order-info-item">
+                  <span class="info-label">Product</span>
+                  <span class="info-val">{{ order.product_name }}</span>
+                </div>
+                <div class="order-info-item">
+                  <span class="info-label">Quantity</span>
+                  <span class="info-val">{{ order.quantity }} units</span>
+                </div>
+                <div class="order-info-item">
+                  <span class="info-label">Total</span>
+                  <span class="info-val">₹{{ order.final_amount.toFixed(2) }}</span>
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+      </section>
+    }
+
+  </div>
+</main>
+
+<!-- Cancel confirm dialog -->
+@if (confirmCancelId()) {
+  <div class="dialog-overlay" (click)="closeDialog()">
+    <div class="dialog-box" (click)="$event.stopPropagation()">
+      <h3>Cancel this order?</h3>
+      <p>This action cannot be undone. The order will be moved to the cancelled section.</p>
+      <div class="dialog-actions">
+        <button class="btn-dialog-cancel" (click)="closeDialog()">Keep Order</button>
+        <button class="btn-dialog-confirm"
+                [disabled]="isLoading(confirmCancelId())"
+                (click)="doCancel()">
+          @if (isLoading(confirmCancelId())) { Cancelling... } @else { Yes, Cancel }
+        </button>
+      </div>
+    </div>
+  </div>
+}

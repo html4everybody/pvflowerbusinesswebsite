@@ -98,7 +98,7 @@
             </div>
 
             <div class="delivery-options">
-              <div class="delivery-card" [class.selected]="deliveryType() === 'immediate'" (click)="deliveryType.set('immediate')">
+              <div class="delivery-card" [class.selected]="deliveryType() === 'immediate'" (click)="selectImmediate()">
                 <div class="delivery-option-icon">
                   <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <circle cx="12" cy="12" r="10"></circle>
@@ -138,7 +138,7 @@
             </div>
 
             @if (deliveryType() === 'scheduled') {
-              <div class="schedule-panel">
+              <div class="schedule-panel" [class.schedule-complete]="isScheduleComplete">
                 <div class="schedule-panel-label">
                   <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
@@ -153,29 +153,67 @@
                     <label for="deliveryDate">Delivery Date <span class="required-star">*</span></label>
                     <input type="date" id="deliveryDate" #deliveryDateField="ngModel"
                       [(ngModel)]="formData.deliveryDate" name="deliveryDate"
-                      [min]="minDate"
+                      [min]="effectiveMinDate"
                       [required]="deliveryType() === 'scheduled'">
                     @if (deliveryDateField.invalid && deliveryDateField.touched) {
                       <div class="field-error">Please select a delivery date</div>
                     }
+                    @if (formData.deliveryDate) {
+                      <div class="date-display-hint">{{ formatSelectedDate(formData.deliveryDate) }}</div>
+                    }
                   </div>
                   <div class="form-group">
-                    <label for="deliveryTime">Delivery Time <span class="required-star">*</span></label>
+                    <label for="deliveryTime">Delivery Window <span class="required-star">*</span></label>
                     <select id="deliveryTime" #deliveryTimeField="ngModel"
                       [(ngModel)]="formData.deliveryTime" name="deliveryTime"
                       [required]="deliveryType() === 'scheduled'">
                       <option value="">Select a time slot</option>
-                      <option value="09:00">9:00 AM – 11:00 AM</option>
-                      <option value="11:00">11:00 AM – 1:00 PM</option>
-                      <option value="13:00">1:00 PM – 3:00 PM</option>
-                      <option value="15:00">3:00 PM – 5:00 PM</option>
-                      <option value="17:00">5:00 PM – 7:00 PM</option>
+                      @for (slot of availableTimeSlots; track slot.value) {
+                        <option [value]="slot.value">{{ slot.label }}</option>
+                      }
                     </select>
+                    @if (availableTimeSlots.length === 0) {
+                      <div class="field-error">No slots available today — please select a future date</div>
+                    }
                     @if (deliveryTimeField.invalid && deliveryTimeField.touched) {
                       <div class="field-error">Please select a time slot</div>
                     }
                   </div>
                 </div>
+
+                @if (isScheduleComplete) {
+                  <div class="schedule-summary">
+                    Delivering on {{ formatSelectedDate(formData.deliveryDate) }}
+                    between {{ availableTimeSlots.find(s => s.value === formData.deliveryTime)?.label ?? formData.deliveryTime }}
+                  </div>
+
+                  <div class="recurring-section">
+                    <label class="recurring-toggle-label" [class.recurring-active]="isRecurring()">
+                      <div class="recurring-checkbox-wrap">
+                        <input type="checkbox" [checked]="isRecurring()"
+                               (change)="isRecurring.set($any($event.target).checked)">
+                        <span class="recurring-custom-check">
+                          @if (isRecurring()) {
+                            <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24"
+                                 fill="none" stroke="white" stroke-width="3.5"
+                                 stroke-linecap="round" stroke-linejoin="round">
+                              <polyline points="20 6 9 17 4 12"></polyline>
+                            </svg>
+                          }
+                        </span>
+                      </div>
+                      <div class="recurring-text">
+                        <strong>Repeat this delivery every year</strong>
+                        <span>Anniversary / annual recurring delivery</span>
+                      </div>
+                    </label>
+                    @if (isRecurring() && annualRecurrenceDisplay) {
+                      <div class="recurring-next-note">
+                        Next delivery will be scheduled for {{ annualRecurrenceDisplay }}
+                      </div>
+                    }
+                  </div>
+                }
               </div>
             }
           </section>
@@ -307,6 +345,58 @@
             }
           </div>
 
+          <div class="promo-panel">
+            <div class="promo-input-row">
+              <input
+                type="text"
+                placeholder="Enter promo code"
+                [value]="promoCode()"
+                (input)="promoCode.set($any($event).target.value.toUpperCase())"
+                (keyup.enter)="!promoResult() && applyPromo()"
+                [disabled]="!!promoResult()"
+                class="promo-input"
+              >
+              @if (!promoResult()) {
+                <button class="promo-btn" (click)="applyPromo()" [disabled]="promoLoading() || !promoCode()">
+                  {{ promoLoading() ? '...' : 'Apply' }}
+                </button>
+              } @else {
+                <button class="promo-btn promo-btn-remove" (click)="clearPromo()">Remove</button>
+              }
+            </div>
+            @if (promoError()) {
+              <p class="promo-msg promo-msg-error">{{ promoError() }}</p>
+            }
+            @if (promoResult()) {
+              <p class="promo-msg promo-msg-success">{{ promoResult()!.description }}</p>
+            }
+          </div>
+
+          @if (authService.user() && loyaltyBalance() > 0) {
+            <div class="points-panel">
+              <div class="points-panel-header">
+                <span class="points-icon">⭐</span>
+                <div>
+                  <strong>{{ loyaltyBalance() }} Loyalty Points</strong>
+                  <span class="points-subtext">= ₹{{ (loyaltyBalance() / 10).toFixed(2) }} possible discount</span>
+                </div>
+                <button class="pts-toggle-btn" [class.on]="loyaltyEnabled()" (click)="togglePoints()">
+                  <span class="pts-knob"></span>
+                </button>
+              </div>
+              @if (loyaltyEnabled()) {
+                <div class="points-input-row">
+                  <label>Points to use:</label>
+                  <input type="number" [min]="0" [max]="maxRedeemable"
+                         [value]="pointsToRedeem()"
+                         (input)="clampAndSetPoints(+$any($event).target.value)">
+                  <span class="pts-value">= ₹{{ pointsDiscountAmount().toFixed(2) }} off</span>
+                </div>
+                <p class="pts-cap-note">Max {{ maxRedeemable }} pts (20% of order)</p>
+              }
+            </div>
+          }
+
           <div class="summary-details">
             <div class="summary-row">
               <span>Subtotal</span>
@@ -314,10 +404,22 @@
             </div>
             <div class="summary-row">
               <span>Shipping</span>
-              <span class="shipping-val">{{ getShipping() === 0 ? 'FREE' : '$' + getShipping().toFixed(2) }}</span>
+              <span class="shipping-val">{{ getShipping() === 0 ? 'FREE' : '₹' + getShipping().toFixed(2) }}</span>
             </div>
             @if (getShipping() === 0) {
               <div class="free-shipping-badge">🎉 You qualify for free shipping!</div>
+            }
+            @if (loyaltyEnabled() && pointsDiscountAmount() > 0) {
+              <div class="summary-row points-discount-row">
+                <span>⭐ Points Discount</span>
+                <span>− ₹{{ pointsDiscountAmount().toFixed(2) }}</span>
+              </div>
+            }
+            @if (promoResult()) {
+              <div class="summary-row promo-discount-row">
+                <span>🏷️ {{ promoResult()!.code }}</span>
+                <span>− ₹{{ promoDiscountAmount().toFixed(2) }}</span>
+              </div>
             }
             <div class="summary-row total">
               <span>Total</span>
@@ -357,6 +459,12 @@
             <span class="icon">🌸</span>
             <span>Fresh flowers guaranteed</span>
           </div>
+          @if (pointsEarned() > 0) {
+            <div class="detail-item">
+              <span class="icon">⭐</span>
+              <span>Earned {{ pointsEarned() }} loyalty points! Balance: {{ newLoyaltyBalance() }} pts</span>
+            </div>
+          }
         </div>
         <a routerLink="/" class="btn-continue">Continue Shopping</a>
       </div>

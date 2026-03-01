@@ -1,0 +1,280 @@
+<main class="subscribe-page">
+
+  <!-- ── Hero ──────────────────────────────────────────────────────────── -->
+  <section class="sub-hero">
+    <div class="container">
+      <span class="sub-tag">🌸 Flower Subscriptions</span>
+      <h1>Fresh Flowers, <em>Every Time</em></h1>
+      <p>Never run out of beauty. Choose a plan, pick your style, and we'll deliver handpicked blooms right to your door — automatically.</p>
+      <div class="sub-perks">
+        <span>✓ Cancel anytime</span>
+        <span>✓ Skip any delivery</span>
+        <span>✓ Pause when needed</span>
+        <span>✓ No hidden fees</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Wizard ─────────────────────────────────────────────────────────── -->
+  <section class="wizard-section">
+    <div class="container">
+
+      <!-- Step progress bar -->
+      @if (!submitted()) {
+        <div class="step-bar">
+          @for (s of [1,2,3,4]; track s) {
+            <div class="step-ind" [class.active]="step() === s" [class.done]="step() > s"
+                 (click)="goToStep(s)" [style.cursor]="step() > s ? 'pointer' : 'default'">
+              <div class="step-dot">
+                @if (step() > s) {
+                  <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                  </svg>
+                } @else {
+                  {{ s }}
+                }
+              </div>
+              <span class="step-label">
+                @if (s === 1) { Plan }
+                @if (s === 2) { Style }
+                @if (s === 3) { Details }
+                @if (s === 4) { Confirm }
+              </span>
+            </div>
+            @if (s < 4) {
+              <div class="step-connector" [class.done]="step() > s"></div>
+            }
+          }
+        </div>
+      }
+
+      <!-- ── Step 1: Choose Plan ─────────────────────────────────────── -->
+      @if (step() === 1) {
+        <div class="wizard-step">
+          <div class="step-header">
+            <h2>Choose Your Plan</h2>
+            <p>How often would you like fresh flowers delivered?</p>
+          </div>
+
+          <div class="plan-cards">
+            @for (plan of plans; track plan.id) {
+              <div class="plan-card"
+                   [class.selected]="selectedPlan() === plan.id"
+                   [class.popular]="!!plan.popular"
+                   (click)="selectPlan(plan.id)">
+                @if (plan.popular) {
+                  <span class="popular-badge">Most Popular</span>
+                }
+                <div class="plan-icon">
+                  @if (plan.id === 'weekly') { 🌷 }
+                  @if (plan.id === 'biweekly') { 🌸 }
+                  @if (plan.id === 'monthly') { 💐 }
+                </div>
+                <h3>{{ plan.label }}</h3>
+                <p class="plan-freq">{{ plan.frequency }}</p>
+                <div class="plan-price">{{ plan.priceLabel }}</div>
+                @if (plan.saving) {
+                  <span class="plan-saving">{{ plan.saving }}</span>
+                }
+                <div class="plan-radio" [class.checked]="selectedPlan() === plan.id">
+                  <div class="radio-inner"></div>
+                </div>
+              </div>
+            }
+          </div>
+
+          <div class="step-actions">
+            <button class="btn-next" [disabled]="!isStep1Valid" (click)="nextStep()">
+              Continue — Choose Style →
+            </button>
+          </div>
+        </div>
+      }
+
+      <!-- ── Step 2: Choose Style ────────────────────────────────────── -->
+      @if (step() === 2) {
+        <div class="wizard-step">
+          <div class="step-header">
+            <h2>Pick Your Style</h2>
+            <p>Do you love surprises, or do you have a favourite in mind?</p>
+          </div>
+
+          <div class="style-cards">
+            <div class="style-card" [class.selected]="selectedStyle() === 'seasonal'" (click)="selectStyle('seasonal')">
+              <span class="style-icon">🌿</span>
+              <h3>Seasonal Surprise</h3>
+              <p>We hand-pick the freshest seasonal blooms each delivery — always a delightful surprise, always perfectly in season.</p>
+              <ul class="style-perks">
+                <li>✓ Curated by our florists</li>
+                <li>✓ Always in season</li>
+                <li>✓ Variety every delivery</li>
+              </ul>
+              <div class="plan-radio" [class.checked]="selectedStyle() === 'seasonal'">
+                <div class="radio-inner"></div>
+              </div>
+            </div>
+
+            <div class="style-card" [class.selected]="selectedStyle() === 'fixed'" (click)="selectStyle('fixed')">
+              <span class="style-icon">💝</span>
+              <h3>Fixed Arrangement</h3>
+              <p>Choose your favourite flower arrangement and receive the same stunning bouquet every delivery — consistently perfect.</p>
+              <ul class="style-perks">
+                <li>✓ Your preferred arrangement</li>
+                <li>✓ Guaranteed availability</li>
+                <li>✓ Same quality every time</li>
+              </ul>
+              <div class="plan-radio" [class.checked]="selectedStyle() === 'fixed'">
+                <div class="radio-inner"></div>
+              </div>
+            </div>
+          </div>
+
+          @if (selectedStyle() === 'fixed') {
+            <div class="product-picker">
+              <h3>Choose Your Arrangement</h3>
+              <p class="picker-hint">Select one arrangement you'd like on every delivery.</p>
+              <div class="picker-grid">
+                @for (product of fixedProducts; track product.id) {
+                  <div class="picker-card"
+                       [class.selected]="selectedProductId() === product.id"
+                       (click)="toggleFixedProduct(product.id)">
+                    <img [src]="product.image" [alt]="product.name" loading="lazy">
+                    <div class="picker-info">
+                      <span class="picker-name">{{ product.name }}</span>
+                      <span class="picker-price">₹{{ product.price.toFixed(2) }}</span>
+                    </div>
+                    @if (selectedProductId() === product.id) {
+                      <div class="picker-check">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5">
+                          <polyline points="20 6 9 17 4 12"></polyline>
+                        </svg>
+                      </div>
+                    }
+                  </div>
+                }
+              </div>
+            </div>
+          }
+
+          <div class="step-actions">
+            <button class="btn-back" (click)="prevStep()">← Back</button>
+            <button class="btn-next" [disabled]="!isStep2Valid" (click)="nextStep()">
+              Continue — Your Details →
+            </button>
+          </div>
+        </div>
+      }
+
+      <!-- ── Step 3: Details ────────────────────────────────────────── -->
+      @if (step() === 3) {
+        <div class="wizard-step">
+          <div class="step-header">
+            <h2>Your Details</h2>
+            <p>Tell us where to deliver your flowers.</p>
+          </div>
+
+          <div class="details-form">
+            <div class="form-group">
+              <label>Full Name</label>
+              <input type="text"
+                     [value]="name()"
+                     (input)="name.set($any($event).target.value)"
+                     placeholder="Your full name">
+            </div>
+            <div class="form-group">
+              <label>Email Address</label>
+              <input type="email"
+                     [value]="email()"
+                     (input)="email.set($any($event).target.value)"
+                     placeholder="your@email.com">
+              <small>Subscription updates will be sent here</small>
+            </div>
+            <div class="form-group">
+              <label>Delivery Address</label>
+              <textarea [value]="address()"
+                        (input)="address.set($any($event).target.value)"
+                        rows="3"
+                        placeholder="Full delivery address including pin code"></textarea>
+            </div>
+          </div>
+
+          @if (error()) {
+            <div class="form-error">{{ error() }}</div>
+          }
+
+          <div class="step-actions">
+            <button class="btn-back" (click)="prevStep()">← Back</button>
+            <button class="btn-next" [disabled]="!isStep3Valid" (click)="nextStep()">
+              Review Order →
+            </button>
+          </div>
+        </div>
+      }
+
+      <!-- ── Step 4: Confirm / Success ──────────────────────────────── -->
+      @if (step() === 4) {
+        @if (!submitted()) {
+          <div class="wizard-step">
+            <div class="step-header">
+              <h2>Review Your Subscription</h2>
+              <p>Everything look right? Confirm to start your flower journey.</p>
+            </div>
+
+            <div class="review-card">
+              <div class="review-row">
+                <span class="review-label">Plan</span>
+                <span class="review-val">{{ selectedPlanOption?.label }} — {{ selectedPlanOption?.priceLabel }}</span>
+              </div>
+              <div class="review-row">
+                <span class="review-label">Style</span>
+                <span class="review-val">
+                  @if (selectedStyle() === 'seasonal') { Seasonal Surprise }
+                  @if (selectedStyle() === 'fixed') { Fixed: {{ selectedProduct?.name }} }
+                </span>
+              </div>
+              <div class="review-row">
+                <span class="review-label">Name</span>
+                <span class="review-val">{{ name() }}</span>
+              </div>
+              <div class="review-row">
+                <span class="review-label">Email</span>
+                <span class="review-val">{{ email() }}</span>
+              </div>
+              <div class="review-row">
+                <span class="review-label">Address</span>
+                <span class="review-val">{{ address() }}</span>
+              </div>
+            </div>
+
+            @if (error()) {
+              <div class="form-error">{{ error() }}</div>
+            }
+
+            <div class="step-actions">
+              <button class="btn-back" (click)="prevStep()">← Back</button>
+              <button class="btn-confirm" [disabled]="submitting()" (click)="submit()">
+                @if (submitting()) { Confirming... } @else { Confirm Subscription }
+              </button>
+            </div>
+          </div>
+
+        } @else {
+          <!-- Success -->
+          <div class="success-state">
+            <div class="success-icon">🎉</div>
+            <h2>You're all set!</h2>
+            <p>Your subscription has been confirmed. Your first delivery is scheduled for:</p>
+            <div class="success-date">{{ formatDate(nextDelivery()) }}</div>
+            <p class="success-sub">Confirmation will be sent to <strong>{{ email() }}</strong>.</p>
+            <div class="success-actions">
+              <a routerLink="/my-subscriptions" class="btn-manage">Manage Subscriptions</a>
+              <a routerLink="/" class="btn-home">Back to Shop</a>
+            </div>
+          </div>
+        }
+      }
+
+    </div>
+  </section>
+
+</main>

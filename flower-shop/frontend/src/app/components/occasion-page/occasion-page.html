@@ -1,0 +1,185 @@
+<!-- ── Index: All Occasions ─────────────────────────────────────────────────── -->
+@if (isIndex) {
+  <main class="occasion-index">
+    <section class="index-hero">
+      <div class="index-hero-content">
+        <span class="index-tag">✨ Curated Collections</span>
+        <h1>Shop by Occasion</h1>
+        <p>Every moment in life deserves the perfect flowers — handpicked, curated, and delivered with love.</p>
+      </div>
+    </section>
+
+    <section class="index-grid-section">
+      <div class="container">
+        <div class="index-cards">
+          @for (occ of allOccasions; track occ.slug) {
+            <a [routerLink]="['/occasions', occ.slug]" class="index-card"
+               [style.--hero]="'url(' + occ.heroImage + ')'">
+              <div class="index-card-overlay" [style.background]="occ.gradient"></div>
+              <div class="index-card-content">
+                <span class="index-card-emoji">{{ occ.emoji }}</span>
+                <h2>{{ occ.title }}</h2>
+                <p>{{ occ.tagline }}</p>
+                <span class="index-card-cta">Explore Collection →</span>
+              </div>
+            </a>
+          }
+        </div>
+      </div>
+    </section>
+  </main>
+}
+
+<!-- ── Individual Occasion Landing Page ─────────────────────────────────────── -->
+@if (!isIndex && config) {
+  <main class="occasion-page">
+
+    <!-- Hero -->
+    <section class="occ-hero" [style.background-image]="'url(' + config.heroImage + ')'">
+      <div class="occ-hero-overlay" [style.background]="config.gradient">
+        <div class="container">
+          <a routerLink="/occasions" class="back-link">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="15 18 9 12 15 6"></polyline>
+            </svg>
+            All Occasions
+          </a>
+          <div class="occ-hero-body">
+            <span class="occ-hero-emoji">{{ config.emoji }}</span>
+            <h1>{{ config.title }}</h1>
+            <p class="occ-hero-tagline">{{ config.tagline }}</p>
+            <a class="occ-hero-cta" (click)="scrollToProducts()">
+              Shop the Collection ↓
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Story Section -->
+    <section class="occ-story">
+      <div class="container">
+        <div class="story-grid">
+          <div class="story-text-block">
+            <span class="story-label">Our Promise</span>
+            <p class="story-body">{{ config.story }}</p>
+            <blockquote class="story-quote">
+              <span class="quote-mark">"</span>
+              {{ config.quote.replace(/^"|"$/g, '') }}
+            </blockquote>
+          </div>
+          <div class="story-perks">
+            <div class="perk">
+              <span class="perk-icon">🌿</span>
+              <div>
+                <strong>Farm-Fresh Blooms</strong>
+                <p>Sourced directly, always fresh</p>
+              </div>
+            </div>
+            <div class="perk">
+              <span class="perk-icon">🚚</span>
+              <div>
+                <strong>Same-Day Delivery</strong>
+                <p>Order before 4 PM for today</p>
+              </div>
+            </div>
+            <div class="perk">
+              <span class="perk-icon">🎁</span>
+              <div>
+                <strong>Gift Wrapping</strong>
+                <p>Beautifully packed, every time</p>
+              </div>
+            </div>
+            <div class="perk">
+              <span class="perk-icon">✍️</span>
+              <div>
+                <strong>Personal Message</strong>
+                <p>Add your heartfelt note</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Products -->
+    <section class="occ-products-section" id="occ-products">
+      <div class="container">
+        <div class="occ-section-header">
+          <h2>Curated for {{ config.title }}</h2>
+          <p>{{ products.length }} handpicked arrangements just for this occasion</p>
+        </div>
+
+        @if (products.length > 0) {
+          <div class="occ-product-grid">
+            @for (product of products; track product.id) {
+              <div class="occ-product-card">
+                <a [routerLink]="['/products', product.id]" class="card-img-wrap">
+                  <img [src]="product.image" [alt]="product.name" loading="lazy">
+                  <span class="card-category">{{ product.category }}</span>
+                </a>
+                <button class="card-wishlist"
+                        [class.active]="wishlistService.has(product.id)"
+                        (click)="wishlistService.toggle(product)"
+                        [title]="wishlistService.has(product.id) ? 'Remove from wishlist' : 'Save'">
+                  @if (wishlistService.has(product.id)) {
+                    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+                  } @else {
+                    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+                  }
+                </button>
+                <div class="card-info">
+                  <div class="card-top">
+                    <h3>{{ product.name }}</h3>
+                    <div class="card-rating">
+                      <span class="star">★</span> {{ product.rating }}
+                    </div>
+                  </div>
+                  <p class="card-desc">{{ product.description }}</p>
+                  <div class="card-bottom">
+                    <span class="card-price">₹{{ product.price.toFixed(2) }}</span>
+                    @if (getQuantity(product.id) === 0) {
+                      <button class="btn-add-cart" (click)="addToCart(product)">Add to Cart</button>
+                    } @else {
+                      <div class="qty-control">
+                        <button (click)="decrementQuantity(product)">−</button>
+                        <span>{{ getQuantity(product.id) }}</span>
+                        <button (click)="incrementQuantity(product)">+</button>
+                      </div>
+                    }
+                  </div>
+                </div>
+              </div>
+            }
+          </div>
+        } @else {
+          <div class="occ-empty">
+            <span>🌾</span>
+            <p>We're curating this collection. Check back soon!</p>
+            <a routerLink="/" class="btn-browse-all">Browse All Flowers</a>
+          </div>
+        }
+      </div>
+    </section>
+
+    <!-- Other Occasions -->
+    <section class="other-occasions-section">
+      <div class="container">
+        <h2>Explore Other Occasions</h2>
+        <div class="other-occ-cards">
+          @for (occ of otherOccasions; track occ.slug) {
+            <a [routerLink]="['/occasions', occ.slug]" class="other-occ-card"
+               [style.--hero]="'url(' + occ.heroImage + ')'">
+              <div class="other-occ-overlay" [style.background]="occ.gradient"></div>
+              <div class="other-occ-content">
+                <span>{{ occ.emoji }}</span>
+                <strong>{{ occ.title }}</strong>
+              </div>
+            </a>
+          }
+        </div>
+      </div>
+    </section>
+
+  </main>
+}
