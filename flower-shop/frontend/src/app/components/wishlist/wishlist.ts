@@ -16,7 +16,10 @@ export class Wishlist implements OnInit {
   isSharedView = false;
   sharedIds: number[] = [];
   shareVisible = signal(false);
+  toastVisible = signal(false);
+  toastProductName = signal('');
   private shareTimer: any;
+  private toastTimer: any;
 
   constructor(
     private route: ActivatedRoute,
@@ -45,14 +48,23 @@ export class Wishlist implements OnInit {
       .filter((p): p is Product => p !== undefined);
   }
 
+  private showToast(name: string): void {
+    this.toastProductName.set(name);
+    this.toastVisible.set(true);
+    clearTimeout(this.toastTimer);
+    this.toastTimer = setTimeout(() => this.toastVisible.set(false), 2500);
+  }
+
   addToCart(product: Product): void {
     this.cartService.addToCart(product);
     this.feedbackService.addToCartFeedback();
+    this.showToast(product.name);
   }
 
   moveAllToCart(): void {
     this.displayProducts.forEach(p => this.cartService.addToCart(p));
     this.feedbackService.addToCartFeedback();
+    this.showToast('All items');
   }
 
   saveSharedToWishlist(): void {
