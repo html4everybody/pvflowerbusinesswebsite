@@ -1,0 +1,574 @@
+.container {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 2rem;
+}
+
+// ── Index Page ────────────────────────────────────────────────────────────────
+.occasion-index {
+  background: var(--bg);
+  min-height: 100vh;
+}
+
+.index-hero {
+  min-height: 44vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  background:
+    linear-gradient(to bottom, rgba(0,0,0,0.18) 0%, rgba(0,0,0,0.60) 100%),
+    url('https://images.unsplash.com/photo-1487530811176-3780de880c2d?w=1600&q=85') center/cover no-repeat;
+  padding: 4rem 2rem;
+
+  .index-hero-content {
+    color: white;
+    animation: fadeInUp 0.8s ease both;
+
+    .index-tag {
+      font-size: 0.82rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      opacity: 0.85;
+      display: block;
+      margin-bottom: 0.75rem;
+    }
+
+    h1 {
+      font-size: clamp(2rem, 5vw, 3.5rem);
+      margin: 0 0 1rem;
+      line-height: 1.15;
+    }
+
+    p {
+      font-size: 1.05rem;
+      max-width: 520px;
+      margin: 0 auto;
+      opacity: 0.9;
+      line-height: 1.6;
+    }
+  }
+}
+
+.index-grid-section {
+  padding: 4rem 0;
+}
+
+.index-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.25rem;
+
+  @media (max-width: 600px) { grid-template-columns: 1fr; }
+}
+
+.index-card {
+  position: relative;
+  height: 320px;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  text-decoration: none;
+  background: var(--hero) center/cover no-repeat;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-lg);
+
+    .index-card-cta { opacity: 1; transform: translateX(0); }
+  }
+
+  .index-card-overlay {
+    position: absolute;
+    inset: 0;
+    transition: opacity 0.3s ease;
+  }
+
+  &:hover .index-card-overlay { opacity: 1.1; }
+
+  .index-card-content {
+    position: relative;
+    z-index: 1;
+    margin-top: auto;
+    padding: 1.75rem 1.5rem;
+    color: white;
+
+    .index-card-emoji {
+      font-size: 2rem;
+      display: block;
+      margin-bottom: 0.5rem;
+    }
+
+    h2 {
+      font-size: 1.45rem;
+      margin: 0 0 0.3rem;
+      line-height: 1.2;
+    }
+
+    p {
+      font-size: 0.85rem;
+      opacity: 0.88;
+      margin: 0 0 0.75rem;
+    }
+
+    .index-card-cta {
+      font-size: 0.82rem;
+      font-weight: 600;
+      opacity: 0;
+      transform: translateX(-6px);
+      transition: all 0.25s ease;
+      display: inline-block;
+      background: rgba(255,255,255,0.2);
+      border: 1px solid rgba(255,255,255,0.35);
+      border-radius: var(--radius-full);
+      padding: 0.35rem 0.9rem;
+    }
+  }
+}
+
+// ── Individual Occasion Page ──────────────────────────────────────────────────
+.occasion-page {
+  background: var(--bg);
+  min-height: 100vh;
+}
+
+// Hero
+.occ-hero {
+  min-height: 70vh;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  display: flex;
+  flex-direction: column;
+
+  @media (max-width: 600px) { min-height: 60vh; }
+}
+
+.occ-hero-overlay {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding-bottom: 4rem;
+
+  .container { padding-top: 2rem; }
+
+  .back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    color: rgba(255,255,255,0.85);
+    font-size: 0.82rem;
+    font-weight: 500;
+    text-decoration: none;
+    transition: color 0.2s;
+    margin-bottom: 2.5rem;
+
+    &:hover { color: white; }
+  }
+}
+
+.occ-hero-body {
+  color: white;
+  animation: fadeInUp 0.7s ease both;
+
+  .occ-hero-emoji {
+    font-size: 3rem;
+    display: block;
+    margin-bottom: 0.75rem;
+  }
+
+  h1 {
+    font-size: clamp(2.2rem, 6vw, 4rem);
+    margin: 0 0 0.65rem;
+    line-height: 1.1;
+    text-shadow: 0 2px 20px rgba(0,0,0,0.25);
+  }
+
+  .occ-hero-tagline {
+    font-size: clamp(1rem, 2.5vw, 1.3rem);
+    opacity: 0.92;
+    margin: 0 0 2rem;
+    max-width: 500px;
+    line-height: 1.5;
+  }
+
+  .occ-hero-cta {
+    display: inline-block;
+    background: rgba(255,255,255,0.18);
+    backdrop-filter: blur(8px);
+    border: 1.5px solid rgba(255,255,255,0.45);
+    color: white;
+    text-decoration: none;
+    padding: 0.75rem 1.75rem;
+    border-radius: var(--radius-full);
+    font-weight: 600;
+    font-size: 0.92rem;
+    transition: background 0.2s, transform 0.2s;
+
+    &:hover {
+      background: rgba(255,255,255,0.28);
+      transform: translateY(-1px);
+    }
+  }
+}
+
+// Story
+.occ-story {
+  padding: 5rem 0;
+
+  .story-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4rem;
+    align-items: start;
+
+    @media (max-width: 768px) {
+      grid-template-columns: 1fr;
+      gap: 2.5rem;
+    }
+  }
+
+  .story-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--accent);
+    display: block;
+    margin-bottom: 1rem;
+  }
+
+  .story-body {
+    font-size: 1.05rem;
+    line-height: 1.8;
+    color: var(--text-muted);
+    margin: 0 0 1.75rem;
+  }
+
+  .story-quote {
+    border-left: 3px solid var(--accent);
+    padding: 0.75rem 0 0.75rem 1.25rem;
+    margin: 0;
+    font-size: 1.05rem;
+    font-style: italic;
+    color: var(--text);
+    line-height: 1.6;
+    font-family: 'Playfair Display', Georgia, serif;
+
+    .quote-mark {
+      font-size: 1.6rem;
+      line-height: 0;
+      vertical-align: -0.4rem;
+      color: var(--accent);
+      margin-right: 0.1rem;
+      font-style: normal;
+    }
+  }
+
+  .story-perks {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+
+  .perk {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: 1rem 1.25rem;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+
+    .perk-icon { font-size: 1.5rem; flex-shrink: 0; }
+
+    strong {
+      display: block;
+      font-size: 0.9rem;
+      color: var(--text);
+      margin-bottom: 0.15rem;
+    }
+
+    p {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin: 0;
+    }
+  }
+}
+
+// Products
+.occ-products-section {
+  padding: 0 0 5rem;
+
+  .occ-section-header {
+    margin-bottom: 2.5rem;
+
+    h2 {
+      font-size: 1.75rem;
+      color: var(--text);
+      margin: 0 0 0.4rem;
+    }
+
+    p {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      margin: 0;
+    }
+  }
+}
+
+.occ-product-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 1.25rem;
+
+  @media (max-width: 500px) { grid-template-columns: repeat(2, 1fr); gap: 0.75rem; }
+}
+
+.occ-product-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  position: relative;
+  transition: transform 0.22s ease, box-shadow 0.22s ease;
+
+  &:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-md);
+  }
+
+  .card-img-wrap {
+    position: relative;
+    display: block;
+    aspect-ratio: 1;
+    overflow: hidden;
+
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.35s ease;
+    }
+
+    &:hover img { transform: scale(1.06); }
+
+    .card-category {
+      position: absolute;
+      top: 0.6rem;
+      left: 0.6rem;
+      background: rgba(0,0,0,0.55);
+      color: white;
+      font-size: 0.68rem;
+      font-weight: 600;
+      padding: 0.2rem 0.55rem;
+      border-radius: var(--radius-full);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+  }
+
+  .card-wishlist {
+    position: absolute;
+    top: 0.6rem;
+    right: 0.6rem;
+    width: 32px;
+    height: 32px;
+    background: rgba(255,255,255,0.92);
+    border: none;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--text-muted);
+    transition: all 0.2s;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+
+    &:hover, &.active { color: var(--accent); background: white; }
+  }
+
+  .card-info {
+    padding: 0.9rem;
+
+    .card-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 0.5rem;
+      margin-bottom: 0.4rem;
+
+      h3 {
+        font-size: 0.88rem;
+        font-weight: 600;
+        color: var(--text);
+        margin: 0;
+        line-height: 1.3;
+        flex: 1;
+        font-family: inherit;
+      }
+
+      .card-rating {
+        font-size: 0.78rem;
+        color: var(--text-muted);
+        white-space: nowrap;
+        .star { color: #f59e0b; }
+      }
+    }
+
+    .card-desc {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+      margin: 0 0 0.85rem;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .card-bottom {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+
+      .card-price {
+        font-size: 1rem;
+        font-weight: 700;
+        color: var(--accent);
+      }
+
+      .btn-add-cart {
+        background: var(--accent);
+        color: white;
+        border: none;
+        padding: 0.45rem 0.85rem;
+        border-radius: var(--radius-sm);
+        font-size: 0.78rem;
+        font-weight: 600;
+        cursor: pointer;
+        font-family: inherit;
+        transition: background 0.2s;
+        white-space: nowrap;
+
+        &:hover { background: var(--accent-dark); }
+      }
+
+      .qty-control {
+        display: flex;
+        align-items: center;
+        border: 1.5px solid var(--accent);
+        border-radius: var(--radius-sm);
+        overflow: hidden;
+        gap: 0;
+
+        button {
+          width: 30px;
+          height: 30px;
+          background: var(--accent-light);
+          border: none;
+          color: var(--accent);
+          font-size: 1rem;
+          font-weight: 700;
+          cursor: pointer;
+          transition: background 0.15s;
+
+          &:hover { background: var(--accent); color: white; }
+        }
+
+        span {
+          min-width: 28px;
+          text-align: center;
+          font-size: 0.85rem;
+          font-weight: 600;
+          color: var(--accent);
+        }
+      }
+    }
+  }
+}
+
+.occ-empty {
+  text-align: center;
+  padding: 4rem 2rem;
+
+  span { font-size: 3rem; display: block; margin-bottom: 1rem; }
+  p { color: var(--text-muted); margin-bottom: 1.5rem; }
+
+  .btn-browse-all {
+    display: inline-block;
+    background: var(--accent);
+    color: white;
+    padding: 0.75rem 1.75rem;
+    border-radius: var(--radius-full);
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.9rem;
+    transition: background 0.2s;
+
+    &:hover { background: var(--accent-dark); }
+  }
+}
+
+// Other Occasions
+.other-occasions-section {
+  padding: 4rem 0;
+  border-top: 1px solid var(--border);
+
+  h2 {
+    font-size: 1.5rem;
+    color: var(--text);
+    margin-bottom: 1.75rem;
+  }
+
+  .other-occ-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1rem;
+
+    @media (max-width: 500px) { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  .other-occ-card {
+    position: relative;
+    height: 160px;
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    text-decoration: none;
+    background: var(--hero) center/cover no-repeat;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+
+    &:hover {
+      transform: translateY(-3px);
+      box-shadow: var(--shadow-md);
+    }
+
+    .other-occ-overlay {
+      position: absolute;
+      inset: 0;
+    }
+
+    .other-occ-content {
+      position: relative;
+      z-index: 1;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      text-align: center;
+      padding: 1rem;
+      gap: 0.4rem;
+
+      span { font-size: 1.8rem; }
+      strong { font-size: 0.9rem; font-weight: 700; }
+    }
+  }
+}

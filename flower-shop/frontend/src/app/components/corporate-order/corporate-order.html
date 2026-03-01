@@ -1,0 +1,392 @@
+<main class="corp-order-page">
+
+  <!-- Hero -->
+  <section class="corp-order-hero">
+    <div class="container">
+      <span class="corp-tag">🏢 Corporate Gifting</span>
+      <h1>Place a Corporate Order</h1>
+      <p>Bulk floral gifting with custom branding and flexible delivery scheduling.</p>
+    </div>
+  </section>
+
+  <section class="wizard-section">
+    <div class="container">
+
+      <!-- Step Bar -->
+      @if (!submitted()) {
+        <div class="step-bar">
+          @for (s of [1,2,3,4]; track s) {
+            <div class="step-ind"
+                 [class.active]="step() === s"
+                 [class.done]="step() > s"
+                 (click)="goToStep(s)"
+                 [style.cursor]="step() > s ? 'pointer' : 'default'">
+              <div class="step-dot">
+                @if (step() > s) {
+                  <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                  </svg>
+                } @else {
+                  {{ s }}
+                }
+              </div>
+              <span class="step-label">
+                @if (s === 1) { Company }
+                @if (s === 2) { Order }
+                @if (s === 3) { Branding }
+                @if (s === 4) { Confirm }
+              </span>
+            </div>
+            @if (s < 4) {
+              <div class="step-connector" [class.done]="step() > s"></div>
+            }
+          }
+        </div>
+      }
+
+      <!-- ── Step 1: Company Details ─────────────────────────────────────── -->
+      @if (step() === 1 && !submitted()) {
+        <div class="wizard-step">
+          <div class="step-header">
+            <h2>Company Details</h2>
+            <p>Tell us about your organisation and who we should contact.</p>
+          </div>
+
+          <div class="form-grid">
+            <div class="form-field full">
+              <label>Company Name <span class="req">*</span></label>
+              <input type="text" placeholder="Acme Corp" [value]="companyName()" (input)="companyName.set($any($event).target.value)">
+            </div>
+            <div class="form-field">
+              <label>Contact Name <span class="req">*</span></label>
+              <input type="text" placeholder="Jane Doe" [value]="contactName()" (input)="contactName.set($any($event).target.value)">
+            </div>
+            <div class="form-field">
+              <label>Contact Email <span class="req">*</span></label>
+              <input type="email" placeholder="jane@acme.com" [value]="contactEmail()" (input)="contactEmail.set($any($event).target.value)">
+            </div>
+            <div class="form-field full">
+              <label>Department / Team <span class="opt">(optional)</span></label>
+              <input type="text" placeholder="HR Department" [value]="department()" (input)="department.set($any($event).target.value)">
+            </div>
+          </div>
+
+          <div class="step-actions">
+            <span></span>
+            <button class="btn-next" [disabled]="!isStep1Valid" (click)="nextStep()">
+              Continue to Order Details →
+            </button>
+          </div>
+        </div>
+      }
+
+      <!-- ── Step 2: Order Details ───────────────────────────────────────── -->
+      @if (step() === 2 && !submitted()) {
+        <div class="wizard-step">
+          <div class="step-header">
+            <h2>Order Details</h2>
+            <p>Choose a product, quantity, and delivery preferences.</p>
+          </div>
+
+          <!-- Product picker -->
+          <div class="picker-section">
+            <h3 class="picker-title">Select a Product <span class="req">*</span></h3>
+            <div class="picker-grid">
+              @for (product of allProducts; track product.id) {
+                <button class="picker-card" [class.selected]="selectedProductId() === product.id"
+                        (click)="selectProduct(product.id)">
+                  <img [src]="product.image" [alt]="product.name">
+                  <div class="picker-card-info">
+                    <span class="picker-name">{{ product.name }}</span>
+                    <span class="picker-price">₹{{ product.price.toFixed(2) }}</span>
+                    <span class="picker-cat">{{ product.category }}</span>
+                  </div>
+                  @if (selectedProductId() === product.id) {
+                    <div class="picker-check">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5">
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                      </svg>
+                    </div>
+                  }
+                </button>
+              }
+            </div>
+          </div>
+
+          <!-- Quantity -->
+          <div class="qty-section">
+            <h3>Quantity <span class="req">*</span> <span class="qty-note">(min 5, max 500)</span></h3>
+            <div class="qty-control-wrap">
+              <button class="qty-btn" (click)="adjustQty(-5)" [disabled]="quantity() <= 5">−5</button>
+              <button class="qty-btn" (click)="adjustQty(-1)" [disabled]="quantity() <= 5">−</button>
+              <input class="qty-input" type="number" min="5" max="500" [value]="quantity()" (input)="onQtyInput($any($event).target.value)">
+              <button class="qty-btn" (click)="adjustQty(1)">+</button>
+              <button class="qty-btn" (click)="adjustQty(5)">+5</button>
+            </div>
+            @if (discountPct() > 0) {
+              <div class="discount-badge">
+                🎉 {{ discountPct() }}% bulk discount applied
+                @if (selectedProductId()) {
+                  — save ₹{{ savings().toFixed(2) }}
+                }
+              </div>
+            }
+          </div>
+
+          <!-- Delivery Address -->
+          <div class="form-field full" style="margin-top:1.5rem">
+            <label>Delivery Address <span class="req">*</span></label>
+            <textarea rows="3" placeholder="Building, Street, City, PIN Code" [value]="deliveryAddress()" (input)="deliveryAddress.set($any($event).target.value)"></textarea>
+          </div>
+
+          <!-- Recurring toggle -->
+          <div class="recurring-toggle">
+            <label class="toggle-row">
+              <span class="toggle-label">Make this a recurring delivery</span>
+              <button class="toggle-btn" [class.on]="isRecurring()" (click)="isRecurring.set(!isRecurring())">
+                <span class="toggle-knob"></span>
+              </button>
+            </label>
+          </div>
+
+          @if (!isRecurring()) {
+            <div class="form-field" style="margin-top:1rem">
+              <label>Delivery Date <span class="req">*</span></label>
+              <input type="date" [min]="minDate" [value]="deliveryDate()" (input)="deliveryDate.set($any($event).target.value)">
+            </div>
+          }
+
+          @if (isRecurring()) {
+            <div class="recurring-options">
+              <div class="recurring-row">
+                <h4>Day of Week</h4>
+                <div class="day-pills">
+                  @for (day of weekdays; track day) {
+                    <button class="day-pill" [class.active]="recurringDay() === day"
+                            (click)="recurringDay.set(day)">
+                      {{ day.slice(0,3) | uppercase }}
+                    </button>
+                  }
+                </div>
+              </div>
+              <div class="recurring-row">
+                <h4>Frequency</h4>
+                <div class="freq-pills">
+                  @for (freq of frequencies; track freq.id) {
+                    <button class="freq-pill" [class.active]="recurringFrequency() === freq.id"
+                            (click)="recurringFrequency.set(freq.id)">
+                      {{ freq.label }}
+                    </button>
+                  }
+                </div>
+              </div>
+            </div>
+          }
+
+          <div class="step-actions">
+            <button class="btn-back" (click)="prevStep()">← Back</button>
+            <button class="btn-next" [disabled]="!isStep2Valid" (click)="nextStep()">
+              Continue to Branding →
+            </button>
+          </div>
+        </div>
+      }
+
+      <!-- ── Step 3: Branding ───────────────────────────────────────────── -->
+      @if (step() === 3 && !submitted()) {
+        <div class="wizard-step">
+          <div class="step-header">
+            <h2>Custom Branding</h2>
+            <p>Add your company logo and a personal message card. Both are optional.</p>
+          </div>
+
+          <div class="branding-layout">
+            <div class="branding-form">
+              <div class="form-field full">
+                <label>Company Logo URL <span class="opt">(optional)</span></label>
+                <input type="url" placeholder="https://yourcompany.com/logo.png"
+                       [value]="brandingLogoUrl()"
+                       (input)="brandingLogoUrl.set($any($event).target.value); logoPreviewError.set(false)">
+              </div>
+
+              <div class="form-field full" style="margin-top:1.25rem">
+                <label>
+                  Custom Card Message <span class="opt">(optional)</span>
+                  <span class="char-count">{{ brandingMessage().length }} / 200</span>
+                </label>
+                <textarea rows="4"
+                          placeholder="Wishing you a wonderful partnership. With appreciation, Acme Corp."
+                          maxlength="200"
+                          [value]="brandingMessage()"
+                          (input)="brandingMessage.set($any($event).target.value)"></textarea>
+              </div>
+            </div>
+
+            <div class="branding-preview">
+              <h4>Preview</h4>
+              <div class="preview-card">
+                @if (brandingLogoUrl() && !logoPreviewError()) {
+                  <img class="preview-logo" [src]="brandingLogoUrl()" alt="Logo preview"
+                       (load)="onLogoLoad()" (error)="onLogoError()">
+                } @else {
+                  <div class="preview-logo-placeholder">🏢<br><small>Logo Preview</small></div>
+                }
+                @if (brandingMessage()) {
+                  <div class="preview-message">"{{ brandingMessage() }}"</div>
+                } @else {
+                  <div class="preview-message-empty">Your card message will appear here...</div>
+                }
+              </div>
+            </div>
+          </div>
+
+          <div class="step-actions">
+            <button class="btn-back" (click)="prevStep()">← Back</button>
+            <button class="btn-next" (click)="nextStep()">
+              Review Order →
+            </button>
+          </div>
+        </div>
+      }
+
+      <!-- ── Step 4: Review & Confirm ───────────────────────────────────── -->
+      @if (step() === 4 && !submitted()) {
+        <div class="wizard-step">
+          <div class="step-header">
+            <h2>Review & Confirm</h2>
+            <p>Check all details before placing your order.</p>
+          </div>
+
+          <div class="review-layout">
+            <!-- Order summary -->
+            <div class="review-card">
+              <h3 class="review-card-title">Order Summary</h3>
+
+              @if (selectedProduct) {
+                <div class="review-product">
+                  <img [src]="selectedProduct.image" [alt]="selectedProduct.name" class="review-product-img">
+                  <div class="review-product-info">
+                    <span class="review-product-name">{{ selectedProduct.name }}</span>
+                    <span class="review-product-cat">{{ selectedProduct.category }}</span>
+                  </div>
+                </div>
+              }
+
+              <div class="review-rows">
+                <div class="review-row">
+                  <span>Company</span>
+                  <span>{{ companyName() }}</span>
+                </div>
+                <div class="review-row">
+                  <span>Contact</span>
+                  <span>{{ contactName() }} · {{ contactEmail() }}</span>
+                </div>
+                <div class="review-row">
+                  <span>Quantity</span>
+                  <span>{{ quantity() }} units</span>
+                </div>
+                <div class="review-row">
+                  <span>Unit Price</span>
+                  <span>₹{{ unitPrice().toFixed(2) }}</span>
+                </div>
+                <div class="review-row">
+                  <span>Subtotal</span>
+                  <span>₹{{ subtotal().toFixed(2) }}</span>
+                </div>
+                @if (discountPct() > 0) {
+                  <div class="review-row discount-row">
+                    <span>Bulk Discount ({{ discountPct() }}%)</span>
+                    <span>− ₹{{ savings().toFixed(2) }}</span>
+                  </div>
+                }
+                <div class="review-row total-row">
+                  <span>Total</span>
+                  <span>₹{{ total().toFixed(2) }}</span>
+                </div>
+              </div>
+
+              <div class="review-delivery">
+                <div class="review-row">
+                  <span>Address</span>
+                  <span>{{ deliveryAddress() }}</span>
+                </div>
+                @if (!isRecurring()) {
+                  <div class="review-row">
+                    <span>Delivery Date</span>
+                    <span>{{ formatDate(deliveryDate()) }}</span>
+                  </div>
+                } @else {
+                  <div class="review-row">
+                    <span>Recurring</span>
+                    <span>{{ capitalize(recurringFrequency()) }} on {{ capitalize(recurringDay()) }}s</span>
+                  </div>
+                }
+              </div>
+            </div>
+
+            <!-- Branding preview -->
+            <div class="review-card">
+              <h3 class="review-card-title">Branding</h3>
+              @if (brandingLogoUrl() && !logoPreviewError()) {
+                <div class="review-branding-logo-wrap">
+                  <img [src]="brandingLogoUrl()" alt="Logo" class="review-branding-logo">
+                </div>
+              } @else {
+                <div class="review-branding-logo-placeholder">No logo provided</div>
+              }
+              @if (brandingMessage()) {
+                <div class="review-branding-message">"{{ brandingMessage() }}"</div>
+              } @else {
+                <div class="review-branding-none">No card message provided</div>
+              }
+            </div>
+          </div>
+
+          @if (error()) {
+            <div class="error-msg">{{ error() }}</div>
+          }
+
+          <div class="step-actions">
+            <button class="btn-back" (click)="prevStep()">← Back</button>
+            <button class="btn-confirm" [disabled]="submitting()" (click)="submit()">
+              @if (submitting()) { Placing Order... } @else { Confirm Order }
+            </button>
+          </div>
+        </div>
+      }
+
+      <!-- ── Success State ────────────────────────────────────────────────── -->
+      @if (submitted()) {
+        <div class="success-state">
+          <div class="success-icon">✅</div>
+          <h2>Order Placed!</h2>
+          <p>Your corporate order has been received and is being processed.</p>
+
+          <div class="success-details">
+            <div class="success-row">
+              <span>Order ID</span>
+              <strong>{{ createdId() }}</strong>
+            </div>
+            <div class="success-row">
+              <span>Amount Due</span>
+              <strong>₹{{ createdFinalAmount().toFixed(2) }}</strong>
+            </div>
+            @if (createdNextDelivery()) {
+              <div class="success-row">
+                <span>First Delivery</span>
+                <strong>{{ formatDate(createdNextDelivery()) }}</strong>
+              </div>
+            }
+          </div>
+
+          <div class="success-actions">
+            <a routerLink="/my-corporate" class="btn-next">Manage My Orders →</a>
+            <a routerLink="/corporate" class="btn-back">Back to Corporate Portal</a>
+          </div>
+        </div>
+      }
+
+    </div>
+  </section>
+
+</main>

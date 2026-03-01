@@ -1,59 +1,151 @@
-# FlowerShop
+# FloranFlowers 🌸
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 21.1.4.
+A full-stack flower shop e-commerce web application built with **Angular 21** (frontend) and **FastAPI** (backend), powered by **Supabase** (PostgreSQL).
 
-## Development server
+---
 
-To start a local development server, run:
+## Project Structure
 
-```bash
-ng serve
+```
+flower-shop/
+├── frontend/   # Angular 21 app
+└── backend/    # FastAPI (Python) server
 ```
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+---
 
-## Code scaffolding
+## Prerequisites
 
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+- **Node.js** v18+ and **npm** v11+
+- **Python** 3.10+
+- A **Supabase** project (for database)
 
-```bash
-ng generate component component-name
-```
+---
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+## Backend Setup (FastAPI)
 
-```bash
-ng generate --help
-```
-
-## Building
-
-To build the project run:
+### 1. Navigate to the backend folder
 
 ```bash
-ng build
+cd flower-shop/backend
 ```
 
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
-
-## Running unit tests
-
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
+### 2. Create and activate a virtual environment
 
 ```bash
-ng test
+python -m venv .venv
+
+# Windows (PowerShell)
+.venv\Scripts\Activate.ps1
+
+# Mac / Linux
+source .venv/bin/activate
 ```
 
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
+### 3. Install dependencies
 
 ```bash
-ng e2e
+pip install -r requirements.txt
 ```
 
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
+### 4. Create the `.env` file
 
-## Additional Resources
+Create a file named `.env` inside the `backend/` folder:
 
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+```env
+SUPABASE_URL=your_supabase_project_url
+SUPABASE_KEY=your_supabase_anon_key
+```
+
+> Get these values from your Supabase project → Settings → API.
+
+### 5. Run the backend server
+
+```bash
+uvicorn main:app --reload --port 8000
+```
+
+- API runs at: `http://localhost:8000`
+- Interactive API docs: `http://localhost:8000/docs`
+
+---
+
+## Frontend Setup (Angular)
+
+### 1. Navigate to the frontend folder
+
+```bash
+cd flower-shop/frontend
+```
+
+### 2. Install dependencies
+
+```bash
+npm install
+```
+
+### 3. Run the development server
+
+```bash
+npm start
+```
+
+- App runs at: `http://localhost:4200`
+- The dev server automatically proxies `/api` requests to `localhost:8000`
+
+> **Note:** The backend must be running for product, cart, auth, and order features to work.
+
+---
+
+## Running Both Together
+
+Open **two terminals** side by side:
+
+**Terminal 1 — Backend**
+```bash
+cd flower-shop/backend
+.venv\Scripts\Activate.ps1     # or: source .venv/bin/activate
+uvicorn main:app --reload --port 8000
+```
+
+**Terminal 2 — Frontend**
+```bash
+cd flower-shop/frontend
+npm start
+```
+
+Then open `http://localhost:4200` in your browser.
+
+---
+
+## Key Features
+
+- Browse flowers by category (Bouquets, Garlands, Flower Braids, Decoration)
+- User authentication (register / login)
+- Cart — guest mode (localStorage) + logged-in mode (Supabase)
+- Wishlist
+- Custom Bouquet Builder
+- Checkout with immediate or scheduled delivery
+- Order history and cancellation
+- Dark / Light mode toggle
+- Contact form
+
+---
+
+## API Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/products` | List products (optional `?category=`) |
+| GET | `/api/products/:id` | Get single product |
+| GET | `/api/products/categories` | List all categories |
+| POST | `/api/auth/register` | Register user |
+| POST | `/api/auth/login` | Login user |
+| GET | `/api/cart?user_id=` | Get cart items |
+| POST | `/api/cart/item` | Add item to cart |
+| DELETE | `/api/cart/item/:id` | Remove cart item |
+| DELETE | `/api/cart/clear` | Clear cart |
+| GET | `/api/orders?email=` | Get orders by email |
+| POST | `/api/orders` | Place order |
+| PATCH | `/api/orders/:id/cancel` | Cancel order |
+| POST | `/api/contact` | Submit contact form |

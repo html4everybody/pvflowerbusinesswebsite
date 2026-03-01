@@ -1,0 +1,112 @@
+<main class="loyalty-page">
+  <div class="container">
+
+    @if (loading()) {
+      <div class="loyalty-loading">
+        <div class="spinner"></div>
+        <p>Loading your loyalty account...</p>
+      </div>
+    } @else if (!account()) {
+      <div class="loyalty-empty">
+        <span class="empty-icon">⭐</span>
+        <h2>No Loyalty Account Yet</h2>
+        <p>Place your first order to start earning loyalty points!</p>
+        <a routerLink="/" class="btn-primary">Shop Now</a>
+      </div>
+    } @else {
+
+      <!-- ── Points Hero ───────────────────────────────── -->
+      <div class="loyalty-hero">
+        <div class="hero-balance">
+          <span class="balance-label">Your Points Balance</span>
+          <span class="balance-number">{{ account()!.points_balance }}</span>
+          <span class="balance-subtext">= ₹{{ (account()!.points_balance / 10).toFixed(2) }} redeemable discount</span>
+        </div>
+        <div class="hero-tier">
+          <span class="tier-badge">{{ tier.emoji }} {{ tier.label }}</span>
+          <div class="tier-progress-wrap">
+            <div class="tier-progress-bar">
+              <div class="tier-progress-fill" [style.width.%]="tierProgress"></div>
+            </div>
+            @if (tier.next > 0) {
+              <span class="tier-progress-label">{{ account()!.points_earned_total }} / {{ tier.next }} pts to next tier</span>
+            } @else {
+              <span class="tier-progress-label">Maximum tier reached!</span>
+            }
+          </div>
+          <span class="total-earned">{{ account()!.points_earned_total }} pts earned all-time</span>
+        </div>
+      </div>
+
+      <!-- ── Referral Card ────────────────────────────── -->
+      <div class="referral-card">
+        <div class="referral-header">
+          <div>
+            <h2>Refer Friends & Earn</h2>
+            <p>Share your link — earn <strong>200 pts</strong> when they sign up, <strong>150 more</strong> on their first order</p>
+          </div>
+          <span class="referral-icon">👥</span>
+        </div>
+        <div class="referral-link-row">
+          <input type="text" readonly [value]="shareUrl" class="referral-input">
+          <button class="btn-copy" (click)="copyReferralLink()" [class.copied]="copySuccess()">
+            @if (copySuccess()) {
+              ✓ Copied!
+            } @else {
+              Copy Link
+            }
+          </button>
+        </div>
+        <p class="referral-code-hint">Your code: <strong>{{ account()!.referral_code }}</strong></p>
+      </div>
+
+      <!-- ── How to Earn ───────────────────────────────── -->
+      <div class="earn-section">
+        <h2 class="section-title">How to Earn Points</h2>
+        <div class="earn-cards">
+          <div class="earn-card">
+            <span class="earn-icon">🛍️</span>
+            <h3>Shop & Earn</h3>
+            <p>Earn <strong>1 point</strong> for every ₹1 spent on any order</p>
+          </div>
+          <div class="earn-card">
+            <span class="earn-icon">👥</span>
+            <h3>Refer a Friend</h3>
+            <p>Get <strong>200 points</strong> when someone signs up using your link</p>
+          </div>
+          <div class="earn-card">
+            <span class="earn-icon">🎁</span>
+            <h3>Referral Purchase</h3>
+            <p>Earn <strong>150 more points</strong> when your referred friend places their first order</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Transaction History ───────────────────────── -->
+      <div class="transactions-section">
+        <h2 class="section-title">Transaction History</h2>
+        @if (account()!.transactions.length === 0) {
+          <div class="no-transactions">
+            <p>No transactions yet. Start shopping to earn points!</p>
+          </div>
+        } @else {
+          <div class="transactions-list">
+            @for (txn of account()!.transactions; track txn.id) {
+              <div class="txn-row">
+                <span class="txn-icon">{{ typeIcon(txn.type) }}</span>
+                <div class="txn-info">
+                  <span class="txn-desc">{{ txn.description }}</span>
+                  <span class="txn-date">{{ formatDate(txn.created_at) }}</span>
+                </div>
+                <span class="txn-points" [class.positive]="txn.points > 0" [class.negative]="txn.points < 0">
+                  {{ txn.points > 0 ? '+' : '' }}{{ txn.points }} pts
+                </span>
+              </div>
+            }
+          </div>
+        }
+      </div>
+
+    }
+  </div>
+</main>

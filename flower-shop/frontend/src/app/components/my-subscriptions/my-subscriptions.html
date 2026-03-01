@@ -1,0 +1,202 @@
+<main class="my-subs-page">
+  <div class="container">
+
+    <!-- Header -->
+    <div class="page-header">
+      <div class="page-header-left">
+        <h1>My Subscriptions</h1>
+        <p>Manage your recurring flower deliveries</p>
+      </div>
+      <a routerLink="/subscribe" class="btn-new-sub">+ New Subscription</a>
+    </div>
+
+    <!-- Loading -->
+    @if (loading()) {
+      <div class="loading-state">
+        <div class="spinner"></div>
+        <p>Loading your subscriptions...</p>
+      </div>
+    }
+
+    <!-- No subscriptions -->
+    @if (!loading() && subscriptions().length === 0) {
+      <div class="empty-state">
+        <span class="empty-icon">🌾</span>
+        <h2>No subscriptions yet</h2>
+        <p>Start a flower subscription and enjoy fresh blooms delivered regularly.</p>
+        <a routerLink="/subscribe" class="btn-start">Start a Subscription</a>
+      </div>
+    }
+
+    <!-- Active -->
+    @if (!loading() && activeList.length > 0) {
+      <section class="sub-section">
+        <h2 class="section-title">
+          <span class="status-dot active"></span>
+          Active ({{ activeList.length }})
+        </h2>
+        <div class="sub-cards">
+          @for (sub of activeList; track sub.id) {
+            <div class="sub-card">
+              <div class="sub-card-top">
+                <div class="sub-badges">
+                  <span class="badge badge-active">Active</span>
+                  <span class="badge badge-plan">{{ planLabel(sub.plan) }}</span>
+                </div>
+                <span class="sub-id">#{{ sub.id.slice(0, 8).toUpperCase() }}</span>
+              </div>
+
+              <div class="sub-info-grid">
+                <div class="sub-info-item">
+                  <span class="info-label">Style</span>
+                  <span class="info-val">{{ styleLabel(sub) }}</span>
+                </div>
+                <div class="sub-info-item">
+                  <span class="info-label">Frequency</span>
+                  <span class="info-val">{{ planFreq(sub.plan) }}</span>
+                </div>
+                <div class="sub-info-item">
+                  <span class="info-label">Next Delivery</span>
+                  <span class="info-val accent">{{ formatDate(sub.next_delivery) }}</span>
+                </div>
+                <div class="sub-info-item">
+                  <span class="info-label">Skipped</span>
+                  <span class="info-val">{{ sub.skipped_count }} time{{ sub.skipped_count !== 1 ? 's' : '' }}</span>
+                </div>
+                <div class="sub-info-item full-width">
+                  <span class="info-label">Delivery Address</span>
+                  <span class="info-val">{{ sub.address }}</span>
+                </div>
+              </div>
+
+              <div class="sub-actions">
+                <button class="btn-skip"
+                        [disabled]="isLoading(sub.id)"
+                        (click)="skip(sub)">
+                  @if (actionId() === sub.id + '-skip') { Skipping... } @else { Skip Next }
+                </button>
+                <button class="btn-pause"
+                        [disabled]="isLoading(sub.id)"
+                        (click)="pause(sub)">
+                  @if (actionId() === sub.id) { Pausing... } @else { Pause }
+                </button>
+                <button class="btn-cancel"
+                        [disabled]="isLoading(sub.id)"
+                        (click)="confirmCancel(sub)">
+                  Cancel
+                </button>
+              </div>
+            </div>
+          }
+        </div>
+      </section>
+    }
+
+    <!-- Paused -->
+    @if (!loading() && pausedList.length > 0) {
+      <section class="sub-section">
+        <h2 class="section-title">
+          <span class="status-dot paused"></span>
+          Paused ({{ pausedList.length }})
+        </h2>
+        <div class="sub-cards">
+          @for (sub of pausedList; track sub.id) {
+            <div class="sub-card paused">
+              <div class="sub-card-top">
+                <div class="sub-badges">
+                  <span class="badge badge-paused">Paused</span>
+                  <span class="badge badge-plan">{{ planLabel(sub.plan) }}</span>
+                </div>
+                <span class="sub-id">#{{ sub.id.slice(0, 8).toUpperCase() }}</span>
+              </div>
+
+              <div class="sub-info-grid">
+                <div class="sub-info-item">
+                  <span class="info-label">Style</span>
+                  <span class="info-val">{{ styleLabel(sub) }}</span>
+                </div>
+                <div class="sub-info-item">
+                  <span class="info-label">Frequency</span>
+                  <span class="info-val">{{ planFreq(sub.plan) }}</span>
+                </div>
+                <div class="sub-info-item full-width">
+                  <span class="info-label">Delivery Address</span>
+                  <span class="info-val">{{ sub.address }}</span>
+                </div>
+              </div>
+
+              <div class="sub-actions">
+                <button class="btn-resume"
+                        [disabled]="isLoading(sub.id)"
+                        (click)="resume(sub)">
+                  @if (actionId() === sub.id) { Resuming... } @else { Resume Subscription }
+                </button>
+                <button class="btn-cancel"
+                        [disabled]="isLoading(sub.id)"
+                        (click)="confirmCancel(sub)">
+                  Cancel
+                </button>
+              </div>
+            </div>
+          }
+        </div>
+      </section>
+    }
+
+    <!-- Cancelled -->
+    @if (!loading() && cancelledList.length > 0) {
+      <section class="sub-section">
+        <h2 class="section-title">
+          <span class="status-dot cancelled"></span>
+          Cancelled ({{ cancelledList.length }})
+        </h2>
+        <div class="sub-cards">
+          @for (sub of cancelledList; track sub.id) {
+            <div class="sub-card cancelled">
+              <div class="sub-card-top">
+                <div class="sub-badges">
+                  <span class="badge badge-cancelled">Cancelled</span>
+                  <span class="badge badge-plan">{{ planLabel(sub.plan) }}</span>
+                </div>
+                <span class="sub-id">#{{ sub.id.slice(0, 8).toUpperCase() }}</span>
+              </div>
+              <div class="sub-info-grid">
+                <div class="sub-info-item">
+                  <span class="info-label">Style</span>
+                  <span class="info-val">{{ styleLabel(sub) }}</span>
+                </div>
+                <div class="sub-info-item">
+                  <span class="info-label">Frequency</span>
+                  <span class="info-val">{{ planFreq(sub.plan) }}</span>
+                </div>
+              </div>
+              <div class="sub-actions">
+                <a routerLink="/subscribe" class="btn-resume">Start New Subscription</a>
+              </div>
+            </div>
+          }
+        </div>
+      </section>
+    }
+
+  </div>
+</main>
+
+<!-- ── Cancel Confirm Dialog ──────────────────────────────────────────── -->
+@if (confirmCancelId()) {
+  <div class="confirm-overlay" (click)="dismissCancel()">
+    <div class="confirm-dialog" (click)="$event.stopPropagation()">
+      <div class="confirm-icon">⚠️</div>
+      <h3>Cancel Subscription?</h3>
+      <p>This will permanently cancel your subscription. You can start a new one anytime.</p>
+      <div class="confirm-actions">
+        <button class="btn-keep" (click)="dismissCancel()">Keep Subscription</button>
+        @for (sub of subscriptions(); track sub.id) {
+          @if (sub.id === confirmCancelId()) {
+            <button class="btn-cancel-confirm" (click)="cancelConfirmed(sub)">Yes, Cancel</button>
+          }
+        }
+      </div>
+    </div>
+  </div>
+}

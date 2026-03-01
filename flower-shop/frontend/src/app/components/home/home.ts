@@ -1,10 +1,11 @@
 import { Component, OnInit, signal } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { ProductService } from '../../services/product';
 import { CartService } from '../../services/cart';
 import { FeedbackService } from '../../services/feedback';
 import { SearchService } from '../../services/search';
 import { WishlistService } from '../../services/wishlist';
+import { PromoService, OffersData, BundleDeal } from '../../services/promo';
 import { Product } from '../../models/product.model';
 import { FadeInDirective } from '../../directives/fade-in';
 
@@ -25,17 +26,40 @@ export class Home implements OnInit {
   toastType = signal<'added' | 'removed'>('added');
   private toastTimer: any;
 
+  offers = signal<OffersData | null>(null);
+  copiedCode = signal('');
+  private copiedTimer: any;
+
   constructor(
     private productService: ProductService,
     private cartService: CartService,
     private feedbackService: FeedbackService,
     public searchService: SearchService,
-    public wishlistService: WishlistService
+    public wishlistService: WishlistService,
+    private promoService: PromoService,
+    private router: Router
   ) {}
 
   ngOnInit(): void {
     this.products = this.productService.getProducts();
     this.categories = this.productService.getCategories();
+    this.promoService.getOffers().subscribe({ next: d => this.offers.set(d), error: () => {} });
+  }
+
+  copyCode(code: string): void {
+    navigator.clipboard.writeText(code).then(() => {
+      this.copiedCode.set(code);
+      clearTimeout(this.copiedTimer);
+      this.copiedTimer = setTimeout(() => this.copiedCode.set(''), 2000);
+    });
+  }
+
+  addBundleToCart(bundle: BundleDeal): void {
+    for (const product of bundle.products) {
+      this.cartService.addToCart(product as unknown as Product, 1);
+    }
+    sessionStorage.setItem('floran_promo', bundle.promo_code);
+    this.router.navigate(['/cart']);
   }
 
   get filteredProducts(): Product[] {

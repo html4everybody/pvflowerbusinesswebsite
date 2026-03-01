@@ -1,0 +1,362 @@
+.my-subs-page {
+  min-height: 100vh;
+  padding: 2.5rem 0 5rem;
+  background: var(--bg, #fff);
+
+  .container {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 0 1.5rem;
+  }
+
+  // ── Page Header ───────────────────────────────────────────────────────────
+  .page-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 2.5rem;
+    flex-wrap: wrap;
+
+    h1 {
+      font-size: 1.9rem;
+      font-weight: 800;
+      color: var(--text, #1a1a1a);
+      margin: 0 0 0.25rem;
+    }
+
+    p {
+      color: var(--text-muted, #666);
+      font-size: 0.9rem;
+      margin: 0;
+    }
+  }
+
+  .btn-new-sub {
+    padding: 0.7rem 1.4rem;
+    background: var(--accent, #d4608a);
+    color: white;
+    border-radius: var(--radius-sm, 8px);
+    font-size: 0.88rem;
+    font-weight: 700;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: background 0.2s;
+
+    &:hover { background: #b8436f; }
+  }
+
+  // ── Loading / Empty ───────────────────────────────────────────────────────
+  .loading-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    padding: 4rem 0;
+    color: var(--text-muted, #888);
+
+    .spinner {
+      width: 36px;
+      height: 36px;
+      border: 3px solid var(--border, #e8e8e8);
+      border-top-color: var(--accent, #d4608a);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .empty-state {
+    text-align: center;
+    padding: 4rem 1rem;
+
+    .empty-icon { font-size: 3.5rem; display: block; margin-bottom: 1rem; }
+
+    h2 {
+      font-size: 1.5rem;
+      font-weight: 800;
+      color: var(--text, #1a1a1a);
+      margin: 0 0 0.5rem;
+    }
+
+    p {
+      color: var(--text-muted, #666);
+      margin: 0 0 1.75rem;
+    }
+
+    .btn-start {
+      display: inline-block;
+      padding: 0.8rem 2rem;
+      background: var(--accent, #d4608a);
+      color: white;
+      border-radius: var(--radius-sm, 8px);
+      font-weight: 700;
+      text-decoration: none;
+      font-size: 0.92rem;
+      transition: background 0.2s;
+
+      &:hover { background: #b8436f; }
+    }
+  }
+
+  // ── Section ───────────────────────────────────────────────────────────────
+  .sub-section {
+    margin-bottom: 2.5rem;
+  }
+
+  .section-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text-muted, #666);
+    margin: 0 0 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-size: 0.8rem;
+  }
+
+  .status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+
+    &.active    { background: #27ae60; }
+    &.paused    { background: #e67e22; }
+    &.cancelled { background: #95a5a6; }
+  }
+
+  // ── Subscription Cards ────────────────────────────────────────────────────
+  .sub-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .sub-card {
+    border: 1.5px solid var(--border, #e8e8e8);
+    border-radius: var(--radius-md, 14px);
+    background: var(--bg-card, #fff);
+    overflow: hidden;
+    transition: box-shadow 0.2s;
+
+    &:hover { box-shadow: 0 4px 20px rgba(0,0,0,0.07); }
+
+    &.paused {
+      border-color: rgba(230, 126, 34, 0.35);
+      background: rgba(230, 126, 34, 0.03);
+    }
+
+    &.cancelled {
+      opacity: 0.65;
+    }
+  }
+
+  .sub-card-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 1.35rem 0.75rem;
+    border-bottom: 1px solid var(--border, #f0f0f0);
+  }
+
+  .sub-badges { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+
+  .badge {
+    display: inline-block;
+    padding: 0.2rem 0.65rem;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+  }
+
+  .badge-active   { background: rgba(39, 174, 96, 0.12);  color: #27ae60; }
+  .badge-paused   { background: rgba(230, 126, 34, 0.12); color: #e67e22; }
+  .badge-cancelled { background: var(--border, #eee);    color: var(--text-muted, #888); }
+  .badge-plan     { background: rgba(212, 96, 138, 0.1); color: var(--accent, #d4608a); }
+
+  .sub-id {
+    font-size: 0.76rem;
+    color: var(--text-muted, #aaa);
+    font-family: monospace;
+    font-weight: 600;
+  }
+
+  // ── Info Grid ─────────────────────────────────────────────────────────────
+  .sub-info-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.1rem;
+    padding: 0.75rem 1.35rem 0.5rem;
+
+    @media (max-width: 480px) { grid-template-columns: 1fr; }
+  }
+
+  .sub-info-item {
+    padding: 0.55rem 0;
+
+    &.full-width { grid-column: 1 / -1; }
+  }
+
+  .info-label {
+    display: block;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--text-muted, #aaa);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.2rem;
+  }
+
+  .info-val {
+    display: block;
+    font-size: 0.88rem;
+    color: var(--text, #1a1a1a);
+    font-weight: 500;
+    line-height: 1.4;
+
+    &.accent { color: var(--accent, #d4608a); font-weight: 700; }
+  }
+
+  // ── Actions ───────────────────────────────────────────────────────────────
+  .sub-actions {
+    display: flex;
+    gap: 0.6rem;
+    padding: 0.85rem 1.35rem 1.1rem;
+    border-top: 1px solid var(--border, #f0f0f0);
+    flex-wrap: wrap;
+  }
+
+  .btn-skip, .btn-pause, .btn-resume, .btn-cancel {
+    padding: 0.5rem 1rem;
+    border-radius: var(--radius-sm, 6px);
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background 0.2s, opacity 0.2s;
+    border: 1.5px solid transparent;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+
+    &:disabled { opacity: 0.5; cursor: not-allowed; }
+  }
+
+  .btn-skip {
+    background: rgba(212, 96, 138, 0.08);
+    color: var(--accent, #d4608a);
+    border-color: rgba(212, 96, 138, 0.2);
+
+    &:hover:not(:disabled) { background: rgba(212, 96, 138, 0.15); }
+  }
+
+  .btn-pause {
+    background: rgba(230, 126, 34, 0.08);
+    color: #e67e22;
+    border-color: rgba(230, 126, 34, 0.2);
+
+    &:hover:not(:disabled) { background: rgba(230, 126, 34, 0.15); }
+  }
+
+  .btn-resume {
+    background: rgba(39, 174, 96, 0.1);
+    color: #27ae60;
+    border-color: rgba(39, 174, 96, 0.25);
+
+    &:hover:not(:disabled) { background: rgba(39, 174, 96, 0.18); }
+  }
+
+  .btn-cancel {
+    background: none;
+    color: var(--text-muted, #999);
+    border-color: var(--border, #ddd);
+    margin-left: auto;
+
+    &:hover:not(:disabled) { color: #c0392b; border-color: rgba(192, 57, 43, 0.4); }
+  }
+}
+
+// ── Cancel Confirm Dialog ─────────────────────────────────────────────────
+.confirm-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.55);
+  z-index: 9000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.18s ease;
+  padding: 1rem;
+}
+
+.confirm-dialog {
+  background: var(--bg-card, #fff);
+  border-radius: var(--radius-md, 16px);
+  padding: 2.25rem 2rem;
+  max-width: 400px;
+  width: 100%;
+  text-align: center;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.18);
+
+  .confirm-icon { font-size: 2.5rem; margin-bottom: 0.75rem; }
+
+  h3 {
+    font-size: 1.2rem;
+    font-weight: 800;
+    color: var(--text, #1a1a1a);
+    margin: 0 0 0.6rem;
+  }
+
+  p {
+    color: var(--text-muted, #666);
+    font-size: 0.9rem;
+    line-height: 1.6;
+    margin: 0 0 1.75rem;
+  }
+
+  .confirm-actions {
+    display: flex;
+    gap: 0.75rem;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .btn-keep {
+    padding: 0.7rem 1.5rem;
+    border: 1.5px solid var(--border, #ddd);
+    border-radius: var(--radius-sm, 8px);
+    background: none;
+    color: var(--text, #333);
+    font-size: 0.88rem;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    transition: border-color 0.2s;
+
+    &:hover { border-color: var(--text-muted, #999); }
+  }
+
+  .btn-cancel-confirm {
+    padding: 0.7rem 1.5rem;
+    border: none;
+    border-radius: var(--radius-sm, 8px);
+    background: #c0392b;
+    color: white;
+    font-size: 0.88rem;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background 0.2s;
+
+    &:hover { background: #a93226; }
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}

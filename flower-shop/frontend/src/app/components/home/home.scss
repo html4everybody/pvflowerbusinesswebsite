@@ -239,6 +239,126 @@
     }
   }
 
+  // ── Occasions Section ───────────────────────────────────────────────────────
+  .occasions-section {
+    padding: 5rem 0;
+    background: var(--bg);
+
+    .section-header {
+      text-align: center;
+      margin-bottom: 2.5rem;
+
+      .section-tag {
+        display: inline-block;
+        background: var(--accent-light);
+        color: var(--accent);
+        padding: 0.3rem 0.85rem;
+        border-radius: var(--radius-full);
+        font-size: 0.75rem;
+        font-weight: 600;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        margin-bottom: 0.85rem;
+      }
+
+      h2 {
+        font-size: clamp(1.6rem, 3vw, 2.25rem);
+        color: var(--text);
+        margin: 0 0 0.65rem;
+      }
+
+      p {
+        color: var(--text-muted);
+        font-size: 0.95rem;
+        max-width: 480px;
+        margin: 0 auto;
+      }
+    }
+
+    .occasion-cards {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 1rem;
+
+      @media (max-width: 1024px) { grid-template-columns: repeat(3, 1fr); }
+      @media (max-width: 640px)  { grid-template-columns: repeat(2, 1fr); gap: 0.75rem; }
+    }
+
+    .occ-card {
+      position: relative;
+      height: 280px;
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      text-decoration: none;
+      background-size: cover;
+      background-position: center;
+      display: flex;
+      flex-direction: column;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+
+      &:hover {
+        transform: translateY(-5px);
+        box-shadow: var(--shadow-lg);
+        .occ-cta-label { opacity: 1; transform: translateX(0); }
+        .occ-img-overlay { opacity: 1; }
+      }
+
+      .occ-img-overlay {
+        position: absolute;
+        inset: 0;
+        transition: opacity 0.3s ease;
+        opacity: 0.82;
+      }
+
+      .occ-card-content {
+        position: relative;
+        z-index: 1;
+        margin-top: auto;
+        padding: 1.4rem 1.2rem;
+        color: white;
+
+        .occ-emoji { font-size: 1.9rem; display: block; margin-bottom: 0.4rem; }
+
+        h3 {
+          font-size: 1.2rem;
+          margin: 0 0 0.25rem;
+          font-family: 'Playfair Display', Georgia, serif;
+        }
+
+        p {
+          font-size: 0.78rem;
+          opacity: 0.88;
+          margin: 0 0 0.65rem;
+        }
+
+        .occ-cta-label {
+          font-size: 0.75rem;
+          font-weight: 600;
+          display: inline-block;
+          opacity: 0;
+          transform: translateX(-6px);
+          transition: all 0.25s ease;
+          background: rgba(255,255,255,0.2);
+          border: 1px solid rgba(255,255,255,0.4);
+          border-radius: var(--radius-full);
+          padding: 0.25rem 0.7rem;
+        }
+      }
+
+      // Per-occasion background images
+      &.occ-birthday  { background-image: url('https://images.unsplash.com/photo-1487530811176-3780de880c2d?w=600&q=80');
+                        .occ-img-overlay { background: linear-gradient(160deg, rgba(232,67,147,0.75) 0%, rgba(255,170,80,0.65) 100%); } }
+      &.occ-wedding   { background-image: url('https://images.unsplash.com/photo-1559563362-c667ba5f5480?w=600&q=80');
+                        .occ-img-overlay { background: linear-gradient(160deg, rgba(200,150,100,0.75) 0%, rgba(255,220,190,0.60) 100%); } }
+      &.occ-sympathy  { background-image: url('https://images.unsplash.com/photo-1490750967868-88aa4486c946?w=600&q=80');
+                        .occ-img-overlay { background: linear-gradient(160deg, rgba(50,100,180,0.75) 0%, rgba(180,210,255,0.60) 100%); } }
+      &.occ-romance   { background-image: url('https://images.unsplash.com/photo-1518882605630-8eb920bc4c49?w=600&q=80');
+                        .occ-img-overlay { background: linear-gradient(160deg, rgba(200,40,100,0.80) 0%, rgba(255,100,140,0.65) 100%); } }
+      &.occ-corporate { background-image: url('https://images.unsplash.com/photo-1561181286-d3fee7d55364?w=600&q=80');
+                        .occ-img-overlay { background: linear-gradient(160deg, rgba(20,40,70,0.85) 0%, rgba(50,90,160,0.70) 100%); } }
+    }
+  }
+
   // ── Collection Section ─────────────────────────────────────────────────────
   .all-products {
     padding: 4rem 0;
@@ -728,6 +848,444 @@
 
       span { font-size: 3.5rem; display: block; margin-bottom: 1rem; }
       p    { font-size: 1rem; }
+    }
+  }
+
+  // ── Subscription Banner ─────────────────────────────────────────────────────
+  .sub-banner {
+    padding: 3rem 0;
+    background:
+      linear-gradient(135deg, rgba(30, 10, 20, 0.88) 0%, rgba(90, 20, 55, 0.82) 100%),
+      url('https://images.unsplash.com/photo-1490750967868-88aa4486c946?w=1400&q=80') center/cover no-repeat;
+
+    .sub-banner-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 2rem;
+      flex-wrap: wrap;
+      padding: 1.25rem 0;
+    }
+
+    .sub-banner-left {
+      flex: 1;
+      min-width: 260px;
+      color: white;
+    }
+
+    .sub-banner-tag {
+      display: inline-block;
+      background: rgba(255,255,255,0.15);
+      border: 1px solid rgba(255,255,255,0.3);
+      padding: 0.25rem 0.85rem;
+      border-radius: 999px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      margin-bottom: 0.85rem;
+    }
+
+    h2 {
+      font-size: clamp(1.4rem, 3vw, 2rem);
+      font-weight: 800;
+      margin: 0 0 0.6rem;
+      color: white;
+    }
+
+    p {
+      font-size: 0.92rem;
+      opacity: 0.85;
+      line-height: 1.65;
+      max-width: 440px;
+      margin: 0 0 1.1rem;
+    }
+
+    .sub-banner-plans {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+
+      span {
+        font-size: 0.82rem;
+        font-weight: 600;
+        opacity: 0.88;
+        background: rgba(255,255,255,0.1);
+        padding: 0.25rem 0.7rem;
+        border-radius: 999px;
+        border: 1px solid rgba(255,255,255,0.2);
+      }
+    }
+
+    .sub-banner-right {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .btn-sub-start {
+      display: inline-block;
+      padding: 0.85rem 2rem;
+      background: white;
+      color: #8b2252;
+      border-radius: var(--radius-sm, 8px);
+      font-size: 0.92rem;
+      font-weight: 800;
+      text-decoration: none;
+      white-space: nowrap;
+      transition: transform 0.15s, box-shadow 0.2s;
+
+      &:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.2); }
+    }
+
+    .btn-sub-manage {
+      font-size: 0.8rem;
+      color: rgba(255,255,255,0.75);
+      text-decoration: none;
+      text-align: center;
+      transition: color 0.2s;
+
+      &:hover { color: white; }
+    }
+
+    @media (max-width: 600px) {
+      .sub-banner-inner { text-align: center; justify-content: center; }
+      .sub-banner-left p { max-width: 100%; }
+      .sub-banner-plans { justify-content: center; }
+    }
+  }
+
+  // ── Corporate Banner ────────────────────────────────────────────────────────
+  .corp-banner {
+    background: #0f1f3d;
+    padding: 1.75rem 0;
+
+    .corp-banner-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1.5rem;
+      flex-wrap: wrap;
+    }
+
+    .corp-banner-left {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+
+      .corp-banner-icon { font-size: 2rem; }
+
+      .corp-banner-text {
+        h3 {
+          font-size: 1rem;
+          font-weight: 700;
+          color: #fff;
+          margin: 0 0 0.2rem;
+        }
+        p {
+          font-size: 0.85rem;
+          color: rgba(255,255,255,0.65);
+          margin: 0;
+        }
+      }
+    }
+
+    .btn-corp-banner {
+      display: inline-flex;
+      padding: 0.65rem 1.4rem;
+      background: var(--accent);
+      color: #fff;
+      border-radius: var(--radius-sm);
+      font-weight: 700;
+      font-size: 0.88rem;
+      text-decoration: none;
+      white-space: nowrap;
+      transition: background 0.2s;
+
+      &:hover { background: #b83770; }
+    }
+
+    @media (max-width: 600px) {
+      .corp-banner-inner { justify-content: center; text-align: center; }
+      .corp-banner-left { flex-direction: column; gap: 0.5rem; }
+    }
+  }
+
+  // ── Loyalty Banner ──────────────────────────────────────────────────────────
+  .loyalty-banner {
+    background: var(--accent-light);
+    padding: 0.9rem 0;
+    border-top: 1px solid rgba(200,75,122,0.15);
+    border-bottom: 1px solid rgba(200,75,122,0.15);
+
+    .loyalty-banner-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .loyalty-banner-text {
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: var(--accent);
+    }
+
+    .btn-loyalty-link {
+      display: inline-flex;
+      align-items: center;
+      padding: 0.45rem 1.1rem;
+      background: var(--accent);
+      color: white;
+      border-radius: 999px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      text-decoration: none;
+      white-space: nowrap;
+      transition: opacity 0.15s ease;
+
+      &:hover { opacity: 0.88; }
+    }
+
+    @media (max-width: 600px) {
+      .loyalty-banner-inner { justify-content: center; text-align: center; }
+    }
+  }
+
+  // ── Seasonal Offers ────────────────────────────────────────────────────────
+  .offers-section {
+    padding: 4rem 0;
+    background: var(--bg);
+
+    .offers-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1.25rem;
+      margin-top: 2rem;
+
+      @media (max-width: 900px) { grid-template-columns: repeat(2, 1fr); }
+      @media (max-width: 480px) { grid-template-columns: 1fr; }
+    }
+
+    .offer-card {
+      position: relative;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 1.5rem 1.25rem 1.25rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 0.5rem;
+      transition: box-shadow 0.2s ease, transform 0.2s ease;
+
+      &:hover {
+        box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+        transform: translateY(-2px);
+      }
+
+      .offer-badge {
+        position: absolute;
+        top: -10px;
+        right: 1rem;
+        background: var(--accent);
+        color: white;
+        font-size: 0.65rem;
+        font-weight: 700;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        padding: 0.2rem 0.7rem;
+        border-radius: 999px;
+      }
+
+      .offer-emoji {
+        font-size: 2.5rem;
+        line-height: 1;
+        margin-bottom: 0.25rem;
+      }
+
+      h3 {
+        font-size: 1rem;
+        font-weight: 700;
+        color: var(--text);
+        margin: 0;
+      }
+
+      p {
+        font-size: 0.82rem;
+        color: var(--text-muted);
+        margin: 0;
+        line-height: 1.5;
+      }
+
+      .offer-code-row {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-top: 0.5rem;
+
+        code {
+          background: var(--bg);
+          border: 1.5px dashed var(--border);
+          border-radius: 6px;
+          padding: 0.3rem 0.75rem;
+          font-size: 0.88rem;
+          font-weight: 700;
+          letter-spacing: 0.08em;
+          color: var(--accent);
+          font-family: monospace;
+        }
+
+        button {
+          padding: 0.3rem 0.8rem;
+          border: 1.5px solid var(--accent);
+          background: transparent;
+          color: var(--accent);
+          border-radius: 6px;
+          font-size: 0.78rem;
+          font-weight: 700;
+          cursor: pointer;
+          transition: background 0.15s ease, color 0.15s ease;
+          font-family: inherit;
+
+          &:hover, &.copied {
+            background: var(--accent);
+            color: white;
+          }
+        }
+      }
+    }
+  }
+
+  // ── Bundle Deals ───────────────────────────────────────────────────────────
+  .bundles-section {
+    padding: 4rem 0;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+
+    .bundles-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.5rem;
+      margin-top: 2rem;
+
+      @media (max-width: 768px) { grid-template-columns: 1fr; }
+    }
+
+    .bundle-card {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      transition: box-shadow 0.2s ease, transform 0.2s ease;
+
+      &:hover {
+        box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+        transform: translateY(-2px);
+      }
+
+      .bundle-top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+
+        .bundle-emoji { font-size: 2rem; line-height: 1; }
+
+        .bundle-save-badge {
+          background: #f0fdf4;
+          color: #16a34a;
+          border: 1px solid #bbf7d0;
+          font-size: 0.75rem;
+          font-weight: 700;
+          padding: 0.25rem 0.75rem;
+          border-radius: 999px;
+        }
+      }
+
+      h3 {
+        font-size: 1.05rem;
+        font-weight: 700;
+        color: var(--text);
+        margin: 0;
+      }
+
+      p {
+        font-size: 0.85rem;
+        color: var(--text-muted);
+        margin: 0;
+        line-height: 1.5;
+      }
+
+      .bundle-items {
+        display: flex;
+        flex-direction: column;
+        gap: 0.6rem;
+
+        .bundle-item {
+          display: flex;
+          align-items: center;
+          gap: 0.75rem;
+
+          img {
+            width: 44px;
+            height: 44px;
+            object-fit: cover;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            flex-shrink: 0;
+          }
+
+          span {
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: var(--text);
+          }
+        }
+      }
+
+      .bundle-pricing {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin-top: 0.25rem;
+
+        .original-price {
+          font-size: 0.9rem;
+          color: var(--text-muted);
+          text-decoration: line-through;
+        }
+
+        .bundle-price {
+          font-size: 1.15rem;
+          font-weight: 800;
+          color: #16a34a;
+        }
+      }
+
+      .btn-add-bundle {
+        margin-top: auto;
+        padding: 0.75rem 1.25rem;
+        background: var(--accent);
+        color: white;
+        border: none;
+        border-radius: 10px;
+        font-size: 0.9rem;
+        font-weight: 700;
+        cursor: pointer;
+        text-align: center;
+        transition: opacity 0.15s ease, transform 0.15s ease;
+        font-family: inherit;
+
+        &:hover {
+          opacity: 0.88;
+          transform: translateY(-1px);
+        }
+      }
     }
   }
 

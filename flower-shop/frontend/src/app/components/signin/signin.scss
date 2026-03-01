@@ -7,6 +7,19 @@
   background: #fafafa;
 }
 
+.referral-banner {
+  background: #fff8f0;
+  border: 1px solid #f5c68a;
+  border-radius: 10px;
+  padding: 0.85rem 1.25rem;
+  font-size: 0.92rem;
+  color: #7a4a1a;
+  text-align: center;
+  margin-bottom: 1rem;
+  width: 100%;
+  max-width: 860px;
+}
+
 .signin-container {
   display: grid;
   grid-template-columns: 1fr 1fr;

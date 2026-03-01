@@ -1,5 +1,5 @@
 import { Component, signal } from '@angular/core';
-import { Router } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../services/auth';
 import { ToastService } from '../../services/toast';
@@ -15,11 +15,23 @@ export class Signin {
   errorMessage = signal('');
   successMessage = signal('');
   loading = signal(false);
+  referralCode = signal('');
 
   loginData = { email: '', password: '' };
   signupData = { firstName: '', lastName: '', email: '', password: '', confirmPassword: '' };
 
-  constructor(private authService: AuthService, private router: Router, private toastService: ToastService) {}
+  constructor(
+    private authService: AuthService,
+    private router: Router,
+    private toastService: ToastService,
+    private route: ActivatedRoute
+  ) {
+    const ref = this.route.snapshot.queryParams['ref'];
+    if (ref) {
+      this.referralCode.set(ref);
+      this.isSignUp.set(true);
+    }
+  }
 
   toggleMode(): void {
     this.isSignUp.set(!this.isSignUp());
@@ -61,7 +73,8 @@ export class Signin {
       firstName: this.signupData.firstName,
       lastName: this.signupData.lastName,
       email: this.signupData.email,
-      password: this.signupData.password
+      password: this.signupData.password,
+      referral_code: this.referralCode() || undefined
     }).subscribe({
       next: () => {
         this.loading.set(false);

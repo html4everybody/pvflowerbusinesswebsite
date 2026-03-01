@@ -61,8 +61,55 @@
                   <span class="order-date">{{ formatDate(order.created_at) }}</span>
                 }
               </div>
-              <span class="order-status" [class.cancelled]="order.status === 'cancelled'">{{ order.status }}</span>
+              <div class="order-header-right">
+                @if (order.is_recurring) {
+                  <span class="badge-recurring">Annual</span>
+                }
+                <span class="order-status" [class.cancelled]="order.status === 'cancelled'">
+                  {{ STATUS_LABELS[order.status] || order.status }}
+                </span>
+              </div>
             </div>
+
+            <div class="status-timeline" [class.cancelled]="order.status === 'cancelled'">
+              @if (order.status !== 'cancelled') {
+                @for (step of STATUS_ORDER; track step; let i = $index) {
+                  <div class="timeline-step"
+                       [class.done]="statusIndex(order.status) > i"
+                       [class.active]="statusIndex(order.status) === i">
+                    <div class="step-dot">
+                      @if (statusIndex(order.status) > i) { ✓ } @else { {{ i + 1 }} }
+                    </div>
+                    <span class="step-label">{{ STATUS_LABELS[step] }}</span>
+                  </div>
+                  @if (i < STATUS_ORDER.length - 1) {
+                    <div class="timeline-line" [class.done]="statusIndex(order.status) > i"></div>
+                  }
+                }
+              } @else {
+                <div class="cancelled-pill">Order Cancelled</div>
+              }
+            </div>
+
+            @if (order.status !== 'cancelled' && order.status !== 'delivered') {
+              <div class="simulate-row">
+                <span class="demo-tag">Demo</span>
+                <button class="btn-advance" [disabled]="advancingId() === order.id" (click)="advanceStatus(order)">
+                  {{ advancingId() === order.id ? 'Updating...' : 'Advance Status →' }}
+                </button>
+              </div>
+            }
+
+            @if (order.notifications?.length) {
+              <div class="notif-log">
+                <span class="notif-log-label">📲 Notifications sent</span>
+                @for (n of order.notifications; track n.id) {
+                  <span class="notif-chip" [class.sms]="n.channel==='sms'" [class.wa]="n.channel==='whatsapp'">
+                    {{ n.channel === 'whatsapp' ? '💬' : '📱' }} {{ STATUS_LABELS[n.status] }}
+                  </span>
+                }
+              </div>
+            }
 
             @if (order.items && order.items.length > 0) {
               <div class="order-items">
@@ -100,6 +147,12 @@
                   <span class="delivery-label">{{ delivery.label }}</span>
                   <span class="delivery-detail">{{ delivery.detail }}</span>
                 </div>
+                @if (order.is_recurring && order.next_recurrence_date) {
+                  <div class="recurrence-info">
+                    <span class="recurrence-badge">Annual</span>
+                    <span class="recurrence-date">Next: {{ formatRecurrenceDate(order.next_recurrence_date) }}</span>
+                  </div>
+                }
                 @if (order.status !== 'cancelled') {
                   <button class="btn-edit-delivery" (click)="startEditDelivery(order)" [class.active]="editingDeliveryId() === order.id" title="Edit delivery schedule">
                     <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">

@@ -172,6 +172,22 @@
         color: #999;
       }
 
+      .order-header-right {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .badge-recurring {
+        background: #ede9fe;
+        color: #6d28d9;
+        font-size: 0.72rem;
+        font-weight: 700;
+        padding: 0.2rem 0.6rem;
+        border-radius: 999px;
+        white-space: nowrap;
+      }
+
       .order-status {
         background: #e8f5e9;
         color: #2e7d32;
@@ -184,6 +200,158 @@
         &.cancelled {
           background: #fff0f0;
           color: #c0392b;
+        }
+      }
+    }
+
+    .status-timeline {
+      display: flex;
+      align-items: center;
+      padding: 1rem 1.25rem;
+      border-bottom: 1px solid #f0f0f0;
+      gap: 0;
+      overflow-x: auto;
+      scrollbar-width: none;
+
+      &::-webkit-scrollbar { display: none; }
+
+      &.cancelled {
+        padding: 0.75rem 1.25rem;
+      }
+
+      .timeline-step {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.3rem;
+        flex-shrink: 0;
+
+        .step-dot {
+          width: 28px;
+          height: 28px;
+          border-radius: 50%;
+          background: #e8e8e8;
+          color: #aaa;
+          font-size: 0.72rem;
+          font-weight: 700;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .step-label {
+          font-size: 0.68rem;
+          font-weight: 500;
+          color: #bbb;
+          white-space: nowrap;
+          transition: color 0.2s ease;
+        }
+
+        &.done {
+          .step-dot {
+            background: #16a34a;
+            color: white;
+          }
+          .step-label { color: #16a34a; font-weight: 600; }
+        }
+
+        &.active {
+          .step-dot {
+            background: var(--accent, #1a1a1a);
+            color: white;
+            box-shadow: 0 0 0 3px rgba(26, 26, 26, 0.15);
+          }
+          .step-label { color: var(--accent, #1a1a1a); font-weight: 700; }
+        }
+      }
+
+      .timeline-line {
+        flex: 1;
+        min-width: 16px;
+        height: 2px;
+        background: #e8e8e8;
+        margin-bottom: 1.1rem;
+        transition: background 0.2s ease;
+
+        &.done { background: #16a34a; }
+      }
+
+      .cancelled-pill {
+        display: inline-block;
+        background: #fff0f0;
+        color: #c0392b;
+        font-size: 0.78rem;
+        font-weight: 700;
+        padding: 0.3rem 0.85rem;
+        border-radius: 999px;
+      }
+    }
+
+    .simulate-row {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.6rem 1.25rem;
+      border-bottom: 1px solid #f0f0f0;
+
+      .demo-tag {
+        font-size: 0.65rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: #999;
+        background: #f0f0f0;
+        padding: 0.15rem 0.5rem;
+        border-radius: 4px;
+      }
+
+      .btn-advance {
+        background: #1a1a1a;
+        color: white;
+        border: none;
+        padding: 0.35rem 0.9rem;
+        border-radius: 6px;
+        font-size: 0.82rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.15s ease;
+
+        &:hover:not(:disabled) { background: #333; }
+        &:disabled { opacity: 0.5; cursor: not-allowed; }
+      }
+    }
+
+    .notif-log {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+      padding: 0.5rem 1.25rem;
+      border-bottom: 1px solid #f0f0f0;
+      background: #fafafa;
+
+      .notif-log-label {
+        font-size: 0.72rem;
+        font-weight: 600;
+        color: #888;
+        margin-right: 0.25rem;
+      }
+
+      .notif-chip {
+        font-size: 0.7rem;
+        font-weight: 600;
+        padding: 0.2rem 0.6rem;
+        border-radius: 999px;
+
+        &.sms {
+          background: #eff6ff;
+          color: #1d4ed8;
+        }
+
+        &.wa {
+          background: #f0fdf4;
+          color: #16a34a;
         }
       }
     }
@@ -241,6 +409,7 @@
     .order-delivery {
       display: flex;
       align-items: center;
+      flex-wrap: wrap;
       gap: 0.75rem;
       padding: 0.7rem 1.25rem;
       background: #f8f8f8;
@@ -308,6 +477,32 @@
           background: #ebebeb;
           border-color: #ddd;
         }
+      }
+
+      .recurrence-info {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        flex-basis: 100%;
+        padding-left: calc(30px + 0.75rem);
+        margin-top: 0.35rem;
+      }
+
+      .recurrence-badge {
+        font-size: 0.65rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        background: #ede9fe;
+        color: #7c3aed;
+        padding: 0.1rem 0.4rem;
+        border-radius: 4px;
+      }
+
+      .recurrence-date {
+        font-size: 0.78rem;
+        color: #6d28d9;
+        font-weight: 500;
       }
     }
 
