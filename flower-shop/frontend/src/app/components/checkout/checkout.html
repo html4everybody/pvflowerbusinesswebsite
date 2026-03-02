@@ -184,7 +184,7 @@
                 @if (isScheduleComplete) {
                   <div class="schedule-summary">
                     Delivering on {{ formatSelectedDate(formData.deliveryDate) }}
-                    between {{ availableTimeSlots.find(s => s.value === formData.deliveryTime)?.label ?? formData.deliveryTime }}
+                    between {{ getSelectedTimeLabel() }}
                   </div>
 
                   <div class="recurring-section">

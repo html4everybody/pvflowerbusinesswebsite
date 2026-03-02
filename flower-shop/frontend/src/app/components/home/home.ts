@@ -1,4 +1,4 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit, OnDestroy, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { ProductService } from '../../services/product';
 import { CartService } from '../../services/cart';
@@ -15,15 +15,44 @@ import { FadeInDirective } from '../../directives/fade-in';
   templateUrl: './home.html',
   styleUrl: './home.scss'
 })
-export class Home implements OnInit {
+export class Home implements OnInit, OnDestroy {
   products: Product[] = [];
   categories: string[] = [];
   selectedCategory: string = 'All';
   cartQuantities: { [productId: number]: number } = {};
 
+  flippedCardId = signal<number | null>(null);
+  private flipTimer: any;
+
+  private get isTouchDevice(): boolean {
+    return !window.matchMedia('(hover: hover)').matches;
+  }
+
+  private scrollListener = () => {
+    if (this.flippedCardId() !== null) {
+      clearTimeout(this.flipTimer);
+      this.flippedCardId.set(null);
+    }
+  };
+
+  handleCardClick(product: Product): void {
+    if (this.isTouchDevice) {
+      const isFlipping = this.flippedCardId() !== product.id;
+      this.flippedCardId.set(isFlipping ? product.id : null);
+      clearTimeout(this.flipTimer);
+      if (isFlipping) {
+        this.flipTimer = setTimeout(() => {
+          this.flippedCardId.set(null);
+        }, 5000);
+      }
+    } else {
+      this.router.navigate(['/products', product.id]);
+    }
+  }
+
   toastVisible = signal(false);
   toastProductName = signal('');
-  toastType = signal<'added' | 'removed'>('added');
+  toastType = signal<'added' | 'removed' | 'wish-added' | 'wish-removed'>('added');
   private toastTimer: any;
 
   offers = signal<OffersData | null>(null);
@@ -44,6 +73,12 @@ export class Home implements OnInit {
     this.products = this.productService.getProducts();
     this.categories = this.productService.getCategories();
     this.promoService.getOffers().subscribe({ next: d => this.offers.set(d), error: () => {} });
+    window.addEventListener('scroll', this.scrollListener, { passive: true });
+  }
+
+  ngOnDestroy(): void {
+    window.removeEventListener('scroll', this.scrollListener);
+    clearTimeout(this.flipTimer);
   }
 
   copyCode(code: string): void {
@@ -90,7 +125,7 @@ export class Home implements OnInit {
     return (productId % 4) + 2; // returns 2–5
   }
 
-  private showToast(name: string, type: 'added' | 'removed'): void {
+  private showToast(name: string, type: 'added' | 'removed' | 'wish-added' | 'wish-removed'): void {
     this.toastProductName.set(name);
     this.toastType.set(type);
     this.toastVisible.set(true);
@@ -98,6 +133,13 @@ export class Home implements OnInit {
     this.toastTimer = setTimeout(() => {
       this.toastVisible.set(false);
     }, 2500);
+  }
+
+  toggleWishlist(product: Product, event: Event): void {
+    event.stopPropagation();
+    const wasWishlisted = this.wishlistService.has(product.id);
+    this.wishlistService.toggle(product);
+    this.showToast(product.name, wasWishlisted ? 'wish-removed' : 'wish-added');
   }
 
   addToCart(product: Product): void {
