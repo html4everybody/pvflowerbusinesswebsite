@@ -534,6 +534,36 @@
 
       @media (max-width: 600px) { height: 230px; }
 
+      // Fixed at top-left — not part of card-inner, so never flips
+      .wishlist-btn {
+        position: absolute;
+        top: 0.6rem; left: 0.6rem;
+        width: 30px; height: 30px;
+        border-radius: 50%;
+        border: none;
+        background: rgba(255, 255, 255, 0.85);
+        backdrop-filter: blur(4px);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #ccc;
+        transition: all 0.2s ease;
+        z-index: 20;
+        padding: 0;
+
+        &:hover {
+          color: var(--accent);
+          transform: scale(1.15);
+          background: rgba(255, 255, 255, 0.95);
+        }
+
+        &.active {
+          color: var(--accent);
+          background: rgba(200, 75, 122, 0.12);
+        }
+      }
+
       .urgency-badge {
         position: absolute;
         top: 0.6rem; left: 0.6rem;
@@ -558,7 +588,22 @@
         border-radius: var(--radius-md);
       }
 
-      &:hover .card-inner { transform: rotateY(180deg); }
+      // Desktop: flip on hover (only real hover-capable devices)
+      @media (hover: hover) {
+        &:hover .card-inner { transform: rotateY(180deg); }
+      }
+
+      // Mobile: flip via .flipped class on tap
+      @media (hover: none) {
+        .card-inner.flipped {
+          transform: rotateY(180deg);
+          .card-front { pointer-events: none; }
+          .card-back  { pointer-events: auto; }
+        }
+        .card-inner:not(.flipped) {
+          .card-back { pointer-events: none; }
+        }
+      }
 
       // ── Shared face styles
       .card-front,
@@ -617,34 +662,6 @@
             box-shadow: 0 1px 4px rgba(0,0,0,0.12);
           }
 
-          .wishlist-btn {
-            position: absolute;
-            top: 0.6rem; left: 0.6rem;
-            width: 30px; height: 30px;
-            border-radius: 50%;
-            border: none;
-            background: rgba(255, 255, 255, 0.85);
-            backdrop-filter: blur(4px);
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #ccc;
-            transition: all 0.2s ease;
-            z-index: 5;
-            padding: 0;
-
-            &:hover {
-              color: var(--accent);
-              transform: scale(1.15);
-              background: rgba(255, 255, 255, 0.95);
-            }
-
-            &.active {
-              color: var(--accent);
-              background: rgba(200, 75, 122, 0.12);
-            }
-          }
         }
 
         .front-info {
@@ -694,13 +711,13 @@
         box-shadow: var(--shadow-md);
 
         .back-content {
-          padding: 1.1rem 1rem;
+          padding: 2.8rem 1rem 1.1rem;
           width: 100%;
           display: flex;
           flex-direction: column;
           justify-content: space-between;
 
-          @media (max-width: 600px) { padding: 0.65rem 0.7rem; }
+          @media (max-width: 600px) { padding: 2.4rem 0.7rem 0.65rem; }
 
           .back-category {
             display: inline-block;
@@ -737,24 +754,6 @@
             margin: 0;
           }
 
-          .back-meta {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin: 0.55rem 0;
-            padding: 0.38rem 0;
-            border-top: 1px solid rgba(255,255,255,0.2);
-            border-bottom: 1px solid rgba(255,255,255,0.2);
-
-            .back-rating { font-size: 0.71rem; font-weight: 600; }
-
-            .back-price {
-              font-size: 0.96rem;
-              font-weight: 800;
-              color: #ffd4e8;
-            }
-          }
-
           .back-actions {
             display: flex;
             gap: 0.45rem;
@@ -771,6 +770,10 @@
               font-weight: 700;
               cursor: pointer;
               font-family: inherit;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              gap: 0.3rem;
               transition: transform 0.15s ease, box-shadow 0.15s ease;
               box-shadow: 0 3px 10px rgba(0,0,0,0.2);
 
@@ -1458,5 +1461,11 @@
   &.removed {
     .toast-icon { background: var(--error); }
     .toast-title { color: var(--error); }
+  }
+
+  &.wish {
+    border-color: rgba(200,75,122,0.3);
+    .toast-icon { background: var(--accent); }
+    .toast-title { color: var(--accent); }
   }
 }

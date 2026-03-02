@@ -71,6 +71,10 @@ export class Checkout {
     return all;
   }
 
+  getSelectedTimeLabel(): string {
+    return this.availableTimeSlots.find(s => s.value === this.formData.deliveryTime)?.label ?? this.formData.deliveryTime;
+  }
+
   get isScheduleComplete(): boolean {
     return this.deliveryType() === 'scheduled'
       && !!this.formData.deliveryDate
