@@ -1,10 +1,10 @@
 .contact-page {
   min-height: calc(100vh - 62px);
-  background: #f7f7f7;
+  background: var(--bg);
 
   .contact-hero {
-    background: white;
-    border-bottom: 1px solid #eee;
+    background: var(--bg-card);
+    border-bottom: 1px solid var(--border);
     padding: 3rem 2rem;
     text-align: center;
 
@@ -15,12 +15,12 @@
       h1 {
         font-size: 2rem;
         font-weight: 700;
-        color: #1a1a1a;
+        color: var(--text);
         margin: 0 0 0.6rem;
       }
 
       p {
-        color: #777;
+        color: var(--text-muted);
         font-size: 1rem;
         margin: 0;
       }
@@ -49,10 +49,10 @@
   }
 
   .info-card {
-    background: white;
+    background: var(--bg-card);
     padding: 1.4rem;
     border-radius: 8px;
-    border: 1px solid #eee;
+    border: 1px solid var(--border);
     text-align: center;
     transition: box-shadow 0.2s ease;
 
@@ -66,14 +66,14 @@
     }
 
     h3 {
-      color: #1a1a1a;
+      color: var(--text);
       margin: 0 0 0.35rem;
       font-size: 0.9rem;
       font-weight: 600;
     }
 
     p {
-      color: #777;
+      color: var(--text-muted);
       margin: 0;
       font-size: 0.83rem;
       line-height: 1.6;
@@ -85,12 +85,12 @@
       gap: 0.25rem;
 
       a {
-        color: #555;
+        color: var(--text-muted);
         text-decoration: none;
         font-size: 0.83rem;
 
         &:hover {
-          color: #111;
+          color: var(--text);
           text-decoration: underline;
         }
       }
@@ -98,9 +98,9 @@
   }
 
   .contact-content {
-    background: white;
+    background: var(--bg-card);
     border-radius: 10px;
-    border: 1px solid #eee;
+    border: 1px solid var(--border);
     overflow: hidden;
   }
 
@@ -110,14 +110,14 @@
 
   .contact-form {
     h2 {
-      color: #1a1a1a;
+      color: var(--text);
       margin: 0 0 0.3rem;
       font-size: 1.25rem;
       font-weight: 700;
     }
 
     .form-sub {
-      color: #999;
+      color: var(--text-muted);
       font-size: 0.88rem;
       margin: 0 0 1.75rem;
     }
@@ -138,7 +138,7 @@
       label {
         display: block;
         margin-bottom: 0.4rem;
-        color: #333;
+        color: var(--text);
         font-weight: 500;
         font-size: 0.85rem;
       }
@@ -146,22 +146,23 @@
       input, select, textarea {
         width: 100%;
         padding: 0.72rem 0.9rem;
-        border: 1px solid #ddd;
+        border: 1px solid var(--border);
         border-radius: 6px;
         font-size: 0.93rem;
         font-family: inherit;
-        color: #1a1a1a;
-        background: white;
+        color: var(--text);
+        background: var(--bg);
         transition: border-color 0.15s ease;
         box-sizing: border-box;
 
         &:focus {
           outline: none;
-          border-color: #888;
+          border-color: var(--text-muted);
         }
 
         &::placeholder {
-          color: #ccc;
+          color: var(--text-muted);
+          opacity: 0.5;
         }
       }
 
@@ -181,18 +182,18 @@
       justify-content: center;
       gap: 0.5rem;
       width: 100%;
-      background: #1a1a1a;
-      color: white;
+      background: var(--text);
+      color: var(--bg);
       border: none;
       padding: 0.85rem;
       border-radius: 6px;
       font-size: 0.95rem;
       font-weight: 600;
       cursor: pointer;
-      transition: background 0.15s ease;
+      transition: opacity 0.15s ease;
 
       &:hover {
-        background: #333;
+        opacity: 0.85;
       }
     }
   }
@@ -216,21 +217,21 @@
     }
 
     h2 {
-      color: #1a1a1a;
+      color: var(--text);
       margin: 0 0 0.5rem;
       font-size: 1.3rem;
     }
 
     p {
-      color: #777;
+      color: var(--text-muted);
       margin: 0 0 1.75rem;
       font-size: 0.93rem;
     }
 
     .btn-another {
       background: transparent;
-      color: #333;
-      border: 1px solid #ddd;
+      color: var(--text);
+      border: 1px solid var(--border);
       padding: 0.7rem 1.5rem;
       border-radius: 6px;
       font-size: 0.93rem;
@@ -239,8 +240,7 @@
       transition: border-color 0.15s ease;
 
       &:hover {
-        border-color: #999;
-        color: #111;
+        border-color: var(--text-muted);
       }
     }
   }

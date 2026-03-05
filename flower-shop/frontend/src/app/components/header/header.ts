@@ -109,6 +109,12 @@ export class Header {
 
   toggleMenu(): void {
     this.menuOpen = !this.menuOpen;
+    if (this.menuOpen) {
+      setTimeout(() => {
+        const nav = this.el.nativeElement.querySelector('.nav');
+        if (nav) nav.scrollTop = 0;
+      });
+    }
   }
 
   closeMenu(): void {
