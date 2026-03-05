@@ -6,6 +6,7 @@ import { Checkout } from './components/checkout/checkout';
 import { Contact } from './components/contact/contact';
 import { Signin } from './components/signin/signin';
 import { Orders } from './components/orders/orders';
+import { OrderDetail } from './components/order-detail/order-detail';
 import { BouquetBuilder } from './components/bouquet-builder/bouquet-builder';
 import { Wishlist } from './components/wishlist/wishlist';
 import { OccasionPage } from './components/occasion-page/occasion-page';
@@ -15,6 +16,7 @@ import { CorporatePortal } from './components/corporate-portal/corporate-portal'
 import { CorporateOrder } from './components/corporate-order/corporate-order';
 import { MyCorporate } from './components/my-corporate/my-corporate';
 import { MyLoyalty } from './components/my-loyalty/my-loyalty';
+import { Admin } from './components/admin/admin';
 
 export const routes: Routes = [
   { path: '', component: Home },
@@ -24,6 +26,7 @@ export const routes: Routes = [
   { path: 'contact', component: Contact },
   { path: 'signin', component: Signin },
   { path: 'orders', component: Orders },
+  { path: 'orders/:id', component: OrderDetail },
   { path: 'builder', component: BouquetBuilder },
   { path: 'wishlist', component: Wishlist },
   { path: 'occasions', component: OccasionPage },
@@ -34,5 +37,6 @@ export const routes: Routes = [
   { path: 'corporate-order', component: CorporateOrder },
   { path: 'my-corporate', component: MyCorporate },
   { path: 'my-loyalty', component: MyLoyalty },
+  { path: 'admin', component: Admin },
   { path: '**', redirectTo: '' }
 ];

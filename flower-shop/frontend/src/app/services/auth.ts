@@ -45,4 +45,12 @@ export class AuthService {
   isLoggedIn(): boolean {
     return !!localStorage.getItem('floran_token');
   }
+
+  isAdmin(): boolean {
+    return !!this.user()?.is_admin;
+  }
+
+  getToken(): string {
+    return localStorage.getItem('floran_token') || '';
+  }
 }

@@ -86,8 +86,8 @@ def award_points(email: str, points: int, type: str, description: str, order_id:
             "description": description,
             "order_id": order_id
         }).execute()
-    except Exception:
-        pass  # Silently fail so orders/registrations still succeed
+    except Exception as e:
+        print(f"award_points error: {e}")
 
 def create_loyalty_account(email: str, referred_by_code: str = None) -> str:
     """Create loyalty_accounts row, award welcome bonus, handle referral signup bonus."""
@@ -248,33 +248,33 @@ def send_sms_whatsapp_reminder(order: dict, days_before: int, is_recurrence: boo
 
 # ── Products (in-memory) ───────────────────────────────────────────────────────
 PRODUCTS = [
-    {"id": 1, "name": "Red Rose Bouquet", "description": "A stunning arrangement of 12 premium red roses, perfect for expressing love and romance.", "price": 49.99, "image": "https://res.cloudinary.com/duf4t01vy/image/upload/v1771819102/ChatGPT_Image_Feb_22_2026_10_57_56_PM_nxsgri.png", "category": "Garlands", "inStock": True},
-    {"id": 2, "name": "Sunflower Delight", "description": "Bright and cheerful sunflowers that bring warmth and happiness to any space.", "price": 34.99, "image": "https://res.cloudinary.com/duf4t01vy/image/upload/v1771818621/ChatGPT_Image_Feb_22_2026_10_49_55_PM_zopiuw.png", "category": "Garlands", "inStock": True},
+    {"id": 1, "name": "Red Rose Bouquet", "description": "A stunning arrangement of 12 premium red roses, perfect for expressing love and romance.", "price": 49.99, "image": "https://lh3.googleusercontent.com/d/1nuxA-51JnSE98viN19Eeo-p3r2lemJMK", "category": "Garlands", "inStock": True},
+    {"id": 2, "name": "Sunflower Delight", "description": "Bright and cheerful sunflowers that bring warmth and happiness to any space.", "price": 34.99, "image": "https://lh3.googleusercontent.com/d/1YAbDIsu4Wa9vvEfD8-0WYsZl-nPnDMFM", "category": "Garlands", "inStock": True},
     {"id": 3, "name": "Elegant Lily Collection", "description": "Pure white lilies symbolizing elegance and sophistication.", "price": 54.99, "image": "https://res.cloudinary.com/duf4t01vy/image/upload/v1771819265/ChatGPT_Image_Feb_22_2026_11_00_56_PM_vrgztm.png", "category": "Garlands", "inStock": True},
     {"id": 4, "name": "Mixed Spring Bouquet", "description": "A colorful mix of seasonal spring flowers including tulips, daisies, and carnations.", "price": 39.99, "image": "https://res.cloudinary.com/duf4t01vy/image/upload/v1771819326/ChatGPT_Image_Feb_22_2026_11_01_54_PM_ehrqxd.png", "category": "Garlands", "inStock": True},
-    {"id": 5, "name": "Pink Peony Paradise", "description": "Lush pink peonies that exude romance and charm.", "price": 64.99, "image": "https://images.unsplash.com/photo-1490750967868-88aa4486c946?w=400", "category": "Flowers", "inStock": True},
-    {"id": 6, "name": "Orchid Elegance", "description": "Exotic orchids that add a touch of luxury to any setting.", "price": 79.99, "image": "https://images.unsplash.com/photo-1566873535350-a3f5d4a804b7?w=400", "category": "Flowers", "inStock": True},
-    {"id": 7, "name": "Lavender Dreams", "description": "Fragrant lavender bundles perfect for relaxation and home decor.", "price": 29.99, "image": "https://images.unsplash.com/photo-1468327768560-75b778cbb551?w=400", "category": "Flowers", "inStock": True},
-    {"id": 8, "name": "Tropical Paradise", "description": "Exotic tropical flowers including birds of paradise and hibiscus.", "price": 69.99, "image": "https://images.unsplash.com/photo-1508610048659-a06b669e3321?w=400", "category": "Flowers", "inStock": True},
-    {"id": 9, "name": "White Rose Serenity", "description": "Pure white roses symbolizing peace, purity, and new beginnings.", "price": 44.99, "image": "https://images.unsplash.com/photo-1559563362-c667ba5f5480?w=400", "category": "Bouquets", "inStock": True},
-    {"id": 10, "name": "Tulip Festival", "description": "Vibrant tulips in assorted colors celebrating the beauty of spring.", "price": 36.99, "image": "https://images.unsplash.com/photo-1520763185298-1b434c919102?w=400", "category": "Flowers", "inStock": True},
-    {"id": 11, "name": "Carnation Charm", "description": "Long-lasting carnations in beautiful shades of pink and red.", "price": 27.99, "image": "https://images.unsplash.com/photo-1526047932273-341f2a7631f9?w=400", "category": "Flowers", "inStock": True},
-    {"id": 12, "name": "Premium Flower Box", "description": "Luxury arrangement in an elegant gift box, perfect for special occasions.", "price": 89.99, "image": "https://images.unsplash.com/photo-1561181286-d3fee7d55364?w=400", "category": "Gifts", "inStock": True},
-    {"id": 13, "name": "Yellow Rose Sunshine", "description": "Bright yellow roses representing friendship and joy.", "price": 42.99, "image": "https://images.unsplash.com/photo-1455659817273-f96807779a8a?w=400", "category": "Flowers", "inStock": True},
-    {"id": 14, "name": "Daisy Meadow", "description": "Fresh white daisies bringing simplicity and charm.", "price": 24.99, "image": "https://images.unsplash.com/photo-1606041008023-472dfb5e530f?w=400", "category": "Flowers", "inStock": True},
-    {"id": 15, "name": "Hydrangea Heaven", "description": "Beautiful blue hydrangeas perfect for home decoration.", "price": 52.99, "image": "https://images.unsplash.com/photo-1468327768560-75b778cbb551?w=400", "category": "Flowers", "inStock": True},
-    {"id": 16, "name": "Cherry Blossom Branch", "description": "Delicate cherry blossoms symbolizing renewal and hope.", "price": 47.99, "image": "https://images.unsplash.com/photo-1490750967868-88aa4486c946?w=400", "category": "Bouquets", "inStock": True},
-    {"id": 17, "name": "Gerbera Fiesta", "description": "Colorful gerbera daisies bringing vibrant energy to any room.", "price": 32.99, "image": "https://images.unsplash.com/photo-1487530811176-3780de880c2d?w=400", "category": "Flowers", "inStock": True},
-    {"id": 18, "name": "Calla Lily Grace", "description": "Elegant calla lilies for sophisticated arrangements.", "price": 58.99, "image": "https://images.unsplash.com/photo-1606041008023-472dfb5e530f?w=400", "category": "Flowers", "inStock": True},
-    {"id": 19, "name": "Wildflower Mix", "description": "Natural wildflower bouquet with rustic charm.", "price": 35.99, "image": "https://images.unsplash.com/photo-1508610048659-a06b669e3321?w=400", "category": "Bouquets", "inStock": True},
-    {"id": 20, "name": "Ranunculus Delight", "description": "Layered ranunculus blooms in soft pastel colors.", "price": 45.99, "image": "https://images.unsplash.com/photo-1518882605630-8eb920bc4c49?w=400", "category": "Flowers", "inStock": True},
-    {"id": 21, "name": "Purple Iris Elegance", "description": "Stunning purple irises with elegant form.", "price": 38.99, "image": "https://images.unsplash.com/photo-1566873535350-a3f5d4a804b7?w=400", "category": "Flowers", "inStock": True},
-    {"id": 22, "name": "Protea Exotic", "description": "Unique South African protea flowers.", "price": 72.99, "image": "https://images.unsplash.com/photo-1508610048659-a06b669e3321?w=400", "category": "Flowers", "inStock": True},
-    {"id": 23, "name": "Dahlia Dreams", "description": "Gorgeous dahlias in rich autumn colors.", "price": 48.99, "image": "https://images.unsplash.com/photo-1490750967868-88aa4486c946?w=400", "category": "Flowers", "inStock": True},
-    {"id": 24, "name": "Anemone Beauty", "description": "Delicate anemones with striking dark centers.", "price": 41.99, "image": "https://images.unsplash.com/photo-1518882605630-8eb920bc4c49?w=400", "category": "Flowers", "inStock": True},
-    {"id": 25, "name": "Chrysanthemum Burst", "description": "Full chrysanthemum blooms in various colors.", "price": 33.99, "image": "https://images.unsplash.com/photo-1487530811176-3780de880c2d?w=400", "category": "Garlands", "inStock": True},
-    {"id": 26, "name": "Freesia Fragrance", "description": "Sweetly scented freesias in soft hues.", "price": 36.99, "image": "https://images.unsplash.com/photo-1606041008023-472dfb5e530f?w=400", "category": "Flowers", "inStock": True},
-    {"id": 27, "name": "Amaryllis Red", "description": "Bold red amaryllis for dramatic displays.", "price": 55.99, "image": "https://images.unsplash.com/photo-1518882605630-8eb920bc4c49?w=400", "category": "Flowers", "inStock": True},
+    {"id": 5, "name": "Pink Peony Paradise", "description": "Lush pink peonies that exude romance and charm.", "price": 64.99, "image": "https://lh3.googleusercontent.com/d/1aUBQMONcLw9vUpgIq3Cn1nrt7gx6S7Xt", "category": "Flowers", "inStock": True},
+    {"id": 6, "name": "Orchid Elegance", "description": "Exotic orchids that add a touch of luxury to any setting.", "price": 79.99, "image": "https://lh3.googleusercontent.com/d/1L9tTNl3wz5OA8S5SxK_UX4RZm3UrKoVa", "category": "Flowers", "inStock": True},
+    {"id": 7, "name": "Lavender Dreams", "description": "Fragrant lavender bundles perfect for relaxation and home decor.", "price": 29.99, "image": "https://lh3.googleusercontent.com/d/1O973hjUx9g7fBAfO3vwaYgJLMngfXUUb", "category": "Flowers", "inStock": True},
+    {"id": 8, "name": "Tropical Paradise", "description": "Exotic tropical flowers including birds of paradise and hibiscus.", "price": 69.99, "image": "https://lh3.googleusercontent.com/d/1wycY7Nfv1bTFnep4oE-q7i-KuQY4kxDH", "category": "Flowers", "inStock": True},
+    {"id": 9, "name": "White Rose Serenity", "description": "Pure white roses symbolizing peace, purity, and new beginnings.", "price": 44.99, "image": "https://lh3.googleusercontent.com/d/1qSK5vtVSqWvqArOtC2WnioD65zga5G2g", "category": "Bouquets", "inStock": True},
+    {"id": 10, "name": "Tulip Festival", "description": "Vibrant tulips in assorted colors celebrating the beauty of spring.", "price": 36.99, "image": "https://lh3.googleusercontent.com/d/1whAwsIb6EH3ELHMrPzK4NMxHu-Uk8fBC", "category": "Flowers", "inStock": True},
+    {"id": 11, "name": "Carnation Charm", "description": "Long-lasting carnations in beautiful shades of pink and red.", "price": 27.99, "image": "https://lh3.googleusercontent.com/d/1F6DXXxmX-Ic68FMb-ulr0eqehefdbGCb", "category": "Flowers", "inStock": True},
+    {"id": 12, "name": "Premium Flower Box", "description": "Luxury arrangement in an elegant gift box, perfect for special occasions.", "price": 89.99, "image": "https://lh3.googleusercontent.com/d/1gJ0Z4ZCnTTNCCdxkBi-FUyDaf_dU3L0G", "category": "Gifts", "inStock": True},
+    {"id": 13, "name": "Yellow Rose Sunshine", "description": "Bright yellow roses representing friendship and joy.", "price": 42.99, "image": "https://lh3.googleusercontent.com/d/1dVJuWiCEhaRi1Z03vIa_j_lwuyvwRgzE", "category": "Flowers", "inStock": True},
+    {"id": 14, "name": "Daisy Meadow", "description": "Fresh white daisies bringing simplicity and charm.", "price": 24.99, "image": "https://lh3.googleusercontent.com/d/1NKDpaB5vn2sU5oghj-mNZ4m3oq6QGRDA", "category": "Flowers", "inStock": True},
+    {"id": 15, "name": "Hydrangea Heaven", "description": "Beautiful blue hydrangeas perfect for home decoration.", "price": 52.99, "image": "https://lh3.googleusercontent.com/d/1nl91VHvvqQ4iQ1_dNaZ1PzGv1yC_olaX", "category": "Flowers", "inStock": True},
+    {"id": 16, "name": "Cherry Blossom Branch", "description": "Delicate cherry blossoms symbolizing renewal and hope.", "price": 47.99, "image": "https://lh3.googleusercontent.com/d/1bWDcV0Ur9OgOlTySRkO0jRI5MwwazyCj", "category": "Bouquets", "inStock": True},
+    {"id": 17, "name": "Gerbera Fiesta", "description": "Colorful gerbera daisies bringing vibrant energy to any room.", "price": 32.99, "image": "https://lh3.googleusercontent.com/d/1s6PPA6yIV9l3wyUjuXfVfVdIJ4KtvBHY", "category": "Flowers", "inStock": True},
+    {"id": 18, "name": "Calla Lily Grace", "description": "Elegant calla lilies for sophisticated arrangements.", "price": 58.99, "image": "https://lh3.googleusercontent.com/d/184PECfm3r3S8ylT6c6psfiNLV91htfrZ", "category": "Flowers", "inStock": True},
+    {"id": 19, "name": "Wildflower Mix", "description": "Natural wildflower bouquet with rustic charm.", "price": 35.99, "image": "https://lh3.googleusercontent.com/d/1OELDWd5rM7l1Qg6V3QbcKCi4p4jkCWq0", "category": "Bouquets", "inStock": True},
+    {"id": 20, "name": "Ranunculus Delight", "description": "Layered ranunculus blooms in soft pastel colors.", "price": 45.99, "image": "https://lh3.googleusercontent.com/d/1b-sslQXb0LFqPDB0Xc4luZyIFGe4sD0H", "category": "Flowers", "inStock": True},
+    {"id": 21, "name": "Purple Iris Elegance", "description": "Stunning purple irises with elegant form.", "price": 38.99, "image": "https://lh3.googleusercontent.com/d/1EdlclfKfojhWqanF-TV_mPfh_ItEoWJr", "category": "Flowers", "inStock": True},
+    {"id": 22, "name": "Protea Exotic", "description": "Unique South African protea flowers.", "price": 72.99, "image": "https://lh3.googleusercontent.com/d/1ZZDnW8v9TSCFsN-q8W6oP3PdqAQZExnz", "category": "Flowers", "inStock": True},
+    {"id": 23, "name": "Dahlia Dreams", "description": "Gorgeous dahlias in rich autumn colors.", "price": 48.99, "image": "https://lh3.googleusercontent.com/d/10lBJASsDwGwu5jYkABlvsc1TcaP9yid7", "category": "Flowers", "inStock": True},
+    {"id": 24, "name": "Anemone Beauty", "description": "Delicate anemones with striking dark centers.", "price": 41.99, "image": "https://lh3.googleusercontent.com/d/1rDUyqzjGNshdeQzyg0zqcqhDitbqR290", "category": "Flowers", "inStock": True},
+    {"id": 25, "name": "Chrysanthemum Burst", "description": "Full chrysanthemum blooms in various colors.", "price": 33.99, "image": "https://lh3.googleusercontent.com/d/1ps20c7uqjovJqja2qA_OTY7EosTURU52", "category": "Garlands", "inStock": True},
+    {"id": 26, "name": "Freesia Fragrance", "description": "Sweetly scented freesias in soft hues.", "price": 36.99, "image": "https://lh3.googleusercontent.com/d/1FlchmH7chNCsQlSRlk-3DU85HGn0X8HM", "category": "Flowers", "inStock": True},
+    {"id": 27, "name": "Amaryllis Red", "description": "Bold red amaryllis for dramatic displays.", "price": 55.99, "image": "https://lh3.googleusercontent.com/d/1CyGqnaDgOEcrtc-Nz3E9Wu4zjginendx", "category": "Flowers", "inStock": True},
     {"id": 28, "name": "Sweet Pea Garden", "description": "Delicate sweet peas with lovely fragrance.", "price": 31.99, "image": "https://images.unsplash.com/photo-1490750967868-88aa4486c946?w=400", "category": "Flowers", "inStock": True},
     {"id": 29, "name": "Magnolia Majesty", "description": "Elegant magnolia branches for statement arrangements.", "price": 67.99, "image": "https://images.unsplash.com/photo-1559563362-c667ba5f5480?w=400", "category": "Flowers", "inStock": True},
     {"id": 30, "name": "Jasmine Bliss", "description": "Fragrant jasmine for romantic occasions.", "price": 43.99, "image": "https://images.unsplash.com/photo-1468327768560-75b778cbb551?w=400", "category": "Garlands", "inStock": True},
@@ -381,8 +381,8 @@ STATUS_MESSAGES = {
 }
 
 VALID_STATUS_TRANSITIONS = {
-    "confirmed":        ["preparing", "cancelled"],
-    "preparing":        ["out_for_delivery", "cancelled"],
+    "confirmed":        ["preparing", "out_for_delivery", "delivered"],
+    "preparing":        ["out_for_delivery", "delivered"],
     "out_for_delivery": ["delivered"],
     "delivered":        [],
     "cancelled":        [],
@@ -498,7 +498,8 @@ def register(req: RegisterRequest):
             "id": user["id"],
             "firstName": user["first_name"],
             "lastName": user["last_name"],
-            "email": user["email"]
+            "email": user["email"],
+            "is_admin": user.get("is_admin", False)
         }
     }
 
@@ -521,9 +522,59 @@ def login(req: LoginRequest):
             "id": user["id"],
             "firstName": user["first_name"],
             "lastName": user["last_name"],
-            "email": user["email"]
+            "email": user["email"],
+            "is_admin": user.get("is_admin", False)
         }
     }
+
+# ── Admin Routes ───────────────────────────────────────────────────────────────
+
+def require_admin(token: str):
+    email = tokens.get(token)
+    if not email:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    result = supabase.table("users").select("is_admin").eq("email", email).execute()
+    if not result.data or not result.data[0].get("is_admin"):
+        raise HTTPException(status_code=403, detail="Admin access required")
+    return email
+
+@app.get("/api/admin/stats")
+def admin_stats(token: str):
+    require_admin(token)
+    all_orders = supabase.table("orders").select("id, status, total, created_at").execute().data
+    today = datetime.utcnow().strftime("%Y-%m-%d")
+    total_orders = len(all_orders)
+    today_orders = sum(1 for o in all_orders if o.get("created_at", "").startswith(today))
+    pending_count = sum(1 for o in all_orders if o.get("status") in ("confirmed", "preparing"))
+    revenue_total = sum(o.get("total", 0) for o in all_orders if o.get("status") != "cancelled")
+    revenue_today = sum(o.get("total", 0) for o in all_orders if o.get("created_at", "").startswith(today) and o.get("status") != "cancelled")
+    return {
+        "total_orders": total_orders,
+        "today_orders": today_orders,
+        "pending_count": pending_count,
+        "revenue_total": round(revenue_total, 2),
+        "revenue_today": round(revenue_today, 2)
+    }
+
+@app.get("/api/admin/orders")
+def admin_orders(token: str, status: str = None):
+    require_admin(token)
+    query = supabase.table("orders").select("*").order("created_at", desc=True)
+    if status:
+        query = query.eq("status", status)
+    orders = query.execute().data
+    if not orders:
+        return []
+    order_ids = [o["id"] for o in orders]
+    items_result = supabase.table("order_items").select("*").in_("order_id", order_ids).execute()
+    items_by_order: dict = {}
+    for item in items_result.data:
+        product = next((p for p in PRODUCTS if p["id"] == item["product_id"]), None)
+        item["image"] = product["image"] if product else ""
+        items_by_order.setdefault(item["order_id"], []).append(item)
+    for order in orders:
+        order["items"] = items_by_order.get(order["id"], [])
+    return orders
 
 # ── Contact Route ──────────────────────────────────────────────────────────────
 
@@ -655,6 +706,25 @@ def get_user_orders(email: str):
         order["notifications"] = notifs_by_order.get(order["id"], [])
     return orders
 
+@app.get("/api/orders/{order_id}")
+def get_order(order_id: str):
+    result = supabase.table("orders").select("*").eq("id", order_id).execute()
+    if not result.data:
+        raise HTTPException(status_code=404, detail="Order not found")
+    order = result.data[0]
+    items_result = supabase.table("order_items").select("*").eq("order_id", order_id).execute()
+    items = items_result.data
+    for item in items:
+        product = next((p for p in PRODUCTS if p["id"] == item["product_id"]), None)
+        item["image"] = product["image"] if product else ""
+    order["items"] = items
+    try:
+        notifs_result = supabase.table("order_notifications").select("id, order_id, channel, status, sent_at").eq("order_id", order_id).order("sent_at").execute()
+        order["notifications"] = [{"id": n["id"], "channel": n["channel"], "status": n["status"], "sent_at": n["sent_at"]} for n in notifs_result.data]
+    except Exception:
+        order["notifications"] = []
+    return order
+
 @app.patch("/api/orders/{order_id}/delivery")
 def update_delivery(order_id: str, req: UpdateDeliveryRequest):
     result = supabase.table("orders").select("status").eq("id", order_id).execute()
@@ -707,19 +777,29 @@ def create_order(req: OrderRequest):
         except Exception:
             pass
 
-    supabase.table("orders").insert({
-        "id": order_id,
-        "customer_email": customer_email,
-        "customer_name": req.customer.get("name", ""),
-        "customer_phone": req.customer.get("phone", ""),
-        "total": req.total,
-        "status": "confirmed",
-        "delivery_type": req.delivery_type,
-        "delivery_datetime": req.delivery_datetime,
-        "is_recurring": req.is_recurring,
-        "recurrence_type": req.recurrence_type,
-        "next_recurrence_date": next_recurrence_date,
-    }).execute()
+    try:
+        supabase.table("orders").insert({
+            "id": order_id,
+            "customer_email": customer_email,
+            "customer_name": req.customer.get("name", ""),
+            "customer_phone": req.customer.get("phone", ""),
+            "customer_address": ", ".join(filter(None, [
+                req.customer.get("address", ""),
+                req.customer.get("city", ""),
+                req.customer.get("state", ""),
+                req.customer.get("zip", ""),
+            ])),
+            "total": req.total,
+            "status": "confirmed",
+            "delivery_type": req.delivery_type,
+            "delivery_datetime": req.delivery_datetime,
+            "is_recurring": req.is_recurring,
+            "recurrence_type": req.recurrence_type,
+            "next_recurrence_date": next_recurrence_date,
+        }).execute()
+    except Exception as e:
+        print(f"Order insert error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
     if req.items:
         supabase.table("order_items").insert([

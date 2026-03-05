@@ -249,9 +249,10 @@ export class Checkout {
         this.cartService.clearCart();
         setTimeout(() => this.confetti.burst(), 300);
       },
-      error: () => {
+      error: (err) => {
         this.loading.set(false);
-        this.errorMessage.set('Something went wrong. Please try again.');
+        console.error('Order error:', err);
+        this.errorMessage.set(err?.error?.detail ?? err?.message ?? 'Something went wrong. Please try again.');
       }
     });
   }
