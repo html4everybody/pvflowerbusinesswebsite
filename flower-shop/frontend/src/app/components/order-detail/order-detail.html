@@ -1,0 +1,408 @@
+<main class="order-detail-page">
+  <div class="container">
+
+    <div class="page-header">
+      <a [routerLink]="isAdmin ? '/admin' : '/orders'" class="back-link">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="19" y1="12" x2="5" y2="12"></line>
+          <polyline points="12 19 5 12 12 5"></polyline>
+        </svg>
+        {{ isAdmin ? 'Admin Dashboard' : 'My Orders' }}
+      </a>
+    </div>
+
+    @if (loading()) {
+      <div class="loading-state">
+        <div class="spinner"></div>
+        <p>Loading order details...</p>
+      </div>
+    } @else if (notFound()) {
+      <div class="not-found">
+        <h2>Order not found</h2>
+        <p>This order doesn't exist or you don't have access to it.</p>
+        <a routerLink="/orders" class="btn-back">Back to My Orders</a>
+      </div>
+    } @else if (order(); as o) {
+
+      <!-- ── ADMIN VIEW ─────────────────────────────────── -->
+      @if (isAdmin) {
+
+        <!-- Two-column: Order Items | Customer Details -->
+        <div class="two-col">
+
+          <!-- Left: Order Items -->
+          @if (o.items && o.items.length > 0) {
+            <div class="section">
+              <h2 class="section-title">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
+                  <line x1="3" y1="6" x2="21" y2="6"></line>
+                  <path d="M16 10a4 4 0 0 1-8 0"></path>
+                </svg>
+                Order Items
+              </h2>
+              <div class="items-card">
+                @for (item of o.items; track item.id) {
+                  <div class="order-item">
+                    <img [src]="item.image" [alt]="item.name" class="item-image">
+                    <div class="item-details">
+                      <span class="item-name">{{ item.name }}</span>
+                      <span class="item-qty">Qty: {{ item.quantity }}</span>
+                    </div>
+                    <span class="item-price">₹{{ (item.price * item.quantity).toFixed(2) }}</span>
+                  </div>
+                }
+                <div class="order-total-row">
+                  <span>Total</span>
+                  <span class="total-amount">₹{{ o.total.toFixed(2) }}</span>
+                </div>
+              </div>
+            </div>
+          }
+
+          <!-- Right: Customer Details -->
+          <div class="section">
+            <h2 class="section-title">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+              </svg>
+              Customer Details
+            </h2>
+            <div class="customer-details-grid">
+              <div class="customer-detail-item">
+                <span class="detail-label">Name</span>
+                <span class="detail-value">{{ o.customer_name }}</span>
+              </div>
+              <div class="customer-detail-item">
+                <span class="detail-label">Email</span>
+                <span class="detail-value">{{ o.customer_email }}</span>
+              </div>
+              @if (o.customer_phone) {
+                <div class="customer-detail-item">
+                  <span class="detail-label">Phone</span>
+                  <span class="detail-value">{{ o.customer_phone }}</span>
+                </div>
+              }
+              @if (o.customer_address) {
+                <div class="customer-detail-item full-width">
+                  <span class="detail-label">Delivery Address</span>
+                  <span class="detail-value">{{ o.customer_address }}</span>
+                </div>
+              }
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Notifications (full width) -->
+        @if (o.notifications?.length) {
+          <div class="section">
+            <h2 class="section-title">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+              </svg>
+              Notifications Sent
+            </h2>
+            <div class="notif-list">
+              @for (n of o.notifications; track n.id) {
+                <span class="notif-chip" [class.sms]="n.channel==='sms'" [class.wa]="n.channel==='whatsapp'">
+                  {{ n.channel === 'whatsapp' ? '💬' : '📱' }} {{ STATUS_LABELS[n.status] }} via {{ n.channel === 'whatsapp' ? 'WhatsApp' : 'SMS' }}
+                </span>
+              }
+            </div>
+          </div>
+        }
+
+        <!-- Update Status (full width) -->
+        @if (NEXT_STATUSES[o.status]?.length) {
+          <div class="section admin-status-section">
+            <h2 class="section-title">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+              </svg>
+              Update Status
+            </h2>
+            <div class="admin-status-row">
+              <select class="admin-status-select"
+                [disabled]="updatingStatus()"
+                (change)="adminUpdateStatus(o, $any($event.target).value); $any($event.target).value = ''">
+                <option value="" disabled selected>Move to...</option>
+                @for (s of NEXT_STATUSES[o.status]; track s) {
+                  <option [value]="s">{{ STATUS_LABELS[s] }}</option>
+                }
+              </select>
+              @if (updatingStatus()) {
+                <span class="admin-updating">Updating...</span>
+              }
+            </div>
+          </div>
+        }
+
+        <!-- Delivery Schedule (full width, last) -->
+        <div class="section">
+          <h2 class="section-title">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+              <line x1="16" y1="2" x2="16" y2="6"></line>
+              <line x1="8" y1="2" x2="8" y2="6"></line>
+              <line x1="3" y1="10" x2="21" y2="10"></line>
+            </svg>
+            Delivery Schedule
+          </h2>
+          @if (formatDelivery(o); as delivery) {
+            <div class="delivery-card" [class.scheduled]="o.delivery_type === 'scheduled'">
+              <div class="delivery-icon">
+                @if (o.delivery_type === 'scheduled') {
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                    <line x1="16" y1="2" x2="16" y2="6"></line>
+                    <line x1="8" y1="2" x2="8" y2="6"></line>
+                    <line x1="3" y1="10" x2="21" y2="10"></line>
+                  </svg>
+                } @else {
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <polyline points="12 6 12 12 16 14"></polyline>
+                  </svg>
+                }
+              </div>
+              <div class="delivery-info">
+                <span class="delivery-label">{{ delivery.label }}</span>
+                <span class="delivery-detail">{{ delivery.detail }}</span>
+                @if (o.is_recurring && o.next_recurrence_date) {
+                  <span class="recurrence-note">Next annual delivery: {{ formatRecurrenceDate(o.next_recurrence_date) }}</span>
+                }
+              </div>
+            </div>
+          }
+        </div>
+
+      }
+
+      <!-- ── CUSTOMER VIEW ──────────────────────────────── -->
+      @if (!isAdmin) {
+
+        <!-- Two-column: Order Items | Tracking -->
+        <div class="two-col">
+
+          <!-- Left: Order Items -->
+          @if (o.items && o.items.length > 0) {
+            <div class="section">
+              <h2 class="section-title">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
+                  <line x1="3" y1="6" x2="21" y2="6"></line>
+                  <path d="M16 10a4 4 0 0 1-8 0"></path>
+                </svg>
+                Order Items
+              </h2>
+              <div class="items-card">
+                @for (item of o.items; track item.id) {
+                  <div class="order-item">
+                    <img [src]="item.image" [alt]="item.name" class="item-image">
+                    <div class="item-details">
+                      <span class="item-name">{{ item.name }}</span>
+                      <span class="item-qty">Qty: {{ item.quantity }}</span>
+                    </div>
+                    <span class="item-price">₹{{ (item.price * item.quantity).toFixed(2) }}</span>
+                  </div>
+                }
+                <div class="order-total-row">
+                  <span>Total</span>
+                  <span class="total-amount">₹{{ o.total.toFixed(2) }}</span>
+                </div>
+              </div>
+            </div>
+          }
+
+          <!-- Right: Tracking + Delivery Schedule -->
+          <div class="right-col">
+
+            <!-- Order Tracking -->
+            <div class="section">
+              <h2 class="section-title">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="1" y="3" width="15" height="13"></rect>
+                  <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon>
+                  <circle cx="5.5" cy="18.5" r="2.5"></circle>
+                  <circle cx="18.5" cy="18.5" r="2.5"></circle>
+                </svg>
+                Order Tracking
+              </h2>
+              @if (o.status === 'cancelled') {
+                <div class="cancelled-banner">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="15" y1="9" x2="9" y2="15"></line>
+                    <line x1="9" y1="9" x2="15" y2="15"></line>
+                  </svg>
+                  This order was cancelled.
+                </div>
+              } @else {
+                <div class="tracking-timeline">
+                  @for (step of STATUS_ORDER; track step; let i = $index) {
+                    <div class="tracking-step"
+                         [class.done]="statusIndex(o.status) > i"
+                         [class.active]="statusIndex(o.status) === i">
+                      <div class="step-icon">
+                        @if (statusIndex(o.status) >= i) {
+                          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="20 6 9 17 4 12"></polyline>
+                          </svg>
+                        } @else {
+                          {{ i + 1 }}
+                        }
+                      </div>
+                      @if (i < STATUS_ORDER.length - 1) {
+                        <div class="step-line"
+                             [class.done]="statusIndex(o.status) > i"
+                             [class.flowing]="statusIndex(o.status) === i"></div>
+                      }
+                      <div class="step-info">
+                        <span class="step-label">{{ STATUS_LABELS[step] }}</span>
+                        @if (statusIndex(o.status) === i) {
+                          <span class="step-desc">{{ STATUS_DESCRIPTIONS[step] }}</span>
+                        }
+                      </div>
+                    </div>
+                  }
+                </div>
+              }
+            </div>
+
+            <!-- Delivery Schedule -->
+            <div class="section">
+              <h2 class="section-title">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                  <line x1="16" y1="2" x2="16" y2="6"></line>
+                  <line x1="8" y1="2" x2="8" y2="6"></line>
+                  <line x1="3" y1="10" x2="21" y2="10"></line>
+                </svg>
+                Delivery Schedule
+              </h2>
+              @if (formatDelivery(o); as delivery) {
+                <div class="delivery-card" [class.scheduled]="o.delivery_type === 'scheduled'">
+                  <div class="delivery-icon">
+                    @if (o.delivery_type === 'scheduled') {
+                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                        <line x1="16" y1="2" x2="16" y2="6"></line>
+                        <line x1="8" y1="2" x2="8" y2="6"></line>
+                        <line x1="3" y1="10" x2="21" y2="10"></line>
+                      </svg>
+                    } @else {
+                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <polyline points="12 6 12 12 16 14"></polyline>
+                      </svg>
+                    }
+                  </div>
+                  <div class="delivery-info">
+                    <span class="delivery-label">{{ delivery.label }}</span>
+                    <span class="delivery-detail">{{ delivery.detail }}</span>
+                    @if (o.is_recurring && o.next_recurrence_date) {
+                      <span class="recurrence-note">Next annual delivery: {{ formatRecurrenceDate(o.next_recurrence_date) }}</span>
+                    }
+                  </div>
+                  @if (o.status !== 'cancelled' && o.status !== 'delivered') {
+                    <button class="btn-edit" (click)="startEditDelivery()" title="Edit delivery schedule">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                      </svg>
+                      Edit
+                    </button>
+                  }
+                </div>
+              }
+              @if (editingDelivery()) {
+                <div class="delivery-edit-panel">
+                  <div class="dec-options">
+                    <div class="dec-card" [class.selected]="editDelivery().type === 'immediate'" (click)="setEditType('immediate')">
+                      <div class="dec-radio" [class.filled]="editDelivery().type === 'immediate'"></div>
+                      <div>
+                        <strong>Immediately</strong>
+                        <span>As soon as possible</span>
+                      </div>
+                    </div>
+                    <div class="dec-card" [class.selected]="editDelivery().type === 'scheduled'" (click)="setEditType('scheduled')">
+                      <div class="dec-radio" [class.filled]="editDelivery().type === 'scheduled'"></div>
+                      <div>
+                        <strong>Schedule</strong>
+                        <span>Pick date & time</span>
+                      </div>
+                    </div>
+                  </div>
+                  @if (editDelivery().type === 'scheduled') {
+                    <div class="dec-fields">
+                      <div class="dec-field">
+                        <label>Date</label>
+                        <input type="date" [min]="minDate" [value]="editDelivery().date" (change)="setEditDate($any($event.target).value)">
+                      </div>
+                      <div class="dec-field">
+                        <label>Time Slot</label>
+                        <select [value]="editDelivery().time" (change)="setEditTime($any($event.target).value)">
+                          <option value="">Select a slot</option>
+                          @for (slot of timeSlots; track slot.key) {
+                            <option [value]="slot.key">{{ slot.label }}</option>
+                          }
+                        </select>
+                      </div>
+                    </div>
+                  }
+                  @if (deliverySaveError()) {
+                    <div class="dec-error">{{ deliverySaveError() }}</div>
+                  }
+                  <div class="dec-actions">
+                    <button class="btn-dec-save" (click)="saveDelivery()" [disabled]="savingDelivery()">
+                      {{ savingDelivery() ? 'Saving...' : 'Save Changes' }}
+                    </button>
+                    <button class="btn-dec-cancel" (click)="cancelEditDelivery()" [disabled]="savingDelivery()">Cancel</button>
+                  </div>
+                </div>
+              }
+            </div>
+
+            <!-- Notifications -->
+            @if (o.notifications?.length) {
+              <div class="section">
+                <h2 class="section-title">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                    <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                  </svg>
+                  Notifications Sent
+                </h2>
+                <div class="notif-list">
+                  @for (n of o.notifications; track n.id) {
+                    <span class="notif-chip" [class.sms]="n.channel==='sms'" [class.wa]="n.channel==='whatsapp'">
+                      {{ n.channel === 'whatsapp' ? '💬' : '📱' }} {{ STATUS_LABELS[n.status] }} via {{ n.channel === 'whatsapp' ? 'WhatsApp' : 'SMS' }}
+                    </span>
+                  }
+                </div>
+              </div>
+            }
+
+            <!-- Cancel -->
+            @if (o.status !== 'cancelled' && o.status !== 'delivered') {
+              <div class="actions-section">
+                @if (cancelError()) {
+                  <p class="cancel-error">{{ cancelError() }}</p>
+                }
+                <button class="btn-cancel" (click)="cancelOrder()" [disabled]="cancelling()">
+                  {{ cancelling() ? 'Cancelling...' : 'Cancel Order' }}
+                </button>
+              </div>
+            }
+
+          </div>
+        </div>
+
+      }
+
+    }
+  </div>
+</main>

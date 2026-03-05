@@ -27,9 +27,9 @@ export class SearchService {
   ];
 
   readonly priceLabels: Record<string, string> = {
-    budget:  'Budget · Under $35',
-    mid:     'Mid · $35–$70',
-    premium: 'Premium · $70+',
+    budget:  'Budget · Under ₹35',
+    mid:     'Mid · ₹35–₹70',
+    premium: 'Premium · ₹70+',
   };
 
   // ── Derived tags from product text ─────────────────────────────────────────

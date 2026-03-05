@@ -17,6 +17,9 @@
         <a routerLink="/contact" routerLinkActive="active" (click)="closeMenu()">Contact Us</a>
 
         @if (authService.user()) {
+          @if (authService.isAdmin()) {
+            <a routerLink="/admin" class="nav-admin-link" (click)="closeMenu()">Admin Dashboard</a>
+          }
           <a routerLink="/orders" class="nav-orders-link" (click)="closeMenu()">My Orders</a>
         }
 
@@ -93,6 +96,17 @@
           </button>
           @if (userMenuOpen) {
             <div class="user-dropdown">
+              @if (authService.isAdmin()) {
+                <a routerLink="/admin" (click)="closeMenu()" class="admin-link">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="3" width="7" height="7"></rect>
+                    <rect x="14" y="3" width="7" height="7"></rect>
+                    <rect x="14" y="14" width="7" height="7"></rect>
+                    <rect x="3" y="14" width="7" height="7"></rect>
+                  </svg>
+                  Admin Dashboard
+                </a>
+              }
               <a routerLink="/orders" (click)="closeMenu()">
                 <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
@@ -230,7 +244,7 @@
                 <img [src]="product.image" [alt]="product.name" class="sug-img">
                 <div class="sug-info">
                   <span class="sug-name">{{ product.name }}</span>
-                  <span class="sug-meta">{{ product.category }} · ${{ product.price.toFixed(2) }}</span>
+                  <span class="sug-meta">{{ product.category }} · ₹{{ product.price.toFixed(2) }}</span>
                 </div>
                 <span class="sug-rating">⭐ {{ product.rating }}</span>
               </div>
@@ -290,9 +304,9 @@
               Price Range
             </span>
             <div class="filter-chips">
-              <button class="filter-chip" [class.active]="searchService.priceRange() === 'budget'"  (click)="searchService.togglePriceRange('budget')">Budget · Under $35</button>
-              <button class="filter-chip" [class.active]="searchService.priceRange() === 'mid'"     (click)="searchService.togglePriceRange('mid')">Mid · $35–$70</button>
-              <button class="filter-chip" [class.active]="searchService.priceRange() === 'premium'" (click)="searchService.togglePriceRange('premium')">Premium · $70+</button>
+              <button class="filter-chip" [class.active]="searchService.priceRange() === 'budget'"  (click)="searchService.togglePriceRange('budget')">Budget · Under ₹35</button>
+              <button class="filter-chip" [class.active]="searchService.priceRange() === 'mid'"     (click)="searchService.togglePriceRange('mid')">Mid · ₹35–₹70</button>
+              <button class="filter-chip" [class.active]="searchService.priceRange() === 'premium'" (click)="searchService.togglePriceRange('premium')">Premium · ₹70+</button>
             </div>
           </div>
         </div>
