@@ -33,14 +33,12 @@ export class Admin implements OnInit {
   updatingId = signal<string | null>(null);
   lastRefreshed = signal<Date | null>(null);
   searchQuery = signal('');
-  sortCol = signal<'date' | 'total' | null>(null);
-  sortDir = signal<'asc' | 'desc'>('desc');
+  selectedDate = signal('');
 
   visibleOrders = computed(() => {
     const tab = this.activeTab();
     const q = this.searchQuery().trim().toLowerCase();
-    const col = this.sortCol();
-    const dir = this.sortDir();
+    const date = this.selectedDate();
 
     let list = tab === 'all' ? this.orders() : this.orders().filter(o => o.status === tab);
 
@@ -52,12 +50,8 @@ export class Admin implements OnInit {
       );
     }
 
-    if (col) {
-      list = [...list].sort((a, b) => {
-        const va = col === 'date' ? new Date(a.created_at).getTime() : a.total;
-        const vb = col === 'date' ? new Date(b.created_at).getTime() : b.total;
-        return dir === 'asc' ? va - vb : vb - va;
-      });
+    if (date) {
+      list = list.filter(o => (o.created_at || '').startsWith(date));
     }
 
     return list;
@@ -136,25 +130,20 @@ export class Admin implements OnInit {
   }
 
   formatDate(dateStr: string): string {
-    return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'Asia/Kolkata' });
   }
 
   formatTime(dateStr: string): string {
-    return new Date(dateStr).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+    return new Date(dateStr).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'Asia/Kolkata' });
   }
 
   formatRefreshed(): string {
     const d = this.lastRefreshed();
-    return d ? d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit' }) : '';
+    return d ? d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit', timeZone: 'Asia/Kolkata' }) : '';
   }
 
-  toggleSort(col: 'date' | 'total'): void {
-    if (this.sortCol() === col) {
-      this.sortDir.set(this.sortDir() === 'asc' ? 'desc' : 'asc');
-    } else {
-      this.sortCol.set(col);
-      this.sortDir.set('desc');
-    }
+  clearDate(): void {
+    this.selectedDate.set('');
   }
 
 }

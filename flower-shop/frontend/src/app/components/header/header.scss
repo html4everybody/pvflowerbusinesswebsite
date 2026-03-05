@@ -76,8 +76,8 @@
       }
     }
 
-    .nav-signin, .nav-user-greeting, .nav-orders-link, .nav-logout-btn,
-    .nav-wishlist-link, .nav-theme-btn { display: none; }
+    .nav-signin, .nav-user-greeting, .nav-orders-link, .nav-extra-link,
+    .nav-logout-btn, .nav-wishlist-link, .nav-theme-btn { display: none; }
 
     .nav-builder {
       color: #444 !important;
@@ -165,7 +165,7 @@
       border-radius: var(--radius-sm);
       transition: border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
 
-      &:hover {
+      &:hover, &.active {
         border-color: var(--accent);
         color: var(--accent);
         box-shadow: 0 2px 8px rgba(200,75,122,0.1);
@@ -247,7 +247,7 @@
     text-decoration: none;
     transition: background 0.15s ease, color 0.15s ease;
 
-    &:hover {
+    &:hover, &.active {
       background: var(--accent-light);
       color: var(--accent);
     }
@@ -290,7 +290,7 @@
     text-decoration: none;
     transition: background 0.15s ease, color 0.15s ease;
 
-    &:hover {
+    &:hover, &.active {
       background: var(--accent-light);
       color: var(--accent);
     }
@@ -712,6 +712,14 @@
       border-bottom: 1px solid var(--border);
       flex-direction: column;
       height: auto;
+      max-height: 60vh;
+      overflow-y: auto;
+      scrollbar-width: thin;
+      scrollbar-color: var(--accent) transparent;
+
+      &::-webkit-scrollbar { width: 4px; }
+      &::-webkit-scrollbar-track { background: transparent; }
+      &::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 99px; }
       padding: 0.5rem 0;
       box-shadow: var(--shadow-md);
       animation: slideDown 0.2s ease;
@@ -752,7 +760,8 @@
         display: block;
       }
 
-      .nav-orders-link {
+      .nav-orders-link,
+      .nav-extra-link {
         display: flex;
         padding: 0.9rem 1.5rem;
         color: #555;
@@ -761,7 +770,7 @@
         border-left: 3px solid transparent;
         transition: background 0.15s ease;
 
-        &:hover { background: var(--accent-light); color: var(--accent); }
+        &:hover, &.active { background: var(--accent-light); color: var(--accent); border-left-color: var(--accent); }
       }
 
       .nav-logout-btn {
@@ -788,10 +797,14 @@
         gap: 0.6rem;
         padding: 0.9rem 1.5rem;
         border-top: 1px solid var(--border);
+        border-left: 3px solid transparent;
         margin-top: 0.25rem;
         color: #555;
         font-weight: 500;
         font-size: 1rem;
+        transition: background 0.15s ease;
+
+        &:hover, &.active { background: var(--accent-light); color: var(--accent); border-left-color: var(--accent); }
 
         .nav-wishlist-count {
           background: var(--accent);

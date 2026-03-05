@@ -18,12 +18,15 @@
 
         @if (authService.user()) {
           @if (authService.isAdmin()) {
-            <a routerLink="/admin" class="nav-admin-link" (click)="closeMenu()">Admin Dashboard</a>
+            <a routerLink="/admin" routerLinkActive="active" class="nav-admin-link" (click)="closeMenu()">Admin Dashboard</a>
           }
-          <a routerLink="/orders" class="nav-orders-link" (click)="closeMenu()">My Orders</a>
+          <a routerLink="/orders" routerLinkActive="active" class="nav-orders-link" (click)="closeMenu()">My Orders</a>
+          <a routerLink="/my-subscriptions" routerLinkActive="active" class="nav-extra-link" (click)="closeMenu()">My Subscriptions</a>
+          <a routerLink="/my-corporate" routerLinkActive="active" class="nav-extra-link" (click)="closeMenu()">Corporate Orders</a>
+          <a routerLink="/my-loyalty" routerLinkActive="active" class="nav-extra-link" (click)="closeMenu()">My Loyalty Points</a>
         }
 
-        <a routerLink="/wishlist" class="nav-wishlist-link" (click)="closeMenu()">
+        <a routerLink="/wishlist" routerLinkActive="active" class="nav-wishlist-link" (click)="closeMenu()">
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
           </svg>
@@ -96,18 +99,7 @@
           </button>
           @if (userMenuOpen) {
             <div class="user-dropdown">
-              @if (authService.isAdmin()) {
-                <a routerLink="/admin" (click)="closeMenu()" class="admin-link">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <rect x="3" y="3" width="7" height="7"></rect>
-                    <rect x="14" y="3" width="7" height="7"></rect>
-                    <rect x="14" y="14" width="7" height="7"></rect>
-                    <rect x="3" y="14" width="7" height="7"></rect>
-                  </svg>
-                  Admin Dashboard
-                </a>
-              }
-              <a routerLink="/orders" (click)="closeMenu()">
+              <a routerLink="/orders" routerLinkActive="active" (click)="closeMenu()">
                 <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
                   <polyline points="14 2 14 8 20 8"></polyline>
@@ -117,20 +109,20 @@
                 </svg>
                 My Orders
               </a>
-              <a routerLink="/my-subscriptions" (click)="closeMenu()">
+              <a routerLink="/my-subscriptions" routerLinkActive="active" (click)="closeMenu()">
                 <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
                 </svg>
                 My Subscriptions
               </a>
-              <a routerLink="/my-corporate" (click)="closeMenu()">
+              <a routerLink="/my-corporate" routerLinkActive="active" (click)="closeMenu()">
                 <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
                   <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
                 </svg>
                 Corporate Orders
               </a>
-              <a routerLink="/my-loyalty" (click)="closeMenu()">
+              <a routerLink="/my-loyalty" routerLinkActive="active" (click)="closeMenu()">
                 <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
                 </svg>
@@ -167,7 +159,7 @@
       </button>
 
       <!-- Wishlist Icon -->
-      <a routerLink="/wishlist" class="wishlist-icon" title="My Wishlist">
+      <a routerLink="/wishlist" routerLinkActive="active" class="wishlist-icon" title="My Wishlist">
         @if (wishlistService.count() > 0) {
           <svg xmlns="http://www.w3.org/2000/svg" width="21" height="21" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
@@ -182,7 +174,7 @@
         }
       </a>
 
-      <a routerLink="/cart" class="cart-icon" [class.bounce]="cartService.cartBounce()">
+      <a routerLink="/cart" routerLinkActive="active" class="cart-icon" [class.bounce]="cartService.cartBounce()">
         <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="9" cy="21" r="1"></circle>
           <circle cx="20" cy="21" r="1"></circle>

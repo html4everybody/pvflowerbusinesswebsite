@@ -17,6 +17,10 @@ export class OrderDetail implements OnInit {
     confirmed: 'Confirmed', preparing: 'Preparing',
     out_for_delivery: 'Out for Delivery', delivered: 'Delivered', cancelled: 'Cancelled'
   };
+  readonly STATUS_ICONS: Record<string, string> = {
+    confirmed: '✅', preparing: '👨‍🍳', out_for_delivery: '🚚', delivered: '📦', cancelled: '❌'
+  };
+  readonly PIPELINE_STATUSES = ['confirmed', 'preparing', 'out_for_delivery', 'delivered'] as const;
   readonly NEXT_STATUSES: Record<string, string[]> = {
     confirmed: ['preparing', 'out_for_delivery', 'delivered'],
     preparing: ['out_for_delivery', 'delivered'],
@@ -53,7 +57,7 @@ export class OrderDetail implements OnInit {
   savingDelivery = signal(false);
   deliverySaveError = signal('');
 
-  minDate = new Date().toISOString().split('T')[0];
+  minDate = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date());
 
   constructor(
     private route: ActivatedRoute,
@@ -168,13 +172,13 @@ export class OrderDetail implements OnInit {
 
   formatDate(dateStr: string): string {
     return new Date(dateStr).toLocaleDateString('en-US', {
-      year: 'numeric', month: 'long', day: 'numeric'
+      year: 'numeric', month: 'long', day: 'numeric', timeZone: 'Asia/Kolkata'
     });
   }
 
   formatRecurrenceDate(dateStr: string): string {
     return new Date(dateStr + 'T12:00:00').toLocaleDateString('en-US',
-      { month: 'long', day: 'numeric', year: 'numeric' });
+      { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'Asia/Kolkata' });
   }
 
   get isAdmin(): boolean { return this.authService.isAdmin(); }
@@ -201,7 +205,7 @@ export class OrderDetail implements OnInit {
     if (o.delivery_datetime) {
       const [datePart, timePart] = o.delivery_datetime.split('T');
       const dateStr = new Date(datePart + 'T12:00:00').toLocaleDateString('en-US', {
-        weekday: 'short', year: 'numeric', month: 'short', day: 'numeric'
+        weekday: 'short', year: 'numeric', month: 'short', day: 'numeric', timeZone: 'Asia/Kolkata'
       });
       const timeKey = timePart?.substring(0, 5);
       const timeLabel = this.timeSlotsMap[timeKey] || timeKey;

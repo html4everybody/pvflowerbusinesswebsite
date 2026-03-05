@@ -381,11 +381,11 @@ STATUS_MESSAGES = {
 }
 
 VALID_STATUS_TRANSITIONS = {
-    "confirmed":        ["preparing", "out_for_delivery", "delivered"],
-    "preparing":        ["out_for_delivery", "delivered"],
-    "out_for_delivery": ["delivered"],
-    "delivered":        [],
-    "cancelled":        [],
+    "confirmed":        ["preparing", "out_for_delivery", "delivered", "cancelled"],
+    "preparing":        ["confirmed", "out_for_delivery", "delivered", "cancelled"],
+    "out_for_delivery": ["confirmed", "preparing", "delivered", "cancelled"],
+    "delivered":        ["confirmed", "preparing", "out_for_delivery", "cancelled"],
+    "cancelled":        ["confirmed", "preparing", "out_for_delivery", "delivered"],
 }
 
 # ── Pydantic Models ────────────────────────────────────────────────────────────
