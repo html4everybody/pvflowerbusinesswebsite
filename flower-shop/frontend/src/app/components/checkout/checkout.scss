@@ -420,11 +420,11 @@
 /* ── Place Order Button ───────────────────────────────────── */
 .btn-place-order {
   width: 100%;
-  background: var(--text);
+  background: linear-gradient(180deg, #2e2e2e 0%, var(--text) 100%);
   color: var(--bg);
   border: none;
   padding: 1rem 1.5rem;
-  border-radius: 10px;
+  border-radius: var(--radius-full);
   font-size: 1rem;
   font-weight: 700;
   cursor: pointer;
@@ -432,12 +432,14 @@
   align-items: center;
   justify-content: center;
   gap: 0.6rem;
-  transition: opacity 0.15s ease, transform 0.1s ease;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.22), inset 0 1px 0 rgba(255,255,255,0.1);
+  transition: opacity 0.15s ease, transform 0.1s ease, box-shadow 0.15s ease;
   letter-spacing: 0.01em;
 
   &:hover:not(:disabled) {
-    opacity: 0.85;
+    opacity: 0.9;
     transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.28), inset 0 1px 0 rgba(255,255,255,0.1);
   }
 
   &:active:not(:disabled) {
@@ -675,18 +677,19 @@
 
       .promo-btn {
         padding: 0.55rem 1rem;
-        background: var(--text);
+        background: linear-gradient(180deg, #2e2e2e 0%, var(--text) 100%);
         color: var(--bg);
         border: none;
-        border-radius: 8px;
+        border-radius: var(--radius-full);
         font-size: 0.82rem;
         font-weight: 700;
         cursor: pointer;
         white-space: nowrap;
-        transition: opacity 0.15s ease;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,0.08);
+        transition: opacity 0.15s ease, transform 0.15s ease;
         font-family: inherit;
 
-        &:hover:not(:disabled) { opacity: 0.85; }
+        &:hover:not(:disabled) { opacity: 0.9; transform: translateY(-1px); }
         &:disabled { opacity: 0.4; cursor: not-allowed; }
 
         &.promo-btn-remove {
@@ -913,16 +916,17 @@
     display: inline-flex;
     align-items: center;
     gap: 0.5rem;
-    background: var(--text);
+    background: linear-gradient(180deg, #2e2e2e 0%, var(--text) 100%);
     color: var(--bg);
     padding: 0.875rem 2rem;
-    border-radius: 10px;
+    border-radius: var(--radius-full);
     text-decoration: none;
     font-weight: 700;
     font-size: 0.95rem;
-    transition: opacity 0.15s ease;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.22), inset 0 1px 0 rgba(255,255,255,0.1);
+    transition: opacity 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
 
-    &:hover { opacity: 0.85; }
+    &:hover { opacity: 0.9; transform: translateY(-1px); box-shadow: 0 6px 20px rgba(0,0,0,0.28), inset 0 1px 0 rgba(255,255,255,0.1); }
   }
 }
 

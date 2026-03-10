@@ -22,14 +22,14 @@
 
             <div class="form-row">
               <div class="form-group">
-                <label for="firstName">First Name <span class="required-star">*</span></label>
+                <label for="firstName">First Name<span class="required-star">*</span></label>
                 <input type="text" id="firstName" #firstNameField="ngModel" [(ngModel)]="formData.firstName" name="firstName" placeholder="John" required>
                 @if (firstNameField.invalid && firstNameField.touched) {
                   <div class="field-error">First name is required</div>
                 }
               </div>
               <div class="form-group">
-                <label for="lastName">Last Name <span class="required-star">*</span></label>
+                <label for="lastName">Last Name<span class="required-star">*</span></label>
                 <input type="text" id="lastName" #lastNameField="ngModel" [(ngModel)]="formData.lastName" name="lastName" placeholder="Doe" required>
                 @if (lastNameField.invalid && lastNameField.touched) {
                   <div class="field-error">Last name is required</div>
@@ -39,14 +39,14 @@
 
             <div class="form-row">
               <div class="form-group">
-                <label for="email">Email <span class="required-star">*</span></label>
+                <label for="email">Email<span class="required-star">*</span></label>
                 <input type="email" id="email" #emailField="ngModel" [(ngModel)]="formData.email" name="email" placeholder="you@example.com" required>
                 @if (emailField.invalid && emailField.touched) {
                   <div class="field-error">Email is required</div>
                 }
               </div>
               <div class="form-group">
-                <label for="phone">Phone <span class="required-star">*</span></label>
+                <label for="phone">Phone<span class="required-star">*</span></label>
                 <input type="tel" id="phone" #phoneField="ngModel" [(ngModel)]="formData.phone" name="phone" placeholder="1234567890" required>
                 @if (phoneField.invalid && phoneField.touched) {
                   <div class="field-error">Phone number is required</div>
@@ -55,7 +55,7 @@
             </div>
 
             <div class="form-group full-width">
-              <label for="address">Street Address <span class="required-star">*</span></label>
+              <label for="address">Street Address<span class="required-star">*</span></label>
               <input type="text" id="address" #addressField="ngModel" [(ngModel)]="formData.address" name="address" placeholder="123 Main Street, Apt 4B" required>
               @if (addressField.invalid && addressField.touched) {
                 <div class="field-error">Address is required</div>
@@ -64,21 +64,21 @@
 
             <div class="form-row three-col">
               <div class="form-group">
-                <label for="city">City <span class="required-star">*</span></label>
+                <label for="city">City<span class="required-star">*</span></label>
                 <input type="text" id="city" #cityField="ngModel" [(ngModel)]="formData.city" name="city" placeholder="New York" required>
                 @if (cityField.invalid && cityField.touched) {
                   <div class="field-error">City is required</div>
                 }
               </div>
               <div class="form-group">
-                <label for="state">State <span class="required-star">*</span></label>
+                <label for="state">State<span class="required-star">*</span></label>
                 <input type="text" id="state" #stateField="ngModel" [(ngModel)]="formData.state" name="state" placeholder="NY" required>
                 @if (stateField.invalid && stateField.touched) {
                   <div class="field-error">State is required</div>
                 }
               </div>
               <div class="form-group">
-                <label for="zip">ZIP Code <span class="required-star">*</span></label>
+                <label for="zip">ZIP Code<span class="required-star">*</span></label>
                 <input type="text" id="zip" #zipField="ngModel" [(ngModel)]="formData.zip" name="zip" placeholder="10001" required>
                 @if (zipField.invalid && zipField.touched) {
                   <div class="field-error">ZIP code is required</div>
@@ -150,7 +150,7 @@
                 </div>
                 <div class="form-row">
                   <div class="form-group">
-                    <label for="deliveryDate">Delivery Date <span class="required-star">*</span></label>
+                    <label for="deliveryDate">Delivery Date<span class="required-star">*</span></label>
                     <input type="date" id="deliveryDate" #deliveryDateField="ngModel"
                       [(ngModel)]="formData.deliveryDate" name="deliveryDate"
                       [min]="minDate"
@@ -160,7 +160,7 @@
                     }
                   </div>
                   <div class="form-group">
-                    <label for="deliveryTime">Delivery Time <span class="required-star">*</span></label>
+                    <label for="deliveryTime">Delivery Time<span class="required-star">*</span></label>
                     <select id="deliveryTime" #deliveryTimeField="ngModel"
                       [(ngModel)]="formData.deliveryTime" name="deliveryTime"
                       [required]="deliveryType() === 'scheduled'">
@@ -196,7 +196,7 @@
             </div>
 
             <div class="form-group full-width">
-              <label for="cardName">Name on Card <span class="required-star">*</span></label>
+              <label for="cardName">Name on Card<span class="required-star">*</span></label>
               <input type="text" id="cardName" #cardNameField="ngModel" [(ngModel)]="formData.cardName" name="cardName" placeholder="John Doe" required>
               @if (cardNameField.invalid && cardNameField.touched) {
                 <div class="field-error">Name on card is required</div>
@@ -204,7 +204,7 @@
             </div>
 
             <div class="form-group full-width">
-              <label for="cardNumber">Card Number <span class="required-star">*</span></label>
+              <label for="cardNumber">Card Number<span class="required-star">*</span></label>
               <div class="input-with-icon">
                 <input type="text" id="cardNumber" #cardNumberField="ngModel" [(ngModel)]="formData.cardNumber" name="cardNumber" placeholder="1234  5678  9012  3456" required>
                 <svg class="field-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -219,7 +219,7 @@
 
             <div class="form-row">
               <div class="form-group">
-                <label for="expiry">Expiry Date <span class="required-star">*</span></label>
+                <label for="expiry">Expiry Date<span class="required-star">*</span></label>
                 <input type="text" id="expiry" #expiryField="ngModel" [(ngModel)]="formData.expiry" name="expiry" placeholder="MM / YY" required>
                 @if (expiryField.invalid && expiryField.touched) {
                   <div class="field-error">Expiry date is required</div>
@@ -227,7 +227,7 @@
               </div>
               <div class="form-group">
                 <label for="cvv">
-                  CVV <span class="required-star">*</span>
+                  CVV<span class="required-star">*</span>
                   <span class="cvv-hint">3–4 digits on back</span>
                 </label>
                 <input type="text" id="cvv" #cvvField="ngModel" [(ngModel)]="formData.cvv" name="cvv" placeholder="•••" required>

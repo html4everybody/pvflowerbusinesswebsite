@@ -72,6 +72,12 @@
   50%       { box-shadow: 0 0 0 6px rgba(200, 75, 122, 0);   }
 }
 
+@keyframes shimmerSweep {
+  0%   { left: -100%; }
+  55%  { left: 140%; }
+  100% { left: 140%; }
+}
+
 @keyframes scaleIn {
   from { transform: scale(0.85); opacity: 0; }
   to   { transform: scale(1);    opacity: 1; }
@@ -89,7 +95,12 @@
   box-sizing: border-box;
 }
 
-html { scroll-behavior: smooth; }
+html {
+  scroll-behavior: smooth;
+  overflow-y: scroll;
+  overflow-x: hidden;
+  scrollbar-gutter: auto;
+}
 
 body {
   font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
@@ -99,6 +110,7 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   transition: background 0.3s ease, color 0.3s ease;
+  overflow-x: hidden;
 }
 
 h1, h2 {
@@ -121,13 +133,31 @@ img {
 }
 
 // ── Custom Scrollbar ─────────────────────────────────────────────────────────
-::-webkit-scrollbar       { width: 8px; }
-::-webkit-scrollbar-track { background: var(--bg); }
+html::-webkit-scrollbar,
+::-webkit-scrollbar {
+  width: 50px;
+}
+
+html::-webkit-scrollbar-track,
+::-webkit-scrollbar-track {
+  background: #f0f0f0;
+}
+
+html::-webkit-scrollbar-thumb,
 ::-webkit-scrollbar-thumb {
-  background: #d4a0bc;
+  background: #b0b0b0;
   border-radius: 4px;
 }
-::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+
+html::-webkit-scrollbar-thumb:hover,
+::-webkit-scrollbar-thumb:hover {
+  background: #707070;
+}
+
+// Firefox
+html {
+  scrollbar-color: #b0b0b0 #f0f0f0;
+}
 
 // ── Selection ────────────────────────────────────────────────────────────────
 ::selection {
@@ -159,7 +189,7 @@ img {
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
-  background: var(--accent);
+  background: linear-gradient(180deg, #d85c8a 0%, var(--accent) 50%, #b83770 100%);
   color: white;
   padding: 0.75rem 1.5rem;
   border: none;
@@ -168,12 +198,12 @@ img {
   font-weight: 600;
   cursor: pointer;
   transition: background 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
-  box-shadow: 0 4px 16px rgba(200, 75, 122, 0.3);
+  box-shadow: 0 4px 16px rgba(200, 75, 122, 0.35), inset 0 1px 0 rgba(255,255,255,0.15);
 
   &:hover {
-    background: var(--accent-dark);
+    background: linear-gradient(180deg, #e06898 0%, var(--accent-dark) 100%);
     transform: translateY(-1px);
-    box-shadow: 0 8px 24px rgba(200, 75, 122, 0.4);
+    box-shadow: 0 8px 24px rgba(200, 75, 122, 0.45), inset 0 1px 0 rgba(255,255,255,0.15);
   }
 
   &:active { transform: translateY(0); }

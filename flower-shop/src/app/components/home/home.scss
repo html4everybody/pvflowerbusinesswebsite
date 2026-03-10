@@ -7,89 +7,101 @@
 
   // Hero Section
   .hero {
-    min-height: 55vh;
+    min-height: 85vh;
     display: flex;
     align-items: center;
-    justify-content: center;
-    text-align: center;
-    color: white;
+    justify-content: flex-start;
+    text-align: left;
+    color: #1a1a1a;
     position: relative;
     overflow: hidden;
-    background:
-      linear-gradient(to bottom, rgba(0,0,0,0.12) 0%, rgba(0,0,0,0.58) 100%),
-      url('https://images.unsplash.com/photo-1487530811176-3780de880c2d?w=1600&q=85') center/cover no-repeat;
+    background: #fdfbfb;
+    padding-top: 70px; // account for fixed header
 
-    @media (max-width: 600px) {
-      min-height: 45vh;
+    &::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      width: 60%;
+      background: url('https://images.unsplash.com/photo-1490750967868-88aa4486c946?q=80&w=1600') center/cover no-repeat;
+      mask-image: linear-gradient(to right, transparent, black 40%);
+      -webkit-mask-image: linear-gradient(to right, transparent, black 40%);
+      opacity: 0.9;
+      pointer-events: none;
+
+      @media (max-width: 900px) {
+        width: 100%;
+        mask-image: linear-gradient(to bottom, transparent, black 60%);
+        -webkit-mask-image: linear-gradient(to bottom, transparent, black 60%);
+        opacity: 0.3;
+      }
     }
 
     .hero-content {
       position: relative;
       z-index: 1;
-      max-width: 640px;
-      padding: 2rem;
+      max-width: 650px;
+      padding: 3rem 0;
       display: flex;
       flex-direction: column;
-      align-items: center;
-      gap: 1.25rem;
-
-      .hero-tag {
-        display: inline-block;
-        background: rgba(255,255,255,0.18);
-        border: 1px solid rgba(255,255,255,0.45);
-        backdrop-filter: blur(6px);
-        color: white;
-        font-size: 0.78rem;
-        font-weight: 600;
-        letter-spacing: 1px;
-        text-transform: uppercase;
-        padding: 0.35rem 1rem;
-        border-radius: 999px;
-      }
+      align-items: flex-start;
+      gap: 1.5rem;
+      animation: fadeInUp 1s cubic-bezier(0.16, 1, 0.3, 1);
 
       h1 {
-        font-size: 3.2rem;
+        font-size: 4.8rem;
         font-weight: 800;
-        line-height: 1.15;
+        line-height: 1.05;
         margin: 0;
-        text-shadow: 0 2px 16px rgba(0,0,0,0.35);
+        color: #1a1a1a;
+        letter-spacing: -0.03em;
+        text-shadow: none;
+
+        @media (max-width: 1024px) {
+          font-size: 4rem;
+        }
 
         @media (max-width: 600px) {
-          font-size: 2rem;
+          font-size: 3rem;
         }
       }
 
       p {
-        font-size: 1.1rem;
-        opacity: 0.9;
+        font-size: 1.25rem;
+        color: #4b5563;
         margin: 0;
-        max-width: 480px;
+        max-width: 500px;
+        font-weight: 400;
+        line-height: 1.6;
+        text-shadow: none;
       }
 
       .btn-shop-now {
         display: inline-flex;
         align-items: center;
-        gap: 0.5rem;
-        margin-top: 0.5rem;
-        background: white;
-        color: #1a1a1a;
+        gap: 0.6rem;
+        margin-top: 1rem;
+        background: linear-gradient(135deg, #ff4757, #ff6b81);
+        color: white;
         border: none;
-        padding: 0.85rem 2rem;
-        border-radius: 999px;
-        font-size: 1rem;
+        padding: 1.1rem 2.5rem;
+        border-radius: 100px;
+        font-size: 1.1rem;
         font-weight: 700;
         cursor: pointer;
-        box-shadow: 0 8px 28px rgba(0,0,0,0.25);
-        transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+        box-shadow: 0 10px 25px rgba(255, 71, 87, 0.3);
+        transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 
         svg {
           transition: transform 0.3s ease;
         }
 
         &:hover {
-          background: #f0f0f0;
-          transform: translateY(-2px);
-          box-shadow: 0 14px 36px rgba(0,0,0,0.3);
+          transform: translateY(-3px);
+          box-shadow: 0 15px 35px rgba(255, 71, 87, 0.4);
+          background: linear-gradient(135deg, #ff6b81, #ff8a9c);
 
           svg {
             transform: translateY(3px);
@@ -98,21 +110,28 @@
 
         &:active {
           transform: translateY(0);
+          box-shadow: 0 5px 15px rgba(255, 71, 87, 0.4);
         }
       }
     }
   }
 
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(30px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
   // Features Section
   .features {
-    padding: 2.5rem 0;
-    background: #fafafa;
-    border-bottom: 1px solid #eee;
+    padding: 3rem 0;
+    background: #f8f4f0;
+    position: relative;
+    z-index: 2;
 
     .feature-grid {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
-      gap: 1.5rem;
+      gap: 2rem;
 
       @media (max-width: 900px) {
         grid-template-columns: repeat(2, 1fr);
@@ -125,27 +144,38 @@
 
     .feature-card {
       text-align: center;
-      padding: 1.25rem;
-      background: white;
-      border-radius: 8px;
-      border: 1px solid #eee;
+      padding: 2rem 1.5rem;
+      background: rgba(255, 255, 255, 0.8);
+      backdrop-filter: blur(10px);
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,0.9);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.03);
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+
+      &:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 15px 35px rgba(0,0,0,0.06);
+      }
 
       .feature-icon {
-        font-size: 2rem;
+        font-size: 2.5rem;
         display: block;
-        margin-bottom: 0.5rem;
+        margin-bottom: 1rem;
+        filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1));
       }
 
       h3 {
-        color: #333;
-        margin-bottom: 0.2rem;
-        font-size: 0.95rem;
+        color: #1a1a1a;
+        margin-bottom: 0.5rem;
+        font-size: 1.1rem;
+        font-weight: 700;
       }
 
       p {
-        color: #888;
+        color: #6b7280;
         margin: 0;
-        font-size: 0.85rem;
+        font-size: 0.9rem;
+        line-height: 1.5;
       }
     }
   }
