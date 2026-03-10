@@ -18,6 +18,7 @@ export class Header {
   menuOpen = false;
   searchOpen = false;
   userMenuOpen = false;
+  navStackOpen = false;
   isScrolled = false;
   showSuggestions = false;
 
@@ -39,6 +40,7 @@ export class Header {
     if (!headerEl.contains(target)) {
       this.showSuggestions = false;
       this.userMenuOpen = false;
+      this.navStackOpen = false;
       this.menuOpen = false;
       this.searchOpen = false;
       return;
@@ -63,6 +65,12 @@ export class Header {
     const userMenu = headerEl.querySelector('.user-menu-wrapper');
     if (!userMenu?.contains(target)) {
       this.userMenuOpen = false;
+    }
+
+    // Close nav stack unless click was inside it
+    const navStack = headerEl.querySelector('.nav-stack-wrapper');
+    if (!navStack?.contains(target)) {
+      this.navStackOpen = false;
     }
   }
 
@@ -139,6 +147,18 @@ export class Header {
 
   toggleUserMenu(): void {
     this.userMenuOpen = !this.userMenuOpen;
+  }
+
+  toggleNavStack(): void {
+    this.navStackOpen = !this.navStackOpen;
+  }
+
+  get userInitials(): string {
+    const user = this.authService.user();
+    if (!user) return '';
+    const f = user.firstName?.[0] ?? '';
+    const l = user.lastName?.[0] ?? '';
+    return (f + l).toUpperCase();
   }
 
   logout(): void {

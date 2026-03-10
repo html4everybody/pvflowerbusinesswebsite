@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, signal } from '@angular/core';
+import { Component, OnInit, OnDestroy, AfterViewInit, ViewChild, ElementRef, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { ProductService } from '../../services/product';
 import { CartService } from '../../services/cart';
@@ -15,7 +15,8 @@ import { FadeInDirective } from '../../directives/fade-in';
   templateUrl: './home.html',
   styleUrl: './home.scss'
 })
-export class Home implements OnInit, OnDestroy {
+export class Home implements OnInit, AfterViewInit, OnDestroy {
+  @ViewChild('heroVideo') heroVideoRef!: ElementRef<HTMLVideoElement>;
   products: Product[] = [];
   categories: string[] = [];
   selectedCategory: string = 'All';
@@ -74,6 +75,14 @@ export class Home implements OnInit, OnDestroy {
     this.categories = this.productService.getCategories();
     this.promoService.getOffers().subscribe({ next: d => this.offers.set(d), error: () => {} });
     window.addEventListener('scroll', this.scrollListener, { passive: true });
+  }
+
+  ngAfterViewInit(): void {
+    const video = this.heroVideoRef?.nativeElement;
+    if (video) {
+      video.muted = true;
+      video.play().catch(() => {});
+    }
   }
 
   ngOnDestroy(): void {

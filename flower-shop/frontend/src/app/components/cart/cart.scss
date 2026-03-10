@@ -197,19 +197,22 @@
     .btn-checkout {
       display: block;
       width: 100%;
-      background: var(--text);
+      background: linear-gradient(180deg, #2e2e2e 0%, var(--text) 100%);
       color: var(--bg);
       text-align: center;
       padding: 0.875rem;
-      border-radius: 4px;
+      border-radius: var(--radius-full);
       text-decoration: none;
       font-weight: 600;
       font-size: 1rem;
       margin-top: 1rem;
-      transition: opacity 0.15s ease;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.22), inset 0 1px 0 rgba(255,255,255,0.1);
+      transition: opacity 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
 
       &:hover {
-        opacity: 0.85;
+        opacity: 0.9;
+        transform: translateY(-1px);
+        box-shadow: 0 6px 20px rgba(0,0,0,0.28), inset 0 1px 0 rgba(255,255,255,0.1);
       }
     }
 
@@ -254,16 +257,19 @@
 
     .btn-shop {
       display: inline-block;
-      background: var(--text);
+      background: linear-gradient(180deg, #2e2e2e 0%, var(--text) 100%);
       color: var(--bg);
       padding: 0.875rem 1.5rem;
-      border-radius: 4px;
+      border-radius: var(--radius-full);
       text-decoration: none;
       font-weight: 600;
-      transition: opacity 0.15s ease;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.22), inset 0 1px 0 rgba(255,255,255,0.1);
+      transition: opacity 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
 
       &:hover {
-        opacity: 0.85;
+        opacity: 0.9;
+        transform: translateY(-1px);
+        box-shadow: 0 6px 20px rgba(0,0,0,0.28), inset 0 1px 0 rgba(255,255,255,0.1);
       }
     }
   }

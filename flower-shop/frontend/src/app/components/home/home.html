@@ -1,39 +1,15 @@
 <main class="home">
 
-  <!-- ── Hero Section (Parallax) ──────────────────────────────────────────── -->
+  <!-- ── Hero Section ──────────────────────────────────────────── -->
   <section class="hero">
-    <div class="hero-parallax"></div>
-    <div class="petals" aria-hidden="true">
-      <span class="petal p1">🌸</span>
-      <span class="petal p2">🌺</span>
-      <span class="petal p3">🌷</span>
-      <span class="petal p4">🌸</span>
-      <span class="petal p5">🏵️</span>
-      <span class="petal p6">🌺</span>
-      <span class="petal p7">🌷</span>
-      <span class="petal p8">🌸</span>
-    </div>
+    <video #heroVideo class="hero-video" autoplay muted loop playsinline>
+      <source src="hero-flowers.mp4" type="video/mp4">
+    </video>
+    <div class="hero-overlay"></div>
     <div class="hero-content">
-      <span class="hero-tag">✨ Premium Flower Shop</span>
-      <h1>Nature's Beauty,<br><em>Delivered Fresh</em></h1>
-      <p>Handpicked blooms for every occasion — birthdays, weddings, anniversaries, or just because.</p>
       <div class="hero-actions">
-        <button class="btn-shop-now" (click)="scrollToCollection()">
-          Shop Collection
-          <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="12" y1="5" x2="12" y2="19"></line>
-            <polyline points="19 12 12 19 5 12"></polyline>
-          </svg>
-        </button>
-        <a routerLink="/builder" class="btn-builder">🎨 Build Your Bouquet</a>
-        <a routerLink="/contact" class="btn-outline">Custom Order</a>
-      </div>
-      <div class="hero-trust">
-        <span>🌿 Same-day delivery</span>
-        <span class="dot">•</span>
-        <span>⭐ 4.9 rated</span>
-        <span class="dot">•</span>
-        <span>🎁 100+ varieties</span>
+        <button class="btn-shop-now" (click)="scrollToCollection()">Shop Now</button>
+        <a routerLink="/occasions" class="btn-hero-outline">Explore Occasions</a>
       </div>
     </div>
   </section>
