@@ -1,6 +1,6 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr
 from typing import Optional
 import uuid
 import os
@@ -390,13 +390,13 @@ VALID_STATUS_TRANSITIONS = {
 
 # ── Pydantic Models ────────────────────────────────────────────────────────────
 class LoginRequest(BaseModel):
-    email: str
+    email: EmailStr
     password: str
 
 class RegisterRequest(BaseModel):
     firstName: str
     lastName: str
-    email: str
+    email: EmailStr
     password: str
     referral_code: Optional[str] = None
 
@@ -428,6 +428,7 @@ class OrderRequest(BaseModel):
     promo_code: Optional[str] = None
     is_recurring: bool = False
     recurrence_type: Optional[str] = None   # 'annual'
+    payment_method: Optional[str] = "cod"   # cod | credit_card | debit_card | phonepe | google_pay
 
 class UpdateDeliveryRequest(BaseModel):
     delivery_type: str
@@ -796,6 +797,7 @@ def create_order(req: OrderRequest):
             "is_recurring": req.is_recurring,
             "recurrence_type": req.recurrence_type,
             "next_recurrence_date": next_recurrence_date,
+            "payment_method": req.payment_method,
         }).execute()
     except Exception as e:
         print(f"Order insert error: {e}")
