@@ -1,6 +1,6 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr
 from typing import Optional
 import uuid
 import os
@@ -197,6 +197,155 @@ def build_reminder_email_html(order: dict, days_before: int, is_recurrence: bool
 </html>
 """
 
+def build_order_confirmation_email_html(order: dict, items: list) -> str:
+    customer_name = order.get("customer_name", "")
+    first_name = customer_name.split()[0] if customer_name else "there"
+    order_id = order.get("id", "")
+    total = order.get("total", 0)
+    delivery_type = order.get("delivery_type", "immediate")
+    address = order.get("customer_address", "")
+    payment = order.get("payment_method", "").replace("_", " ").title()
+
+    delivery_dt_str = order.get("delivery_datetime", "")
+    delivery_line = ""
+    if delivery_type == "scheduled" and delivery_dt_str:
+        try:
+            dt = datetime.strptime(delivery_dt_str[:16], "%Y-%m-%dT%H:%M")
+            delivery_line = f"<div style='font-size:0.88rem;color:#555;margin-top:0.25rem;'>Scheduled: {dt.strftime('%b %d, %Y at %I:%M %p')}</div>"
+        except Exception:
+            delivery_line = f"<div style='font-size:0.88rem;color:#555;margin-top:0.25rem;'>Scheduled: {delivery_dt_str}</div>"
+    else:
+        delivery_line = "<div style='font-size:0.88rem;color:#555;margin-top:0.25rem;'>Immediate delivery</div>"
+
+    items_rows = "".join(
+        f"<tr><td style='padding:0.4rem 0;font-size:0.9rem;color:#333;'>{it.get('name','')}</td>"
+        f"<td style='padding:0.4rem 0;font-size:0.9rem;color:#333;text-align:center;'>{it.get('quantity',1)}</td>"
+        f"<td style='padding:0.4rem 0;font-size:0.9rem;color:#333;text-align:right;'>₹{it.get('price',0):.2f}</td></tr>"
+        for it in items
+    )
+
+    return f"""<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"></head>
+<body style="margin:0;padding:0;background:#f4f4f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
+  <div style="max-width:560px;margin:2rem auto;border-radius:12px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
+    <div style="background:#1a1a1a;padding:1.5rem 2rem;display:flex;align-items:center;gap:0.75rem;">
+      <span style="font-size:1.4rem;">🌸</span>
+      <span style="color:white;font-size:1.05rem;font-weight:700;letter-spacing:0.01em;">FloranFlowers</span>
+      <span style="color:#888;margin-left:0.5rem;font-size:0.85rem;">/ Order Confirmed</span>
+    </div>
+    <div style="background:white;padding:2rem;">
+      <h1 style="font-size:1.3rem;font-weight:700;color:#111;margin:0 0 0.5rem;">
+        Thank you, {first_name}! Your order is confirmed 🎉
+      </h1>
+      <p style="color:#666;font-size:0.95rem;line-height:1.6;margin:0 0 1.5rem;">
+        We've received your order and will have your flowers ready soon.
+      </p>
+      <div style="background:#f8f9fa;border:1px solid #e4e4e7;border-radius:10px;padding:1.25rem;margin-bottom:1.25rem;">
+        <div style="font-size:0.78rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#888;margin-bottom:0.5rem;">Order Details</div>
+        <div style="font-size:0.95rem;font-weight:700;color:#111;font-family:monospace;">{order_id}</div>
+        {delivery_line}
+        {"<div style='font-size:0.88rem;color:#555;margin-top:0.25rem;'>Deliver to: " + address + "</div>" if address else ""}
+        {"<div style='font-size:0.88rem;color:#555;margin-top:0.25rem;'>Payment: " + payment + "</div>" if payment else ""}
+      </div>
+      <div style="background:#f8f9fa;border:1px solid #e4e4e7;border-radius:10px;padding:1.25rem;margin-bottom:1.25rem;">
+        <div style="font-size:0.78rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#888;margin-bottom:0.75rem;">Items Ordered</div>
+        <table style="width:100%;border-collapse:collapse;">
+          <thead>
+            <tr>
+              <th style="font-size:0.78rem;color:#888;text-align:left;padding-bottom:0.4rem;">Item</th>
+              <th style="font-size:0.78rem;color:#888;text-align:center;padding-bottom:0.4rem;">Qty</th>
+              <th style="font-size:0.78rem;color:#888;text-align:right;padding-bottom:0.4rem;">Price</th>
+            </tr>
+          </thead>
+          <tbody>{items_rows}</tbody>
+          <tfoot>
+            <tr style="border-top:1px solid #e4e4e7;">
+              <td colspan="2" style="padding-top:0.6rem;font-size:0.9rem;font-weight:700;color:#111;">Total</td>
+              <td style="padding-top:0.6rem;font-size:0.9rem;font-weight:700;color:#111;text-align:right;">₹{total:.2f}</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+      <p style="color:#aaa;font-size:0.78rem;margin:0;">
+        Thank you for choosing FloranFlowers 🌸<br>
+        If you have questions, reply to this email or visit our website.
+      </p>
+    </div>
+  </div>
+</body>
+</html>"""
+
+
+def send_order_confirmation_email(order: dict, items: list) -> bool:
+    if not _resend_api_key or not order.get("customer_email"):
+        return False
+    try:
+        _resend_lib.Emails.send({
+            "from": _reminder_from_email,
+            "to": [order["customer_email"]],
+            "subject": f"Your FloranFlowers Order {order.get('id','')} is Confirmed! 🌸",
+            "html": build_order_confirmation_email_html(order, items),
+        })
+        return True
+    except Exception:
+        return False
+
+
+def build_order_cancellation_email_html(order: dict) -> str:
+    customer_name = order.get("customer_name", "")
+    first_name = customer_name.split()[0] if customer_name else "there"
+    order_id = order.get("id", "")
+    total = order.get("total", 0)
+
+    return f"""<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"></head>
+<body style="margin:0;padding:0;background:#f4f4f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
+  <div style="max-width:560px;margin:2rem auto;border-radius:12px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
+    <div style="background:#1a1a1a;padding:1.5rem 2rem;display:flex;align-items:center;gap:0.75rem;">
+      <span style="font-size:1.4rem;">🌸</span>
+      <span style="color:white;font-size:1.05rem;font-weight:700;letter-spacing:0.01em;">FloranFlowers</span>
+      <span style="color:#888;margin-left:0.5rem;font-size:0.85rem;">/ Order Cancelled</span>
+    </div>
+    <div style="background:white;padding:2rem;">
+      <h1 style="font-size:1.3rem;font-weight:700;color:#111;margin:0 0 0.5rem;">
+        Hi {first_name}, your order has been cancelled.
+      </h1>
+      <p style="color:#666;font-size:0.95rem;line-height:1.6;margin:0 0 1.5rem;">
+        Your order has been successfully cancelled. We're sorry to see it go!
+        If this was a mistake or you need help, please contact us.
+      </p>
+      <div style="background:#fff5f5;border:1px solid #fecaca;border-radius:10px;padding:1.25rem;margin-bottom:1.5rem;">
+        <div style="font-size:0.78rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#888;margin-bottom:0.5rem;">Cancelled Order</div>
+        <div style="font-size:0.95rem;font-weight:700;color:#111;font-family:monospace;">{order_id}</div>
+        <div style="font-size:0.88rem;color:#555;margin-top:0.25rem;">Order Total: ₹{total:.2f}</div>
+      </div>
+      <p style="color:#aaa;font-size:0.78rem;margin:0;">
+        Thank you for choosing FloranFlowers 🌸<br>
+        We hope to see you again soon!
+      </p>
+    </div>
+  </div>
+</body>
+</html>"""
+
+
+def send_order_cancellation_email(order: dict) -> bool:
+    if not _resend_api_key or not order.get("customer_email"):
+        return False
+    try:
+        _resend_lib.Emails.send({
+            "from": _reminder_from_email,
+            "to": [order["customer_email"]],
+            "subject": f"Your FloranFlowers Order {order.get('id','')} Has Been Cancelled",
+            "html": build_order_cancellation_email_html(order),
+        })
+        return True
+    except Exception:
+        return False
+
+
 def send_email_reminder(order: dict, days_before: int, is_recurrence: bool = False) -> bool:
     if not _resend_api_key or not order.get("customer_email"):
         return False
@@ -390,13 +539,13 @@ VALID_STATUS_TRANSITIONS = {
 
 # ── Pydantic Models ────────────────────────────────────────────────────────────
 class LoginRequest(BaseModel):
-    email: str
+    email: EmailStr
     password: str
 
 class RegisterRequest(BaseModel):
     firstName: str
     lastName: str
-    email: str
+    email: EmailStr
     password: str
     referral_code: Optional[str] = None
 
@@ -428,6 +577,7 @@ class OrderRequest(BaseModel):
     promo_code: Optional[str] = None
     is_recurring: bool = False
     recurrence_type: Optional[str] = None   # 'annual'
+    payment_method: Optional[str] = "cod"   # cod | credit_card | debit_card | phonepe | google_pay
 
 class UpdateDeliveryRequest(BaseModel):
     delivery_type: str
@@ -748,6 +898,7 @@ def cancel_order(order_id: str):
         raise HTTPException(status_code=400, detail="Only confirmed or preparing orders can be cancelled")
     supabase.table("orders").update({"status": "cancelled"}).eq("id", order_id).execute()
     send_notifications(order_id, "cancelled", order.get("customer_phone") or "")
+    send_order_cancellation_email(order)
     return {"status": "cancelled"}
 
 @app.patch("/api/orders/{order_id}/status")
@@ -796,6 +947,7 @@ def create_order(req: OrderRequest):
             "is_recurring": req.is_recurring,
             "recurrence_type": req.recurrence_type,
             "next_recurrence_date": next_recurrence_date,
+            "payment_method": req.payment_method,
         }).execute()
     except Exception as e:
         print(f"Order insert error: {e}")
@@ -849,6 +1001,28 @@ def create_order(req: OrderRequest):
                 new_balance = updated.data[0]["points_balance"]
         except Exception:
             pass
+
+    # Send order confirmation email
+    order_record = {
+        "id": order_id,
+        "customer_email": customer_email,
+        "customer_name": req.customer.get("name", ""),
+        "customer_address": ", ".join(filter(None, [
+            req.customer.get("address", ""),
+            req.customer.get("city", ""),
+            req.customer.get("state", ""),
+            req.customer.get("zip", ""),
+        ])),
+        "total": req.total,
+        "delivery_type": req.delivery_type,
+        "delivery_datetime": req.delivery_datetime,
+        "payment_method": req.payment_method,
+    }
+    items_list = [
+        {"name": item.name, "price": item.price, "quantity": item.quantity}
+        for item in (req.items or [])
+    ]
+    send_order_confirmation_email(order_record, items_list)
 
     return {"orderId": order_id, "status": "confirmed", "points_earned": points_earned, "new_balance": new_balance}
 

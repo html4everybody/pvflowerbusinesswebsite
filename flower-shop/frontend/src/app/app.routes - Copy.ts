@@ -1,0 +1,42 @@
+import { Routes } from '@angular/router';
+import { Home } from './components/home/home';
+import { ProductDetail } from './components/product-detail/product-detail';
+import { Cart } from './components/cart/cart';
+import { Checkout } from './components/checkout/checkout';
+import { Contact } from './components/contact/contact';
+import { Signin } from './components/signin/signin';
+import { Orders } from './components/orders/orders';
+import { OrderDetail } from './components/order-detail/order-detail';
+import { BouquetBuilder } from './components/bouquet-builder/bouquet-builder';
+import { Wishlist } from './components/wishlist/wishlist';
+import { OccasionPage } from './components/occasion-page/occasion-page';
+import { Subscription } from './components/subscription/subscription';
+import { MySubscriptions } from './components/my-subscriptions/my-subscriptions';
+import { CorporatePortal } from './components/corporate-portal/corporate-portal';
+import { CorporateOrder } from './components/corporate-order/corporate-order';
+import { MyCorporate } from './components/my-corporate/my-corporate';
+import { MyLoyalty } from './components/my-loyalty/my-loyalty';
+import { Admin } from './components/admin/admin';
+
+export const routes: Routes = [
+  { path: '', component: Home },
+  { path: 'products/:id', component: ProductDetail },
+  { path: 'cart', component: Cart },
+  { path: 'checkout', component: Checkout },
+  { path: 'contact', component: Contact },
+  { path: 'signin', component: Signin },
+  { path: 'orders', component: Orders },
+  { path: 'orders/:id', component: OrderDetail },
+  { path: 'builder', component: BouquetBuilder },
+  { path: 'wishlist', component: Wishlist },
+  { path: 'occasions', component: OccasionPage },
+  { path: 'occasions/:slug', component: OccasionPage },
+  { path: 'subscribe', component: Subscription },
+  { path: 'my-subscriptions', component: MySubscriptions },
+  { path: 'corporate', component: CorporatePortal },
+  { path: 'corporate-order', component: CorporateOrder },
+  { path: 'my-corporate', component: MyCorporate },
+  { path: 'my-loyalty', component: MyLoyalty },
+  { path: 'admin', component: Admin },
+  { path: '**', redirectTo: '' }
+];

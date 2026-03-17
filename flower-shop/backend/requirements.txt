@@ -5,3 +5,4 @@ python-dotenv
 bcrypt
 twilio
 resend
+email-validator
