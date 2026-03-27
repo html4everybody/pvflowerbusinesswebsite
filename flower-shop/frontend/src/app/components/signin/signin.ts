@@ -1,8 +1,10 @@
 import { Component, signal } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
 import { FormsModule } from '@angular/forms';
+import { HttpClient } from '@angular/common/http';
 import { AuthService } from '../../services/auth';
 import { ToastService } from '../../services/toast';
+import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-signin',
@@ -16,6 +18,9 @@ export class Signin {
   successMessage = signal('');
   loading = signal(false);
   referralCode = signal('');
+  showResendLink = signal(false);
+  resendLoading = signal(false);
+  resendDone = signal(false);
 
   loginData = { email: '', password: '' };
   signupData = { firstName: '', lastName: '', email: '', password: '', confirmPassword: '' };
@@ -24,7 +29,8 @@ export class Signin {
     private authService: AuthService,
     private router: Router,
     private toastService: ToastService,
-    private route: ActivatedRoute
+    private route: ActivatedRoute,
+    private http: HttpClient
   ) {
     const ref = this.route.snapshot.queryParams['ref'];
     if (ref) {
@@ -37,6 +43,16 @@ export class Signin {
     this.isSignUp.set(!this.isSignUp());
     this.errorMessage.set('');
     this.successMessage.set('');
+    this.showResendLink.set(false);
+    this.resendDone.set(false);
+  }
+
+  resendVerification(): void {
+    this.resendLoading.set(true);
+    this.http.post(`${environment.apiUrl}/api/auth/resend-verification`, { email: this.loginData.email }).subscribe({
+      next: () => { this.resendLoading.set(false); this.resendDone.set(true); },
+      error: () => { this.resendLoading.set(false); this.resendDone.set(true); }
+    });
   }
 
   onLogin(): void {
@@ -53,7 +69,9 @@ export class Signin {
       },
       error: (err) => {
         this.loading.set(false);
-        this.errorMessage.set(err.error?.detail || 'Invalid email or password');
+        const msg = err.error?.detail || 'Invalid email or password';
+        this.errorMessage.set(msg);
+        this.showResendLink.set(err.status === 403);
       }
     });
   }
@@ -81,7 +99,7 @@ export class Signin {
         this.isSignUp.set(false);
         this.loginData.email = this.signupData.email;
         this.loginData.password = '';
-        this.successMessage.set(`Account created! Welcome, ${this.signupData.firstName}. Please sign in.`);
+        this.successMessage.set(`We've sent a verification email to ${this.signupData.email}. Please verify before signing in.`);
         this.signupData = { firstName: '', lastName: '', email: '', password: '', confirmPassword: '' };
       },
       error: (err) => {

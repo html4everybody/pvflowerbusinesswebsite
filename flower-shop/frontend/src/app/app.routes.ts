@@ -17,6 +17,7 @@ import { CorporateOrder } from './components/corporate-order/corporate-order';
 import { MyCorporate } from './components/my-corporate/my-corporate';
 import { MyLoyalty } from './components/my-loyalty/my-loyalty';
 import { Admin } from './components/admin/admin';
+import { VerifyEmail } from './components/verify-email/verify-email';
 
 export const routes: Routes = [
   { path: '', component: Home },
@@ -25,6 +26,7 @@ export const routes: Routes = [
   { path: 'checkout', component: Checkout },
   { path: 'contact', component: Contact },
   { path: 'signin', component: Signin },
+  { path: 'verify-email', component: VerifyEmail },
   { path: 'orders', component: Orders },
   { path: 'orders/:id', component: OrderDetail },
   { path: 'builder', component: BouquetBuilder },
