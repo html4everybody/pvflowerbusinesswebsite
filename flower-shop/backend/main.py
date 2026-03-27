@@ -4,7 +4,11 @@ from pydantic import BaseModel, EmailStr
 from typing import Optional
 import uuid
 import os
-from datetime import datetime, timedelta
+import secrets
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+from datetime import datetime, timedelta, timezone
 from dotenv import load_dotenv
 from supabase import create_client, Client
 import bcrypt
@@ -41,6 +45,56 @@ supabase: Client = create_client(
     os.getenv("SUPABASE_URL"),
     os.getenv("SUPABASE_KEY")
 )
+
+# ── Gmail SMTP config ──────────────────────────────────────────────────────────
+GMAIL_USER         = os.getenv("GMAIL_USER", "")
+GMAIL_APP_PASSWORD = os.getenv("GMAIL_APP_PASSWORD", "")
+APP_URL            = os.getenv("APP_URL", "http://localhost:4200")
+
+def send_verification_email(to_email: str, first_name: str, token: str):
+    if not GMAIL_USER or not GMAIL_APP_PASSWORD:
+        print(f"[Email] Gmail not configured — skipping. Token: {token}")
+        return
+    verify_url = f"{APP_URL}/verify-email?token={token}"
+    msg = MIMEMultipart("alternative")
+    msg["Subject"] = "Verify your FloranFlowers email"
+    msg["From"]    = f"FloranFlowers <{GMAIL_USER}>"
+    msg["To"]      = to_email
+    html = f"""
+    <!DOCTYPE html>
+    <html>
+    <body style="margin:0;padding:0;background:#fdf0f5;font-family:'Segoe UI',Arial,sans-serif;">
+      <table width="100%" cellpadding="0" cellspacing="0">
+        <tr><td align="center" style="padding:40px 16px;">
+          <table width="520" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(200,75,122,0.1);">
+            <tr><td style="background:linear-gradient(135deg,#c84b7a,#9c2d55);padding:32px 40px;text-align:center;">
+              <div style="font-size:2rem;">🌸</div>
+              <div style="color:#fff;font-size:1.5rem;font-weight:800;margin-top:8px;letter-spacing:-0.03em;">FloranFlowers</div>
+            </td></tr>
+            <tr><td style="padding:40px;">
+              <h2 style="margin:0 0 12px;color:#1e1e1e;font-size:1.35rem;font-weight:800;">Hi {first_name}, verify your email</h2>
+              <p style="color:#666;line-height:1.6;margin:0 0 28px;">Thanks for signing up! Click the button below to verify your email address and activate your account.</p>
+              <div style="text-align:center;margin-bottom:28px;">
+                <a href="{verify_url}" style="display:inline-block;padding:14px 36px;background:linear-gradient(135deg,#c84b7a,#9c2d55);color:#fff;text-decoration:none;border-radius:999px;font-weight:700;font-size:1rem;box-shadow:0 4px 16px rgba(200,75,122,0.35);">Verify My Email</a>
+              </div>
+              <p style="color:#999;font-size:0.82rem;line-height:1.6;margin:0;">This link expires in <strong>24 hours</strong>. If you didn't create an account, you can ignore this email.</p>
+              <hr style="border:none;border-top:1px solid #f0e0e8;margin:24px 0;">
+              <p style="color:#bbb;font-size:0.75rem;margin:0;">Or copy this link: <span style="color:#c84b7a;">{verify_url}</span></p>
+            </td></tr>
+          </table>
+        </td></tr>
+      </table>
+    </body>
+    </html>
+    """
+    msg.attach(MIMEText(html, "html"))
+    try:
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
+            server.login(GMAIL_USER, GMAIL_APP_PASSWORD)
+            server.sendmail(GMAIL_USER, to_email, msg.as_string())
+        print(f"[Email] Verification email sent to {to_email}")
+    except Exception as e:
+        print(f"[Email] Failed to send verification email: {e}")
 
 # ── Password helpers ───────────────────────────────────────────────────────────
 def hash_password(password: str) -> str:
@@ -623,35 +677,95 @@ def get_product(product_id: int):
 
 @app.post("/api/auth/register")
 def register(req: RegisterRequest):
-    existing = supabase.table("users").select("email").eq("email", req.email).execute()
+    existing = supabase.table("users").select("*").eq("email", req.email).execute()
+
     if existing.data:
-        raise HTTPException(status_code=400, detail="Email already registered")
+        user = existing.data[0]
+        if user.get("is_verified"):
+            raise HTTPException(status_code=400, detail="Email already registered")
+        # Unverified account — resend verification with updated details
+        hashed_password = hash_password(req.password)
+        verification_token = secrets.token_urlsafe(32)
+        token_expires = (datetime.now(timezone.utc) + timedelta(hours=24)).isoformat()
+        supabase.table("users").update({
+            "password": hashed_password,
+            "first_name": req.firstName,
+            "last_name": req.lastName,
+            "verification_token": verification_token,
+            "verification_token_expires_at": token_expires
+        }).eq("email", req.email).execute()
+        send_verification_email(req.email, req.firstName, verification_token)
+        return { "message": "Account created! Please check your email to verify your account." }
 
     hashed_password = hash_password(req.password)
+    verification_token = secrets.token_urlsafe(32)
+    token_expires = (datetime.now(timezone.utc) + timedelta(hours=24)).isoformat()
 
-    result = supabase.table("users").insert({
+    supabase.table("users").insert({
         "email": req.email,
         "password": hashed_password,
         "first_name": req.firstName,
-        "last_name": req.lastName
+        "last_name": req.lastName,
+        "is_verified": False,
+        "verification_token": verification_token,
+        "verification_token_expires_at": token_expires
     }).execute()
 
-    user = result.data[0]
-    token = str(uuid.uuid4())
-    tokens[token] = req.email
-
     create_loyalty_account(req.email, req.referral_code)
+    send_verification_email(req.email, req.firstName, verification_token)
 
-    return {
-        "token": token,
-        "user": {
-            "id": user["id"],
-            "firstName": user["first_name"],
-            "lastName": user["last_name"],
-            "email": user["email"],
-            "is_admin": user.get("is_admin", False)
-        }
-    }
+    return { "message": "Account created! Please check your email to verify your account." }
+
+
+@app.get("/api/auth/verify-email")
+def verify_email(token: str):
+    result = supabase.table("users").select("*").eq("verification_token", token).execute()
+    if not result.data:
+        raise HTTPException(status_code=400, detail="Invalid or expired verification link.")
+
+    user = result.data[0]
+    if user.get("is_verified"):
+        return { "message": "Email already verified." }
+
+    expires_at = user.get("verification_token_expires_at")
+    if expires_at:
+        expiry = datetime.fromisoformat(expires_at.replace("Z", "+00:00"))
+        if datetime.now(timezone.utc) > expiry:
+            raise HTTPException(status_code=400, detail="Verification link has expired. Please request a new one.")
+
+    supabase.table("users").update({
+        "is_verified": True,
+        "verification_token": None,
+        "verification_token_expires_at": None
+    }).eq("email", user["email"]).execute()
+
+    return { "message": "Email verified successfully!" }
+
+
+class ResendVerificationRequest(BaseModel):
+    email: EmailStr
+
+@app.post("/api/auth/resend-verification")
+def resend_verification(req: ResendVerificationRequest):
+    result = supabase.table("users").select("*").eq("email", req.email).execute()
+    if not result.data:
+        return { "message": "If that email is registered, a verification link has been sent." }
+
+    user = result.data[0]
+    if user.get("is_verified"):
+        return { "message": "Email is already verified." }
+
+    verification_token = secrets.token_urlsafe(32)
+    token_expires = (datetime.now(timezone.utc) + timedelta(hours=24)).isoformat()
+
+    supabase.table("users").update({
+        "verification_token": verification_token,
+        "verification_token_expires_at": token_expires
+    }).eq("email", req.email).execute()
+
+    send_verification_email(req.email, user["first_name"], verification_token)
+    return { "message": "If that email is registered, a verification link has been sent." }
+
 
 @app.post("/api/auth/login")
 def login(req: LoginRequest):
@@ -662,6 +776,9 @@ def login(req: LoginRequest):
     user = result.data[0]
     if not verify_password(req.password, user["password"]):
         raise HTTPException(status_code=401, detail="Invalid credentials")
+
+    if not user.get("is_verified", False):
+        raise HTTPException(status_code=403, detail="Please verify your email before signing in. Check your inbox for the verification link.")
 
     token = str(uuid.uuid4())
     tokens[token] = req.email

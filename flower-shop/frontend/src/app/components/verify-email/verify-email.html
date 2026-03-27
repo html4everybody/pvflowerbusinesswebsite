@@ -1,0 +1,64 @@
+<main class="verify-page">
+  <div class="verify-card">
+    <div class="logo">
+      <span class="logo-icon">🌸</span>
+      <span class="logo-text">FloranFlowers</span>
+    </div>
+
+    @if (status() === 'loading') {
+      <div class="state-block">
+        <div class="spinner"></div>
+        <p class="state-msg">Verifying your email...</p>
+      </div>
+    }
+
+    @if (status() === 'success') {
+      <div class="state-block">
+        <div class="state-icon success-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="20 6 9 17 4 12"></polyline>
+          </svg>
+        </div>
+        <h1>Email Verified!</h1>
+        <p class="state-msg">Your account is now active. You can sign in and start shopping.</p>
+        <a routerLink="/signin" class="btn-primary">Sign In Now</a>
+      </div>
+    }
+
+    @if (status() === 'error') {
+      <div class="state-block">
+        <div class="state-icon error-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </div>
+        <h1>Verification Failed</h1>
+        <p class="state-msg">{{ errorMessage() }}</p>
+        <div class="resend-block">
+          <p class="resend-label">Resend verification email</p>
+          <div class="resend-row">
+            <input type="email" placeholder="Enter your email" [value]="resendEmail()" (input)="resendEmail.set($any($event.target).value)">
+            <button class="btn-resend" (click)="resend()" [disabled]="resendLoading() || !resendEmail()">
+              {{ resendLoading() ? 'Sending...' : 'Resend' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    }
+
+    @if (status() === 'resent') {
+      <div class="state-block">
+        <div class="state-icon resent-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <rect width="20" height="16" x="2" y="4" rx="2"/>
+            <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
+          </svg>
+        </div>
+        <h1>Check Your Inbox</h1>
+        <p class="state-msg">If that email is registered, a new verification link has been sent.</p>
+        <a routerLink="/signin" class="btn-secondary">Back to Sign In</a>
+      </div>
+    }
+  </div>
+</main>

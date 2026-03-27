@@ -223,57 +223,141 @@
             <div class="section-header">
               <div class="section-badge">3</div>
               <div>
-                <h2>Payment Information</h2>
-                <p>Your payment details are encrypted and secure</p>
-              </div>
-              <div class="card-icons">
-                <span class="card-chip">VISA</span>
-                <span class="card-chip">MC</span>
-                <span class="card-chip">AMEX</span>
+                <h2>Payment</h2>
+                <p>Choose how you'd like to pay</p>
               </div>
             </div>
 
-            <div class="form-group full-width">
-              <label for="cardName">Name on Card <span class="required-star">*</span></label>
-              <input type="text" id="cardName" #cardNameField="ngModel" [(ngModel)]="formData.cardName" name="cardName" placeholder="John Doe" required>
-              @if (cardNameField.invalid && cardNameField.touched) {
-                <div class="field-error">Name on card is required</div>
-              }
+            <div class="payment-options">
+              <div class="payment-option" [class.selected]="paymentMethod() === 'card'" (click)="paymentMethod.set('card')">
+                <div class="payment-bullet">
+                  <div class="payment-bullet-inner"></div>
+                </div>
+                <div class="payment-option-icon">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
+                    <line x1="1" y1="10" x2="23" y2="10"></line>
+                  </svg>
+                </div>
+                <div class="payment-option-text">
+                  <strong>Pay by Card</strong>
+                  <span>Credit / Debit card — secure &amp; encrypted</span>
+                </div>
+              </div>
+
+              <div class="payment-option" [class.selected]="paymentMethod() === 'cod'" (click)="paymentMethod.set('cod')">
+                <div class="payment-bullet">
+                  <div class="payment-bullet-inner"></div>
+                </div>
+                <div class="payment-option-icon">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="12" y1="1" x2="12" y2="23"></line>
+                    <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                  </svg>
+                </div>
+                <div class="payment-option-text">
+                  <strong>Cash on Delivery</strong>
+                  <span>Pay in cash when your order arrives</span>
+                </div>
+              </div>
+
+              <div class="payment-option" [class.selected]="paymentMethod() === 'upi'" (click)="paymentMethod.set('upi')">
+                <div class="payment-bullet">
+                  <div class="payment-bullet-inner"></div>
+                </div>
+                <div class="payment-option-icon">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="2" y="5" width="20" height="14" rx="2"></rect>
+                    <path d="M12 10v4M10 12h4"></path>
+                  </svg>
+                </div>
+                <div class="payment-option-text">
+                  <strong>Pay with UPI</strong>
+                  <span>GPay, PhonePe, Paytm & more</span>
+                </div>
+              </div>
             </div>
 
-            <div class="form-group full-width">
-              <label for="cardNumber">Card Number <span class="required-star">*</span></label>
-              <div class="input-with-icon">
-                <input type="text" id="cardNumber" #cardNumberField="ngModel" [(ngModel)]="formData.cardNumber" name="cardNumber" placeholder="1234  5678  9012  3456" required>
-                <svg class="field-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                  <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
-                  <line x1="1" y1="10" x2="23" y2="10"></line>
+            @if (paymentMethod() === 'card') {
+              <div style="margin-top: 1.25rem;">
+                <div class="form-group full-width">
+                  <label for="cardName">Name on Card <span class="required-star">*</span></label>
+                  <input type="text" id="cardName" #cardNameField="ngModel" [(ngModel)]="formData.cardName" name="cardName" placeholder="John Doe" [required]="paymentMethod() === 'card'">
+                  @if (cardNameField.invalid && cardNameField.touched) {
+                    <div class="field-error">Name on card is required</div>
+                  }
+                </div>
+
+                <div class="form-group full-width">
+                  <label for="cardNumber">Card Number <span class="required-star">*</span></label>
+                  <div class="input-with-icon">
+                    <input type="text" id="cardNumber" #cardNumberField="ngModel" [(ngModel)]="formData.cardNumber" name="cardNumber" placeholder="1234  5678  9012  3456" [required]="paymentMethod() === 'card'">
+                    <svg class="field-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                      <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
+                      <line x1="1" y1="10" x2="23" y2="10"></line>
+                    </svg>
+                  </div>
+                  @if (cardNumberField.invalid && cardNumberField.touched) {
+                    <div class="field-error">Card number is required</div>
+                  }
+                </div>
+
+                <div class="form-row">
+                  <div class="form-group">
+                    <label for="expiry">Expiry Date <span class="required-star">*</span></label>
+                    <input type="text" id="expiry" #expiryField="ngModel" [(ngModel)]="formData.expiry" name="expiry" placeholder="MM / YY" [required]="paymentMethod() === 'card'">
+                    @if (expiryField.invalid && expiryField.touched) {
+                      <div class="field-error">Expiry date is required</div>
+                    }
+                  </div>
+                  <div class="form-group">
+                    <label for="cvv">
+                      CVV <span class="required-star">*</span>
+                      <span class="cvv-hint">3–4 digits on back</span>
+                    </label>
+                    <input type="text" id="cvv" #cvvField="ngModel" [(ngModel)]="formData.cvv" name="cvv" placeholder="•••" [required]="paymentMethod() === 'card'">
+                    @if (cvvField.invalid && cvvField.touched) {
+                      <div class="field-error">CVV is required</div>
+                    }
+                  </div>
+                </div>
+              </div>
+            }
+
+            @if (paymentMethod() === 'cod') {
+              <div class="cod-notice">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="12" y1="8" x2="12" y2="12"></line>
+                  <line x1="12" y1="16" x2="12.01" y2="16"></line>
                 </svg>
+                Please keep exact change ready — ₹{{ getTotal().toFixed(2) }}
               </div>
-              @if (cardNumberField.invalid && cardNumberField.touched) {
-                <div class="field-error">Card number is required</div>
-              }
-            </div>
+            }
 
-            <div class="form-row">
-              <div class="form-group">
-                <label for="expiry">Expiry Date <span class="required-star">*</span></label>
-                <input type="text" id="expiry" #expiryField="ngModel" [(ngModel)]="formData.expiry" name="expiry" placeholder="MM / YY" required>
-                @if (expiryField.invalid && expiryField.touched) {
-                  <div class="field-error">Expiry date is required</div>
-                }
+            @if (paymentMethod() === 'upi') {
+              <div class="upi-panel" style="margin-top: 1.25rem;">
+                <div class="form-group full-width">
+                  <label for="upiId">UPI ID <span class="required-star">*</span></label>
+                  <div class="upi-input-wrap">
+                    <input type="text" id="upiId" #upiIdField="ngModel" [(ngModel)]="formData.upiId"
+                      name="upiId" placeholder="yourname@upi"
+                      pattern="^[\w.\-]+@[\w.\-]+$"
+                      [required]="paymentMethod() === 'upi'">
+                    <span class="upi-at-badge">UPI</span>
+                  </div>
+                  @if (upiIdField.invalid && upiIdField.touched) {
+                    <div class="field-error">Enter a valid UPI ID (e.g. name&#64;upi)</div>
+                  }
+                </div>
+                <div class="upi-apps">
+                  <span class="upi-app-chip">GPay</span>
+                  <span class="upi-app-chip">PhonePe</span>
+                  <span class="upi-app-chip">Paytm</span>
+                  <span class="upi-app-chip">BHIM</span>
+                </div>
               </div>
-              <div class="form-group">
-                <label for="cvv">
-                  CVV <span class="required-star">*</span>
-                  <span class="cvv-hint">3–4 digits on back</span>
-                </label>
-                <input type="text" id="cvv" #cvvField="ngModel" [(ngModel)]="formData.cvv" name="cvv" placeholder="•••" required>
-                @if (cvvField.invalid && cvvField.touched) {
-                  <div class="field-error">CVV is required</div>
-                }
-              </div>
-            </div>
+            }
           </section>
 
           <!-- Gift Message -->

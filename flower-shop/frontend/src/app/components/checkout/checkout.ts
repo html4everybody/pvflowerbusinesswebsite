@@ -97,6 +97,8 @@ export class Checkout {
     this.isRecurring.set(false);
   }
 
+  paymentMethod = signal<'card' | 'cod' | 'upi'>('card');
+
   formData = {
     firstName: '',
     lastName: '',
@@ -110,6 +112,7 @@ export class Checkout {
     cardNumber: '',
     expiry: '',
     cvv: '',
+    upiId: '',
     giftMessage: '',
     deliveryDate: '',
     deliveryTime: ''
@@ -237,6 +240,7 @@ export class Checkout {
       promo_code: this.promoResult()?.code ?? undefined,
       is_recurring: this.isRecurring(),
       recurrence_type: this.isRecurring() ? 'annual' : null,
+      payment_method: this.paymentMethod(),
     };
 
     this.http.post<{ orderId: string; status: string; points_earned?: number; new_balance?: number }>(`${environment.apiUrl}/api/orders`, payload).subscribe({

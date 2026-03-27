@@ -12,8 +12,13 @@ export class AuthService {
   constructor(private http: HttpClient) {}
 
   private loadUser(): any {
-    const stored = localStorage.getItem('floran_user');
-    return stored ? JSON.parse(stored) : null;
+    try {
+      const stored = localStorage.getItem('floran_user');
+      return stored && stored !== 'undefined' ? JSON.parse(stored) : null;
+    } catch {
+      localStorage.removeItem('floran_user');
+      return null;
+    }
   }
 
   login(email: string, password: string): Observable<any> {
