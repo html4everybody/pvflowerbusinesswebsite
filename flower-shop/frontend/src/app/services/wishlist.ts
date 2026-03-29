@@ -1,7 +1,7 @@
 import { Injectable, signal, computed } from '@angular/core';
 import { Product } from '../models/product.model';
 
-const KEY = 'floran_wishlist';
+const KEY = 'viva_wishlist';
 
 @Injectable({ providedIn: 'root' })
 export class WishlistService {

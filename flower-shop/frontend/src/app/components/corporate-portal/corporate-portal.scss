@@ -78,7 +78,7 @@
 
         em {
           font-style: normal;
-          color: #f9a8d4;
+          color: #93c5fd;
         }
       }
 
@@ -124,7 +124,7 @@
     text-decoration: none;
     transition: background 0.2s, transform 0.15s;
 
-    &:hover { background: #b83770; transform: translateY(-1px); }
+    &:hover { background: #1e56c8; transform: translateY(-1px); }
 
     &.btn-cta-large { padding: 1rem 2rem; font-size: 1rem; }
   }
@@ -214,7 +214,7 @@
 
       &.popular {
         border-color: var(--accent);
-        box-shadow: 0 0 0 4px rgba(200, 60, 110, 0.08);
+        box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.08);
       }
 
       .tier-popular-tag {

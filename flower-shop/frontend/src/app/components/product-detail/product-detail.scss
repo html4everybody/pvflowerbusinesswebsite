@@ -223,7 +223,7 @@
       .btn-add-to-cart {
         flex: 1;
         min-width: 200px;
-        background: linear-gradient(180deg, #d85c8a 0%, var(--accent) 50%, #b83770 100%);
+        background: linear-gradient(180deg, #3b82f6 0%, var(--accent) 50%, #1e56c8 100%);
         color: white;
         border: none;
         padding: 0.875rem 1.5rem;
@@ -231,10 +231,10 @@
         font-size: 0.95rem;
         font-weight: 600;
         cursor: pointer;
-        box-shadow: 0 4px 16px rgba(200,75,122,0.35), inset 0 1px 0 rgba(255,255,255,0.15);
+        box-shadow: 0 4px 16px rgba(37,99,235,0.35), inset 0 1px 0 rgba(255,255,255,0.15);
         transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
 
-        &:hover { background: linear-gradient(180deg, #e06898 0%, var(--accent-dark) 100%); box-shadow: 0 6px 20px rgba(200,75,122,0.45), inset 0 1px 0 rgba(255,255,255,0.15); }
+        &:hover { background: linear-gradient(180deg, #3b82f6 0%, var(--accent-dark) 100%); box-shadow: 0 6px 20px rgba(37,99,235,0.45), inset 0 1px 0 rgba(255,255,255,0.15); }
         &:active { transform: scale(0.99); }
       }
 
@@ -664,7 +664,7 @@
   }
 
   .btn-fbt-cart {
-    background: linear-gradient(180deg, #d85c8a 0%, var(--accent) 50%, #b83770 100%);
+    background: linear-gradient(180deg, #3b82f6 0%, var(--accent) 50%, #1e56c8 100%);
     color: white;
     border: none;
     width: 100%;
@@ -674,10 +674,10 @@
     font-size: 0.9rem;
     cursor: pointer;
     font-family: inherit;
-    box-shadow: 0 4px 14px rgba(200,75,122,0.3), inset 0 1px 0 rgba(255,255,255,0.12);
+    box-shadow: 0 4px 14px rgba(37,99,235,0.3), inset 0 1px 0 rgba(255,255,255,0.12);
     transition: background 0.2s, box-shadow 0.2s, transform 0.15s;
 
-    &:hover { background: linear-gradient(180deg, #e06898 0%, var(--accent-dark) 100%); box-shadow: 0 6px 18px rgba(200,75,122,0.42); transform: translateY(-1px); }
+    &:hover { background: linear-gradient(180deg, #3b82f6 0%, var(--accent-dark) 100%); box-shadow: 0 6px 18px rgba(37,99,235,0.42); transform: translateY(-1px); }
   }
 
   // ── Related Products ─────────────────────────────────────────────────────────

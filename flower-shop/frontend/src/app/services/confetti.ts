@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 
 @Injectable({ providedIn: 'root' })
 export class ConfettiService {
-  private colors = ['#c84b7a', '#e07aaa', '#ffc8df', '#ffd700', '#ffffff', '#f9e4ed', '#ff6b9d'];
+  private colors = ['#2563eb', '#60a5fa', '#bfdbfe', '#ffd700', '#ffffff', '#dbeafe', '#3b82f6'];
 
   burst(): void {
     const canvas = document.createElement('canvas');

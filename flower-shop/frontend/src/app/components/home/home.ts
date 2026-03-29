@@ -102,7 +102,7 @@ export class Home implements OnInit, AfterViewInit, OnDestroy {
     for (const product of bundle.products) {
       this.cartService.addToCart(product as unknown as Product, 1);
     }
-    sessionStorage.setItem('floran_promo', bundle.promo_code);
+    sessionStorage.setItem('viva_promo', bundle.promo_code);
     this.router.navigate(['/cart']);
   }
 

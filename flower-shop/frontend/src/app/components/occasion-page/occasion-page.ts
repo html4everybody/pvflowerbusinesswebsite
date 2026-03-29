@@ -67,8 +67,8 @@ export const OCCASIONS: OccasionConfig[] = [
     quote: '"Love is a flower. You\'ve got to let it grow." — John Lennon',
     emoji: '❤️',
     heroImage: 'https://images.unsplash.com/photo-1518882605630-8eb920bc4c49?w=1400&q=85',
-    gradient: 'linear-gradient(135deg, rgba(200,40,100,0.85) 0%, rgba(255,100,140,0.75) 100%)',
-    accentColor: '#c84b7a',
+    gradient: 'linear-gradient(135deg, rgba(153,27,27,0.85) 0%, rgba(220,38,38,0.70) 100%)',
+    accentColor: '#2563eb',
     keywords: ['romance', 'romantic', 'love', 'valentine', 'rose', 'passion', 'peony', 'bloom', 'heart'],
   },
   {

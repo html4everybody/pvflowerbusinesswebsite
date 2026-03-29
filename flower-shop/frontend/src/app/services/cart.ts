@@ -49,7 +49,7 @@ export class CartService {
 
   private loadFromLocalStorage(): CartItem[] {
     try {
-      const stored = localStorage.getItem('floran_cart_guest');
+      const stored = localStorage.getItem('viva_cart_guest');
       return stored ? JSON.parse(stored) : [];
     } catch {
       return [];
@@ -57,7 +57,7 @@ export class CartService {
   }
 
   private saveToLocalStorage(): void {
-    localStorage.setItem('floran_cart_guest', JSON.stringify(this.cartItems()));
+    localStorage.setItem('viva_cart_guest', JSON.stringify(this.cartItems()));
   }
 
   // ── Cart mutations ──────────────────────────────────────────────────────────

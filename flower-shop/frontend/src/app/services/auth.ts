@@ -13,10 +13,10 @@ export class AuthService {
 
   private loadUser(): any {
     try {
-      const stored = localStorage.getItem('floran_user');
+      const stored = localStorage.getItem('viva_user');
       return stored && stored !== 'undefined' ? JSON.parse(stored) : null;
     } catch {
-      localStorage.removeItem('floran_user');
+      localStorage.removeItem('viva_user');
       return null;
     }
   }
@@ -24,8 +24,8 @@ export class AuthService {
   login(email: string, password: string): Observable<any> {
     return this.http.post<any>(`${this.apiUrl}/api/auth/login`, { email, password }).pipe(
       tap(res => {
-        localStorage.setItem('floran_token', res.token);
-        localStorage.setItem('floran_user', JSON.stringify(res.user));
+        localStorage.setItem('viva_token', res.token);
+        localStorage.setItem('viva_user', JSON.stringify(res.user));
         this.user.set(res.user);
       })
     );
@@ -34,21 +34,21 @@ export class AuthService {
   register(data: { firstName: string; lastName: string; email: string; password: string; referral_code?: string }): Observable<any> {
     return this.http.post<any>(`${this.apiUrl}/api/auth/register`, data).pipe(
       tap(res => {
-        localStorage.setItem('floran_token', res.token);
-        localStorage.setItem('floran_user', JSON.stringify(res.user));
+        localStorage.setItem('viva_token', res.token);
+        localStorage.setItem('viva_user', JSON.stringify(res.user));
         this.user.set(res.user);
       })
     );
   }
 
   logout(): void {
-    localStorage.removeItem('floran_token');
-    localStorage.removeItem('floran_user');
+    localStorage.removeItem('viva_token');
+    localStorage.removeItem('viva_user');
     this.user.set(null);
   }
 
   isLoggedIn(): boolean {
-    return !!localStorage.getItem('floran_token');
+    return !!localStorage.getItem('viva_token');
   }
 
   isAdmin(): boolean {
@@ -56,6 +56,6 @@ export class AuthService {
   }
 
   getToken(): string {
-    return localStorage.getItem('floran_token') || '';
+    return localStorage.getItem('viva_token') || '';
   }
 }

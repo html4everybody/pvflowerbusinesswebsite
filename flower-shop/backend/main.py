@@ -6,6 +6,7 @@ import uuid
 import os
 import secrets
 import smtplib
+import httpx as _httpx
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from datetime import datetime, timedelta, timezone
@@ -26,11 +27,11 @@ if _sid and _token:
 
 import resend as _resend_lib
 _resend_api_key = os.getenv("RESEND_API_KEY", "")
-_reminder_from_email = os.getenv("REMINDER_FROM_EMAIL", "reminders@floranflowers.com")
+_reminder_from_email = os.getenv("REMINDER_FROM_EMAIL", "reminders@vivapetals.com")
 if _resend_api_key:
     _resend_lib.api_key = _resend_api_key
 
-app = FastAPI(title="FloranFlowers API")
+app = FastAPI(title="VivaPetals API")
 
 app.add_middleware(
     CORSMiddleware,
@@ -50,6 +51,7 @@ supabase: Client = create_client(
 GMAIL_USER         = os.getenv("GMAIL_USER", "")
 GMAIL_APP_PASSWORD = os.getenv("GMAIL_APP_PASSWORD", "")
 APP_URL            = os.getenv("APP_URL", "http://localhost:4200")
+GOOGLE_CLIENT_ID   = os.getenv("GOOGLE_CLIENT_ID", "")
 
 def send_verification_email(to_email: str, first_name: str, token: str):
     if not GMAIL_USER or not GMAIL_APP_PASSWORD:
@@ -57,8 +59,8 @@ def send_verification_email(to_email: str, first_name: str, token: str):
         return
     verify_url = f"{APP_URL}/verify-email?token={token}"
     msg = MIMEMultipart("alternative")
-    msg["Subject"] = "Verify your FloranFlowers email"
-    msg["From"]    = f"FloranFlowers <{GMAIL_USER}>"
+    msg["Subject"] = "Verify your VivaPetals email"
+    msg["From"]    = f"VivaPetals <{GMAIL_USER}>"
     msg["To"]      = to_email
     html = f"""
     <!DOCTYPE html>
@@ -69,7 +71,7 @@ def send_verification_email(to_email: str, first_name: str, token: str):
           <table width="520" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(200,75,122,0.1);">
             <tr><td style="background:linear-gradient(135deg,#c84b7a,#9c2d55);padding:32px 40px;text-align:center;">
               <div style="font-size:2rem;">🌸</div>
-              <div style="color:#fff;font-size:1.5rem;font-weight:800;margin-top:8px;letter-spacing:-0.03em;">FloranFlowers</div>
+              <div style="color:#fff;font-size:1.5rem;font-weight:800;margin-top:8px;letter-spacing:-0.03em;">VivaPetals</div>
             </td></tr>
             <tr><td style="padding:40px;">
               <h2 style="margin:0 0 12px;color:#1e1e1e;font-size:1.35rem;font-weight:800;">Hi {first_name}, verify your email</h2>
@@ -162,7 +164,7 @@ def create_loyalty_account(email: str, referred_by_code: str = None) -> str:
     except Exception:
         pass
     # Welcome bonus
-    award_points(email, 100, "earned_welcome", "Welcome bonus for joining FloranFlowers")
+    award_points(email, 100, "earned_welcome", "Welcome bonus for joining VivaPetals")
     # Referral signup bonus: 200 pts to referrer
     if referred_by_code and referred_by:
         referrer_result = supabase.table("loyalty_accounts").select("user_email").eq("referral_code", referred_by_code).execute()
@@ -218,7 +220,7 @@ def build_reminder_email_html(order: dict, days_before: int, is_recurrence: bool
   <div style="max-width:560px;margin:2rem auto;border-radius:12px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
     <div style="background:#1a1a1a;padding:1.5rem 2rem;display:flex;align-items:center;gap:0.75rem;">
       <span style="font-size:1.4rem;">🌸</span>
-      <span style="color:white;font-size:1.05rem;font-weight:700;letter-spacing:0.01em;">FloranFlowers</span>
+      <span style="color:white;font-size:1.05rem;font-weight:700;letter-spacing:0.01em;">VivaPetals</span>
       <span style="color:#888;margin-left:0.5rem;font-size:0.85rem;">/ Delivery Reminder</span>
     </div>
     <div style="background:white;padding:2rem;">
@@ -242,7 +244,7 @@ def build_reminder_email_html(order: dict, days_before: int, is_recurrence: bool
         </ul>
       </div>
       <p style="color:#aaa;font-size:0.78rem;margin:0;">
-        Thank you for choosing FloranFlowers 🌸<br>
+        Thank you for choosing VivaPetals 🌸<br>
         If you have questions, reply to this email or visit our website.
       </p>
     </div>
@@ -285,7 +287,7 @@ def build_order_confirmation_email_html(order: dict, items: list) -> str:
   <div style="max-width:560px;margin:2rem auto;border-radius:12px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
     <div style="background:#1a1a1a;padding:1.5rem 2rem;display:flex;align-items:center;gap:0.75rem;">
       <span style="font-size:1.4rem;">🌸</span>
-      <span style="color:white;font-size:1.05rem;font-weight:700;letter-spacing:0.01em;">FloranFlowers</span>
+      <span style="color:white;font-size:1.05rem;font-weight:700;letter-spacing:0.01em;">VivaPetals</span>
       <span style="color:#888;margin-left:0.5rem;font-size:0.85rem;">/ Order Confirmed</span>
     </div>
     <div style="background:white;padding:2rem;">
@@ -322,7 +324,7 @@ def build_order_confirmation_email_html(order: dict, items: list) -> str:
         </table>
       </div>
       <p style="color:#aaa;font-size:0.78rem;margin:0;">
-        Thank you for choosing FloranFlowers 🌸<br>
+        Thank you for choosing VivaPetals 🌸<br>
         If you have questions, reply to this email or visit our website.
       </p>
     </div>
@@ -338,7 +340,7 @@ def send_order_confirmation_email(order: dict, items: list) -> bool:
         _resend_lib.Emails.send({
             "from": _reminder_from_email,
             "to": [order["customer_email"]],
-            "subject": f"Your FloranFlowers Order {order.get('id','')} is Confirmed! 🌸",
+            "subject": f"Your VivaPetals Order {order.get('id','')} is Confirmed! 🌸",
             "html": build_order_confirmation_email_html(order, items),
         })
         return True
@@ -359,7 +361,7 @@ def build_order_cancellation_email_html(order: dict) -> str:
   <div style="max-width:560px;margin:2rem auto;border-radius:12px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
     <div style="background:#1a1a1a;padding:1.5rem 2rem;display:flex;align-items:center;gap:0.75rem;">
       <span style="font-size:1.4rem;">🌸</span>
-      <span style="color:white;font-size:1.05rem;font-weight:700;letter-spacing:0.01em;">FloranFlowers</span>
+      <span style="color:white;font-size:1.05rem;font-weight:700;letter-spacing:0.01em;">VivaPetals</span>
       <span style="color:#888;margin-left:0.5rem;font-size:0.85rem;">/ Order Cancelled</span>
     </div>
     <div style="background:white;padding:2rem;">
@@ -376,7 +378,7 @@ def build_order_cancellation_email_html(order: dict) -> str:
         <div style="font-size:0.88rem;color:#555;margin-top:0.25rem;">Order Total: ₹{total:.2f}</div>
       </div>
       <p style="color:#aaa;font-size:0.78rem;margin:0;">
-        Thank you for choosing FloranFlowers 🌸<br>
+        Thank you for choosing VivaPetals 🌸<br>
         We hope to see you again soon!
       </p>
     </div>
@@ -392,7 +394,7 @@ def send_order_cancellation_email(order: dict) -> bool:
         _resend_lib.Emails.send({
             "from": _reminder_from_email,
             "to": [order["customer_email"]],
-            "subject": f"Your FloranFlowers Order {order.get('id','')} Has Been Cancelled",
+            "subject": f"Your VivaPetals Order {order.get('id','')} Has Been Cancelled",
             "html": build_order_cancellation_email_html(order),
         })
         return True
@@ -409,7 +411,7 @@ def send_email_reminder(order: dict, days_before: int, is_recurrence: bool = Fal
         _resend_lib.Emails.send({
             "from": _reminder_from_email,
             "to": [order["customer_email"]],
-            "subject": f"Your FloranFlowers {kind} Delivery is {timing.title()}! 🌸",
+            "subject": f"Your VivaPetals {kind} Delivery is {timing.title()}! 🌸",
             "html": build_reminder_email_html(order, days_before, is_recurrence),
         })
         return True
@@ -431,7 +433,7 @@ def send_sms_whatsapp_reminder(order: dict, days_before: int, is_recurrence: boo
         except Exception:
             formatted_date = dt_str[:10]
     msg = (
-        f"FloranFlowers Reminder: Your {kind} flower delivery "
+        f"VivaPetals Reminder: Your {kind} flower delivery "
         f"(Order {order['id']}) arrives {timing}"
         + (f" on {formatted_date}" if formatted_date else "")
         + ". Please ensure someone is available."
@@ -577,10 +579,10 @@ BUNDLE_DEALS = [
 
 # ── Order Status ───────────────────────────────────────────────────────────────
 STATUS_MESSAGES = {
-    "preparing":        "🌸 FloranFlowers: Your order {order_id} is being prepared! We're arranging your blooms.",
-    "out_for_delivery": "🚚 FloranFlowers: Your order {order_id} is out for delivery! Our driver is on the way.",
-    "delivered":        "🌺 FloranFlowers: Your order {order_id} has been delivered! Thank you for choosing FloranFlowers.",
-    "cancelled":        "💔 FloranFlowers: Your order {order_id} has been cancelled. Contact us if you need help.",
+    "preparing":        "🌸 VivaPetals: Your order {order_id} is being prepared! We're arranging your blooms.",
+    "out_for_delivery": "🚚 VivaPetals: Your order {order_id} is out for delivery! Our driver is on the way.",
+    "delivered":        "🌺 VivaPetals: Your order {order_id} has been delivered! Thank you for choosing VivaPetals.",
+    "cancelled":        "💔 VivaPetals: Your order {order_id} has been cancelled. Contact us if you need help.",
 }
 
 VALID_STATUS_TRANSITIONS = {
@@ -793,6 +795,102 @@ def login(req: LoginRequest):
             "is_admin": user.get("is_admin", False)
         }
     }
+
+# ── Social Auth ────────────────────────────────────────────────────────────────
+
+class SocialAuthRequest(BaseModel):
+    provider: str  # 'google' or 'facebook'
+    token: str     # id_token (Google) or accessToken (Facebook)
+
+@app.post("/api/auth/social")
+def social_auth(req: SocialAuthRequest):
+    email: str | None = None
+    first_name = "User"
+    last_name = ""
+
+    if req.provider == "google":
+        try:
+            # Verify access_token by calling Google's userinfo endpoint
+            r = _httpx.get(
+                "https://www.googleapis.com/oauth2/v2/userinfo",
+                headers={"Authorization": f"Bearer {req.token}"},
+                timeout=10
+            )
+            data = r.json()
+            if r.status_code != 200 or "error" in data:
+                raise HTTPException(status_code=401, detail="Invalid Google token. Please try again.")
+            email      = data.get("email")
+            first_name = data.get("given_name") or data.get("name", "User").split()[0]
+            last_name  = data.get("family_name", "")
+        except HTTPException:
+            raise
+        except Exception:
+            raise HTTPException(status_code=401, detail="Google sign-in verification failed.")
+
+    elif req.provider == "facebook":
+        try:
+            r = _httpx.get(
+                "https://graph.facebook.com/me",
+                params={"fields": "id,name,email,first_name,last_name", "access_token": req.token},
+                timeout=10
+            )
+            data = r.json()
+            if r.status_code != 200 or "error" in data:
+                raise HTTPException(status_code=401, detail="Invalid Facebook token. Please try again.")
+            email      = data.get("email")
+            first_name = data.get("first_name") or data.get("name", "User").split()[0]
+            last_name  = data.get("last_name", "")
+        except HTTPException:
+            raise
+        except Exception:
+            raise HTTPException(status_code=401, detail="Facebook sign-in verification failed.")
+
+    else:
+        raise HTTPException(status_code=400, detail="Unsupported provider.")
+
+    if not email:
+        raise HTTPException(
+            status_code=400,
+            detail="We could not retrieve your email from the provider. Please ensure your account has a verified email address."
+        )
+
+    # ── Find or create user ──────────────────────────────────────────────────
+    existing = supabase.table("users").select("*").eq("email", email).execute()
+
+    if existing.data:
+        user = existing.data[0]
+        # Auto-verify any account that signs in via trusted OAuth provider
+        if not user.get("is_verified"):
+            supabase.table("users").update({"is_verified": True}).eq("email", email).execute()
+            user["is_verified"] = True
+    else:
+        # Create a new social user — no password needed, pre-verified
+        random_pw = hash_password(secrets.token_urlsafe(32))
+        result = supabase.table("users").insert({
+            "email":      email,
+            "password":   random_pw,
+            "first_name": first_name,
+            "last_name":  last_name,
+            "is_verified": True
+        }).execute()
+        user = result.data[0]
+        create_loyalty_account(email)
+
+    # Issue app session token
+    token = str(uuid.uuid4())
+    tokens[token] = email
+
+    return {
+        "token": token,
+        "user": {
+            "id":        user["id"],
+            "firstName": user["first_name"],
+            "lastName":  user["last_name"],
+            "email":     user["email"],
+            "is_admin":  user.get("is_admin", False)
+        }
+    }
+
 
 # ── Admin Routes ───────────────────────────────────────────────────────────────
 
