@@ -12,15 +12,15 @@ import { ToastService } from './services/toast';
   styleUrl: './app.scss'
 })
 export class App implements OnInit, OnDestroy {
-  title = 'FloranFlowers';
+  title = 'VivaPetals';
   private scrollTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor(private router: Router, private toastService: ToastService) {}
 
   ngOnInit(): void {
-    const pendingToast = sessionStorage.getItem('floran_toast');
+    const pendingToast = sessionStorage.getItem('viva_toast');
     if (pendingToast) {
-      sessionStorage.removeItem('floran_toast');
+      sessionStorage.removeItem('viva_toast');
       setTimeout(() => this.toastService.show(pendingToast), 300);
     }
 

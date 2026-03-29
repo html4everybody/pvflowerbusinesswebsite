@@ -37,7 +37,7 @@
 
       em {
         font-style: normal;
-        color: #f9c2d0;
+        color: #bfdbfe;
       }
     }
 
@@ -104,19 +104,19 @@
 
       &.active {
         .step-dot {
-          background: var(--accent, #d4608a);
+          background: var(--accent, #2563eb);
           color: white;
-          box-shadow: 0 0 0 4px rgba(212, 96, 138, 0.18);
+          box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.18);
         }
-        .step-label { color: var(--accent, #d4608a); }
+        .step-label { color: var(--accent, #2563eb); }
       }
 
       &.done {
         .step-dot {
-          background: var(--accent, #d4608a);
+          background: var(--accent, #2563eb);
           color: white;
         }
-        .step-label { color: var(--accent, #d4608a); }
+        .step-label { color: var(--accent, #2563eb); }
       }
     }
 
@@ -127,7 +127,7 @@
       margin-bottom: 1.4rem;
       transition: background 0.3s;
 
-      &.done { background: var(--accent, #d4608a); }
+      &.done { background: var(--accent, #2563eb); }
 
       @media (max-width: 500px) { width: 28px; }
     }
@@ -184,18 +184,18 @@
     &:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,0.08); }
 
     &.selected {
-      border-color: var(--accent, #d4608a);
-      box-shadow: 0 0 0 3px rgba(212, 96, 138, 0.14), 0 8px 24px rgba(0,0,0,0.08);
+      border-color: var(--accent, #2563eb);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.14), 0 8px 24px rgba(0,0,0,0.08);
     }
 
-    &.popular { border-color: var(--accent, #d4608a); }
+    &.popular { border-color: var(--accent, #2563eb); }
 
     .popular-badge {
       position: absolute;
       top: -13px;
       left: 50%;
       transform: translateX(-50%);
-      background: var(--accent, #d4608a);
+      background: var(--accent, #2563eb);
       color: white;
       font-size: 0.7rem;
       font-weight: 700;
@@ -223,14 +223,14 @@
     .plan-price {
       font-size: 1.05rem;
       font-weight: 700;
-      color: var(--accent, #d4608a);
+      color: var(--accent, #2563eb);
       margin-bottom: 0.5rem;
     }
 
     .plan-saving {
       display: inline-block;
-      background: rgba(212, 96, 138, 0.1);
-      color: var(--accent, #d4608a);
+      background: rgba(37, 99, 235, 0.1);
+      color: var(--accent, #2563eb);
       font-size: 0.72rem;
       font-weight: 700;
       padding: 0.15rem 0.55rem;
@@ -258,8 +258,8 @@
       }
 
       &.checked {
-        border-color: var(--accent, #d4608a);
-        .radio-inner { background: var(--accent, #d4608a); }
+        border-color: var(--accent, #2563eb);
+        .radio-inner { background: var(--accent, #2563eb); }
       }
     }
   }
@@ -285,8 +285,8 @@
     &:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,0.08); }
 
     &.selected {
-      border-color: var(--accent, #d4608a);
-      box-shadow: 0 0 0 3px rgba(212, 96, 138, 0.14);
+      border-color: var(--accent, #2563eb);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.14);
     }
 
     .style-icon { font-size: 2.4rem; display: block; margin-bottom: 0.85rem; }
@@ -361,11 +361,11 @@
     background: var(--bg-card, #fff);
     transition: border-color 0.2s, box-shadow 0.2s;
 
-    &:hover { border-color: rgba(212, 96, 138, 0.5); }
+    &:hover { border-color: rgba(37, 99, 235, 0.5); }
 
     &.selected {
-      border-color: var(--accent, #d4608a);
-      box-shadow: 0 0 0 2px rgba(212, 96, 138, 0.18);
+      border-color: var(--accent, #2563eb);
+      box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.18);
     }
 
     img {
@@ -393,7 +393,7 @@
 
       .picker-price {
         font-size: 0.72rem;
-        color: var(--accent, #d4608a);
+        color: var(--accent, #2563eb);
         font-weight: 700;
       }
     }
@@ -405,7 +405,7 @@
       width: 22px;
       height: 22px;
       border-radius: 50%;
-      background: var(--accent, #d4608a);
+      background: var(--accent, #2563eb);
       color: white;
       display: flex;
       align-items: center;
@@ -446,8 +446,8 @@
 
       &:focus {
         outline: none;
-        border-color: var(--accent, #d4608a);
-        box-shadow: 0 0 0 3px rgba(212, 96, 138, 0.1);
+        border-color: var(--accent, #2563eb);
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
       }
     }
 
@@ -533,7 +533,7 @@
 
   .btn-next {
     padding: 0.85rem 2.25rem;
-    background: var(--accent, #d4608a);
+    background: var(--accent, #2563eb);
     color: white;
     border: none;
     border-radius: var(--radius-sm, 8px);
@@ -543,13 +543,13 @@
     font-family: inherit;
     transition: background 0.2s, transform 0.15s, opacity 0.2s;
 
-    &:hover:not(:disabled) { background: #b8436f; transform: translateY(-1px); }
+    &:hover:not(:disabled) { background: #1d4ed8; transform: translateY(-1px); }
     &:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
   }
 
   .btn-confirm {
     padding: 0.9rem 2.5rem;
-    background: var(--accent, #d4608a);
+    background: var(--accent, #2563eb);
     color: white;
     border: none;
     border-radius: var(--radius-sm, 8px);
@@ -559,7 +559,7 @@
     font-family: inherit;
     transition: background 0.2s, transform 0.15s, opacity 0.2s;
 
-    &:hover:not(:disabled) { background: #b8436f; transform: translateY(-1px); }
+    &:hover:not(:disabled) { background: #1d4ed8; transform: translateY(-1px); }
     &:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
   }
 
@@ -592,9 +592,9 @@
     .success-date {
       font-size: 1.15rem;
       font-weight: 700;
-      color: var(--accent, #d4608a);
-      background: rgba(212, 96, 138, 0.08);
-      border: 1px solid rgba(212, 96, 138, 0.2);
+      color: var(--accent, #2563eb);
+      background: rgba(37, 99, 235, 0.08);
+      border: 1px solid rgba(37, 99, 235, 0.2);
       border-radius: var(--radius-md, 12px);
       padding: 0.85rem 2rem;
       display: inline-block;
@@ -615,7 +615,7 @@
 
     .btn-manage {
       padding: 0.8rem 1.75rem;
-      background: var(--accent, #d4608a);
+      background: var(--accent, #2563eb);
       color: white;
       border-radius: var(--radius-sm, 8px);
       font-weight: 700;
@@ -623,7 +623,7 @@
       text-decoration: none;
       transition: background 0.2s;
 
-      &:hover { background: #b8436f; }
+      &:hover { background: #1d4ed8; }
     }
 
     .btn-home {

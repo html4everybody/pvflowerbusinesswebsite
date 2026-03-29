@@ -11,14 +11,14 @@ export class ThemeService {
   }
 
   private loadTheme(): boolean {
-    const stored = localStorage.getItem('floran_theme');
+    const stored = localStorage.getItem('viva_theme');
     if (stored) return stored === 'dark';
     return window.matchMedia('(prefers-color-scheme: dark)').matches;
   }
 
   private applyTheme(dark: boolean): void {
     document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
-    localStorage.setItem('floran_theme', dark ? 'dark' : 'light');
+    localStorage.setItem('viva_theme', dark ? 'dark' : 'light');
   }
 
   toggle(): void {

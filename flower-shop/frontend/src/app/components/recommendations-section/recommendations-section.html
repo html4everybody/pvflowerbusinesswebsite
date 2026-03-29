@@ -1,0 +1,129 @@
+@if (!loading() && hasSections()) {
+  <section class="reco-section">
+
+    <div class="reco-heading" appFadeIn>
+      <span class="reco-eyebrow">✦ Picked For You</span>
+      <h2>Personalized Picks</h2>
+    </div>
+
+    <!-- ── Based on Last Order ───────────────────────────────────────────── -->
+    @if (basedOnOrder && basedOnOrder.products.length > 0) {
+      <div class="reco-row" appFadeIn>
+        <div class="reco-row-header">
+          <div class="reco-row-label">
+            <span class="reco-row-icon">🛍️</span>
+            <div>
+              <span class="reco-row-title">Based on your last order</span>
+              <span class="reco-row-sub">{{ basedOnOrder.reason }}</span>
+            </div>
+          </div>
+        </div>
+        <div class="reco-cards-track">
+          @for (p of basedOnOrder.products; track p.id) {
+            <div class="reco-card" (click)="goToProduct(p.id)">
+              <div class="reco-card-img-wrap">
+                <img [src]="p.image" [alt]="p.name" loading="lazy">
+              </div>
+              <div class="reco-card-body">
+                <p class="reco-card-name">{{ p.name }}</p>
+                <div class="reco-card-footer">
+                  <span class="reco-card-price">₹{{ p.price.toFixed(2) }}</span>
+                  <button class="reco-add-btn"
+                          (click)="$event.stopPropagation(); addToCart(p)"
+                          [class.adding]="addingId() === p.id">
+                    @if (addingId() === p.id) {
+                      ✓
+                    } @else {
+                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    }
+                  </button>
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+    }
+
+    <!-- ── Popular in Your City ─────────────────────────────────────────── -->
+    @if (popularCity && popularCity.products.length > 0) {
+      <div class="reco-row" appFadeIn>
+        <div class="reco-row-header">
+          <div class="reco-row-label">
+            <span class="reco-row-icon">📍</span>
+            <div>
+              <span class="reco-row-title">Most popular in {{ popularCity.city }}</span>
+              <span class="reco-row-sub">What your neighbours are ordering</span>
+            </div>
+          </div>
+        </div>
+        <div class="reco-cards-track">
+          @for (p of popularCity.products; track p.id) {
+            <div class="reco-card" (click)="goToProduct(p.id)">
+              <div class="reco-card-img-wrap">
+                <img [src]="p.image" [alt]="p.name" loading="lazy">
+                <span class="reco-hot-badge">🔥 Local Fave</span>
+              </div>
+              <div class="reco-card-body">
+                <p class="reco-card-name">{{ p.name }}</p>
+                <div class="reco-card-footer">
+                  <span class="reco-card-price">₹{{ p.price.toFixed(2) }}</span>
+                  <button class="reco-add-btn"
+                          (click)="$event.stopPropagation(); addToCart(p)"
+                          [class.adding]="addingId() === p.id">
+                    @if (addingId() === p.id) {
+                      ✓
+                    } @else {
+                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    }
+                  </button>
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+    }
+
+    <!-- ── Trending This Week ────────────────────────────────────────────── -->
+    @if (trending && trending.products.length > 0) {
+      <div class="reco-row" appFadeIn>
+        <div class="reco-row-header">
+          <div class="reco-row-label">
+            <span class="reco-row-icon">📈</span>
+            <div>
+              <span class="reco-row-title">Trending this week</span>
+              <span class="reco-row-sub">Flying off the shelves right now</span>
+            </div>
+          </div>
+        </div>
+        <div class="reco-cards-track">
+          @for (p of trending.products; track p.id) {
+            <div class="reco-card" (click)="goToProduct(p.id)">
+              <div class="reco-card-img-wrap">
+                <img [src]="p.image" [alt]="p.name" loading="lazy">
+                <span class="reco-trend-badge">↑ Trending</span>
+              </div>
+              <div class="reco-card-body">
+                <p class="reco-card-name">{{ p.name }}</p>
+                <div class="reco-card-footer">
+                  <span class="reco-card-price">₹{{ p.price.toFixed(2) }}</span>
+                  <button class="reco-add-btn"
+                          (click)="$event.stopPropagation(); addToCart(p)"
+                          [class.adding]="addingId() === p.id">
+                    @if (addingId() === p.id) {
+                      ✓
+                    } @else {
+                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    }
+                  </button>
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+    }
+
+  </section>
+}

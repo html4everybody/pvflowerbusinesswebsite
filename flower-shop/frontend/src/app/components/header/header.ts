@@ -115,6 +115,15 @@ export class Header {
     });
   }
 
+  goToHomeSection(sectionId: string): void {
+    this.navStackOpen = false;
+    this.router.navigate(['/']).then(() => {
+      setTimeout(() => {
+        document.getElementById(sectionId)?.scrollIntoView({ behavior: 'smooth' });
+      }, 120);
+    });
+  }
+
   toggleMenu(): void {
     this.menuOpen = !this.menuOpen;
     if (this.menuOpen) {
@@ -163,7 +172,7 @@ export class Header {
 
   logout(): void {
     this.authService.logout();
-    sessionStorage.setItem('floran_toast', 'Logged out successfully.');
+    sessionStorage.setItem('viva_toast', 'Logged out successfully.');
     window.location.href = '/';
   }
 }

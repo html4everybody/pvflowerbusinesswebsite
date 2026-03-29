@@ -38,7 +38,7 @@
     .logo-text {
       font-size: 1.25rem;
       font-weight: 800;
-      background: linear-gradient(135deg, var(--accent), #9c2d55);
+      background: linear-gradient(135deg, var(--accent), #1d4ed8);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
@@ -79,7 +79,7 @@
 
   &.success-icon { background: #22c55e; box-shadow: 0 4px 16px rgba(34,197,94,0.3); }
   &.error-icon   { background: #ef4444; box-shadow: 0 4px 16px rgba(239,68,68,0.3); }
-  &.resent-icon  { background: var(--accent); box-shadow: 0 4px 16px rgba(200,75,122,0.3); }
+  &.resent-icon  { background: var(--accent); box-shadow: 0 4px 16px rgba(37,99,235,0.3); }
 }
 
 .spinner {
@@ -96,13 +96,13 @@
   display: inline-block;
   margin-top: 0.5rem;
   padding: 0.75rem 2rem;
-  background: linear-gradient(180deg, #d85c8a 0%, var(--accent) 100%);
+  background: linear-gradient(180deg, #3b82f6 0%, var(--accent) 100%);
   color: white;
   border-radius: 999px;
   text-decoration: none;
   font-weight: 700;
   font-size: 0.95rem;
-  box-shadow: 0 4px 16px rgba(200,75,122,0.35);
+  box-shadow: 0 4px 16px rgba(37,99,235,0.35);
   transition: opacity 0.15s ease, transform 0.15s ease;
 
   &:hover { opacity: 0.9; transform: translateY(-1px); }
@@ -164,7 +164,7 @@
 
     .btn-resend {
       padding: 0.6rem 1rem;
-      background: linear-gradient(180deg, #d85c8a 0%, var(--accent) 100%);
+      background: linear-gradient(180deg, #3b82f6 0%, var(--accent) 100%);
       color: white;
       border: none;
       border-radius: 8px;

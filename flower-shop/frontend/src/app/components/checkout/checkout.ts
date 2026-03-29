@@ -145,10 +145,10 @@ export class Checkout {
     }
 
     // Auto-apply pending promo from sessionStorage (e.g. set by bundle flow)
-    const pending = sessionStorage.getItem('floran_promo');
+    const pending = sessionStorage.getItem('viva_promo');
     if (pending) {
       this.promoCode.set(pending);
-      sessionStorage.removeItem('floran_promo');
+      sessionStorage.removeItem('viva_promo');
       setTimeout(() => this.applyPromo(), 100);
     }
   }

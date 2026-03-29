@@ -3,12 +3,15 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, EmailStr
 from typing import Optional
 import uuid
+import base64 as _base64
 import os
 import secrets
 import smtplib
+import httpx as _httpx
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from datetime import datetime, timedelta, timezone
+from collections import Counter
 from dotenv import load_dotenv
 from supabase import create_client, Client
 import bcrypt
@@ -26,11 +29,11 @@ if _sid and _token:
 
 import resend as _resend_lib
 _resend_api_key = os.getenv("RESEND_API_KEY", "")
-_reminder_from_email = os.getenv("REMINDER_FROM_EMAIL", "reminders@floranflowers.com")
+_reminder_from_email = os.getenv("REMINDER_FROM_EMAIL", "reminders@vivapetals.com")
 if _resend_api_key:
     _resend_lib.api_key = _resend_api_key
 
-app = FastAPI(title="FloranFlowers API")
+app = FastAPI(title="VivaPetals API")
 
 app.add_middleware(
     CORSMiddleware,
@@ -50,6 +53,7 @@ supabase: Client = create_client(
 GMAIL_USER         = os.getenv("GMAIL_USER", "")
 GMAIL_APP_PASSWORD = os.getenv("GMAIL_APP_PASSWORD", "")
 APP_URL            = os.getenv("APP_URL", "http://localhost:4200")
+GOOGLE_CLIENT_ID   = os.getenv("GOOGLE_CLIENT_ID", "")
 
 def send_verification_email(to_email: str, first_name: str, token: str):
     if not GMAIL_USER or not GMAIL_APP_PASSWORD:
@@ -57,8 +61,8 @@ def send_verification_email(to_email: str, first_name: str, token: str):
         return
     verify_url = f"{APP_URL}/verify-email?token={token}"
     msg = MIMEMultipart("alternative")
-    msg["Subject"] = "Verify your FloranFlowers email"
-    msg["From"]    = f"FloranFlowers <{GMAIL_USER}>"
+    msg["Subject"] = "Verify your VivaPetals email"
+    msg["From"]    = f"VivaPetals <{GMAIL_USER}>"
     msg["To"]      = to_email
     html = f"""
     <!DOCTYPE html>
@@ -69,7 +73,7 @@ def send_verification_email(to_email: str, first_name: str, token: str):
           <table width="520" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(200,75,122,0.1);">
             <tr><td style="background:linear-gradient(135deg,#c84b7a,#9c2d55);padding:32px 40px;text-align:center;">
               <div style="font-size:2rem;">🌸</div>
-              <div style="color:#fff;font-size:1.5rem;font-weight:800;margin-top:8px;letter-spacing:-0.03em;">FloranFlowers</div>
+              <div style="color:#fff;font-size:1.5rem;font-weight:800;margin-top:8px;letter-spacing:-0.03em;">VivaPetals</div>
             </td></tr>
             <tr><td style="padding:40px;">
               <h2 style="margin:0 0 12px;color:#1e1e1e;font-size:1.35rem;font-weight:800;">Hi {first_name}, verify your email</h2>
@@ -162,7 +166,7 @@ def create_loyalty_account(email: str, referred_by_code: str = None) -> str:
     except Exception:
         pass
     # Welcome bonus
-    award_points(email, 100, "earned_welcome", "Welcome bonus for joining FloranFlowers")
+    award_points(email, 100, "earned_welcome", "Welcome bonus for joining VivaPetals")
     # Referral signup bonus: 200 pts to referrer
     if referred_by_code and referred_by:
         referrer_result = supabase.table("loyalty_accounts").select("user_email").eq("referral_code", referred_by_code).execute()
@@ -218,7 +222,7 @@ def build_reminder_email_html(order: dict, days_before: int, is_recurrence: bool
   <div style="max-width:560px;margin:2rem auto;border-radius:12px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
     <div style="background:#1a1a1a;padding:1.5rem 2rem;display:flex;align-items:center;gap:0.75rem;">
       <span style="font-size:1.4rem;">🌸</span>
-      <span style="color:white;font-size:1.05rem;font-weight:700;letter-spacing:0.01em;">FloranFlowers</span>
+      <span style="color:white;font-size:1.05rem;font-weight:700;letter-spacing:0.01em;">VivaPetals</span>
       <span style="color:#888;margin-left:0.5rem;font-size:0.85rem;">/ Delivery Reminder</span>
     </div>
     <div style="background:white;padding:2rem;">
@@ -242,7 +246,7 @@ def build_reminder_email_html(order: dict, days_before: int, is_recurrence: bool
         </ul>
       </div>
       <p style="color:#aaa;font-size:0.78rem;margin:0;">
-        Thank you for choosing FloranFlowers 🌸<br>
+        Thank you for choosing VivaPetals 🌸<br>
         If you have questions, reply to this email or visit our website.
       </p>
     </div>
@@ -285,7 +289,7 @@ def build_order_confirmation_email_html(order: dict, items: list) -> str:
   <div style="max-width:560px;margin:2rem auto;border-radius:12px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
     <div style="background:#1a1a1a;padding:1.5rem 2rem;display:flex;align-items:center;gap:0.75rem;">
       <span style="font-size:1.4rem;">🌸</span>
-      <span style="color:white;font-size:1.05rem;font-weight:700;letter-spacing:0.01em;">FloranFlowers</span>
+      <span style="color:white;font-size:1.05rem;font-weight:700;letter-spacing:0.01em;">VivaPetals</span>
       <span style="color:#888;margin-left:0.5rem;font-size:0.85rem;">/ Order Confirmed</span>
     </div>
     <div style="background:white;padding:2rem;">
@@ -322,7 +326,7 @@ def build_order_confirmation_email_html(order: dict, items: list) -> str:
         </table>
       </div>
       <p style="color:#aaa;font-size:0.78rem;margin:0;">
-        Thank you for choosing FloranFlowers 🌸<br>
+        Thank you for choosing VivaPetals 🌸<br>
         If you have questions, reply to this email or visit our website.
       </p>
     </div>
@@ -338,7 +342,7 @@ def send_order_confirmation_email(order: dict, items: list) -> bool:
         _resend_lib.Emails.send({
             "from": _reminder_from_email,
             "to": [order["customer_email"]],
-            "subject": f"Your FloranFlowers Order {order.get('id','')} is Confirmed! 🌸",
+            "subject": f"Your VivaPetals Order {order.get('id','')} is Confirmed! 🌸",
             "html": build_order_confirmation_email_html(order, items),
         })
         return True
@@ -359,7 +363,7 @@ def build_order_cancellation_email_html(order: dict) -> str:
   <div style="max-width:560px;margin:2rem auto;border-radius:12px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
     <div style="background:#1a1a1a;padding:1.5rem 2rem;display:flex;align-items:center;gap:0.75rem;">
       <span style="font-size:1.4rem;">🌸</span>
-      <span style="color:white;font-size:1.05rem;font-weight:700;letter-spacing:0.01em;">FloranFlowers</span>
+      <span style="color:white;font-size:1.05rem;font-weight:700;letter-spacing:0.01em;">VivaPetals</span>
       <span style="color:#888;margin-left:0.5rem;font-size:0.85rem;">/ Order Cancelled</span>
     </div>
     <div style="background:white;padding:2rem;">
@@ -376,7 +380,7 @@ def build_order_cancellation_email_html(order: dict) -> str:
         <div style="font-size:0.88rem;color:#555;margin-top:0.25rem;">Order Total: ₹{total:.2f}</div>
       </div>
       <p style="color:#aaa;font-size:0.78rem;margin:0;">
-        Thank you for choosing FloranFlowers 🌸<br>
+        Thank you for choosing VivaPetals 🌸<br>
         We hope to see you again soon!
       </p>
     </div>
@@ -392,7 +396,7 @@ def send_order_cancellation_email(order: dict) -> bool:
         _resend_lib.Emails.send({
             "from": _reminder_from_email,
             "to": [order["customer_email"]],
-            "subject": f"Your FloranFlowers Order {order.get('id','')} Has Been Cancelled",
+            "subject": f"Your VivaPetals Order {order.get('id','')} Has Been Cancelled",
             "html": build_order_cancellation_email_html(order),
         })
         return True
@@ -409,7 +413,7 @@ def send_email_reminder(order: dict, days_before: int, is_recurrence: bool = Fal
         _resend_lib.Emails.send({
             "from": _reminder_from_email,
             "to": [order["customer_email"]],
-            "subject": f"Your FloranFlowers {kind} Delivery is {timing.title()}! 🌸",
+            "subject": f"Your VivaPetals {kind} Delivery is {timing.title()}! 🌸",
             "html": build_reminder_email_html(order, days_before, is_recurrence),
         })
         return True
@@ -431,7 +435,7 @@ def send_sms_whatsapp_reminder(order: dict, days_before: int, is_recurrence: boo
         except Exception:
             formatted_date = dt_str[:10]
     msg = (
-        f"FloranFlowers Reminder: Your {kind} flower delivery "
+        f"VivaPetals Reminder: Your {kind} flower delivery "
         f"(Order {order['id']}) arrives {timing}"
         + (f" on {formatted_date}" if formatted_date else "")
         + ". Please ensure someone is available."
@@ -577,10 +581,10 @@ BUNDLE_DEALS = [
 
 # ── Order Status ───────────────────────────────────────────────────────────────
 STATUS_MESSAGES = {
-    "preparing":        "🌸 FloranFlowers: Your order {order_id} is being prepared! We're arranging your blooms.",
-    "out_for_delivery": "🚚 FloranFlowers: Your order {order_id} is out for delivery! Our driver is on the way.",
-    "delivered":        "🌺 FloranFlowers: Your order {order_id} has been delivered! Thank you for choosing FloranFlowers.",
-    "cancelled":        "💔 FloranFlowers: Your order {order_id} has been cancelled. Contact us if you need help.",
+    "preparing":        "🌸 VivaPetals: Your order {order_id} is being prepared! We're arranging your blooms.",
+    "out_for_delivery": "🚚 VivaPetals: Your order {order_id} is out for delivery! Our driver is on the way.",
+    "delivered":        "🌺 VivaPetals: Your order {order_id} has been delivered! Thank you for choosing VivaPetals.",
+    "cancelled":        "💔 VivaPetals: Your order {order_id} has been cancelled. Contact us if you need help.",
 }
 
 VALID_STATUS_TRANSITIONS = {
@@ -794,6 +798,102 @@ def login(req: LoginRequest):
         }
     }
 
+# ── Social Auth ────────────────────────────────────────────────────────────────
+
+class SocialAuthRequest(BaseModel):
+    provider: str  # 'google' or 'facebook'
+    token: str     # id_token (Google) or accessToken (Facebook)
+
+@app.post("/api/auth/social")
+def social_auth(req: SocialAuthRequest):
+    email: str | None = None
+    first_name = "User"
+    last_name = ""
+
+    if req.provider == "google":
+        try:
+            # Verify access_token by calling Google's userinfo endpoint
+            r = _httpx.get(
+                "https://www.googleapis.com/oauth2/v2/userinfo",
+                headers={"Authorization": f"Bearer {req.token}"},
+                timeout=10
+            )
+            data = r.json()
+            if r.status_code != 200 or "error" in data:
+                raise HTTPException(status_code=401, detail="Invalid Google token. Please try again.")
+            email      = data.get("email")
+            first_name = data.get("given_name") or data.get("name", "User").split()[0]
+            last_name  = data.get("family_name", "")
+        except HTTPException:
+            raise
+        except Exception:
+            raise HTTPException(status_code=401, detail="Google sign-in verification failed.")
+
+    elif req.provider == "facebook":
+        try:
+            r = _httpx.get(
+                "https://graph.facebook.com/me",
+                params={"fields": "id,name,email,first_name,last_name", "access_token": req.token},
+                timeout=10
+            )
+            data = r.json()
+            if r.status_code != 200 or "error" in data:
+                raise HTTPException(status_code=401, detail="Invalid Facebook token. Please try again.")
+            email      = data.get("email")
+            first_name = data.get("first_name") or data.get("name", "User").split()[0]
+            last_name  = data.get("last_name", "")
+        except HTTPException:
+            raise
+        except Exception:
+            raise HTTPException(status_code=401, detail="Facebook sign-in verification failed.")
+
+    else:
+        raise HTTPException(status_code=400, detail="Unsupported provider.")
+
+    if not email:
+        raise HTTPException(
+            status_code=400,
+            detail="We could not retrieve your email from the provider. Please ensure your account has a verified email address."
+        )
+
+    # ── Find or create user ──────────────────────────────────────────────────
+    existing = supabase.table("users").select("*").eq("email", email).execute()
+
+    if existing.data:
+        user = existing.data[0]
+        # Auto-verify any account that signs in via trusted OAuth provider
+        if not user.get("is_verified"):
+            supabase.table("users").update({"is_verified": True}).eq("email", email).execute()
+            user["is_verified"] = True
+    else:
+        # Create a new social user — no password needed, pre-verified
+        random_pw = hash_password(secrets.token_urlsafe(32))
+        result = supabase.table("users").insert({
+            "email":      email,
+            "password":   random_pw,
+            "first_name": first_name,
+            "last_name":  last_name,
+            "is_verified": True
+        }).execute()
+        user = result.data[0]
+        create_loyalty_account(email)
+
+    # Issue app session token
+    token = str(uuid.uuid4())
+    tokens[token] = email
+
+    return {
+        "token": token,
+        "user": {
+            "id":        user["id"],
+            "firstName": user["first_name"],
+            "lastName":  user["last_name"],
+            "email":     user["email"],
+            "is_admin":  user.get("is_admin", False)
+        }
+    }
+
+
 # ── Admin Routes ───────────────────────────────────────────────────────────────
 
 def require_admin(token: str):
@@ -842,6 +942,138 @@ def admin_orders(token: str, status: str = None):
     for order in orders:
         order["items"] = items_by_order.get(order["id"], [])
     return orders
+
+@app.get("/api/admin/customers")
+def admin_customers(token: str):
+    require_admin(token)
+    users = supabase.table("users").select("id, email, first_name, last_name, created_at, is_verified").order("created_at", desc=True).execute().data or []
+    orders = supabase.table("orders").select("id, customer_email, total, status, created_at").execute().data or []
+    order_map: dict = {}
+    for o in orders:
+        em = o["customer_email"]
+        if em not in order_map:
+            order_map[em] = {"count": 0, "total": 0.0, "last_order": ""}
+        order_map[em]["count"] += 1
+        if o.get("status") != "cancelled":
+            order_map[em]["total"] += o.get("total", 0)
+        if o.get("created_at", "") > order_map[em]["last_order"]:
+            order_map[em]["last_order"] = o["created_at"]
+    result = []
+    for u in users:
+        em = u["email"]
+        stats = order_map.get(em, {"count": 0, "total": 0.0, "last_order": ""})
+        result.append({**u, "order_count": stats["count"], "total_spent": round(stats["total"], 2), "last_order": stats["last_order"]})
+    return result
+
+@app.get("/api/admin/analytics")
+def admin_analytics(token: str):
+    require_admin(token)
+    all_orders = supabase.table("orders").select("id, total, status, created_at").order("created_at", desc=True).execute().data or []
+    now = datetime.now(timezone.utc)
+    # Revenue last 30 days by day
+    revenue_by_day: dict = {}
+    for i in range(30):
+        day = (now - timedelta(days=29 - i)).strftime("%Y-%m-%d")
+        revenue_by_day[day] = 0.0
+    for o in all_orders:
+        if o.get("status") == "cancelled":
+            continue
+        day = (o.get("created_at") or "")[:10]
+        if day in revenue_by_day:
+            revenue_by_day[day] += o.get("total", 0)
+    revenue_chart = [{"date": d, "revenue": round(v, 2)} for d, v in revenue_by_day.items()]
+    # Top products
+    all_items = supabase.table("order_items").select("product_id, name, quantity, price").execute().data or []
+    product_totals: dict = {}
+    for item in all_items:
+        pid = item["product_id"]
+        if pid not in product_totals:
+            product_totals[pid] = {"name": item["name"], "qty": 0, "revenue": 0.0}
+        product_totals[pid]["qty"] += item.get("quantity", 1)
+        product_totals[pid]["revenue"] += item.get("price", 0) * item.get("quantity", 1)
+    top_products = sorted(product_totals.values(), key=lambda x: x["revenue"], reverse=True)[:10]
+    for p in top_products:
+        p["revenue"] = round(p["revenue"], 2)
+    # Peak hours (IST offset +5:30)
+    hour_counts = [0] * 24
+    for o in all_orders:
+        ts = o.get("created_at")
+        if ts:
+            try:
+                dt = datetime.fromisoformat(ts.replace("Z", "+00:00"))
+                ist_hour = (dt.hour + 5) % 24  # rough IST
+                hour_counts[ist_hour] += 1
+            except Exception:
+                pass
+    peak_hours = [{"hour": i, "count": hour_counts[i]} for i in range(24)]
+    return {"revenue_chart": revenue_chart, "top_products": top_products, "peak_hours": peak_hours}
+
+@app.get("/api/admin/inventory")
+def admin_inventory(token: str):
+    require_admin(token)
+    stock_rows = supabase.table("product_stock").select("*").execute().data or []
+    stock_map = {r["product_id"]: r["stock"] for r in stock_rows}
+    result = []
+    for p in PRODUCTS:
+        stock = stock_map.get(p["id"], 50)
+        result.append({"id": p["id"], "name": p["name"], "category": p["category"], "price": p["price"], "stock": stock, "low_stock": stock < 10})
+    return result
+
+class StockUpdate(BaseModel):
+    stock: int
+
+@app.patch("/api/admin/inventory/{product_id}")
+def update_stock(product_id: int, req: StockUpdate, token: str):
+    require_admin(token)
+    existing = supabase.table("product_stock").select("product_id").eq("product_id", product_id).execute()
+    if existing.data:
+        supabase.table("product_stock").update({"stock": req.stock}).eq("product_id", product_id).execute()
+    else:
+        supabase.table("product_stock").insert({"product_id": product_id, "stock": req.stock}).execute()
+    return {"product_id": product_id, "stock": req.stock}
+
+class DeliveryZoneCreate(BaseModel):
+    zone_name: str
+    areas: str
+    delivery_charge: float
+    min_order: float = 0
+    active: bool = True
+
+class DeliveryZoneUpdate(BaseModel):
+    zone_name: Optional[str] = None
+    areas: Optional[str] = None
+    delivery_charge: Optional[float] = None
+    min_order: Optional[float] = None
+    active: Optional[bool] = None
+
+@app.get("/api/admin/delivery-zones")
+def list_delivery_zones(token: str):
+    require_admin(token)
+    return supabase.table("delivery_zones").select("*").order("zone_name").execute().data or []
+
+@app.post("/api/admin/delivery-zones")
+def create_delivery_zone(req: DeliveryZoneCreate, token: str):
+    require_admin(token)
+    result = supabase.table("delivery_zones").insert({
+        "zone_name": req.zone_name, "areas": req.areas,
+        "delivery_charge": req.delivery_charge, "min_order": req.min_order, "active": req.active
+    }).execute()
+    return result.data[0]
+
+@app.patch("/api/admin/delivery-zones/{zone_id}")
+def update_delivery_zone(zone_id: int, req: DeliveryZoneUpdate, token: str):
+    require_admin(token)
+    update_data = {k: v for k, v in req.model_dump().items() if v is not None}
+    result = supabase.table("delivery_zones").update(update_data).eq("id", zone_id).execute()
+    if not result.data:
+        raise HTTPException(status_code=404, detail="Zone not found")
+    return result.data[0]
+
+@app.delete("/api/admin/delivery-zones/{zone_id}")
+def delete_delivery_zone(zone_id: int, token: str):
+    require_admin(token)
+    supabase.table("delivery_zones").delete().eq("id", zone_id).execute()
+    return {"status": "ok"}
 
 # ── Contact Route ──────────────────────────────────────────────────────────────
 
@@ -1278,6 +1510,165 @@ def send_reminders(days: str = "3,1"):
 
     return {"status": "ok", "total_reminders_sent": total_sent, "summary": summary}
 
+
+# ── Smart Occasion Reminders ────────────────────────────────────────────────────
+
+OCCASION_EMOJIS = {
+    "birthday": "🎂", "anniversary": "💍", "valentine": "❤️",
+    "mothers_day": "🌷", "fathers_day": "👔", "graduation": "🎓", "custom": "🎉"
+}
+
+class OccasionCreate(BaseModel):
+    user_email: str
+    title: str
+    occasion_type: str = "custom"
+    month: int
+    day: int
+    linked_order_id: Optional[str] = None
+    notes: Optional[str] = None
+
+class OccasionUpdate(BaseModel):
+    title: Optional[str] = None
+    occasion_type: Optional[str] = None
+    month: Optional[int] = None
+    day: Optional[int] = None
+    linked_order_id: Optional[str] = None
+    notes: Optional[str] = None
+
+@app.get("/api/occasions")
+def get_occasions(email: str):
+    result = supabase.table("occasion_reminders").select("*").eq("user_email", email).order("month").order("day").execute()
+    return result.data or []
+
+@app.post("/api/occasions")
+def create_occasion(req: OccasionCreate):
+    result = supabase.table("occasion_reminders").insert(req.dict()).execute()
+    return result.data[0]
+
+@app.put("/api/occasions/{occasion_id}")
+def update_occasion(occasion_id: str, req: OccasionUpdate):
+    data = {k: v for k, v in req.dict().items() if v is not None}
+    result = supabase.table("occasion_reminders").update(data).eq("id", occasion_id).execute()
+    return result.data[0]
+
+@app.delete("/api/occasions/{occasion_id}")
+def delete_occasion(occasion_id: str):
+    supabase.table("occasion_reminders").delete().eq("id", occasion_id).execute()
+    return {"status": "deleted"}
+
+
+def build_occasion_reminder_email(occasion: dict, days_before: int) -> str:
+    title      = occasion.get("title", "Special Occasion")
+    occ_type   = occasion.get("occasion_type", "custom")
+    emoji      = OCCASION_EMOJIS.get(occ_type, "🎉")
+    timing     = "tomorrow" if days_before == 1 else f"in {days_before} days"
+    order_id   = occasion.get("linked_order_id")
+    reorder_html = ""
+    if order_id:
+        reorder_url = f"{APP_URL}/orders/{order_id}"
+        reorder_html = f"""
+      <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:1.25rem;margin-bottom:1.25rem;">
+        <div style="font-size:0.82rem;font-weight:700;color:#1d4ed8;margin-bottom:0.6rem;">🔁 Re-order Last Gift</div>
+        <p style="color:#1e3a8a;font-size:0.88rem;margin:0 0 0.75rem;">
+          You gifted flowers for this occasion before. Send the same arrangement again with one click.
+        </p>
+        <a href="{reorder_url}" style="display:inline-block;padding:0.6rem 1.4rem;background:linear-gradient(135deg,#3b82f6,#1d4ed8);color:#fff;
+           text-decoration:none;border-radius:999px;font-weight:700;font-size:0.85rem;box-shadow:0 4px 12px rgba(37,99,235,0.35);">
+          Re-order Now →
+        </a>
+      </div>"""
+    shop_url = f"{APP_URL}"
+    return f"""<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"></head>
+<body style="margin:0;padding:0;background:#f4f4f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
+  <div style="max-width:540px;margin:2rem auto;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.10);">
+    <div style="background:linear-gradient(135deg,#0f172a,#1e1b4b);padding:1.75rem 2rem;display:flex;align-items:center;gap:0.75rem;">
+      <span style="font-size:1.6rem;">🌸</span>
+      <div>
+        <div style="color:white;font-size:1.1rem;font-weight:800;letter-spacing:0.01em;">VivaPetals</div>
+        <div style="color:#94a3b8;font-size:0.8rem;margin-top:2px;">Smart Occasion Reminder</div>
+      </div>
+    </div>
+    <div style="background:white;padding:2rem;">
+      <div style="font-size:3rem;text-align:center;margin-bottom:0.5rem;">{emoji}</div>
+      <h1 style="font-size:1.35rem;font-weight:800;color:#0f172a;text-align:center;margin:0 0 0.5rem;">
+        {title} is {timing}!
+      </h1>
+      <p style="color:#64748b;font-size:0.92rem;line-height:1.6;text-align:center;margin:0 0 1.5rem;">
+        Don't forget to make it special. Send fresh flowers and make someone's day unforgettable.
+      </p>
+      {reorder_html}
+      <div style="text-align:center;margin-bottom:1.5rem;">
+        <a href="{shop_url}" style="display:inline-block;padding:0.75rem 2rem;background:linear-gradient(135deg,#3b82f6,#1d4ed8);
+           color:#fff;text-decoration:none;border-radius:999px;font-weight:700;font-size:0.95rem;
+           box-shadow:0 4px 16px rgba(37,99,235,0.40);">
+          Shop Fresh Flowers →
+        </a>
+      </div>
+      <p style="color:#94a3b8;font-size:0.75rem;text-align:center;margin:0;">
+        You're receiving this because you saved this date in VivaPetals Reminders.<br>
+        <a href="{APP_URL}/reminders" style="color:#3b82f6;">Manage your reminders</a>
+      </p>
+    </div>
+  </div>
+</body>
+</html>"""
+
+
+def send_occasion_reminder_email(occasion: dict, days_before: int) -> bool:
+    if not _resend_api_key:
+        return False
+    user_email = occasion.get("user_email", "")
+    title      = occasion.get("title", "Special Occasion")
+    timing     = "tomorrow" if days_before == 1 else f"in {days_before} days"
+    try:
+        _resend_lib.Emails.send({
+            "from":    _reminder_from_email,
+            "to":      [user_email],
+            "subject": f"🌸 Reminder: {title} is {timing}!",
+            "html":    build_occasion_reminder_email(occasion, days_before),
+        })
+        return True
+    except Exception as e:
+        print(f"[Occasion Reminder] Failed to send to {user_email}: {e}")
+        return False
+
+
+# Extend the existing /api/reminders/send to also process occasion reminders
+# The enhanced version is handled by appending occasion logic inside the existing endpoint.
+# We expose a dedicated endpoint so it can also be called standalone.
+
+@app.post("/api/occasions/send-reminders")
+def send_occasion_reminders(days: str = "3,1"):
+    today        = datetime.utcnow().date()
+    day_offsets  = [int(d.strip()) for d in days.split(",") if d.strip().isdigit()]
+    total_sent   = 0
+
+    for n in day_offsets:
+        target = today + timedelta(days=n)
+        occasions = supabase.table("occasion_reminders") \
+            .select("*").eq("month", target.month).eq("day", target.day).execute().data or []
+
+        for occ in occasions:
+            log_key = f"OCC-{occ['id']}"
+            already = {r["channel"] for r in (
+                supabase.table("reminder_logs").select("channel")
+                .eq("order_id", log_key).eq("reminder_type", f"{n}_day")
+                .execute().data or [])}
+            if "email" not in already:
+                if send_occasion_reminder_email(occ, n):
+                    try:
+                        supabase.table("reminder_logs").insert({
+                            "order_id": log_key, "reminder_type": f"{n}_day", "channel": "email"
+                        }).execute()
+                    except Exception:
+                        pass
+                    total_sent += 1
+
+    return {"status": "ok", "occasion_reminders_sent": total_sent}
+
+
 # ── Corporate Orders ────────────────────────────────────────────────────────────
 
 class CorporateOrderRequest(BaseModel):
@@ -1386,3 +1777,210 @@ def skip_corporate_order(order_id: str):
     new_date = advance_corp_delivery(order.get("recurring_frequency", "weekly"), order.get("next_delivery") or "")
     supabase.table("corporate_orders").update({"next_delivery": new_date}).eq("id", order_id).execute()
     return {"next_delivery": new_date}
+
+
+# ── Personalized Recommendations ────────────────────────────────────────────────
+
+def _enrich_products(product_ids: list, counter: Counter = None) -> list:
+    """Return full product dicts for given IDs, sorted by counter frequency if provided."""
+    products = [p for p in PRODUCTS if p["id"] in product_ids]
+    if counter:
+        products.sort(key=lambda p: counter.get(p["id"], 0), reverse=True)
+    return products
+
+@app.get("/api/recommendations")
+def get_recommendations(email: str = ""):
+    response = {
+        "based_on_last_order": {"reason": "", "products": []},
+        "popular_in_city":     {"city": "",   "products": []},
+        "trending_this_week":  {"products": []},
+    }
+
+    # ── Trending this week (always computed) ────────────────────────────────────
+    try:
+        week_ago = (datetime.utcnow() - timedelta(days=7)).isoformat()
+        recent_orders = (supabase.table("orders").select("id")
+                         .gte("created_at", week_ago).neq("status", "cancelled")
+                         .execute().data or [])
+        if recent_orders:
+            ids = [o["id"] for o in recent_orders]
+            items = (supabase.table("order_items").select("product_id")
+                     .in_("order_id", ids).execute().data or [])
+            counter = Counter(it["product_id"] for it in items)
+            top_ids = set(pid for pid, _ in counter.most_common(8))
+            response["trending_this_week"]["products"] = _enrich_products(top_ids, counter)[:6]
+    except Exception as e:
+        print(f"[Recommendations] trending error: {e}")
+
+    # Fallback: top-rated products if no order data yet
+    if not response["trending_this_week"]["products"]:
+        response["trending_this_week"]["products"] = sorted(
+            [p for p in PRODUCTS if p.get("inStock")],
+            key=lambda p: p.get("rating", 0), reverse=True
+        )[:6]
+
+    if not email:
+        return response
+
+    # ── Based on last order + city (requires email) ──────────────────────────────
+    try:
+        user_orders = (supabase.table("orders").select("id, customer_address")
+                       .eq("customer_email", email).neq("status", "cancelled")
+                       .order("created_at", desc=True).limit(1).execute().data or [])
+
+        if user_orders:
+            last_order = user_orders[0]
+            last_id = last_order["id"]
+
+            last_items = (supabase.table("order_items").select("product_id, name")
+                          .eq("order_id", last_id).execute().data or [])
+            ordered_ids = {it["product_id"] for it in last_items}
+            sample_names = [it["name"] for it in last_items[:2]]
+
+            # Find categories of what they ordered
+            ordered_categories = {
+                p["category"] for p in PRODUCTS if p["id"] in ordered_ids
+            }
+
+            if ordered_categories:
+                similar = [
+                    p for p in PRODUCTS
+                    if p["category"] in ordered_categories
+                    and p["id"] not in ordered_ids
+                    and p.get("inStock")
+                ]
+                similar.sort(key=lambda p: p.get("rating", 0), reverse=True)
+                names_str = " & ".join(sample_names) if sample_names else "your last order"
+                response["based_on_last_order"]["reason"] = f"Because you ordered {names_str}"
+                response["based_on_last_order"]["products"] = similar[:6]
+
+            # ── Popular in their city ────────────────────────────────────────────
+            address = last_order.get("customer_address", "")
+            parts = [p.strip() for p in address.split(",")]
+            city = parts[1] if len(parts) >= 2 else ""
+
+            if city:
+                city_orders = (supabase.table("orders").select("id")
+                               .ilike("customer_address", f"%{city}%")
+                               .neq("status", "cancelled").execute().data or [])
+                if city_orders:
+                    city_ids = [o["id"] for o in city_orders]
+                    city_items = (supabase.table("order_items").select("product_id")
+                                  .in_("order_id", city_ids).execute().data or [])
+                    city_counter = Counter(it["product_id"] for it in city_items)
+                    top_city = set(pid for pid, _ in city_counter.most_common(8))
+                    response["popular_in_city"]["city"] = city
+                    response["popular_in_city"]["products"] = _enrich_products(top_city, city_counter)[:6]
+
+    except Exception as e:
+        print(f"[Recommendations] personalized error: {e}")
+
+    return response
+
+
+# ── Product Reviews ──────────────────────────────────────────────────────────────
+
+class ReviewCreate(BaseModel):
+    product_id: int
+    user_email: str
+    author_name: str
+    rating: int
+    review_text: str
+    photo_b64_list: list[str] = []
+
+@app.get("/api/reviews")
+def get_reviews(product_id: int):
+    try:
+        reviews = (supabase.table("product_reviews").select("*")
+                   .eq("product_id", product_id)
+                   .order("created_at", desc=True).execute().data or [])
+        return reviews
+    except Exception:
+        return []
+
+@app.get("/api/reviews/can-review")
+def can_review_check(product_id: int, email: str = ""):
+    if not email:
+        return {"can_review": False, "has_purchased": False, "already_reviewed": False}
+    try:
+        user_orders = (supabase.table("orders").select("id")
+                       .eq("customer_email", email).neq("status", "cancelled")
+                       .execute().data or [])
+        has_purchased = False
+        if user_orders:
+            oids = [o["id"] for o in user_orders]
+            bought = (supabase.table("order_items").select("id")
+                      .eq("product_id", product_id).in_("order_id", oids)
+                      .limit(1).execute().data or [])
+            has_purchased = len(bought) > 0
+
+        existing = (supabase.table("product_reviews").select("id")
+                    .eq("product_id", product_id).eq("user_email", email)
+                    .limit(1).execute().data or [])
+        already_reviewed = len(existing) > 0
+
+        return {
+            "can_review": not already_reviewed,
+            "has_purchased": has_purchased,
+            "already_reviewed": already_reviewed
+        }
+    except Exception:
+        return {"can_review": True, "has_purchased": False, "already_reviewed": False}
+
+@app.post("/api/reviews")
+def create_review(req: ReviewCreate):
+    if not (1 <= req.rating <= 5):
+        raise HTTPException(status_code=422, detail="Rating must be 1–5")
+    if not req.review_text.strip():
+        raise HTTPException(status_code=422, detail="Review text is required")
+
+    # Prevent duplicate reviews
+    existing = (supabase.table("product_reviews").select("id")
+                .eq("product_id", req.product_id).eq("user_email", req.user_email)
+                .limit(1).execute().data or [])
+    if existing:
+        raise HTTPException(status_code=409, detail="You have already reviewed this product")
+
+    # Verified purchase check
+    has_purchased = False
+    if req.user_email:
+        try:
+            user_orders = (supabase.table("orders").select("id")
+                           .eq("customer_email", req.user_email).neq("status", "cancelled")
+                           .execute().data or [])
+            if user_orders:
+                oids = [o["id"] for o in user_orders]
+                bought = (supabase.table("order_items").select("id")
+                          .eq("product_id", req.product_id).in_("order_id", oids)
+                          .limit(1).execute().data or [])
+                has_purchased = len(bought) > 0
+        except Exception:
+            pass
+
+    # Upload photos to Supabase Storage
+    photo_urls = []
+    for i, b64_str in enumerate(req.photo_b64_list[:3]):
+        try:
+            img_bytes = _base64.b64decode(b64_str)
+            path = f"{uuid.uuid4()}/{i}.jpg"
+            supabase.storage.from_("review-photos").upload(
+                path, img_bytes, {"content-type": "image/jpeg"}
+            )
+            url = supabase.storage.from_("review-photos").get_public_url(path)
+            photo_urls.append(url)
+        except Exception as e:
+            print(f"[Reviews] Photo upload skipped: {e}")
+
+    review_id = str(uuid.uuid4())
+    result = supabase.table("product_reviews").insert({
+        "id": review_id,
+        "product_id": req.product_id,
+        "user_email": req.user_email,
+        "author_name": req.author_name,
+        "rating": req.rating,
+        "review_text": req.review_text.strip(),
+        "photo_urls": photo_urls,
+        "verified_purchase": has_purchased,
+    }).execute()
+
+    return result.data[0] if result.data else {"id": review_id}

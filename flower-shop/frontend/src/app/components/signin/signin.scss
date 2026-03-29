@@ -39,7 +39,7 @@
 
 .blob-1 {
   width: 420px; height: 420px;
-  background: radial-gradient(circle, rgba(200, 75, 122, 0.14), transparent 70%);
+  background: radial-gradient(circle, rgba(37, 99, 235, 0.14), transparent 70%);
   top: -120px; left: -100px;
   animation-delay: 0s;
 }
@@ -53,7 +53,7 @@
 
 .blob-3 {
   width: 280px; height: 280px;
-  background: radial-gradient(circle, rgba(255, 140, 180, 0.1), transparent 70%);
+  background: radial-gradient(circle, rgba(37, 99, 235, 0.1), transparent 70%);
   top: 50%; left: 60%;
   animation-delay: 8s;
 }
@@ -88,7 +88,7 @@
   border: 1px solid var(--border);
   padding: 1.75rem 2.5rem 1.5rem;
   box-shadow:
-    0 4px 24px rgba(200, 75, 122, 0.08),
+    0 4px 24px rgba(37, 99, 235, 0.08),
     0 20px 60px rgba(0, 0, 0, 0.12);
   animation: fadeInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
 
@@ -108,13 +108,13 @@
   .logo-icon {
     font-size: 1.5rem;
     line-height: 1;
-    filter: drop-shadow(0 2px 6px rgba(200,75,122,0.35));
+    filter: drop-shadow(0 2px 6px rgba(37,99,235,0.35));
   }
 
   .logo-text {
     font-size: 1.35rem;
     font-weight: 800;
-    background: linear-gradient(135deg, var(--accent), #9c2d55);
+    background: linear-gradient(135deg, var(--accent), #1d4ed8);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -206,7 +206,7 @@
           outline: none;
           border-color: var(--accent);
           background: var(--bg-card);
-          box-shadow: 0 0 0 3.5px rgba(200, 75, 122, 0.12);
+          box-shadow: 0 0 0 3.5px rgba(37, 99, 235, 0.12);
         }
 
         &.ng-invalid.ng-touched {
@@ -332,7 +332,7 @@
   // ── Submit Button ─────────────────────────────────────────────────────────
   .btn-submit {
     width: 100%;
-    background: linear-gradient(180deg, #d85c8a 0%, var(--accent) 50%, #b83770 100%);
+    background: linear-gradient(180deg, #3b82f6 0%, var(--accent) 50%, #1e56c8 100%);
     color: white;
     border: none;
     padding: 0.72rem 1.5rem;
@@ -346,14 +346,14 @@
     gap: 0.5rem;
     font-family: inherit;
     letter-spacing: 0.01em;
-    box-shadow: 0 4px 20px rgba(200, 75, 122, 0.4), inset 0 1px 0 rgba(255,255,255,0.15);
+    box-shadow: 0 4px 20px rgba(37, 99, 235, 0.4), inset 0 1px 0 rgba(255,255,255,0.15);
     transition: transform 0.15s ease, box-shadow 0.2s ease, background 0.2s ease;
     margin-bottom: 0.25rem;
 
     &:hover:not(:disabled) {
-      background: linear-gradient(180deg, #e06898 0%, var(--accent-dark) 100%);
+      background: linear-gradient(180deg, #3b82f6 0%, var(--accent-dark) 100%);
       transform: translateY(-2px);
-      box-shadow: 0 8px 28px rgba(200, 75, 122, 0.5), inset 0 1px 0 rgba(255,255,255,0.15);
+      box-shadow: 0 8px 28px rgba(37, 99, 235, 0.5), inset 0 1px 0 rgba(255,255,255,0.15);
     }
 
     &:active:not(:disabled) { transform: translateY(0); }
@@ -408,7 +408,7 @@
       transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease;
 
       &:hover {
-        border-color: rgba(200, 75, 122, 0.3);
+        border-color: rgba(37, 99, 235, 0.3);
         box-shadow: 0 3px 12px rgba(0,0,0,0.08);
         transform: translateY(-1px);
       }

@@ -10,51 +10,121 @@
       </button>
       @if (navStackOpen) {
         <div class="nav-stack-dropdown">
-          <a routerLink="/wishlist" routerLinkActive="active" (click)="navStackOpen = false">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
-            </svg>
-            Wishlist
-            @if (wishlistService.count() > 0) {
-              <span class="stack-badge">{{ wishlistService.count() }}</span>
-            }
-          </a>
-          <a routerLink="/occasions" routerLinkActive="active" (click)="navStackOpen = false">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
-            </svg>
-            Occasions
-          </a>
-          <a routerLink="/builder" routerLinkActive="active" (click)="navStackOpen = false">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
-            </svg>
-            Builder
-          </a>
-          <button class="stack-theme-row" (click)="themeService.toggle()">
-            @if (themeService.isDark()) {
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="12" cy="12" r="5"/>
-                <line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/>
-                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
-                <line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/>
-                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
-              </svg>
-              Light Mode
-            } @else {
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
-              </svg>
-              Dark Mode
-            }
-          </button>
+          <div class="hub-header">
+            <span class="hub-label">✦ Viva Hub</span>
+            <span class="hub-sub">Quick access to all services</span>
+          </div>
+          <div class="hub-items">
+
+            <a routerLink="/occasions" routerLinkActive="active" (click)="navStackOpen = false" class="hub-item">
+              <span class="hub-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                  <line x1="16" y1="2" x2="16" y2="6"></line>
+                  <line x1="8" y1="2" x2="8" y2="6"></line>
+                  <line x1="3" y1="10" x2="21" y2="10"></line>
+                </svg>
+              </span>
+              <span class="hub-text">
+                <span class="hub-name">Occasions</span>
+                <span class="hub-desc">Browse by event &amp; mood</span>
+              </span>
+              <svg class="hub-arrow" xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+            </a>
+
+            <a routerLink="/subscribe" routerLinkActive="active" (click)="navStackOpen = false" class="hub-item">
+              <span class="hub-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M23 4v6h-6"></path><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+                </svg>
+              </span>
+              <span class="hub-text">
+                <span class="hub-name">Bloom Plan</span>
+                <span class="hub-desc">Fresh flowers, weekly</span>
+              </span>
+              <svg class="hub-arrow" xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+            </a>
+
+            <a routerLink="/corporate" routerLinkActive="active" (click)="navStackOpen = false" class="hub-item">
+              <span class="hub-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
+                  <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
+                </svg>
+              </span>
+              <span class="hub-text">
+                <span class="hub-name">Corporate Suite</span>
+                <span class="hub-desc">Bulk orders &amp; branded gifts</span>
+              </span>
+              <svg class="hub-arrow" xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+            </a>
+
+            <a routerLink="/my-loyalty" routerLinkActive="active" (click)="navStackOpen = false" class="hub-item">
+              <span class="hub-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                </svg>
+              </span>
+              <span class="hub-text">
+                <span class="hub-name">Petal Rewards</span>
+                <span class="hub-desc">Earn points · Refer &amp; save</span>
+              </span>
+              <svg class="hub-arrow" xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+            </a>
+
+            <a routerLink="/reminders" routerLinkActive="active" (click)="navStackOpen = false" class="hub-item">
+              <span class="hub-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M22 17H2a3 3 0 0 0 3-3V9a7 7 0 0 1 14 0v5a3 3 0 0 0 3 3z"/>
+                  <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+                </svg>
+              </span>
+              <span class="hub-text">
+                <span class="hub-name">Occasion Reminders</span>
+                <span class="hub-desc">Never miss a birthday again</span>
+              </span>
+              <svg class="hub-arrow" xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+            </a>
+
+            <button class="hub-item" (click)="goToHomeSection('offers-section')">
+              <span class="hub-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path>
+                  <line x1="7" y1="7" x2="7.01" y2="7"></line>
+                </svg>
+              </span>
+              <span class="hub-text">
+                <span class="hub-name">Live Deals</span>
+                <span class="hub-desc">Today's active promo codes</span>
+              </span>
+              <svg class="hub-arrow" xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+            </button>
+
+            <button class="hub-item" (click)="goToHomeSection('bundles-section')">
+              <span class="hub-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M20 12V22H4V12"></path>
+                  <path d="M22 7H2v5h20V7z"></path>
+                  <path d="M12 22V7"></path>
+                  <path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"></path>
+                  <path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"></path>
+                </svg>
+              </span>
+              <span class="hub-text">
+                <span class="hub-name">Bundle Offers</span>
+                <span class="hub-desc">Curated sets, save 15%</span>
+              </span>
+              <svg class="hub-arrow" xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+            </button>
+
+          </div>
         </div>
       }
     </div>
 
     <a routerLink="/" class="logo" (click)="scrollToTop()">
       <span class="logo-icon">🌸</span>
-      <span class="logo-text">FloranFlowers</span>
+      <span class="logo-text">VivaPetals</span>
     </a>
 
     <div class="header-actions">
@@ -64,7 +134,9 @@
         }
 
         <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" (click)="scrollToTop()">Home</a>
+        <!-- Builder link hidden (feature in development)
         <a routerLink="/builder" routerLinkActive="active" (click)="closeMenu()" class="nav-builder">Builder</a>
+        -->
         <a routerLink="/occasions" routerLinkActive="active" (click)="closeMenu()" class="nav-occasions">Occasions</a>
         <a routerLink="/contact" routerLinkActive="active" (click)="closeMenu()">Contact Us</a>
 
@@ -76,6 +148,7 @@
           <a routerLink="/my-subscriptions" routerLinkActive="active" class="nav-extra-link" (click)="closeMenu()">My Subscriptions</a>
           <a routerLink="/my-corporate" routerLinkActive="active" class="nav-extra-link" (click)="closeMenu()">Corporate Orders</a>
           <a routerLink="/my-loyalty" routerLinkActive="active" class="nav-extra-link" (click)="closeMenu()">My Loyalty Points</a>
+          <a routerLink="/reminders" routerLinkActive="active" class="nav-extra-link" (click)="closeMenu()">My Reminders</a>
         }
 
         <a routerLink="/wishlist" routerLinkActive="active" class="nav-wishlist-link" (click)="closeMenu()">
@@ -129,21 +202,33 @@
         }
       </button>
 
-      <!-- Dark / Light Toggle -->
-      <button class="theme-toggle" (click)="themeService.toggle()" [title]="themeService.isDark() ? 'Switch to Light Mode' : 'Switch to Dark Mode'" aria-label="Toggle theme">
-        @if (themeService.isDark()) {
-          <svg xmlns="http://www.w3.org/2000/svg" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="5"/>
-            <line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/>
-            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
-            <line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/>
-            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
-          </svg>
-        } @else {
-          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
-          </svg>
-        }
+      <!-- Theme Pill Toggle -->
+      <button class="theme-pill"
+              (click)="themeService.toggle()"
+              [class.dark]="themeService.isDark()"
+              [attr.title]="themeService.isDark() ? 'Switch to Light Mode' : 'Switch to Dark Mode'"
+              aria-label="Toggle theme">
+        <span class="theme-pill-track">
+          <span class="theme-pill-thumb">
+            @if (themeService.isDark()) {
+              <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+              </svg>
+            } @else {
+              <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                <circle cx="12" cy="12" r="4" fill="currentColor" stroke="none"/>
+                <line x1="12" y1="1" x2="12" y2="4"/>
+                <line x1="12" y1="20" x2="12" y2="23"/>
+                <line x1="4.22" y1="4.22" x2="6.34" y2="6.34"/>
+                <line x1="17.66" y1="17.66" x2="19.78" y2="19.78"/>
+                <line x1="1" y1="12" x2="4" y2="12"/>
+                <line x1="20" y1="12" x2="23" y2="12"/>
+                <line x1="4.22" y1="19.78" x2="6.34" y2="17.66"/>
+                <line x1="17.66" y1="6.34" x2="19.78" y2="4.22"/>
+              </svg>
+            }
+          </span>
+        </span>
       </button>
 
       <!-- Wishlist Icon -->
@@ -215,6 +300,13 @@
                   <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
                 </svg>
                 My Loyalty Points
+              </a>
+              <a routerLink="/reminders" routerLinkActive="active" (click)="closeMenu()">
+                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M22 17H2a3 3 0 0 0 3-3V9a7 7 0 0 1 14 0v5a3 3 0 0 0 3 3z"/>
+                  <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+                </svg>
+                My Reminders
               </a>
               <button class="logout-btn" (click)="logout()">
                 <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">

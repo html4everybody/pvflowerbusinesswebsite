@@ -44,7 +44,7 @@
     white-space: nowrap;
     transition: background 0.2s;
 
-    &:hover { background: #b83770; }
+    &:hover { background: #1e56c8; }
   }
 
   // ── Loading ───────────────────────────────────────────────────────────────────
@@ -103,7 +103,7 @@
       text-decoration: none;
       transition: background 0.2s;
 
-      &:hover { background: #b83770; }
+      &:hover { background: #1e56c8; }
     }
   }
 
@@ -189,7 +189,7 @@
       }
 
       &.badge-recurring {
-        background: rgba(200,60,110,0.12);
+        background: rgba(37,99,235,0.12);
         color: var(--accent);
       }
     }
@@ -236,7 +236,7 @@
       display: inline-block;
       margin-left: 0.4rem;
       font-size: 0.7rem;
-      background: rgba(200,60,110,0.12);
+      background: rgba(37,99,235,0.12);
       color: var(--accent);
       padding: 0.1rem 0.4rem;
       border-radius: var(--radius-full);

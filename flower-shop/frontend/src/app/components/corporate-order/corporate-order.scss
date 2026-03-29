@@ -84,7 +84,7 @@
         background: var(--accent);
         border-color: var(--accent);
         color: #fff;
-        box-shadow: 0 0 0 4px rgba(200, 60, 110, 0.18);
+        box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.18);
       }
 
       &.active .step-label { color: var(--accent); }
@@ -258,7 +258,7 @@
 
     &.selected {
       border-color: var(--accent);
-      box-shadow: 0 0 0 3px rgba(200, 60, 110, 0.15);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
     }
 
     .picker-check {
@@ -336,8 +336,8 @@
   .discount-badge {
     display: inline-block;
     margin-top: 0.75rem;
-    background: rgba(200, 60, 110, 0.1);
-    border: 1px solid rgba(200, 60, 110, 0.25);
+    background: rgba(37, 99, 235, 0.1);
+    border: 1px solid rgba(37, 99, 235, 0.25);
     color: var(--accent);
     font-size: 0.85rem;
     font-weight: 600;
@@ -640,7 +640,7 @@
     text-decoration: none;
     display: inline-flex;
 
-    &:hover:not(:disabled) { background: #b83770; }
+    &:hover:not(:disabled) { background: #1e56c8; }
     &:disabled { opacity: 0.55; cursor: not-allowed; }
   }
 
@@ -671,7 +671,7 @@
     cursor: pointer;
     transition: background 0.2s;
 
-    &:hover:not(:disabled) { background: #b83770; }
+    &:hover:not(:disabled) { background: #1e56c8; }
     &:disabled { opacity: 0.55; cursor: not-allowed; }
   }
 

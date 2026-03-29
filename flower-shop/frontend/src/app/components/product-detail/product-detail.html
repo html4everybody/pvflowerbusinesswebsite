@@ -204,6 +204,99 @@
                   </div>
                 }
               </div>
+
+              <!-- ── Write a Review ──────────────────────────────────────── -->
+              <div class="write-review-section">
+                @if (!authService.user()) {
+                  <div class="review-signin-prompt">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                    <span><a routerLink="/signin" class="review-signin-link">Sign in</a> to leave a review</span>
+                  </div>
+                }
+
+                @if (authService.user() && canReviewStatus()?.already_reviewed) {
+                  <div class="review-done-msg">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                    You've already reviewed this product. Thank you!
+                  </div>
+                }
+
+                @if (authService.user() && canReviewStatus()?.can_review) {
+                  <div class="write-review-form">
+                    <h3 class="wr-title">Write a Review</h3>
+
+                    @if (canReviewStatus()?.has_purchased) {
+                      <div class="verified-banner">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                        Verified Purchase — your review will get the Verified badge
+                      </div>
+                    }
+
+                    <!-- Star Rating Selector -->
+                    <div class="wr-field">
+                      <label class="wr-label">Your Rating <span class="req">*</span></label>
+                      <div class="star-selector"
+                           (mouseleave)="hoverRating.set(0)">
+                        @for (star of [1,2,3,4,5]; track star) {
+                          <button type="button"
+                                  class="star-btn"
+                                  [class.filled]="star <= (hoverRating() || reviewForm.rating)"
+                                  (mouseenter)="hoverRating.set(star)"
+                                  (click)="setReviewRating(star)">★</button>
+                        }
+                        <span class="star-label">
+                          {{ reviewForm.rating === 5 ? 'Excellent' : reviewForm.rating === 4 ? 'Good' : reviewForm.rating === 3 ? 'Okay' : reviewForm.rating === 2 ? 'Poor' : 'Terrible' }}
+                        </span>
+                      </div>
+                    </div>
+
+                    <!-- Review Text -->
+                    <div class="wr-field">
+                      <label class="wr-label">Your Review <span class="req">*</span></label>
+                      <textarea [(ngModel)]="reviewForm.text"
+                                class="wr-textarea"
+                                placeholder="Share your experience — how were the flowers, packaging, delivery?"
+                                rows="4"
+                                maxlength="800"></textarea>
+                      <span class="wr-char-count">{{ reviewForm.text.length }}/800</span>
+                    </div>
+
+                    <!-- Photo Upload -->
+                    <div class="wr-field">
+                      <label class="wr-label">Add Photos <span class="wr-optional">(optional, max 3)</span></label>
+                      <div class="photo-upload-area">
+                        @for (photo of reviewForm.photos; track $index) {
+                          <div class="photo-thumb">
+                            <img [src]="photo.preview" alt="Review photo">
+                            <button type="button" class="photo-remove" (click)="removePhoto($index)">
+                              <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                            </button>
+                          </div>
+                        }
+                        @if (reviewForm.photos.length < 3) {
+                          <label class="photo-add-btn">
+                            <input type="file" accept="image/*" multiple (change)="onPhotoSelected($event)" hidden>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                            <span>Add photo</span>
+                          </label>
+                        }
+                      </div>
+                    </div>
+
+                    <button class="btn-submit-review"
+                            (click)="submitReview()"
+                            [disabled]="submittingReview() || !reviewForm.text.trim()">
+                      @if (submittingReview()) {
+                        <svg class="spin-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+                        Submitting…
+                      } @else {
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                        Submit Review
+                      }
+                    </button>
+                  </div>
+                }
+              </div>
             </div>
           }
 
