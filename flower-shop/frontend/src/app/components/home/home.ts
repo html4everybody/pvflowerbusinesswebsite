@@ -8,10 +8,11 @@ import { WishlistService } from '../../services/wishlist';
 import { PromoService, OffersData, BundleDeal } from '../../services/promo';
 import { Product } from '../../models/product.model';
 import { FadeInDirective } from '../../directives/fade-in';
+import { RecommendationsSection } from '../recommendations-section/recommendations-section';
 
 @Component({
   selector: 'app-home',
-  imports: [RouterLink, FadeInDirective],
+  imports: [RouterLink, FadeInDirective, RecommendationsSection],
   templateUrl: './home.html',
   styleUrl: './home.scss'
 })

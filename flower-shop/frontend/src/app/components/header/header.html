@@ -72,6 +72,20 @@
               <svg class="hub-arrow" xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
             </a>
 
+            <a routerLink="/reminders" routerLinkActive="active" (click)="navStackOpen = false" class="hub-item">
+              <span class="hub-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M22 17H2a3 3 0 0 0 3-3V9a7 7 0 0 1 14 0v5a3 3 0 0 0 3 3z"/>
+                  <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+                </svg>
+              </span>
+              <span class="hub-text">
+                <span class="hub-name">Occasion Reminders</span>
+                <span class="hub-desc">Never miss a birthday again</span>
+              </span>
+              <svg class="hub-arrow" xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+            </a>
+
             <button class="hub-item" (click)="goToHomeSection('offers-section')">
               <span class="hub-icon">
                 <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -134,6 +148,7 @@
           <a routerLink="/my-subscriptions" routerLinkActive="active" class="nav-extra-link" (click)="closeMenu()">My Subscriptions</a>
           <a routerLink="/my-corporate" routerLinkActive="active" class="nav-extra-link" (click)="closeMenu()">Corporate Orders</a>
           <a routerLink="/my-loyalty" routerLinkActive="active" class="nav-extra-link" (click)="closeMenu()">My Loyalty Points</a>
+          <a routerLink="/reminders" routerLinkActive="active" class="nav-extra-link" (click)="closeMenu()">My Reminders</a>
         }
 
         <a routerLink="/wishlist" routerLinkActive="active" class="nav-wishlist-link" (click)="closeMenu()">
@@ -285,6 +300,13 @@
                   <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
                 </svg>
                 My Loyalty Points
+              </a>
+              <a routerLink="/reminders" routerLinkActive="active" (click)="closeMenu()">
+                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M22 17H2a3 3 0 0 0 3-3V9a7 7 0 0 1 14 0v5a3 3 0 0 0 3 3z"/>
+                  <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+                </svg>
+                My Reminders
               </a>
               <button class="logout-btn" (click)="logout()">
                 <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">

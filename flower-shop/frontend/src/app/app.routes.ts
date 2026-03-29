@@ -18,6 +18,7 @@ import { MyCorporate } from './components/my-corporate/my-corporate';
 import { MyLoyalty } from './components/my-loyalty/my-loyalty';
 import { Admin } from './components/admin/admin';
 import { VerifyEmail } from './components/verify-email/verify-email';
+import { Reminders } from './components/reminders/reminders';
 
 export const routes: Routes = [
   { path: '', component: Home },
@@ -39,6 +40,7 @@ export const routes: Routes = [
   { path: 'corporate-order', component: CorporateOrder },
   { path: 'my-corporate', component: MyCorporate },
   { path: 'my-loyalty', component: MyLoyalty },
+  { path: 'reminders', component: Reminders },
   { path: 'admin', component: Admin },
   { path: '**', redirectTo: '' }
 ];
