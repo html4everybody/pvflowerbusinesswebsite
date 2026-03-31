@@ -83,10 +83,7 @@
         "serve": {
           "builder": "@angular/build:dev-server",
           "options": {
-            "allowedHosts": [
-              "all",
-              "dowerless-degreeless-cecily.ngrok-free.dev"
-            ],
+            "allowedHosts": [".ngrok-free.app", ".ngrok-free.dev", ".ngrok.io"],
             "proxyConfig": "proxy.conf.json"
           },
           "configurations": {

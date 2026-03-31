@@ -1,4 +1,4 @@
-import { Component, OnInit, signal, computed } from '@angular/core';
+import { Component, OnInit, signal, computed, effect } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
@@ -27,7 +27,7 @@ export class Admin implements OnInit {
     delivered: [], cancelled: []
   };
 
-  activeSection = signal<AdminSection>('overview');
+  activeSection = signal<AdminSection>((sessionStorage.getItem('admin_section') as AdminSection) || 'overview');
 
   // ── Stats ──────────────────────────────────────────────────────────────────
   stats = signal<any>(null);
@@ -37,7 +37,7 @@ export class Admin implements OnInit {
   orders = signal<any[]>([]);
   loadingOrders = signal(true);
   loadError = signal('');
-  activeTab = signal('all');
+  activeTab = signal(sessionStorage.getItem('admin_tab') || 'all');
   updatingId = signal<string | null>(null);
   searchQuery = signal('');
   selectedDate = signal('');
@@ -125,13 +125,23 @@ export class Admin implements OnInit {
     private http: HttpClient,
     private router: Router,
     private toastService: ToastService
-  ) {}
+  ) {
+    effect(() => sessionStorage.setItem('admin_section', this.activeSection()));
+    effect(() => sessionStorage.setItem('admin_tab', this.activeTab()));
+  }
 
   ngOnInit(): void {
     if (!this.authService.isLoggedIn()) { this.router.navigate(['/signin']); return; }
     if (!this.authService.isAdmin()) { this.router.navigate(['/']); return; }
     this.loadStats();
     this.loadOrders();
+    // If restored section needs lazy-loaded data, trigger it
+    const section = this.activeSection();
+    if (section === 'products' && !this.products().length) this.loadProducts();
+    if (section === 'inventory' && !this.inventory().length) this.loadInventory();
+    if (section === 'customers' && !this.customers().length) this.loadCustomers();
+    if (section === 'analytics' && !this.analytics()) this.loadAnalytics();
+    if (section === 'zones' && !this.zones().length) this.loadZones();
   }
 
   get token(): string { return this.authService.getToken(); }

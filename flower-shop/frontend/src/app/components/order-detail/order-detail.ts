@@ -1,5 +1,6 @@
 import { Component, OnInit, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { Location } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { AuthService } from '../../services/auth';
 import { ToastService } from '../../services/toast';
@@ -62,10 +63,13 @@ export class OrderDetail implements OnInit {
   constructor(
     private route: ActivatedRoute,
     private router: Router,
+    private location: Location,
     private http: HttpClient,
     private authService: AuthService,
     private toastService: ToastService
   ) {}
+
+  goBack(): void { this.location.back(); }
 
   ngOnInit(): void {
     if (!this.authService.isLoggedIn()) {

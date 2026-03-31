@@ -24,9 +24,17 @@ export class Signin implements AfterViewInit {
   googleLoading   = signal(false);
   facebookLoading = signal(false);
   referralCode    = signal('');
-  showResendLink  = signal(false);
-  resendLoading   = signal(false);
-  resendDone      = signal(false);
+  showResendLink     = signal(false);
+  resendLoading      = signal(false);
+  resendDone         = signal(false);
+  showForgotPassword   = signal(false);
+  showLoginPassword    = signal(false);
+  showSignupPassword   = signal(false);
+  showConfirmPassword  = signal(false);
+  forgotEmail        = signal('');
+  forgotLoading      = signal(false);
+  forgotSent         = signal(false);
+  forgotError        = signal('');
 
   loginData  = { email: '', password: '' };
   signupData = { firstName: '', lastName: '', email: '', password: '', confirmPassword: '' };
@@ -158,6 +166,16 @@ export class Signin implements AfterViewInit {
     this.successMessage.set('');
     this.showResendLink.set(false);
     this.resendDone.set(false);
+  }
+
+  sendForgotPassword(): void {
+    this.forgotError.set('');
+    this.forgotSent.set(false);
+    this.forgotLoading.set(true);
+    this.http.post(`${environment.apiUrl}/api/auth/forgot-password`, { email: this.forgotEmail() }).subscribe({
+      next: () => { this.forgotLoading.set(false); this.forgotSent.set(true); },
+      error: (err) => { this.forgotLoading.set(false); this.forgotError.set(err.error?.detail || 'Something went wrong. Please try again.'); }
+    });
   }
 
   resendVerification(): void {
