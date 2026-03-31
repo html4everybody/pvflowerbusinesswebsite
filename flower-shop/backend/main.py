@@ -771,6 +771,94 @@ def resend_verification(req: ResendVerificationRequest):
     return { "message": "If that email is registered, a verification link has been sent." }
 
 
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
+
+class ResetPasswordRequest(BaseModel):
+    token: str
+    new_password: str
+
+@app.post("/api/auth/forgot-password")
+def forgot_password(req: ForgotPasswordRequest):
+    result = supabase.table("users").select("*").eq("email", req.email).execute()
+    if not result.data:
+        raise HTTPException(status_code=404, detail="No account found with that email address.")
+
+    user = result.data[0]
+    reset_token = secrets.token_urlsafe(32)
+    token_expires = (datetime.now(timezone.utc) + timedelta(hours=1)).isoformat()
+
+    supabase.table("users").update({
+        "reset_token": reset_token,
+        "reset_token_expires_at": token_expires
+    }).eq("email", req.email).execute()
+
+    reset_url = f"{APP_URL}/reset-password?token={reset_token}"
+    html = f"""
+    <!DOCTYPE html>
+    <html>
+    <body style="margin:0;padding:0;background:#fdf0f5;font-family:'Segoe UI',Arial,sans-serif;">
+      <table width="100%" cellpadding="0" cellspacing="0">
+        <tr><td align="center" style="padding:40px 16px;">
+          <table width="520" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(200,75,122,0.1);">
+            <tr><td style="background:linear-gradient(135deg,#c84b7a,#9c2d55);padding:32px 40px;text-align:center;">
+              <div style="font-size:2rem;">🌸</div>
+              <div style="color:#fff;font-size:1.5rem;font-weight:800;margin-top:8px;">FloranFlowers</div>
+            </td></tr>
+            <tr><td style="padding:40px;">
+              <h2 style="margin:0 0 12px;color:#1e1e1e;font-size:1.35rem;font-weight:800;">Reset your password</h2>
+              <p style="color:#666;line-height:1.6;margin:0 0 28px;">Hi {user['first_name']}, we received a request to reset your password. Click the button below to set a new one.</p>
+              <div style="text-align:center;margin-bottom:28px;">
+                <a href="{reset_url}" style="display:inline-block;padding:14px 36px;background:linear-gradient(135deg,#c84b7a,#9c2d55);color:#fff;text-decoration:none;border-radius:999px;font-weight:700;font-size:1rem;box-shadow:0 4px 16px rgba(200,75,122,0.35);">Reset Password</a>
+              </div>
+              <p style="color:#999;font-size:0.82rem;line-height:1.6;margin:0;">This link expires in <strong>1 hour</strong>. If you didn't request this, ignore this email.</p>
+              <hr style="border:none;border-top:1px solid #f0e0e8;margin:24px 0;">
+              <p style="color:#bbb;font-size:0.75rem;margin:0;">Or copy: <span style="color:#c84b7a;">{reset_url}</span></p>
+            </td></tr>
+          </table>
+        </td></tr>
+      </table>
+    </body>
+    </html>
+    """
+    msg = MIMEMultipart("alternative")
+    msg["Subject"] = "Reset your FloranFlowers password"
+    msg["From"]    = f"FloranFlowers <{GMAIL_USER}>"
+    msg["To"]      = req.email
+    msg.attach(MIMEText(html, "html"))
+    try:
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
+            server.login(GMAIL_USER, GMAIL_APP_PASSWORD)
+            server.sendmail(GMAIL_USER, req.email, msg.as_string())
+        print(f"[Email] Password reset email sent to {req.email}")
+    except Exception as e:
+        print(f"[Email] Failed to send reset email: {e}")
+
+    return { "message": "If that email is registered, a reset link has been sent." }
+
+
+@app.post("/api/auth/reset-password")
+def reset_password(req: ResetPasswordRequest):
+    result = supabase.table("users").select("*").eq("reset_token", req.token).execute()
+    if not result.data:
+        raise HTTPException(status_code=400, detail="Invalid or expired reset link.")
+
+    user = result.data[0]
+    expires_at = user.get("reset_token_expires_at")
+    if expires_at:
+        expiry = datetime.fromisoformat(expires_at.replace("Z", "+00:00"))
+        if datetime.now(timezone.utc) > expiry:
+            raise HTTPException(status_code=400, detail="Reset link has expired. Please request a new one.")
+
+    supabase.table("users").update({
+        "password": hash_password(req.new_password),
+        "reset_token": None,
+        "reset_token_expires_at": None
+    }).eq("email", user["email"]).execute()
+
+    return { "message": "Password reset successfully." }
+
+
 @app.post("/api/auth/login")
 def login(req: LoginRequest):
     result = supabase.table("users").select("*").eq("email", req.email).execute()

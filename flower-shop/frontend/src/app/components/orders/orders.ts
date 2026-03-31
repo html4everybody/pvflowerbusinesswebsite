@@ -1,4 +1,4 @@
-import { Component, OnInit, signal, computed } from '@angular/core';
+import { Component, OnInit, signal, computed, effect } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { AuthService } from '../../services/auth';
@@ -18,7 +18,7 @@ export class Orders implements OnInit {
 
   orders = signal<any[]>([]);
   loading = signal(true);
-  activeTab = signal<'active' | 'cancelled'>('active');
+  activeTab = signal<'active' | 'cancelled'>((sessionStorage.getItem('orders_tab') as 'active' | 'cancelled') || 'active');
 
   activeOrders = computed(() => this.orders().filter(o => o.status !== 'cancelled'));
   cancelledOrders = computed(() => this.orders().filter(o => o.status === 'cancelled'));
@@ -28,7 +28,9 @@ export class Orders implements OnInit {
     private authService: AuthService,
     private http: HttpClient,
     private router: Router
-  ) {}
+  ) {
+    effect(() => sessionStorage.setItem('orders_tab', this.activeTab()));
+  }
 
   ngOnInit(): void {
     if (!this.authService.isLoggedIn()) {

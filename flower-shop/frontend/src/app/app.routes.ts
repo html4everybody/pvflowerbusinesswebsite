@@ -18,6 +18,7 @@ import { MyCorporate } from './components/my-corporate/my-corporate';
 import { MyLoyalty } from './components/my-loyalty/my-loyalty';
 import { Admin } from './components/admin/admin';
 import { VerifyEmail } from './components/verify-email/verify-email';
+import { ResetPassword } from './components/reset-password/reset-password';
 import { Reminders } from './components/reminders/reminders';
 
 export const routes: Routes = [
@@ -28,6 +29,7 @@ export const routes: Routes = [
   { path: 'contact', component: Contact },
   { path: 'signin', component: Signin },
   { path: 'verify-email', component: VerifyEmail },
+  { path: 'reset-password', component: ResetPassword },
   { path: 'orders', component: Orders },
   { path: 'orders/:id', component: OrderDetail },
   { path: 'builder', component: BouquetBuilder },
