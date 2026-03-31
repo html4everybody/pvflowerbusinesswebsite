@@ -336,17 +336,23 @@ def build_order_confirmation_email_html(order: dict, items: list) -> str:
 
 
 def send_order_confirmation_email(order: dict, items: list) -> bool:
-    if not _resend_api_key or not order.get("customer_email"):
+    to_email = order.get("customer_email")
+    if not GMAIL_USER or not GMAIL_APP_PASSWORD or not to_email:
+        print(f"[Email] Gmail not configured or no email — skipping order confirmation for {to_email}")
         return False
     try:
-        _resend_lib.Emails.send({
-            "from": _reminder_from_email,
-            "to": [order["customer_email"]],
-            "subject": f"Your VivaPetals Order {order.get('id','')} is Confirmed! 🌸",
-            "html": build_order_confirmation_email_html(order, items),
-        })
+        msg = MIMEMultipart("alternative")
+        msg["Subject"] = f"Your VivaPetals Order {order.get('id', '')} is Confirmed! 🌸"
+        msg["From"]    = f"VivaPetals <{GMAIL_USER}>"
+        msg["To"]      = to_email
+        msg.attach(MIMEText(build_order_confirmation_email_html(order, items), "html"))
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
+            server.login(GMAIL_USER, GMAIL_APP_PASSWORD)
+            server.sendmail(GMAIL_USER, to_email, msg.as_string())
+        print(f"[Email] Order confirmation sent to {to_email}")
         return True
-    except Exception:
+    except Exception as e:
+        print(f"[Email] Failed to send order confirmation: {e}")
         return False
 
 
@@ -390,17 +396,22 @@ def build_order_cancellation_email_html(order: dict) -> str:
 
 
 def send_order_cancellation_email(order: dict) -> bool:
-    if not _resend_api_key or not order.get("customer_email"):
+    to_email = order.get("customer_email")
+    if not GMAIL_USER or not GMAIL_APP_PASSWORD or not to_email:
         return False
     try:
-        _resend_lib.Emails.send({
-            "from": _reminder_from_email,
-            "to": [order["customer_email"]],
-            "subject": f"Your VivaPetals Order {order.get('id','')} Has Been Cancelled",
-            "html": build_order_cancellation_email_html(order),
-        })
+        msg = MIMEMultipart("alternative")
+        msg["Subject"] = f"Your VivaPetals Order {order.get('id', '')} Has Been Cancelled"
+        msg["From"]    = f"VivaPetals <{GMAIL_USER}>"
+        msg["To"]      = to_email
+        msg.attach(MIMEText(build_order_cancellation_email_html(order), "html"))
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
+            server.login(GMAIL_USER, GMAIL_APP_PASSWORD)
+            server.sendmail(GMAIL_USER, to_email, msg.as_string())
+        print(f"[Email] Cancellation email sent to {to_email}")
         return True
-    except Exception:
+    except Exception as e:
+        print(f"[Email] Failed to send cancellation email: {e}")
         return False
 
 

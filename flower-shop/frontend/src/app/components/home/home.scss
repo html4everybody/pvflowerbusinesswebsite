@@ -117,21 +117,22 @@
           display: inline-flex;
           align-items: center;
           justify-content: center;
-          border-radius: var(--radius-full);
+          border-radius: 12px;
           border: none;
           color: white;
           font-weight: 700;
           letter-spacing: 0.02em;
           cursor: pointer;
           text-decoration: none;
-          background: linear-gradient(135deg, #818cf8 0%, #2563eb 45%, #1d4ed8 100%);
-          box-shadow: 0 8px 28px rgba(37,99,235,0.55), inset 0 1px 0 rgba(255,255,255,0.2);
-          transition: transform 0.25s ease, box-shadow 0.25s ease;
+          background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+          box-shadow: 0 3px 12px rgba(37,99,235,0.35);
+          transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
           font-family: inherit;
 
           &:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 16px 40px rgba(37,99,235,0.65), inset 0 1px 0 rgba(255,255,255,0.2);
+            opacity: 0.9;
+            transform: translateY(-1px);
+            box-shadow: 0 5px 18px rgba(37,99,235,0.45);
           }
           &:active { transform: translateY(0); }
         }

@@ -112,6 +112,9 @@
         -->
         <a routerLink="/occasions" routerLinkActive="active" (click)="closeMenu()" class="nav-occasions">Occasions</a>
         <a routerLink="/contact" routerLinkActive="active" (click)="closeMenu()">Contact Us</a>
+        @if (!authService.user()) {
+          <a routerLink="/track" routerLinkActive="active" (click)="closeMenu()" class="nav-track">Track Order</a>
+        }
 
         @if (authService.user()) {
           @if (authService.isAdmin()) {

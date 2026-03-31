@@ -1,0 +1,154 @@
+<main class="track-page">
+  <div class="track-container">
+
+    <!-- Header -->
+    <div class="track-hero">
+      <span class="track-hero-icon">🌸</span>
+      <h1>Track Your Order</h1>
+      <p>Enter your order ID from the confirmation email to see the latest status.</p>
+    </div>
+
+    <!-- Search Box -->
+    <div class="track-search-card">
+      <label class="search-label">Order ID</label>
+      <div class="search-row">
+        <input
+          type="text"
+          class="search-input"
+          placeholder="e.g. FLR3A2B1C2"
+          [(ngModel)]="orderId"
+          (keydown.enter)="track()"
+          autocomplete="off"
+          spellcheck="false">
+        <button class="track-btn" (click)="track()" [disabled]="loading() || !orderId.trim()">
+          @if (loading()) {
+            <span class="btn-spinner"></span>
+            Tracking...
+          } @else {
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+            Track Order
+          }
+        </button>
+      </div>
+      @if (error()) {
+        <div class="track-error">
+          <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          {{ error() }}
+        </div>
+      }
+    </div>
+
+    <!-- Result -->
+    @if (order(); as o) {
+      <div class="result-wrap">
+
+        <!-- Status Banner -->
+        <div class="status-banner" [class]="o.status">
+          <span class="status-icon">{{ STATUS_ICONS[o.status] }}</span>
+          <div class="status-text">
+            <span class="status-label">{{ STATUS_LABELS[o.status] }}</span>
+            <span class="status-desc">{{ STATUS_DESC[o.status] }}</span>
+          </div>
+        </div>
+
+        <!-- Timeline (not shown for cancelled) -->
+        @if (o.status !== 'cancelled') {
+          <div class="timeline-card">
+            @for (step of TIMELINE; track step; let i = $index) {
+              <div class="timeline-step" [class.done]="statusIndex(o.status) >= i" [class.active]="o.status === step">
+                <div class="step-line-wrap">
+                  <div class="step-dot">
+                    @if (statusIndex(o.status) >= i) {
+                      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                    }
+                  </div>
+                  @if (i < TIMELINE.length - 1) {
+                    <div class="step-connector" [class.filled]="statusIndex(o.status) > i"></div>
+                  }
+                </div>
+                <div class="step-info">
+                  <span class="step-name">{{ STATUS_LABELS[step] }}</span>
+                </div>
+              </div>
+            }
+          </div>
+        }
+
+        <!-- Order Info + Items -->
+        <div class="detail-grid">
+
+          <!-- Order Summary -->
+          <div class="detail-card">
+            <h3 class="card-title">
+              <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+              Order Summary
+            </h3>
+            <div class="info-rows">
+              <div class="info-row">
+                <span class="info-key">Order ID</span>
+                <span class="info-val mono">{{ o.id }}</span>
+              </div>
+              <div class="info-row">
+                <span class="info-key">Placed on</span>
+                <span class="info-val">{{ formatDate(o.created_at) }}</span>
+              </div>
+              <div class="info-row">
+                <span class="info-key">Customer</span>
+                <span class="info-val">{{ o.customer_name }}</span>
+              </div>
+              @if (o.customer_address) {
+                <div class="info-row">
+                  <span class="info-key">Delivery to</span>
+                  <span class="info-val">{{ o.customer_address }}</span>
+                </div>
+              }
+              <div class="info-row">
+                <span class="info-key">Delivery</span>
+                <span class="info-val">{{ o.delivery_type === 'scheduled' ? 'Scheduled' : 'Immediate' }}</span>
+              </div>
+              @if (o.payment_method) {
+                <div class="info-row">
+                  <span class="info-key">Payment</span>
+                  <span class="info-val">{{ o.payment_method.replace('_', ' ') | titlecase }}</span>
+                </div>
+              }
+              <div class="info-row total-row">
+                <span class="info-key">Total</span>
+                <span class="info-val total-val">₹{{ o.total?.toFixed(2) }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Items -->
+          @if (o.items?.length > 0) {
+            <div class="detail-card">
+              <h3 class="card-title">
+                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+                Items Ordered
+              </h3>
+              <div class="items-list">
+                @for (item of o.items; track item.id) {
+                  <div class="item-row">
+                    @if (item.image) {
+                      <img [src]="item.image" [alt]="item.name" class="item-thumb">
+                    }
+                    <div class="item-info">
+                      <span class="item-name">{{ item.name }}</span>
+                      <span class="item-qty">Qty: {{ item.quantity }}</span>
+                    </div>
+                    <span class="item-price">₹{{ (item.price * item.quantity).toFixed(2) }}</span>
+                  </div>
+                }
+              </div>
+            </div>
+          }
+
+        </div>
+
+      </div>
+    }
+
+  </div>
+</main>

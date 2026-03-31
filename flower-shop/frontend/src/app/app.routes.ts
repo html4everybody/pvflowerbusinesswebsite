@@ -20,6 +20,7 @@ import { Admin } from './components/admin/admin';
 import { VerifyEmail } from './components/verify-email/verify-email';
 import { ResetPassword } from './components/reset-password/reset-password';
 import { Reminders } from './components/reminders/reminders';
+import { TrackOrder } from './components/track-order/track-order';
 
 export const routes: Routes = [
   { path: '', component: Home },
@@ -43,6 +44,7 @@ export const routes: Routes = [
   { path: 'my-corporate', component: MyCorporate },
   { path: 'my-loyalty', component: MyLoyalty },
   { path: 'reminders', component: Reminders },
+  { path: 'track', component: TrackOrder },
   { path: 'admin', component: Admin },
   { path: '**', redirectTo: '' }
 ];
