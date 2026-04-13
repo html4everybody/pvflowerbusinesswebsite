@@ -1,7 +1,8 @@
-import { Component, signal } from '@angular/core';
+import { Component, OnInit, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { TitleCasePipe } from '@angular/common';
+import { ActivatedRoute } from '@angular/router';
 import { environment } from '../../../environments/environment';
 
 @Component({
@@ -10,7 +11,7 @@ import { environment } from '../../../environments/environment';
   templateUrl: './track-order.html',
   styleUrl: './track-order.scss'
 })
-export class TrackOrder {
+export class TrackOrder implements OnInit {
   readonly STATUS_LABELS: Record<string, string> = {
     confirmed: 'Order Confirmed',
     preparing: 'Preparing',
@@ -42,7 +43,15 @@ export class TrackOrder {
   order = signal<any>(null);
   error = signal('');
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient, private route: ActivatedRoute) {}
+
+  ngOnInit(): void {
+    const id = this.route.snapshot.queryParamMap.get('id');
+    if (id) {
+      this.orderId = id;
+      this.track();
+    }
+  }
 
   track(): void {
     const id = this.orderId.trim().toUpperCase();

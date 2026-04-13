@@ -1041,6 +1041,80 @@
   svg { flex-shrink: 0; color: #f59e0b; }
 }
 
+/* ── City Autocomplete ───────────────────────────────────── */
+.city-autocomplete-wrap {
+  position: relative;
+}
+
+.city-suggestions {
+  position: absolute;
+  top: calc(100% - 0.25rem);
+  left: 0;
+  right: 0;
+  z-index: 100;
+  background: var(--bg-card);
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+  margin: 0;
+  padding: 0.3rem 0;
+  list-style: none;
+  max-height: 220px;
+  overflow-y: auto;
+
+  li {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    padding: 0.6rem 1rem;
+    cursor: pointer;
+    transition: background 0.1s ease;
+
+    &:hover { background: var(--bg); }
+
+    .sug-city {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .sug-state {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      white-space: nowrap;
+    }
+  }
+}
+
+/* ── ZIP / Pincode Lookup ────────────────────────────────── */
+.zip-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+
+  input {
+    padding-right: 2.5rem;
+  }
+}
+
+.zip-spinner {
+  position: absolute;
+  right: 0.75rem;
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--border);
+  border-top-color: var(--text-muted);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  flex-shrink: 0;
+  pointer-events: none;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
 /* ── UPI Panel ───────────────────────────────────────────── */
 .upi-input-wrap {
   position: relative;

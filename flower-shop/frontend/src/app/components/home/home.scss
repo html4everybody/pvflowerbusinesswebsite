@@ -124,15 +124,15 @@
           letter-spacing: 0.02em;
           cursor: pointer;
           text-decoration: none;
-          background: linear-gradient(135deg, #3b82f6, #1d4ed8);
-          box-shadow: 0 3px 12px rgba(37,99,235,0.35);
+          background: linear-gradient(135deg, #e8436e, #d12052);
+          box-shadow: 0 3px 12px rgba(209,32,82,0.4);
           transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
           font-family: inherit;
 
           &:hover {
             opacity: 0.9;
             transform: translateY(-1px);
-            box-shadow: 0 5px 18px rgba(37,99,235,0.45);
+            box-shadow: 0 5px 18px rgba(209,32,82,0.55);
           }
           &:active { transform: translateY(0); }
         }
@@ -715,7 +715,7 @@
 
       // ── Back face
       .card-back {
-        background: linear-gradient(160deg, #0f172a 0%, #1e3a8a 55%, #2563eb 100%);
+        background: linear-gradient(160deg, #6e0a28 0%, #d12052 55%, #e8436e 100%);
         color: white;
         transform: rotateY(180deg);
         display: flex;
