@@ -64,24 +64,51 @@
 
             <div class="form-row three-col">
               <div class="form-group">
+                <label for="zip">PIN Code <span class="required-star">*</span></label>
+                <div class="zip-input-wrap">
+                  <input type="text" id="zip" #zipField="ngModel" [(ngModel)]="formData.zip" name="zip"
+                    placeholder="e.g. 500001" maxlength="6" required
+                    (input)="onZipChange()">
+                  @if (zipLookupLoading()) {
+                    <span class="zip-spinner"></span>
+                  }
+                </div>
+                @if (zipField.invalid && zipField.touched) {
+                  <div class="field-error">PIN code is required</div>
+                }
+                @if (zipLookupError()) {
+                  <div class="field-error">{{ zipLookupError() }}</div>
+                }
+              </div>
+              <div class="form-group city-autocomplete-wrap">
                 <label for="city">City <span class="required-star">*</span></label>
-                <input type="text" id="city" #cityField="ngModel" [(ngModel)]="formData.city" name="city" placeholder="New York" required>
+                <input type="text" id="city" #cityField="ngModel" [(ngModel)]="formData.city" name="city"
+                  placeholder="Auto-filled from PIN or type city" required autocomplete="off"
+                  (input)="onCityInput()" (blur)="hideCitySuggestions()">
                 @if (cityField.invalid && cityField.touched) {
                   <div class="field-error">City is required</div>
+                }
+                @if (showCitySuggestions() && citySuggestions().length > 0) {
+                  <ul class="city-suggestions">
+                    @for (s of citySuggestions(); track s.city) {
+                      <li (mousedown)="selectCitySuggestion(s)">
+                        <span class="sug-city">{{ s.city }}</span>
+                        @if (s.state) { <span class="sug-state">{{ s.state }}</span> }
+                      </li>
+                    }
+                  </ul>
                 }
               </div>
               <div class="form-group">
                 <label for="state">State <span class="required-star">*</span></label>
-                <input type="text" id="state" #stateField="ngModel" [(ngModel)]="formData.state" name="state" placeholder="NY" required>
+                <select id="state" #stateField="ngModel" [(ngModel)]="formData.state" name="state" required>
+                  <option value="">Select state</option>
+                  @for (s of indianStates; track s) {
+                    <option [value]="s">{{ s }}</option>
+                  }
+                </select>
                 @if (stateField.invalid && stateField.touched) {
                   <div class="field-error">State is required</div>
-                }
-              </div>
-              <div class="form-group">
-                <label for="zip">ZIP Code <span class="required-star">*</span></label>
-                <input type="text" id="zip" #zipField="ngModel" [(ngModel)]="formData.zip" name="zip" placeholder="10001" required>
-                @if (zipField.invalid && zipField.touched) {
-                  <div class="field-error">ZIP code is required</div>
                 }
               </div>
             </div>

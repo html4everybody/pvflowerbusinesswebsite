@@ -8,10 +8,11 @@ import { ConfettiService } from '../../services/confetti';
 import { LoyaltyService } from '../../services/loyalty';
 import { PromoService, PromoResult } from '../../services/promo';
 import { environment } from '../../../environments/environment';
+import { CommonModule } from '@angular/common';
 
 @Component({
   selector: 'app-checkout',
-  imports: [RouterLink, FormsModule],
+  imports: [RouterLink, FormsModule, CommonModule],
   templateUrl: './checkout.html',
   styleUrl: './checkout.scss'
 })
@@ -98,6 +99,94 @@ export class Checkout {
   }
 
   paymentMethod = signal<'card' | 'cod' | 'upi'>('card');
+
+  zipLookupLoading = signal(false);
+  zipLookupError = signal('');
+
+  citySuggestions = signal<{ city: string; state: string }[]>([]);
+  showCitySuggestions = signal(false);
+  private citySearchTimer: any;
+
+  readonly indianStates: string[] = [
+    'Andaman and Nicobar Islands', 'Andhra Pradesh', 'Arunachal Pradesh', 'Assam',
+    'Bihar', 'Chandigarh', 'Chhattisgarh',
+    'Dadra and Nagar Haveli and Daman and Diu', 'Delhi',
+    'Goa', 'Gujarat', 'Haryana', 'Himachal Pradesh',
+    'Jammu and Kashmir', 'Jharkhand', 'Karnataka', 'Kerala',
+    'Ladakh', 'Lakshadweep', 'Madhya Pradesh', 'Maharashtra',
+    'Manipur', 'Meghalaya', 'Mizoram', 'Nagaland', 'Odisha',
+    'Puducherry', 'Punjab', 'Rajasthan', 'Sikkim', 'Tamil Nadu',
+    'Telangana', 'Tripura', 'Uttar Pradesh', 'Uttarakhand', 'West Bengal'
+  ];
+
+  onCityInput(): void {
+    const query = this.formData.city.trim();
+    clearTimeout(this.citySearchTimer);
+    this.citySuggestions.set([]);
+    if (query.length < 2) {
+      this.showCitySuggestions.set(false);
+      return;
+    }
+    this.citySearchTimer = setTimeout(() => {
+      const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&countrycodes=in&format=json&addressdetails=1&limit=8`;
+      this.http.get<any[]>(url, { headers: { 'User-Agent': 'FloranFlowers/1.0' } }).subscribe({
+        next: (res) => {
+          const seen = new Set<string>();
+          const suggestions = res
+            .map(r => ({
+              city: r.address.city || r.address.town || r.address.village || r.address.county || '',
+              state: r.address.state || ''
+            }))
+            .filter(s => {
+              if (!s.city || seen.has(s.city.toLowerCase())) return false;
+              seen.add(s.city.toLowerCase());
+              return true;
+            });
+          this.citySuggestions.set(suggestions);
+          this.showCitySuggestions.set(suggestions.length > 0);
+        },
+        error: () => this.showCitySuggestions.set(false)
+      });
+    }, 350);
+  }
+
+  selectCitySuggestion(s: { city: string; state: string }): void {
+    this.formData.city = s.city;
+    if (s.state) this.formData.state = s.state;
+    this.showCitySuggestions.set(false);
+    this.citySuggestions.set([]);
+  }
+
+  hideCitySuggestions(): void {
+    setTimeout(() => this.showCitySuggestions.set(false), 150);
+  }
+
+  onZipChange(): void {
+    const zip = this.formData.zip.trim();
+    if (zip.length !== 6 || !/^\d{6}$/.test(zip)) {
+      this.zipLookupError.set('');
+      return;
+    }
+    this.zipLookupLoading.set(true);
+    this.zipLookupError.set('');
+    const url = `https://nominatim.openstreetmap.org/search?postalcode=${zip}&country=India&format=json&addressdetails=1&limit=1`;
+    this.http.get<any[]>(url, { headers: { 'User-Agent': 'FloranFlowers/1.0' } }).subscribe({
+      next: (res) => {
+        this.zipLookupLoading.set(false);
+        if (res?.length > 0) {
+          const addr = res[0].address;
+          this.formData.city = addr.city || addr.town || addr.village || addr.county || addr.state_district || '';
+          this.formData.state = addr.state || '';
+        } else {
+          this.zipLookupError.set('Pincode not found');
+        }
+      },
+      error: () => {
+        this.zipLookupLoading.set(false);
+        this.zipLookupError.set('Could not fetch pincode details');
+      }
+    });
+  }
 
   formData = {
     firstName: '',
