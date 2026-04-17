@@ -1,0 +1,21 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+
+# Environment secrets — NEVER commit these
+.env
+.env.local
+.env.production
+
+# Angular / Node
+frontend/node_modules/
+frontend/dist/
+frontend/.angular/
+
+# macOS
+.DS_Store
+
+# Editor
+.vscode/

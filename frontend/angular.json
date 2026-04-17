@@ -3,7 +3,7 @@
   "version": 1,
   "cli": {
     "packageManager": "npm",
-    "analytics": false
+    "analytics": "40efcac5-23f6-4f80-bbf9-f36cccc0a5e6"
   },
   "newProjectRoot": "projects",
   "projects": {
@@ -58,6 +58,12 @@
           },
           "configurations": {
             "production": {
+              "fileReplacements": [
+                {
+                  "replace": "src/environments/environment.ts",
+                  "with": "src/environments/environment.prod.ts"
+                }
+              ],
               "budgets": [
                 {
                   "type": "initial",
@@ -83,10 +89,7 @@
         "serve": {
           "builder": "@angular/build:dev-server",
           "options": {
-            "allowedHosts": [
-              "all",
-              "dowerless-degreeless-cecily.ngrok-free.dev"
-            ],
+            "allowedHosts": [".ngrok-free.app", ".ngrok-free.dev", ".ngrok.io"],
             "proxyConfig": "proxy.conf.json"
           },
           "configurations": {
