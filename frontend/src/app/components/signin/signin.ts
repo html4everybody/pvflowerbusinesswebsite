@@ -207,9 +207,30 @@ export class Signin implements AfterViewInit {
     });
   }
 
+  get passwordChecks() {
+    const p = this.signupData.password;
+    return {
+      length:  p.length >= 8,
+      upper:   /[A-Z]/.test(p),
+      lower:   /[a-z]/.test(p),
+      number:  /[0-9]/.test(p),
+      special: /[^A-Za-z0-9]/.test(p),
+    };
+  }
+
+  get passwordValid(): boolean {
+    const c = this.passwordChecks;
+    return c.length && c.upper && c.lower && c.number && c.special;
+  }
+
   onSignup(): void {
     this.errorMessage.set('');
     this.successMessage.set('');
+
+    if (!this.passwordValid) {
+      this.errorMessage.set('Password does not meet the requirements below.');
+      return;
+    }
 
     if (this.signupData.password !== this.signupData.confirmPassword) {
       this.errorMessage.set('Passwords do not match');
@@ -235,7 +256,13 @@ export class Signin implements AfterViewInit {
       },
       error: (err) => {
         this.loading.set(false);
-        this.errorMessage.set(err.error?.detail || 'Registration failed. Please try again.');
+        const detail = err.error?.detail;
+        const msg = typeof detail === 'string'
+          ? detail
+          : Array.isArray(detail)
+            ? detail.map((d: any) => d.msg || d.message || String(d)).join(', ')
+            : 'Registration failed. Please try again.';
+        this.errorMessage.set(msg);
       }
     });
   }

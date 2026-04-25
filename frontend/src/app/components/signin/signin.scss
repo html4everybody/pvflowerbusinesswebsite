@@ -16,7 +16,7 @@
 
 // ── Page Shell ──────────────────────────────────────────────────────────────
 .signin-page {
-  min-height: 100vh;
+  min-height: calc(100vh - 68px);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -245,6 +245,36 @@
       font-size: 0.78rem;
       margin-top: 0.3rem;
       padding-left: 0.85rem;
+    }
+
+    .pw-requirements {
+      margin-top: 0.5rem;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.28rem 0.5rem;
+
+      .pw-req {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        font-size: 0.78rem;
+        color: var(--text-muted);
+        transition: color 0.2s ease;
+
+        .pw-dot {
+          width: 6px;
+          height: 6px;
+          border-radius: 50%;
+          background: var(--border);
+          flex-shrink: 0;
+          transition: background 0.2s ease;
+        }
+
+        &.met {
+          color: var(--success);
+          .pw-dot { background: var(--success); }
+        }
+      }
     }
   }
 
