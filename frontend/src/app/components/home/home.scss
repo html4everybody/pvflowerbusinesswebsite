@@ -529,12 +529,12 @@
     // Product Grid
     .product-grid {
       display: grid;
-      grid-template-columns: repeat(5, 1fr);
+      grid-template-columns: repeat(5, minmax(0, 1fr));
       gap: 1.25rem;
 
-      @media (max-width: 1200px) { grid-template-columns: repeat(4, 1fr); }
-      @media (max-width: 900px)  { grid-template-columns: repeat(3, 1fr); }
-      @media (max-width: 600px)  { grid-template-columns: repeat(2, 1fr); gap: 0.75rem; }
+      @media (max-width: 1200px) { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+      @media (max-width: 900px)  { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      @media (max-width: 600px)  { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.75rem; }
     }
 
     // Product Card
@@ -542,6 +542,7 @@
       cursor: pointer;
       height: 340px;
       position: relative;
+      min-width: 0;
 
       @media (max-width: 600px) { height: 230px; }
 
@@ -602,45 +603,47 @@
         border-top: 1px solid var(--border);
         flex-shrink: 0;
         display: flex;
-        align-items: center;
-        gap: 0.5rem;
+        flex-direction: column;
+        gap: 0.3rem;
 
-        @media (max-width: 600px) { padding: 0.5rem 0.6rem; gap: 0.35rem; }
+        @media (max-width: 600px) { padding: 0.5rem 0.6rem; gap: 0.25rem; }
 
-        .front-info-text {
-          flex: 1;
-          min-width: 0;
+        h3 {
+          font-family: 'Poppins', sans-serif;
+          font-size: 0.78rem;
+          font-weight: 600;
+          color: var(--text);
+          margin: 0;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
 
-          h3 {
-            font-family: 'Poppins', sans-serif;
-            font-size: 0.78rem;
-            font-weight: 600;
-            color: var(--text);
-            margin: 0 0 0.18rem;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
+          @media (max-width: 600px) { font-size: 0.7rem; }
+        }
 
-            @media (max-width: 600px) { font-size: 0.7rem; }
-          }
+        .front-info-bottom {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 0.35rem;
+        }
 
-          .price {
-            font-size: 0.88rem;
-            font-weight: 700;
-            color: #111111;
+        .price {
+          font-size: 0.88rem;
+          font-weight: 700;
+          color: #111111;
 
-            @media (max-width: 600px) { font-size: 0.8rem; }
-          }
+          @media (max-width: 600px) { font-size: 0.8rem; }
         }
 
         .btn-add-front {
           flex-shrink: 0;
-          padding: 0.38rem 0.75rem;
+          padding: 0.25rem 0.55rem;
           background: #e3f2fd;
           color: #1565c0;
           border: 1.5px solid #90caf9;
           border-radius: 8px;
-          font-size: 0.72rem;
+          font-size: 0.65rem;
           font-weight: 700;
           cursor: pointer;
           font-family: inherit;
