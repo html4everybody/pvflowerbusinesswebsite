@@ -839,8 +839,8 @@ def forgot_password(req: ForgotPasswordRequest):
     </html>
     """
     msg = MIMEMultipart("alternative")
-    msg["Subject"] = "Reset your FloranFlowers password"
-    msg["From"]    = f"FloranFlowers <{GMAIL_USER}>"
+    msg["Subject"] = "Reset your VivaPetals password"
+    msg["From"]    = f"VivaPetals <{GMAIL_USER}>"
     msg["To"]      = req.email
     msg.attach(MIMEText(html, "html"))
     try:
