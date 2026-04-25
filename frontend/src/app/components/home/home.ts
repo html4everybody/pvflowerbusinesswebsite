@@ -1,4 +1,5 @@
-import { Component, OnInit, OnDestroy, AfterViewInit, ViewChild, ElementRef, signal } from '@angular/core';
+import { Component, OnInit, AfterViewInit, ViewChild, ElementRef, signal } from '@angular/core';
+import { DecimalPipe } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { ProductService } from '../../services/product';
 import { CartService } from '../../services/cart';
@@ -11,45 +12,16 @@ import { FadeInDirective } from '../../directives/fade-in';
 
 @Component({
   selector: 'app-home',
-  imports: [RouterLink, FadeInDirective],
+  imports: [RouterLink, FadeInDirective, DecimalPipe],
   templateUrl: './home.html',
   styleUrl: './home.scss'
 })
-export class Home implements OnInit, AfterViewInit, OnDestroy {
+export class Home implements OnInit, AfterViewInit {
   @ViewChild('heroVideo') heroVideoRef!: ElementRef<HTMLVideoElement>;
   products: Product[] = [];
   categories: string[] = [];
   selectedCategory: string = 'All';
   cartQuantities: { [productId: number]: number } = {};
-
-  flippedCardId = signal<number | null>(null);
-  private flipTimer: any;
-
-  private get isTouchDevice(): boolean {
-    return !window.matchMedia('(hover: hover)').matches;
-  }
-
-  private scrollListener = () => {
-    if (this.flippedCardId() !== null) {
-      clearTimeout(this.flipTimer);
-      this.flippedCardId.set(null);
-    }
-  };
-
-  handleCardClick(product: Product): void {
-    if (this.isTouchDevice) {
-      const isFlipping = this.flippedCardId() !== product.id;
-      this.flippedCardId.set(isFlipping ? product.id : null);
-      clearTimeout(this.flipTimer);
-      if (isFlipping) {
-        this.flipTimer = setTimeout(() => {
-          this.flippedCardId.set(null);
-        }, 5000);
-      }
-    } else {
-      this.router.navigate(['/products', product.id]);
-    }
-  }
 
   toastVisible = signal(false);
   toastProductName = signal('');
@@ -74,7 +46,6 @@ export class Home implements OnInit, AfterViewInit, OnDestroy {
     this.products = this.productService.getProducts();
     this.categories = this.productService.getCategories();
     this.promoService.getOffers().subscribe({ next: d => this.offers.set(d), error: () => {} });
-    window.addEventListener('scroll', this.scrollListener, { passive: true });
   }
 
   ngAfterViewInit(): void {
@@ -85,9 +56,8 @@ export class Home implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
-  ngOnDestroy(): void {
-    window.removeEventListener('scroll', this.scrollListener);
-    clearTimeout(this.flipTimer);
+  goToProduct(productId: number): void {
+    this.router.navigate(['/products', productId]);
   }
 
   copyCode(code: string): void {
@@ -125,13 +95,12 @@ export class Home implements OnInit, AfterViewInit, OnDestroy {
     return this.cartQuantities[productId] || 0;
   }
 
-  // Deterministic low-stock: ids divisible by 7 or ending in 3 show urgency
   isLowStock(productId: number): boolean {
     return productId % 7 === 0 || productId % 10 === 3;
   }
 
   lowStockCount(productId: number): number {
-    return (productId % 4) + 2; // returns 2–5
+    return (productId % 4) + 2;
   }
 
   private showToast(name: string, type: 'added' | 'removed' | 'wish-added' | 'wish-removed'): void {
