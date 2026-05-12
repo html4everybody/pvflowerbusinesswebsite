@@ -218,6 +218,11 @@
     text-decoration: none;
     flex-shrink: 0;
 
+    .logo-img {
+      width: 36px;
+      height: 36px;
+    }
+
     .logo-icon {
       font-size: 1.6rem;
       animation: float 4s ease-in-out infinite;
