@@ -27,12 +27,7 @@
 
   @media (max-width: 900px) {
     .cart-summary {
-      order: -1;
       position: static;
-    }
-
-    .cart-items {
-      order: 1;
     }
   }
 

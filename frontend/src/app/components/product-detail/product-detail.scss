@@ -186,9 +186,15 @@
 
     .add-to-cart-section {
       display: flex;
+      flex-direction: column;
+      align-items: flex-start;
       gap: 0.75rem;
       margin-bottom: 1rem;
-      flex-wrap: wrap;
+
+      .cart-action-row {
+        display: flex;
+        gap: 0.75rem;
+      }
 
       .quantity-selector {
         display: flex;
@@ -221,20 +227,23 @@
       }
 
       .btn-add-to-cart {
-        flex: 1;
-        min-width: 200px;
-        background: linear-gradient(180deg, #3b82f6 0%, var(--accent) 50%, #1e56c8 100%);
-        color: white;
-        border: none;
+        width: 132px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        background: #e3f2fd;
+        color: #1565c0;
+        border: 1.5px solid #90caf9;
         padding: 0.875rem 1.5rem;
         border-radius: var(--radius-full);
         font-size: 0.95rem;
         font-weight: 600;
         cursor: pointer;
-        box-shadow: 0 4px 16px rgba(37,99,235,0.35), inset 0 1px 0 rgba(255,255,255,0.15);
+        box-shadow: 0 2px 8px rgba(21,101,192,0.15);
         transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
 
-        &:hover { background: linear-gradient(180deg, #3b82f6 0%, var(--accent-dark) 100%); box-shadow: 0 6px 20px rgba(37,99,235,0.45), inset 0 1px 0 rgba(255,255,255,0.15); }
+        &:hover { background: #bbdefb; box-shadow: 0 4px 12px rgba(21,101,192,0.25); }
         &:active { transform: scale(0.99); }
       }
 
@@ -268,6 +277,28 @@
       color: var(--error);
 
       &.in-stock { color: var(--success); }
+    }
+
+    @media (max-width: 768px) {
+      h1 { font-size: 1.3rem; }
+
+      .price { font-size: 1.3rem; }
+
+      .quantity-selector {
+        button { width: 30px; height: 30px; font-size: 0.85rem; }
+        span { width: 36px; font-size: 0.85rem; }
+      }
+
+      .btn-add-to-cart {
+        width: 98px;
+        padding: 0.5rem 1rem;
+        font-size: 0.8rem;
+      }
+
+      .btn-wishlist {
+        padding: 0.5rem 0.9rem;
+        font-size: 0.8rem;
+      }
     }
   }
 
