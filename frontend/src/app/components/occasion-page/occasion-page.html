@@ -111,42 +111,49 @@
         </div>
 
         @if (products.length > 0) {
-          <div class="occ-product-grid">
+          <div class="product-grid">
             @for (product of products; track product.id) {
-              <div class="occ-product-card">
-                <a [routerLink]="['/products', product.id]" class="card-img-wrap">
-                  <img [src]="product.image" [alt]="product.name" loading="lazy">
-                  <span class="card-category">{{ product.category }}</span>
-                </a>
-                <button class="card-wishlist"
+              <div class="product-card" (click)="goToProduct(product.id)">
+
+                <button class="wishlist-btn"
                         [class.active]="wishlistService.has(product.id)"
-                        (click)="wishlistService.toggle(product)"
-                        [title]="wishlistService.has(product.id) ? 'Remove from wishlist' : 'Save'">
+                        (click)="wishlistService.toggle(product); $event.stopPropagation()"
+                        [title]="wishlistService.has(product.id) ? 'Remove from wishlist' : 'Save to wishlist'">
                   @if (wishlistService.has(product.id)) {
-                    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+                    </svg>
                   } @else {
-                    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+                    </svg>
                   }
                 </button>
-                <div class="card-info">
-                  <div class="card-top">
-                    <h3>{{ product.name }}</h3>
-                    <div class="card-rating">
-                      <span class="star">★</span> {{ product.rating }}
-                    </div>
+
+                <div class="card-inner">
+                  <div class="front-image">
+                    <img [src]="product.image" [alt]="product.name" loading="lazy">
                   </div>
-                  <p class="card-desc">{{ product.description }}</p>
-                  <div class="card-bottom">
-                    <span class="card-price">₹{{ product.price.toFixed(2) }}</span>
-                    @if (getQuantity(product.id) === 0) {
-                      <button class="btn-add-cart" (click)="addToCart(product)">Add to Cart</button>
-                    } @else {
-                      <div class="qty-control">
-                        <button (click)="decrementQuantity(product)">−</button>
-                        <span>{{ getQuantity(product.id) }}</span>
-                        <button (click)="incrementQuantity(product)">+</button>
-                      </div>
-                    }
+                  <div class="front-info">
+                    <h3>{{ product.name }}</h3>
+                    <div class="front-info-bottom">
+                      <span class="price">₹{{ product.price | number:'1.0-0' }}</span>
+                      @if (getQuantity(product.id) === 0) {
+                        <button class="btn-add-front" (click)="addToCart(product); $event.stopPropagation()">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
+                            <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
+                          </svg>
+                          Add
+                        </button>
+                      } @else {
+                        <div class="quantity-control" (click)="$event.stopPropagation()">
+                          <button class="qty-btn" (click)="decrementQuantity(product)">−</button>
+                          <span class="qty-value">{{ getQuantity(product.id) }}</span>
+                          <button class="qty-btn" (click)="incrementQuantity(product)">+</button>
+                        </div>
+                      }
+                    </div>
                   </div>
                 </div>
               </div>

@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { DecimalPipe } from '@angular/common';
 import { ProductService } from '../../services/product';
 import { CartService } from '../../services/cart';
 import { FeedbackService } from '../../services/feedback';
@@ -89,7 +90,7 @@ export const OCCASIONS: OccasionConfig[] = [
 
 @Component({
   selector: 'app-occasion-page',
-  imports: [RouterLink],
+  imports: [RouterLink, DecimalPipe],
   templateUrl: './occasion-page.html',
   styleUrl: './occasion-page.scss',
 })
@@ -102,12 +103,17 @@ export class OccasionPage implements OnInit {
 
   constructor(
     private route: ActivatedRoute,
+    private router: Router,
     private productService: ProductService,
     private cartService: CartService,
     private feedbackService: FeedbackService,
     private toastService: ToastService,
     public wishlistService: WishlistService,
   ) {}
+
+  goToProduct(id: number): void {
+    this.router.navigate(['/products', id]);
+  }
 
   ngOnInit(): void {
     this.route.params.subscribe(params => {
