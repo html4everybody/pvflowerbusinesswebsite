@@ -861,6 +861,43 @@ def forgot_password(req: ForgotPasswordRequest):
     return { "message": "If that email is registered, a reset link has been sent." }
 
 
+class UpdateProfileRequest(BaseModel):
+    token: str
+    first_name: str
+    last_name: str
+
+class ChangePasswordRequest(BaseModel):
+    token: str
+    current_password: str
+    new_password: str
+
+@app.put("/api/auth/profile")
+def update_profile(req: UpdateProfileRequest):
+    email = tokens.get(req.token)
+    if not email:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    supabase.table("users").update({
+        "first_name": req.first_name.strip(),
+        "last_name": req.last_name.strip()
+    }).eq("email", email).execute()
+    return {"firstName": req.first_name.strip(), "lastName": req.last_name.strip(), "email": email}
+
+@app.put("/api/auth/change-password")
+def change_password(req: ChangePasswordRequest):
+    email = tokens.get(req.token)
+    if not email:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    result = supabase.table("users").select("password", "auth_provider").eq("email", email).execute()
+    if not result.data:
+        raise HTTPException(status_code=404, detail="User not found")
+    user = result.data[0]
+    if user.get("auth_provider") in ("google", "facebook"):
+        raise HTTPException(status_code=400, detail=f"This account uses {user['auth_provider'].title()} sign-in. Use 'Forgot Password' to set a password instead.")
+    if not verify_password(req.current_password, user["password"]):
+        raise HTTPException(status_code=401, detail="Current password is incorrect")
+    supabase.table("users").update({"password": hash_password(req.new_password)}).eq("email", email).execute()
+    return {"message": "Password updated successfully"}
+
 @app.post("/api/auth/reset-password")
 def reset_password(req: ResetPasswordRequest):
     result = supabase.table("users").select("*").eq("reset_token", req.token).execute()
