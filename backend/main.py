@@ -351,22 +351,21 @@ def build_order_confirmation_email_html(order: dict, items: list) -> str:
 
 def send_order_confirmation_email(order: dict, items: list) -> bool:
     to_email = order.get("customer_email")
-    if not GMAIL_USER or not GMAIL_APP_PASSWORD or not to_email:
-        print(f"[Email] Gmail not configured or no email — skipping order confirmation for {to_email}")
+    if not RESEND_API_KEY or not to_email:
+        print(f"[Email] Resend not configured or no email — skipping order confirmation for {to_email}", flush=True)
         return False
     try:
-        msg = MIMEMultipart("alternative")
-        msg["Subject"] = f"Your VivaPetals Order {order.get('id', '')} is Confirmed! 🌸"
-        msg["From"]    = f"VivaPetals <{GMAIL_USER}>"
-        msg["To"]      = to_email
-        msg.attach(MIMEText(build_order_confirmation_email_html(order, items), "html"))
-        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
-            server.login(GMAIL_USER, GMAIL_APP_PASSWORD)
-            server.sendmail(GMAIL_USER, to_email, msg.as_string())
-        print(f"[Email] Order confirmation sent to {to_email}")
-        return True
+        with _httpx.Client() as client:
+            resp = client.post(
+                "https://api.resend.com/emails",
+                headers={"Authorization": f"Bearer {RESEND_API_KEY}", "Content-Type": "application/json"},
+                json={"from": "VivaPetals <orderhere@vivapetals.com>", "to": [to_email], "subject": f"Your VivaPetals Order {order.get('id', '')} is Confirmed! 🌸", "html": build_order_confirmation_email_html(order, items)},
+                timeout=10
+            )
+        print(f"[Email] Order confirmation response {resp.status_code}: {resp.text}", flush=True)
+        return resp.status_code in (200, 201)
     except Exception as e:
-        print(f"[Email] Failed to send order confirmation: {e}")
+        print(f"[Email] Failed to send order confirmation: {e}", flush=True)
         return False
 
 
@@ -411,21 +410,20 @@ def build_order_cancellation_email_html(order: dict) -> str:
 
 def send_order_cancellation_email(order: dict) -> bool:
     to_email = order.get("customer_email")
-    if not GMAIL_USER or not GMAIL_APP_PASSWORD or not to_email:
+    if not RESEND_API_KEY or not to_email:
         return False
     try:
-        msg = MIMEMultipart("alternative")
-        msg["Subject"] = f"Your VivaPetals Order {order.get('id', '')} Has Been Cancelled"
-        msg["From"]    = f"VivaPetals <{GMAIL_USER}>"
-        msg["To"]      = to_email
-        msg.attach(MIMEText(build_order_cancellation_email_html(order), "html"))
-        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
-            server.login(GMAIL_USER, GMAIL_APP_PASSWORD)
-            server.sendmail(GMAIL_USER, to_email, msg.as_string())
-        print(f"[Email] Cancellation email sent to {to_email}")
-        return True
+        with _httpx.Client() as client:
+            resp = client.post(
+                "https://api.resend.com/emails",
+                headers={"Authorization": f"Bearer {RESEND_API_KEY}", "Content-Type": "application/json"},
+                json={"from": "VivaPetals <orderhere@vivapetals.com>", "to": [to_email], "subject": f"Your VivaPetals Order {order.get('id', '')} Has Been Cancelled", "html": build_order_cancellation_email_html(order)},
+                timeout=10
+            )
+        print(f"[Email] Cancellation email response {resp.status_code}: {resp.text}", flush=True)
+        return resp.status_code in (200, 201)
     except Exception as e:
-        print(f"[Email] Failed to send cancellation email: {e}")
+        print(f"[Email] Failed to send cancellation email: {e}", flush=True)
         return False
 
 
@@ -830,7 +828,7 @@ def forgot_password(req: ForgotPasswordRequest):
           <table width="520" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(200,75,122,0.1);">
             <tr><td style="background:linear-gradient(135deg,#c84b7a,#9c2d55);padding:32px 40px;text-align:center;">
               <div style="font-size:2rem;">🌸</div>
-              <div style="color:#fff;font-size:1.5rem;font-weight:800;margin-top:8px;">FloranFlowers</div>
+              <div style="color:#fff;font-size:1.5rem;font-weight:800;margin-top:8px;">VivaPetals</div>
             </td></tr>
             <tr><td style="padding:40px;">
               <h2 style="margin:0 0 12px;color:#1e1e1e;font-size:1.35rem;font-weight:800;">Reset your password</h2>
@@ -848,18 +846,17 @@ def forgot_password(req: ForgotPasswordRequest):
     </body>
     </html>
     """
-    msg = MIMEMultipart("alternative")
-    msg["Subject"] = "Reset your VivaPetals password"
-    msg["From"]    = f"VivaPetals <{GMAIL_USER}>"
-    msg["To"]      = req.email
-    msg.attach(MIMEText(html, "html"))
     try:
-        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
-            server.login(GMAIL_USER, GMAIL_APP_PASSWORD)
-            server.sendmail(GMAIL_USER, req.email, msg.as_string())
-        print(f"[Email] Password reset email sent to {req.email}")
+        with _httpx.Client() as client:
+            resp = client.post(
+                "https://api.resend.com/emails",
+                headers={"Authorization": f"Bearer {RESEND_API_KEY}", "Content-Type": "application/json"},
+                json={"from": "VivaPetals <orderhere@vivapetals.com>", "to": [req.email], "subject": "Reset your VivaPetals password", "html": html},
+                timeout=10
+            )
+        print(f"[Email] Reset email response {resp.status_code}: {resp.text}", flush=True)
     except Exception as e:
-        print(f"[Email] Failed to send reset email: {e}")
+        print(f"[Email] Failed to send reset email: {e}", flush=True)
 
     return { "message": "If that email is registered, a reset link has been sent." }
 
