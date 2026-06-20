@@ -276,8 +276,12 @@ export class Checkout {
     this.promoError.set('');
   }
 
+  get orderBaseTotal(): number {
+    return this.cartService.cartTotal() + this.getShipping() - this.promoDiscountAmount();
+  }
+
   get maxRedeemable(): number {
-    const cap = Math.floor(this.getTotal() * 0.20) * 10;
+    const cap = Math.floor(this.orderBaseTotal * 0.20) * 10;
     return Math.min(this.loyaltyBalance(), cap);
   }
 
