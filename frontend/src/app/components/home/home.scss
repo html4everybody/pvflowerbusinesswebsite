@@ -631,7 +631,7 @@
         .price {
           font-size: 0.88rem;
           font-weight: 700;
-          color: #111111;
+          color: var(--text);
 
           @media (max-width: 600px) { font-size: 0.8rem; }
         }
