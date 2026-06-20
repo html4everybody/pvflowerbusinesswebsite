@@ -894,6 +894,9 @@ def login(req: LoginRequest):
 
     user = result.data[0]
     if not verify_password(req.password, user["password"]):
+        provider = user.get("auth_provider", "email")
+        if provider in ("google", "facebook"):
+            raise HTTPException(status_code=401, detail=f"This account was created with {provider.title()}. Please sign in with {provider.title()}, or use 'Forgot Password' to set a password.")
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
     if not user.get("is_verified", False):
@@ -984,11 +987,12 @@ def social_auth(req: SocialAuthRequest):
         # Create a new social user — no password needed, pre-verified
         random_pw = hash_password(secrets.token_urlsafe(32))
         result = supabase.table("users").insert({
-            "email":      email,
-            "password":   random_pw,
-            "first_name": first_name,
-            "last_name":  last_name,
-            "is_verified": True
+            "email":         email,
+            "password":      random_pw,
+            "first_name":    first_name,
+            "last_name":     last_name,
+            "is_verified":   True,
+            "auth_provider": req.provider
         }).execute()
         user = result.data[0]
         create_loyalty_account(email)
