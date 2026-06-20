@@ -21,6 +21,7 @@ import { VerifyEmail } from './components/verify-email/verify-email';
 import { ResetPassword } from './components/reset-password/reset-password';
 import { Reminders } from './components/reminders/reminders';
 import { TrackOrder } from './components/track-order/track-order';
+import { ForgotPassword } from './components/forgot-password/forgot-password';
 
 export const routes: Routes = [
   { path: '', component: Home },
@@ -31,6 +32,7 @@ export const routes: Routes = [
   { path: 'signin', component: Signin },
   { path: 'verify-email', component: VerifyEmail },
   { path: 'reset-password', component: ResetPassword },
+  { path: 'forgot-password', component: ForgotPassword },
   { path: 'orders', component: Orders },
   { path: 'orders/:id', component: OrderDetail },
   { path: 'builder', component: BouquetBuilder },

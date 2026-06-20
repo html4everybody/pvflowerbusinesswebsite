@@ -75,26 +75,8 @@
             <input type="checkbox">
             <span>Remember me</span>
           </label>
-          <button type="button" class="forgot-password" (click)="showForgotPassword.set(true)">Forgot password?</button>
+          <a routerLink="/forgot-password" class="forgot-password">Forgot password?</a>
         </div>
-
-        @if (showForgotPassword()) {
-          <div class="forgot-panel">
-            <p class="forgot-label">Enter your email and we'll send you a reset link.</p>
-            <div class="forgot-row">
-              <input type="email" placeholder="your@email.com" [value]="forgotEmail()" (input)="forgotEmail.set($any($event.target).value)">
-              <button type="button" class="btn-send-reset" (click)="sendForgotPassword()" [disabled]="forgotLoading() || !forgotEmail()">
-                {{ forgotLoading() ? 'Sending...' : 'Send' }}
-              </button>
-            </div>
-            @if (forgotSent()) {
-              <div class="forgot-success">Reset link sent — check your inbox.</div>
-            }
-            @if (forgotError()) {
-              <div class="forgot-error">{{ forgotError() }}</div>
-            }
-          </div>
-        }
 
         @if (errorMessage()) {
           <div class="error-msg">
