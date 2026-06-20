@@ -129,7 +129,7 @@ export class Checkout {
     }
     this.citySearchTimer = setTimeout(() => {
       const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&countrycodes=in&format=json&addressdetails=1&limit=8`;
-      this.http.get<any[]>(url, { headers: { 'User-Agent': 'FloranFlowers/1.0' } }).subscribe({
+      this.http.get<any[]>(url, { headers: { 'User-Agent': 'VivaPetals/1.0' } }).subscribe({
         next: (res) => {
           const seen = new Set<string>();
           const suggestions = res
@@ -170,7 +170,7 @@ export class Checkout {
     this.zipLookupLoading.set(true);
     this.zipLookupError.set('');
     const url = `https://nominatim.openstreetmap.org/search?postalcode=${zip}&country=India&format=json&addressdetails=1&limit=1`;
-    this.http.get<any[]>(url, { headers: { 'User-Agent': 'FloranFlowers/1.0' } }).subscribe({
+    this.http.get<any[]>(url, { headers: { 'User-Agent': 'VivaPetals/1.0' } }).subscribe({
       next: (res) => {
         this.zipLookupLoading.set(false);
         if (res?.length > 0) {
