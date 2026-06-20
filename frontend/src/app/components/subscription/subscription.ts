@@ -35,6 +35,8 @@ export class Subscription implements OnInit {
   nextDelivery = signal('');
 
   selectedDuration = signal<'weekly' | 'biweekly' | 'monthly' | null>(null);
+  selectedStyle = signal<'florist' | 'custom' | null>(null);
+  floristBudget = signal<number>(500);
   selections = signal<ProductSelection[]>([]);
   activeCategory = signal<string>('All');
 
@@ -68,7 +70,17 @@ export class Subscription implements OnInit {
     },
   ];
 
-  readonly weightOptions = [0.25, 0.5, 1, 1.5, 2, 3, 5];
+  readonly weightOptions = [
+    { value: 0.1, label: '100g' },
+    { value: 0.25, label: '250g' },
+    { value: 0.5, label: '500g' },
+    { value: 1, label: '1 kg' },
+    { value: 2, label: '2 kg' },
+    { value: 3, label: '3 kg' },
+    { value: 5, label: '5 kg' },
+  ];
+
+  readonly budgetOptions = [200, 300, 500, 750, 1000, 1500, 2000];
   readonly sizeOptions = [
     { id: 'small', label: 'Small', multiplier: 0.7 },
     { id: 'medium', label: 'Medium', multiplier: 1.0 },
@@ -120,6 +132,7 @@ export class Subscription implements OnInit {
   }
 
   get dailySubtotal(): number {
+    if (this.selectedStyle() === 'florist') return this.floristBudget();
     return this.selections().reduce((sum, sel) => sum + this.getItemDailyCost(sel), 0);
   }
 
@@ -146,7 +159,11 @@ export class Subscription implements OnInit {
 
   get isStep1Valid(): boolean { return !!this.selectedDuration(); }
 
-  get isStep2Valid(): boolean { return this.selections().length > 0; }
+  get isStep2Valid(): boolean {
+    if (!this.selectedStyle()) return false;
+    if (this.selectedStyle() === 'florist') return this.floristBudget() > 0;
+    return this.selections().length > 0;
+  }
 
   get isStep3Valid(): boolean {
     return this.name().trim().length >= 2 &&
@@ -191,6 +208,14 @@ export class Subscription implements OnInit {
     this.selectedDuration.set(id);
   }
 
+  selectStyle(style: 'florist' | 'custom'): void {
+    this.selectedStyle.set(style);
+  }
+
+  setBudget(amount: number): void {
+    this.floristBudget.set(amount);
+  }
+
   setCategory(cat: string): void {
     this.activeCategory.set(cat);
   }
@@ -231,20 +256,27 @@ export class Subscription implements OnInit {
     );
   }
 
+  formatWeight(kg: number): string {
+    if (kg < 1) return `${Math.round(kg * 1000)}g`;
+    return `${kg} kg`;
+  }
+
   submit(): void {
     if (!this.isStep3Valid || !this.selectedDuration() || !this.isStep2Valid) return;
     this.submitting.set(true);
     this.error.set('');
 
-    const items: SubscriptionItem[] = this.selections().map(sel => ({
-      product_id: sel.product.id,
-      product_name: sel.product.name,
-      category: sel.product.category,
-      weight_kg: sel.product.category === 'Flowers' ? sel.weight : undefined,
-      size: sel.product.category === 'Bouquets' ? sel.size : undefined,
-      quantity: !['Flowers', 'Bouquets'].includes(sel.product.category) ? sel.quantity : undefined,
-      daily_cost: this.getItemDailyCost(sel),
-    }));
+    const items: SubscriptionItem[] = this.selectedStyle() === 'florist'
+      ? []
+      : this.selections().map(sel => ({
+          product_id: sel.product.id,
+          product_name: sel.product.name,
+          category: sel.product.category,
+          weight_kg: sel.product.category === 'Flowers' ? sel.weight : undefined,
+          size: sel.product.category === 'Bouquets' ? sel.size : undefined,
+          quantity: !['Flowers', 'Bouquets'].includes(sel.product.category) ? sel.quantity : undefined,
+          daily_cost: this.getItemDailyCost(sel),
+        }));
 
     const req: CreateSubscriptionRequest = {
       customer_email: this.email().trim(),

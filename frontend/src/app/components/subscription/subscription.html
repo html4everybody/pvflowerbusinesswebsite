@@ -127,124 +127,63 @@
         </div>
       }
 
-      <!-- ── Step 2: Select Products ──────────────────────────────────── -->
+      <!-- ── Step 2: Style + Products ────────────────────────────────── -->
       @if (step() === 2) {
         <div class="wizard-step">
           <div class="step-header">
-            <h2>What would you like delivered daily?</h2>
-            <p>Select one or more products. Set the weight, size, or quantity for each — we'll calculate your daily cost.</p>
+            <h2>How would you like your daily flowers?</h2>
+            <p>Let our expert florists curate for you, or handpick exactly what you want.</p>
           </div>
 
-          <!-- Category Filters -->
-          <div class="cat-filters">
-            @for (cat of categories; track cat) {
-              <button class="cat-btn" [class.active]="activeCategory() === cat" (click)="setCategory(cat)">
-                {{ cat }}
-              </button>
-            }
-          </div>
-
-          <!-- Product Grid -->
-          <div class="product-grid">
-            @for (product of filteredProducts; track product.id) {
-              <div class="prod-card" [class.selected]="isProductSelected(product.id)" (click)="toggleProduct(product)">
-                <div class="prod-img-wrap">
-                  <img [src]="product.image" [alt]="product.name" loading="lazy">
-                  @if (isProductSelected(product.id)) {
-                    <div class="prod-check">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5">
-                        <polyline points="20 6 9 17 4 12"></polyline>
-                      </svg>
-                    </div>
-                  }
-                </div>
-                <div class="prod-info">
-                  <span class="prod-name">{{ product.name }}</span>
-                  <span class="prod-cat">{{ product.category }}</span>
-                  <span class="prod-price">
-                    ₹{{ product.price }}
-                    @if (product.category === 'Flowers') { /kg }
-                    @if (product.category === 'Bouquets') { /pc }
-                    @if (product.category !== 'Flowers' && product.category !== 'Bouquets') { /pc }
-                  </span>
-                </div>
+          <!-- Style Toggle -->
+          <div class="style-cards">
+            <div class="style-card" [class.selected]="selectedStyle() === 'florist'" (click)="selectStyle('florist')">
+              <span class="style-icon">🌿</span>
+              <h3>Florist's Choice</h3>
+              <p>Our florists handpick the freshest blooms every morning based on season, availability, and occasion — always beautiful, always a surprise.</p>
+              <ul class="style-perks">
+                <li>✓ Curated daily by expert florists</li>
+                <li>✓ Freshest seasonal varieties</li>
+                <li>✓ Perfect for homes, temples & offices</li>
+              </ul>
+              <div class="plan-radio" [class.checked]="selectedStyle() === 'florist'">
+                <div class="radio-inner"></div>
               </div>
-            }
+            </div>
+
+            <div class="style-card" [class.selected]="selectedStyle() === 'custom'" (click)="selectStyle('custom')">
+              <span class="style-icon">🛒</span>
+              <h3>I'll Choose</h3>
+              <p>Select exactly what you want — pick flowers by weight, bouquets by size, garlands by quantity. You decide what arrives at your door each day.</p>
+              <ul class="style-perks">
+                <li>✓ Full control over your daily delivery</li>
+                <li>✓ Mix flowers, bouquets, garlands & more</li>
+                <li>✓ Perfect for restaurants, events & malls</li>
+              </ul>
+              <div class="plan-radio" [class.checked]="selectedStyle() === 'custom'">
+                <div class="radio-inner"></div>
+              </div>
+            </div>
           </div>
 
-          <!-- Selected Products Configuration -->
-          @if (selections().length > 0) {
+          <!-- ── Florist's Choice → Budget Picker ── -->
+          @if (selectedStyle() === 'florist') {
             <div class="config-section">
-              <h3>Configure your selections</h3>
-              <p class="config-hint">Set the right amount for each product you've chosen.</p>
+              <h3>Set your daily budget</h3>
+              <p class="config-hint">Tell us how much to spend each day, and our florists will make the most of it.</p>
 
-              <div class="config-list">
-                @for (sel of selections(); track sel.product.id) {
-                  <div class="config-item">
-                    <div class="config-left">
-                      <img [src]="sel.product.image" [alt]="sel.product.name">
-                      <div class="config-details">
-                        <span class="config-name">{{ sel.product.name }}</span>
-                        <span class="config-cat">{{ sel.product.category }}</span>
-                      </div>
-                    </div>
-
-                    <div class="config-right">
-                      <!-- Flowers → Weight -->
-                      @if (sel.product.category === 'Flowers') {
-                        <label>Weight (kg)</label>
-                        <select [value]="sel.weight" (change)="updateWeight(sel.product.id, +$any($event).target.value)" (click)="$event.stopPropagation()">
-                          @for (w of weightOptions; track w) {
-                            <option [value]="w">{{ w }} kg</option>
-                          }
-                        </select>
-                      }
-
-                      <!-- Bouquets → Size -->
-                      @if (sel.product.category === 'Bouquets') {
-                        <label>Size</label>
-                        <div class="size-btns">
-                          @for (opt of sizeOptions; track opt.id) {
-                            <button class="size-btn" [class.active]="sel.size === opt.id"
-                                    (click)="$event.stopPropagation(); updateSize(sel.product.id, opt.id)">
-                              {{ opt.label }}
-                            </button>
-                          }
-                        </div>
-                      }
-
-                      <!-- Garlands, Decoration, Gifts → Quantity -->
-                      @if (sel.product.category !== 'Flowers' && sel.product.category !== 'Bouquets') {
-                        <label>Quantity</label>
-                        <div class="qty-control">
-                          <button (click)="$event.stopPropagation(); updateQuantity(sel.product.id, sel.quantity - 1)">−</button>
-                          <span>{{ sel.quantity }}</span>
-                          <button (click)="$event.stopPropagation(); updateQuantity(sel.product.id, sel.quantity + 1)">+</button>
-                        </div>
-                      }
-
-                      <div class="config-cost">₹{{ getItemDailyCost(sel) }}/day</div>
-                    </div>
-
-                    <button class="config-remove" (click)="$event.stopPropagation(); toggleProduct(sel.product)" title="Remove">✕</button>
-                  </div>
+              <div class="budget-grid">
+                @for (b of budgetOptions; track b) {
+                  <button class="budget-btn" [class.active]="floristBudget() === b" (click)="setBudget(b)">
+                    ₹{{ b }}<span>/day</span>
+                  </button>
                 }
               </div>
 
               <!-- Price Summary -->
               <div class="price-summary">
-                <div class="ps-row">
-                  <span>Daily subtotal</span>
-                  <span>₹{{ dailySubtotal }}</span>
-                </div>
-                @if (discountPercent > 0) {
-                  <div class="ps-row ps-discount">
-                    <span>{{ selectedDurationOption?.label }} discount ({{ discountPercent }}%)</span>
-                    <span>−₹{{ dailySubtotal - dailyTotal }}</span>
-                  </div>
-                }
                 <div class="ps-row ps-daily">
-                  <span>Your daily cost</span>
+                  <span>Your daily budget</span>
                   <span>₹{{ dailyTotal }}/day</span>
                 </div>
                 <div class="ps-row ps-grand">
@@ -256,6 +195,132 @@
                 }
               </div>
             </div>
+          }
+
+          <!-- ── I'll Choose → Product Picker ── -->
+          @if (selectedStyle() === 'custom') {
+            <!-- Category Filters -->
+            <div class="cat-filters">
+              @for (cat of categories; track cat) {
+                <button class="cat-btn" [class.active]="activeCategory() === cat" (click)="setCategory(cat)">
+                  {{ cat }}
+                </button>
+              }
+            </div>
+
+            <!-- Product Grid -->
+            <div class="product-grid">
+              @for (product of filteredProducts; track product.id) {
+                <div class="prod-card" [class.selected]="isProductSelected(product.id)" (click)="toggleProduct(product)">
+                  <div class="prod-img-wrap">
+                    <img [src]="product.image" [alt]="product.name" loading="lazy">
+                    @if (isProductSelected(product.id)) {
+                      <div class="prod-check">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5">
+                          <polyline points="20 6 9 17 4 12"></polyline>
+                        </svg>
+                      </div>
+                    }
+                  </div>
+                  <div class="prod-info">
+                    <span class="prod-name">{{ product.name }}</span>
+                    <span class="prod-cat">{{ product.category }}</span>
+                    <span class="prod-price">
+                      ₹{{ product.price }}
+                      @if (product.category === 'Flowers') { /kg }
+                      @if (product.category === 'Bouquets') { /pc }
+                      @if (product.category !== 'Flowers' && product.category !== 'Bouquets') { /pc }
+                    </span>
+                  </div>
+                </div>
+              }
+            </div>
+
+            <!-- Selected Products Configuration -->
+            @if (selections().length > 0) {
+              <div class="config-section">
+                <h3>Configure your selections</h3>
+                <p class="config-hint">Set the right amount for each product you've chosen.</p>
+
+                <div class="config-list">
+                  @for (sel of selections(); track sel.product.id) {
+                    <div class="config-item">
+                      <div class="config-left">
+                        <img [src]="sel.product.image" [alt]="sel.product.name">
+                        <div class="config-details">
+                          <span class="config-name">{{ sel.product.name }}</span>
+                          <span class="config-cat">{{ sel.product.category }}</span>
+                        </div>
+                      </div>
+
+                      <div class="config-right">
+                        <!-- Flowers → Weight -->
+                        @if (sel.product.category === 'Flowers') {
+                          <label>Weight</label>
+                          <select [value]="sel.weight" (change)="updateWeight(sel.product.id, +$any($event).target.value)" (click)="$event.stopPropagation()">
+                            @for (w of weightOptions; track w.value) {
+                              <option [value]="w.value">{{ w.label }}</option>
+                            }
+                          </select>
+                        }
+
+                        <!-- Bouquets → Size -->
+                        @if (sel.product.category === 'Bouquets') {
+                          <label>Size</label>
+                          <div class="size-btns">
+                            @for (opt of sizeOptions; track opt.id) {
+                              <button class="size-btn" [class.active]="sel.size === opt.id"
+                                      (click)="$event.stopPropagation(); updateSize(sel.product.id, opt.id)">
+                                {{ opt.label }}
+                              </button>
+                            }
+                          </div>
+                        }
+
+                        <!-- Garlands, Decoration, Gifts → Quantity -->
+                        @if (sel.product.category !== 'Flowers' && sel.product.category !== 'Bouquets') {
+                          <label>Quantity</label>
+                          <div class="qty-control">
+                            <button (click)="$event.stopPropagation(); updateQuantity(sel.product.id, sel.quantity - 1)">−</button>
+                            <span>{{ sel.quantity }}</span>
+                            <button (click)="$event.stopPropagation(); updateQuantity(sel.product.id, sel.quantity + 1)">+</button>
+                          </div>
+                        }
+
+                        <div class="config-cost">₹{{ getItemDailyCost(sel) }}/day</div>
+                      </div>
+
+                      <button class="config-remove" (click)="$event.stopPropagation(); toggleProduct(sel.product)" title="Remove">✕</button>
+                    </div>
+                  }
+                </div>
+
+                <!-- Price Summary -->
+                <div class="price-summary">
+                  <div class="ps-row">
+                    <span>Daily subtotal</span>
+                    <span>₹{{ dailySubtotal }}</span>
+                  </div>
+                  @if (discountPercent > 0) {
+                    <div class="ps-row ps-discount">
+                      <span>{{ selectedDurationOption?.label }} discount ({{ discountPercent }}%)</span>
+                      <span>−₹{{ dailySubtotal - dailyTotal }}</span>
+                    </div>
+                  }
+                  <div class="ps-row ps-daily">
+                    <span>Your daily cost</span>
+                    <span>₹{{ dailyTotal }}/day</span>
+                  </div>
+                  <div class="ps-row ps-grand">
+                    <span>Total for {{ selectedDurationOption?.days }} days</span>
+                    <span>₹{{ grandTotal.toLocaleString('en-IN') }}</span>
+                  </div>
+                  @if (discountAmount > 0) {
+                    <div class="ps-saving">You save ₹{{ discountAmount.toLocaleString('en-IN') }} with the {{ selectedDurationOption?.label }} plan!</div>
+                  }
+                </div>
+              </div>
+            }
           }
 
           <div class="step-actions">
@@ -343,29 +408,38 @@
                 <span class="review-label">Plan</span>
                 <span class="review-val">{{ selectedDurationOption?.label }} — {{ selectedDurationOption?.days }} days of daily delivery</span>
               </div>
+              <div class="review-row">
+                <span class="review-label">Style</span>
+                <span class="review-val">
+                  @if (selectedStyle() === 'florist') { Florist's Choice — ₹{{ floristBudget() }}/day budget }
+                  @if (selectedStyle() === 'custom') { Custom Selection }
+                </span>
+              </div>
               @if (discountPercent > 0) {
                 <div class="review-row">
                   <span class="review-label">Discount</span>
-                  <span class="review-val review-discount">{{ discountPercent }}% off on all products</span>
+                  <span class="review-val review-discount">{{ discountPercent }}% off</span>
                 </div>
               }
               <div class="review-divider"></div>
 
-              <!-- Items -->
-              @for (sel of selections(); track sel.product.id) {
-                <div class="review-row">
-                  <span class="review-label">{{ sel.product.category }}</span>
-                  <span class="review-val">
-                    {{ sel.product.name }}
-                    @if (sel.product.category === 'Flowers') { — {{ sel.weight }} kg }
-                    @if (sel.product.category === 'Bouquets') { — {{ sel.size }} }
-                    @if (sel.product.category !== 'Flowers' && sel.product.category !== 'Bouquets') { × {{ sel.quantity }} }
-                    <span class="review-item-cost">₹{{ getItemDailyCost(sel) }}/day</span>
-                  </span>
-                </div>
+              <!-- Items (custom only) -->
+              @if (selectedStyle() === 'custom') {
+                @for (sel of selections(); track sel.product.id) {
+                  <div class="review-row">
+                    <span class="review-label">{{ sel.product.category }}</span>
+                    <span class="review-val">
+                      {{ sel.product.name }}
+                      @if (sel.product.category === 'Flowers') { — {{ formatWeight(sel.weight) }} }
+                      @if (sel.product.category === 'Bouquets') { — {{ sel.size }} }
+                      @if (sel.product.category !== 'Flowers' && sel.product.category !== 'Bouquets') { × {{ sel.quantity }} }
+                      <span class="review-item-cost">₹{{ getItemDailyCost(sel) }}/day</span>
+                    </span>
+                  </div>
+                }
+                <div class="review-divider"></div>
               }
 
-              <div class="review-divider"></div>
               <div class="review-row">
                 <span class="review-label">Daily</span>
                 <span class="review-val">₹{{ dailyTotal }}/day</span>
