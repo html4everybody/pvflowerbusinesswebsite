@@ -44,7 +44,7 @@
     p {
       font-size: 1.05rem;
       opacity: 0.9;
-      max-width: 580px;
+      max-width: 640px;
       margin: 0 auto 1.75rem;
       line-height: 1.65;
     }
@@ -56,6 +56,42 @@
       justify-content: center;
       font-size: 0.88rem;
       opacity: 0.88;
+      font-weight: 500;
+    }
+  }
+
+  // ── Trust Strip ───────────────────────────────────────────────────────────
+  .trust-strip {
+    background: var(--bg-subtle, #f7f8fa);
+    border-bottom: 1px solid var(--border, #e8e8e8);
+    padding: 2rem 1.5rem;
+    text-align: center;
+
+    .trust-items {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 1.5rem 2.5rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .trust-item {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--text, #1a1a1a);
+
+      .trust-icon {
+        font-size: 1.4rem;
+      }
+    }
+
+    .trust-caption {
+      font-size: 0.8rem;
+      color: var(--text-muted, #888);
+      margin: 0;
       font-weight: 500;
     }
   }
@@ -159,21 +195,25 @@
       font-size: 0.98rem;
       margin: 0;
     }
+
+    &.size-header {
+      margin-top: 3.5rem;
+    }
   }
 
-  // ── Plan Cards ────────────────────────────────────────────────────────────
-  .plan-cards {
+  // ── Duration Cards ────────────────────────────────────────────────────────
+  .duration-cards {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 1.25rem;
-    margin-bottom: 2.5rem;
+    margin-bottom: 1rem;
 
     @media (max-width: 680px) { grid-template-columns: 1fr; }
   }
 
-  .plan-card {
+  .duration-card {
     position: relative;
-    padding: 1.75rem 1.5rem;
+    padding: 2rem 1.5rem 1.5rem;
     border: 2px solid var(--border, #e8e8e8);
     border-radius: var(--radius-md, 14px);
     background: var(--bg-card, #fff);
@@ -205,37 +245,50 @@
       letter-spacing: 0.04em;
     }
 
-    .plan-icon { font-size: 2.2rem; margin-bottom: 0.6rem; }
-
-    h3 {
-      font-size: 1.15rem;
-      font-weight: 800;
+    .dur-days {
+      font-size: 3rem;
+      font-weight: 900;
       color: var(--text, #1a1a1a);
-      margin: 0 0 0.3rem;
+      line-height: 1;
     }
 
-    .plan-freq {
-      font-size: 0.82rem;
-      color: var(--text-muted, #888);
-      margin: 0 0 0.85rem;
-    }
-
-    .plan-price {
-      font-size: 1.05rem;
+    .dur-label {
+      font-size: 0.85rem;
       font-weight: 700;
-      color: var(--accent, #2563eb);
-      margin-bottom: 0.5rem;
+      color: var(--text-muted, #888);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 1rem;
     }
 
-    .plan-saving {
-      display: inline-block;
-      background: rgba(37, 99, 235, 0.1);
+    .dur-price {
+      font-size: 1.4rem;
+      font-weight: 800;
       color: var(--accent, #2563eb);
+      margin-bottom: 0.2rem;
+
+      span {
+        font-size: 0.85rem;
+        font-weight: 600;
+      }
+    }
+
+    .dur-total {
+      font-size: 0.78rem;
+      color: var(--text-muted, #888);
+      font-weight: 600;
+      margin-bottom: 0.6rem;
+    }
+
+    .dur-saving {
+      display: inline-block;
+      background: rgba(22, 163, 74, 0.1);
+      color: #16a34a;
       font-size: 0.72rem;
       font-weight: 700;
-      padding: 0.15rem 0.55rem;
+      padding: 0.2rem 0.65rem;
       border-radius: 999px;
-      margin-bottom: 0.85rem;
+      margin-bottom: 0.75rem;
     }
 
     .plan-radio {
@@ -261,6 +314,157 @@
         border-color: var(--accent, #2563eb);
         .radio-inner { background: var(--accent, #2563eb); }
       }
+    }
+  }
+
+  // ── Size Cards ────────────────────────────────────────────────────────────
+  .size-cards {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.25rem;
+    margin-bottom: 1rem;
+
+    @media (max-width: 680px) { grid-template-columns: 1fr; }
+  }
+
+  .size-card {
+    position: relative;
+    padding: 1.75rem 1.25rem;
+    border: 2px solid var(--border, #e8e8e8);
+    border-radius: var(--radius-md, 14px);
+    background: var(--bg-card, #fff);
+    cursor: pointer;
+    text-align: center;
+    transition: border-color 0.2s, box-shadow 0.2s, transform 0.15s;
+
+    &:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,0.08); }
+
+    &.selected {
+      border-color: var(--accent, #2563eb);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.14), 0 8px 24px rgba(0,0,0,0.08);
+    }
+
+    .size-icon {
+      font-size: 2.2rem;
+      display: block;
+      margin-bottom: 0.6rem;
+    }
+
+    h3 {
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: var(--text, #1a1a1a);
+      margin: 0 0 0.25rem;
+    }
+
+    .size-stems {
+      display: block;
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: var(--accent, #2563eb);
+      margin-bottom: 0.35rem;
+    }
+
+    .size-extra {
+      display: inline-block;
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--text-muted, #666);
+      background: var(--bg-subtle, #f0f0f0);
+      padding: 0.15rem 0.6rem;
+      border-radius: 999px;
+      margin-bottom: 0.6rem;
+
+      &.included {
+        background: rgba(22, 163, 74, 0.1);
+        color: #16a34a;
+      }
+    }
+
+    .size-desc {
+      font-size: 0.8rem;
+      color: var(--text-muted, #666);
+      line-height: 1.5;
+      margin: 0 0 0.75rem;
+    }
+
+    .plan-radio {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      border: 2px solid var(--border, #ccc);
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: border-color 0.2s;
+
+      .radio-inner {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: transparent;
+        transition: background 0.2s;
+      }
+
+      &.checked {
+        border-color: var(--accent, #2563eb);
+        .radio-inner { background: var(--accent, #2563eb); }
+      }
+    }
+  }
+
+  // ── Price Summary ─────────────────────────────────────────────────────────
+  .price-summary {
+    margin: 2rem 0 0;
+
+    .price-summary-inner {
+      max-width: 560px;
+      margin: 0 auto;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: center;
+      gap: 1.5rem 3rem;
+      padding: 1.25rem 2rem;
+      background: rgba(37, 99, 235, 0.05);
+      border: 1.5px solid rgba(37, 99, 235, 0.2);
+      border-radius: var(--radius-md, 14px);
+    }
+
+    .ps-left, .ps-right {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.15rem;
+    }
+
+    .ps-label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--text-muted, #888);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .ps-daily {
+      font-size: 1.5rem;
+      font-weight: 900;
+      color: var(--accent, #2563eb);
+    }
+
+    .ps-total {
+      font-size: 1.5rem;
+      font-weight: 900;
+      color: var(--text, #1a1a1a);
+    }
+
+    .ps-saving {
+      width: 100%;
+      text-align: center;
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: #16a34a;
     }
   }
 
@@ -422,6 +626,14 @@
     gap: 1.25rem;
   }
 
+  .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.25rem;
+
+    @media (max-width: 500px) { grid-template-columns: 1fr; }
+  }
+
   .form-group {
     display: flex;
     flex-direction: column;
@@ -431,6 +643,12 @@
       font-size: 0.88rem;
       font-weight: 700;
       color: var(--text, #1a1a1a);
+
+      .optional {
+        font-weight: 500;
+        color: var(--text-muted, #aaa);
+        font-size: 0.8rem;
+      }
     }
 
     input, textarea {
@@ -476,6 +694,16 @@
 
     &:last-child { border-bottom: none; }
 
+    &.review-total {
+      background: rgba(37, 99, 235, 0.04);
+
+      .review-val {
+        font-weight: 800;
+        font-size: 1.05rem;
+        color: var(--accent, #2563eb);
+      }
+    }
+
     .review-label {
       min-width: 75px;
       font-size: 0.8rem;
@@ -492,6 +720,12 @@
       flex: 1;
       line-height: 1.5;
     }
+  }
+
+  .review-divider {
+    height: 1px;
+    background: var(--border, #e0e0e0);
+    margin: 0.25rem 1.35rem;
   }
 
   // ── Form Error ────────────────────────────────────────────────────────────
@@ -604,6 +838,9 @@
     .success-sub {
       font-size: 0.9rem;
       margin-bottom: 2rem;
+      max-width: 500px;
+      margin-left: auto;
+      margin-right: auto;
     }
 
     .success-actions {

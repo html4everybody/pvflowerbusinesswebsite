@@ -1,4 +1,4 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit, signal, computed } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../services/auth';
 import { SubscriptionService, CreateSubscriptionRequest } from '../../services/subscription';
@@ -6,13 +6,20 @@ import { ToastService } from '../../services/toast';
 import { ProductService } from '../../services/product';
 import { Product } from '../../models/product.model';
 
-interface PlanOption {
+interface DurationOption {
   id: 'weekly' | 'biweekly' | 'monthly';
-  label: string;
-  frequency: string;
-  priceLabel: string;
-  saving?: string;
+  days: number;
+  perDay: number;
   popular?: boolean;
+}
+
+interface SizeOption {
+  id: 'essential' | 'standard' | 'premium';
+  label: string;
+  stems: string;
+  extraPerDay: number;
+  icon: string;
+  description: string;
 }
 
 @Component({
@@ -28,35 +35,47 @@ export class Subscription implements OnInit {
   error = signal('');
   nextDelivery = signal('');
 
-  selectedPlan = signal<'weekly' | 'biweekly' | 'monthly' | null>(null);
+  selectedDuration = signal<'weekly' | 'biweekly' | 'monthly' | null>(null);
+  selectedSize = signal<'essential' | 'standard' | 'premium' | null>(null);
   selectedStyle = signal<'seasonal' | 'fixed' | null>(null);
   selectedProductId = signal<number | null>(null);
 
   name = signal('');
   email = signal('');
   address = signal('');
+  phone = signal('');
+  instructions = signal('');
 
-  readonly plans: PlanOption[] = [
+  readonly durations: DurationOption[] = [
+    { id: 'weekly', days: 7, perDay: 299 },
+    { id: 'biweekly', days: 14, perDay: 249, popular: true },
+    { id: 'monthly', days: 30, perDay: 199 },
+  ];
+
+  readonly sizes: SizeOption[] = [
     {
-      id: 'weekly',
-      label: 'Weekly',
-      frequency: 'Every week',
-      priceLabel: '₹799 / week',
+      id: 'essential',
+      label: 'Essential',
+      stems: '6–8 stems',
+      extraPerDay: 0,
+      icon: '🌱',
+      description: 'A neat, everyday arrangement — perfect for desks, small tables, or pooja spaces.',
     },
     {
-      id: 'biweekly',
-      label: 'Bi-Weekly',
-      frequency: 'Every 2 weeks',
-      priceLabel: '₹1,399 / delivery',
-      saving: 'Save ₹199',
-      popular: true,
+      id: 'standard',
+      label: 'Standard',
+      stems: '12–15 stems',
+      extraPerDay: 100,
+      icon: '🌷',
+      description: 'A fuller, eye-catching bouquet — great for reception areas, dining tables, and gifting.',
     },
     {
-      id: 'monthly',
-      label: 'Monthly',
-      frequency: 'Once a month',
-      priceLabel: '₹2,199 / month',
-      saving: 'Best value',
+      id: 'premium',
+      label: 'Premium',
+      stems: '20–25 stems',
+      extraPerDay: 250,
+      icon: '💐',
+      description: 'A grand, show-stopping arrangement — designed for lobbies, events, and luxury spaces.',
     },
   ];
 
@@ -67,11 +86,37 @@ export class Subscription implements OnInit {
     return this.fixedProducts.find(p => p.id === this.selectedProductId()) ?? null;
   }
 
-  get selectedPlanOption(): PlanOption | null {
-    return this.plans.find(p => p.id === this.selectedPlan()) ?? null;
+  get selectedDurationOption(): DurationOption | null {
+    return this.durations.find(d => d.id === this.selectedDuration()) ?? null;
   }
 
-  get isStep1Valid(): boolean { return !!this.selectedPlan(); }
+  get selectedSizeOption(): SizeOption | null {
+    return this.sizes.find(s => s.id === this.selectedSize()) ?? null;
+  }
+
+  get dailyRate(): number {
+    const dur = this.selectedDurationOption;
+    const size = this.selectedSizeOption;
+    if (!dur || !size) return 0;
+    return dur.perDay + size.extraPerDay;
+  }
+
+  get totalPrice(): number {
+    const dur = this.selectedDurationOption;
+    if (!dur) return 0;
+    return this.dailyRate * dur.days;
+  }
+
+  get savingsPercent(): number {
+    const dur = this.selectedDurationOption;
+    const size = this.selectedSizeOption;
+    if (!dur || !size) return 0;
+    const weeklyRate = 299 + size.extraPerDay;
+    if (dur.id === 'weekly') return 0;
+    return Math.round((1 - this.dailyRate / weeklyRate) * 100);
+  }
+
+  get isStep1Valid(): boolean { return !!this.selectedDuration() && !!this.selectedSize(); }
 
   get isStep2Valid(): boolean {
     if (!this.selectedStyle()) return false;
@@ -82,6 +127,7 @@ export class Subscription implements OnInit {
   get isStep3Valid(): boolean {
     return this.name().trim().length >= 2 &&
       this.email().trim().includes('@') &&
+      this.phone().trim().length >= 10 &&
       this.address().trim().length >= 5;
   }
 
@@ -116,8 +162,12 @@ export class Subscription implements OnInit {
     if (n < this.step()) this.step.set(n as 1 | 2 | 3 | 4);
   }
 
-  selectPlan(id: 'weekly' | 'biweekly' | 'monthly'): void {
-    this.selectedPlan.set(id);
+  selectDuration(id: 'weekly' | 'biweekly' | 'monthly'): void {
+    this.selectedDuration.set(id);
+  }
+
+  selectSize(id: 'essential' | 'standard' | 'premium'): void {
+    this.selectedSize.set(id);
   }
 
   selectStyle(s: 'seasonal' | 'fixed'): void {
@@ -129,15 +179,24 @@ export class Subscription implements OnInit {
     this.selectedProductId.set(this.selectedProductId() === id ? null : id);
   }
 
+  getDailyRateFor(dur: DurationOption): number {
+    const size = this.selectedSizeOption;
+    return dur.perDay + (size?.extraPerDay ?? 0);
+  }
+
+  getTotalFor(dur: DurationOption): number {
+    return this.getDailyRateFor(dur) * dur.days;
+  }
+
   submit(): void {
-    if (!this.isStep3Valid || !this.selectedPlan() || !this.selectedStyle()) return;
+    if (!this.isStep3Valid || !this.selectedDuration() || !this.selectedStyle()) return;
     this.submitting.set(true);
     this.error.set('');
 
     const req: CreateSubscriptionRequest = {
       customer_email: this.email().trim(),
       customer_name: this.name().trim(),
-      plan: this.selectedPlan()!,
+      plan: this.selectedDuration()!,
       style: this.selectedStyle()!,
       fixed_product_id: this.selectedProductId() ?? undefined,
       fixed_product_name: this.selectedProduct?.name,
