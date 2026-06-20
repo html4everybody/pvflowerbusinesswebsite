@@ -7,10 +7,7 @@ import uuid
 import base64 as _base64
 import os
 import secrets
-import smtplib
 import httpx as _httpx
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
 from datetime import datetime, timedelta, timezone
 from collections import Counter
 from dotenv import load_dotenv
@@ -51,21 +48,16 @@ supabase: Client = create_client(
     os.getenv("SUPABASE_KEY")
 )
 
-# ── Gmail SMTP config ──────────────────────────────────────────────────────────
-GMAIL_USER         = os.getenv("GMAIL_USER", "")
-GMAIL_APP_PASSWORD = os.getenv("GMAIL_APP_PASSWORD", "")
-APP_URL            = os.getenv("APP_URL", "http://localhost:4200")
-GOOGLE_CLIENT_ID   = os.getenv("GOOGLE_CLIENT_ID", "")
+# ── Email config (Resend API) ──────────────────────────────────────────────────
+RESEND_API_KEY = os.getenv("RESEND_API_KEY", "")
+APP_URL        = os.getenv("APP_URL", "http://localhost:4200")
+GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "")
 
 def send_verification_email(to_email: str, first_name: str, token: str):
-    if not GMAIL_USER or not GMAIL_APP_PASSWORD:
-        print(f"[Email] Gmail not configured — skipping. Token: {token}")
+    if not RESEND_API_KEY:
+        print(f"[Email] Resend not configured — skipping. Token: {token}", flush=True)
         return
     verify_url = f"{APP_URL}/verify-email?token={token}"
-    msg = MIMEMultipart("alternative")
-    msg["Subject"] = "Verify your VivaPetals email"
-    msg["From"]    = f"VivaPetals <{GMAIL_USER}>"
-    msg["To"]      = to_email
     html = f"""
     <!DOCTYPE html>
     <html>
@@ -93,14 +85,17 @@ def send_verification_email(to_email: str, first_name: str, token: str):
     </body>
     </html>
     """
-    msg.attach(MIMEText(html, "html"))
     try:
-        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
-            server.login(GMAIL_USER, GMAIL_APP_PASSWORD)
-            server.sendmail(GMAIL_USER, to_email, msg.as_string())
-        print(f"[Email] Verification email sent to {to_email}")
+        with _httpx.Client() as client:
+            resp = client.post(
+                "https://api.resend.com/emails",
+                headers={"Authorization": f"Bearer {RESEND_API_KEY}", "Content-Type": "application/json"},
+                json={"from": "VivaPetals <orderhere@vivapetals.com>", "to": [to_email], "subject": "Verify your VivaPetals email", "html": html},
+                timeout=10
+            )
+        print(f"[Email] Resend response {resp.status_code}: {resp.text}", flush=True)
     except Exception as e:
-        print(f"[Email] Failed to send verification email: {e}")
+        print(f"[Email] Failed to send verification email: {e}", flush=True)
 
 # ── Password helpers ───────────────────────────────────────────────────────────
 def hash_password(password: str) -> str:
