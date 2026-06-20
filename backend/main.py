@@ -830,7 +830,7 @@ def forgot_password(req: ForgotPasswordRequest):
           <table width="520" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(200,75,122,0.1);">
             <tr><td style="background:linear-gradient(135deg,#c84b7a,#9c2d55);padding:32px 40px;text-align:center;">
               <div style="font-size:2rem;">🌸</div>
-              <div style="color:#fff;font-size:1.5rem;font-weight:800;margin-top:8px;">FloranFlowers</div>
+              <div style="color:#fff;font-size:1.5rem;font-weight:800;margin-top:8px;">VivaPetals</div>
             </td></tr>
             <tr><td style="padding:40px;">
               <h2 style="margin:0 0 12px;color:#1e1e1e;font-size:1.35rem;font-weight:800;">Reset your password</h2>
@@ -848,18 +848,17 @@ def forgot_password(req: ForgotPasswordRequest):
     </body>
     </html>
     """
-    msg = MIMEMultipart("alternative")
-    msg["Subject"] = "Reset your VivaPetals password"
-    msg["From"]    = f"VivaPetals <{GMAIL_USER}>"
-    msg["To"]      = req.email
-    msg.attach(MIMEText(html, "html"))
     try:
-        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
-            server.login(GMAIL_USER, GMAIL_APP_PASSWORD)
-            server.sendmail(GMAIL_USER, req.email, msg.as_string())
-        print(f"[Email] Password reset email sent to {req.email}")
+        with _httpx.Client() as client:
+            resp = client.post(
+                "https://api.resend.com/emails",
+                headers={"Authorization": f"Bearer {RESEND_API_KEY}", "Content-Type": "application/json"},
+                json={"from": "VivaPetals <orderhere@vivapetals.com>", "to": [req.email], "subject": "Reset your VivaPetals password", "html": html},
+                timeout=10
+            )
+        print(f"[Email] Reset email response {resp.status_code}: {resp.text}", flush=True)
     except Exception as e:
-        print(f"[Email] Failed to send reset email: {e}")
+        print(f"[Email] Failed to send reset email: {e}", flush=True)
 
     return { "message": "If that email is registered, a reset link has been sent." }
 
