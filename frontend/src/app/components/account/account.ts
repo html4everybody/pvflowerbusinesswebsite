@@ -1,4 +1,4 @@
-import { Component, signal } from '@angular/core';
+import { Component, OnInit, signal, computed } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
@@ -13,14 +13,16 @@ type Tab = 'profile' | 'orders';
   templateUrl: './account.html',
   styleUrl: './account.scss'
 })
-export class Account {
+export class Account implements OnInit {
   activeTab = signal<Tab>('profile');
 
+  // ── Profile ──────────────────────────────────────────────────────────────
   profileForm = { firstName: '', lastName: '' };
   profileSaving  = signal(false);
   profileSuccess = signal('');
   profileError   = signal('');
 
+  // ── Password ─────────────────────────────────────────────────────────────
   pwForm = { current: '', newPw: '', confirm: '' };
   showCurrentPw = signal(false);
   showNewPw     = signal(false);
@@ -28,6 +30,20 @@ export class Account {
   pwSaving      = signal(false);
   pwSuccess     = signal('');
   pwError       = signal('');
+
+  // ── Orders ───────────────────────────────────────────────────────────────
+  readonly STATUS_LABELS: Record<string, string> = {
+    confirmed: 'Confirmed', preparing: 'Preparing',
+    out_for_delivery: 'Out for Delivery', delivered: 'Delivered', cancelled: 'Cancelled'
+  };
+
+  orders        = signal<any[]>([]);
+  ordersLoading = signal(false);
+  ordersTab     = signal<'active' | 'cancelled'>('active');
+
+  activeOrders    = computed(() => this.orders().filter(o => o.status !== 'cancelled'));
+  cancelledOrders = computed(() => this.orders().filter(o => o.status === 'cancelled'));
+  visibleOrders   = computed(() => this.ordersTab() === 'active' ? this.activeOrders() : this.cancelledOrders());
 
   get checks() {
     const p = this.pwForm.newPw;
@@ -45,18 +61,22 @@ export class Account {
     return c.length && c.upper && c.lower && c.number && c.special;
   }
 
-  get userInitials(): string {
-    const user = this.authService.user();
-    if (!user) return '';
-    return ((user.firstName?.[0] ?? '') + (user.lastName?.[0] ?? '')).toUpperCase();
-  }
-
   constructor(public authService: AuthService, private http: HttpClient) {
     const user = this.authService.user();
     if (user) {
       this.profileForm.firstName = user.firstName;
       this.profileForm.lastName  = user.lastName;
     }
+  }
+
+  ngOnInit(): void {
+    const user = this.authService.user();
+    if (!user) return;
+    this.ordersLoading.set(true);
+    this.http.get<any[]>(`${environment.apiUrl}/api/orders?email=${encodeURIComponent(user.email)}`).subscribe({
+      next: (data) => { this.orders.set(data); this.ordersLoading.set(false); },
+      error: () => this.ordersLoading.set(false)
+    });
   }
 
   saveProfile() {
@@ -112,5 +132,15 @@ export class Account {
         this.pwError.set(err.error?.detail || 'Failed to change password.');
       }
     });
+  }
+
+  formatDate(dateStr: string): string {
+    return new Date(dateStr).toLocaleDateString('en-IN', {
+      year: 'numeric', month: 'short', day: 'numeric', timeZone: 'Asia/Kolkata'
+    });
+  }
+
+  itemCount(order: any): number {
+    return (order.items || []).reduce((sum: number, i: any) => sum + i.quantity, 0);
   }
 }
