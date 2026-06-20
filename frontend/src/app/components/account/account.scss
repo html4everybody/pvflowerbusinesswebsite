@@ -1,0 +1,115 @@
+.account-page {
+  min-height: calc(100vh - 68px);
+  background: var(--bg);
+  padding: 2.5rem 1.25rem;
+}
+
+.account-container {
+  max-width: 680px;
+  margin: 0 auto;
+}
+
+.profile-header {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+
+  .profile-avatar {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.3rem;
+    font-weight: 700;
+    flex-shrink: 0;
+    letter-spacing: 1px;
+  }
+
+  .profile-info {
+    h1 {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: var(--text);
+      margin: 0 0 0.2rem;
+    }
+
+    p {
+      font-size: 0.875rem;
+      color: var(--text-muted);
+      margin: 0;
+    }
+  }
+}
+
+.account-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.account-card {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  text-decoration: none;
+  transition: border-color 0.2s, box-shadow 0.2s, transform 0.15s;
+
+  &:hover {
+    border-color: var(--accent);
+    box-shadow: 0 2px 12px rgba(37, 99, 235, 0.1);
+    transform: translateX(2px);
+
+    .card-icon { background: var(--accent); color: #fff; }
+    .card-arrow { color: var(--accent); }
+  }
+
+  .card-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    background: var(--accent-light);
+    color: var(--accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: background 0.2s, color 0.2s;
+  }
+
+  .card-text {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+
+    .card-title {
+      font-size: 0.92rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .card-desc {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+    }
+  }
+
+  .card-arrow {
+    color: var(--text-subtle);
+    flex-shrink: 0;
+    transition: color 0.2s;
+  }
+}
