@@ -1,28 +1,117 @@
 <main class="account-page">
-  <div class="account-container">
+  <div class="account-layout">
 
-    <!-- Profile Header -->
-    <div class="profile-header">
-      <div class="profile-avatar">{{ userInitials }}</div>
-      <div class="profile-info">
-        <h1>{{ authService.user()?.firstName }} {{ authService.user()?.lastName }}</h1>
-        <p>{{ authService.user()?.email }}</p>
-      </div>
-    </div>
+    <!-- Left Sidebar -->
+    <aside class="account-sidebar">
+      <button class="sidebar-item" [class.active]="activeTab() === 'profile'" (click)="activeTab.set('profile')">Profile</button>
+      <a class="sidebar-item" routerLink="/orders">My Orders</a>
+    </aside>
 
-    <!-- Account Menu -->
-    <div class="account-grid">
+    <!-- Content -->
+    <div class="account-content">
 
-      <a routerLink="/orders" class="account-card">
-        <div class="card-icon">
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-        </div>
-        <div class="card-text">
-          <span class="card-title">My Orders</span>
-          <span class="card-desc">Track and view your orders</span>
-        </div>
-        <svg class="card-arrow" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
-      </a>
+      @if (activeTab() === 'profile') {
+        <!-- Profile Info -->
+        <section class="content-section">
+          <h2>Profile</h2>
+
+          <div class="field-row">
+            <div class="field-group">
+              <label>First Name</label>
+              <input type="text" [(ngModel)]="profileForm.firstName" name="firstName" placeholder="First name">
+            </div>
+            <div class="field-group">
+              <label>Last Name</label>
+              <input type="text" [(ngModel)]="profileForm.lastName" name="lastName" placeholder="Last name">
+            </div>
+          </div>
+
+          <div class="field-group">
+            <label>Email Address</label>
+            <input type="email" [value]="authService.user()?.email" disabled class="input-disabled">
+          </div>
+
+          @if (profileSuccess()) {
+            <div class="alert-success">{{ profileSuccess() }}</div>
+          }
+          @if (profileError()) {
+            <div class="alert-error">{{ profileError() }}</div>
+          }
+
+          <button class="btn-save" (click)="saveProfile()" [disabled]="profileSaving()">
+            {{ profileSaving() ? 'Saving...' : 'Save Changes' }}
+          </button>
+        </section>
+
+        <div class="section-divider"></div>
+
+        <!-- Change Password -->
+        <section class="content-section">
+          <h2>Change Password</h2>
+
+          <div class="field-group">
+            <label>Current Password</label>
+            <div class="input-wrap">
+              <input [type]="showCurrentPw() ? 'text' : 'password'" [(ngModel)]="pwForm.current" name="currentPw" placeholder="Enter current password">
+              <button type="button" class="eye-btn" (click)="showCurrentPw.set(!showCurrentPw())">
+                @if (showCurrentPw()) {
+                  <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                } @else {
+                  <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                }
+              </button>
+            </div>
+          </div>
+
+          <div class="field-group">
+            <label>New Password</label>
+            <div class="input-wrap">
+              <input [type]="showNewPw() ? 'text' : 'password'" [(ngModel)]="pwForm.newPw" name="newPw" placeholder="Enter new password">
+              <button type="button" class="eye-btn" (click)="showNewPw.set(!showNewPw())">
+                @if (showNewPw()) {
+                  <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                } @else {
+                  <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                }
+              </button>
+            </div>
+            @if (pwForm.newPw) {
+              <div class="pw-requirements">
+                <div class="pw-req" [class.met]="checks.length"><span class="pw-dot"></span>8+ characters</div>
+                <div class="pw-req" [class.met]="checks.upper"><span class="pw-dot"></span>Uppercase</div>
+                <div class="pw-req" [class.met]="checks.lower"><span class="pw-dot"></span>Lowercase</div>
+                <div class="pw-req" [class.met]="checks.number"><span class="pw-dot"></span>Number</div>
+                <div class="pw-req" [class.met]="checks.special"><span class="pw-dot"></span>Special char</div>
+              </div>
+            }
+          </div>
+
+          <div class="field-group">
+            <label>Confirm New Password</label>
+            <div class="input-wrap">
+              <input [type]="showConfirmPw() ? 'text' : 'password'" [(ngModel)]="pwForm.confirm" name="confirmPw" placeholder="Confirm new password">
+              <button type="button" class="eye-btn" (click)="showConfirmPw.set(!showConfirmPw())">
+                @if (showConfirmPw()) {
+                  <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                } @else {
+                  <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                }
+              </button>
+            </div>
+          </div>
+
+          @if (pwSuccess()) {
+            <div class="alert-success">{{ pwSuccess() }}</div>
+          }
+          @if (pwError()) {
+            <div class="alert-error">{{ pwError() }}</div>
+          }
+
+          <button class="btn-save" (click)="changePassword()" [disabled]="pwSaving() || !pwForm.current || !pwValid || pwForm.newPw !== pwForm.confirm">
+            {{ pwSaving() ? 'Updating...' : 'Update Password' }}
+          </button>
+        </section>
+      }
 
     </div>
   </div>
