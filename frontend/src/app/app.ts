@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, signal } from '@angular/core';
 import { Router, NavigationEnd, RouterOutlet } from '@angular/router';
 import { Header } from './components/header/header';
 import { Footer } from './components/footer/footer';
@@ -13,7 +13,10 @@ import { ToastService } from './services/toast';
 })
 export class App implements OnInit, OnDestroy {
   title = 'VivaPetals';
+  showFooter = signal(true);
   private scrollTimer: ReturnType<typeof setTimeout> | null = null;
+
+  private readonly NO_FOOTER_ROUTES = ['/signin', '/verify-email'];
 
   constructor(private router: Router, private toastService: ToastService) {}
 
@@ -27,6 +30,7 @@ export class App implements OnInit, OnDestroy {
     this.router.events.subscribe(event => {
       if (event instanceof NavigationEnd) {
         window.scrollTo({ top: 0, behavior: 'smooth' });
+        this.showFooter.set(!this.NO_FOOTER_ROUTES.some(r => event.urlAfterRedirects.startsWith(r)));
       }
     });
 
