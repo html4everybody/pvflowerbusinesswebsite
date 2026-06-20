@@ -16,6 +16,7 @@ from collections import Counter
 from dotenv import load_dotenv
 from supabase import create_client, Client
 import bcrypt
+import threading
 from twilio.rest import Client as TwilioClient
 
 load_dotenv()
@@ -103,7 +104,7 @@ def send_verification_email(to_email: str, first_name: str, token: str):
 
 # ── Password helpers ───────────────────────────────────────────────────────────
 def hash_password(password: str) -> str:
-    return bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
+    return bcrypt.hashpw(password.encode(), bcrypt.gensalt(rounds=10)).decode()
 
 def verify_password(password: str, hashed: str) -> bool:
     return bcrypt.checkpw(password.encode(), hashed.encode())
@@ -716,7 +717,7 @@ def register(req: RegisterRequest):
             "verification_token": verification_token,
             "verification_token_expires_at": token_expires
         }).eq("email", req.email).execute()
-        send_verification_email(req.email, req.firstName, verification_token)
+        threading.Thread(target=send_verification_email, args=(req.email, req.firstName, verification_token), daemon=True).start()
         return { "message": "Account created! Please check your email to verify your account." }
 
     hashed_password = hash_password(req.password)
@@ -730,11 +731,11 @@ def register(req: RegisterRequest):
         "last_name": req.lastName,
         "is_verified": False,
         "verification_token": verification_token,
-        "verification_token_expires_at": token_expires
+        "verification_token_expires_at": token_expires,
+        "referred_by_code": req.referral_code or None
     }).execute()
 
-    create_loyalty_account(req.email, req.referral_code)
-    send_verification_email(req.email, req.firstName, verification_token)
+    threading.Thread(target=send_verification_email, args=(req.email, req.firstName, verification_token), daemon=True).start()
 
     return { "message": "Account created! Please check your email to verify your account." }
 
@@ -760,6 +761,8 @@ def verify_email(token: str):
         "verification_token": None,
         "verification_token_expires_at": None
     }).eq("email", user["email"]).execute()
+
+    create_loyalty_account(user["email"], user.get("referred_by_code"))
 
     return { "message": "Email verified successfully!" }
 
