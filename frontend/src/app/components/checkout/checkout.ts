@@ -277,8 +277,7 @@ export class Checkout {
   }
 
   get maxRedeemable(): number {
-    const cap = Math.floor(this.getTotal() * 0.20) * 10;
-    return Math.min(this.loyaltyBalance(), cap);
+    return this.loyaltyBalance();
   }
 
   clampAndSetPoints(value: number): void {
