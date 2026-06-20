@@ -146,30 +146,41 @@ def award_points(email: str, points: int, type: str, description: str, order_id:
 
 def create_loyalty_account(email: str, referred_by_code: str = None) -> str:
     """Create loyalty_accounts row, award welcome bonus, handle referral signup bonus."""
+    # Skip if account already exists (prevents double-awarding on duplicate verify calls)
+    existing = supabase.table("loyalty_accounts").select("referral_code").eq("user_email", email).execute()
+    if existing.data:
+        print(f"[Loyalty] Account already exists for {email} — skipping", flush=True)
+        return existing.data[0]["referral_code"]
+
     ref_code = generate_referral_code()
-    referred_by = None
+    referrer_email = None
+
     if referred_by_code:
         referrer = supabase.table("loyalty_accounts").select("user_email").eq("referral_code", referred_by_code).execute()
         if referrer.data:
-            referred_by = referred_by_code
+            referrer_email = referrer.data[0]["user_email"]
+        else:
+            print(f"[Loyalty] Referral code {referred_by_code} not found in loyalty_accounts", flush=True)
+
     try:
         supabase.table("loyalty_accounts").insert({
             "user_email": email,
             "points_balance": 0,
             "points_earned_total": 0,
             "referral_code": ref_code,
-            "referred_by_code": referred_by
+            "referred_by_code": referred_by_code if referrer_email else None
         }).execute()
-    except Exception:
-        pass
+    except Exception as e:
+        print(f"[Loyalty] Failed to create account for {email}: {e}", flush=True)
+
     # Welcome bonus
     award_points(email, 100, "earned_welcome", "Welcome bonus for joining VivaPetals")
+
     # Referral signup bonus: 200 pts to referrer
-    if referred_by_code and referred_by:
-        referrer_result = supabase.table("loyalty_accounts").select("user_email").eq("referral_code", referred_by_code).execute()
-        if referrer_result.data:
-            referrer_email = referrer_result.data[0]["user_email"]
-            award_points(referrer_email, 200, "earned_referral_signup", f"Referral signup bonus — {email} joined")
+    if referrer_email:
+        print(f"[Loyalty] Awarding 200 referral pts to {referrer_email} for referring {email}", flush=True)
+        award_points(referrer_email, 200, "earned_referral_signup", f"Referral signup bonus — {email} joined")
+
     return ref_code
 
 def send_notifications(order_id: str, status: str, phone: str):
