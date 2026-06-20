@@ -5,7 +5,7 @@
     <div class="container">
       <span class="sub-tag">🌸 Daily Flower Delivery</span>
       <h1>Fresh Flowers at Your Door, <em>Every Single Day</em></h1>
-      <p>Whether you run a restaurant, manage an office, worship daily, or simply love flowers at home — we bring farm-fresh, handpicked blooms to your doorstep every morning. Pick your duration, choose your size, and leave the rest to us.</p>
+      <p>Whether you run a restaurant, manage an office, worship daily, or simply love flowers at home — we bring farm-fresh, handpicked blooms to your doorstep every morning. Pick your duration, choose what you need, and leave the rest to us.</p>
       <div class="sub-perks">
         <span>✓ Fresh flowers every morning</span>
         <span>✓ No commitments beyond your plan</span>
@@ -40,8 +40,8 @@
           <span>Hotels</span>
         </div>
         <div class="trust-item">
-          <span class="trust-icon">🎉</span>
-          <span>Events</span>
+          <span class="trust-icon">🛒</span>
+          <span>Malls</span>
         </div>
       </div>
       <p class="trust-caption">Trusted by businesses and families across Hyderabad</p>
@@ -68,8 +68,8 @@
                 }
               </div>
               <span class="step-label">
-                @if (s === 1) { Plan }
-                @if (s === 2) { Style }
+                @if (s === 1) { Duration }
+                @if (s === 2) { Products }
                 @if (s === 3) { Details }
                 @if (s === 4) { Confirm }
               </span>
@@ -81,33 +81,36 @@
         </div>
       }
 
-      <!-- ── Step 1: Duration + Size ──────────────────────────────────── -->
+      <!-- ── Step 1: Choose Duration ──────────────────────────────────── -->
       @if (step() === 1) {
         <div class="wizard-step">
-
-          <!-- Duration Selection -->
           <div class="step-header">
             <h2>How long do you need daily flowers?</h2>
-            <p>Every plan includes fresh flowers delivered to your door every single morning. Commit longer, pay less per day.</p>
+            <p>Every plan delivers fresh flowers to your door every single morning. Commit longer, save more.</p>
           </div>
 
           <div class="duration-cards">
             @for (dur of durations; track dur.id) {
               <div class="duration-card"
                    [class.selected]="selectedDuration() === dur.id"
-                   [class.popular]="!!dur.popular"
+                   [class.popular]="dur.id === 'monthly'"
                    (click)="selectDuration(dur.id)">
-                @if (dur.popular) {
-                  <span class="popular-badge">Most Popular</span>
+                @if (dur.id === 'monthly') {
+                  <span class="popular-badge">Best Value</span>
                 }
-                <div class="dur-days">{{ dur.days }}</div>
-                <div class="dur-label">Days</div>
-                <div class="dur-price">₹{{ getDailyRateFor(dur) }}<span>/day</span></div>
-                <div class="dur-total">Total: ₹{{ getTotalFor(dur).toLocaleString('en-IN') }}</div>
-                @if (dur.id !== 'weekly') {
-                  <span class="dur-saving">
-                    Save {{ dur.id === 'biweekly' ? '17%' : '33%' }} vs 7-day
-                  </span>
+                @if (dur.id === 'biweekly') {
+                  <span class="popular-badge popular-badge-green">Popular</span>
+                }
+                <h3>{{ dur.label }}</h3>
+                <p class="dur-subtitle">{{ dur.subtitle }}</p>
+                <div class="dur-days-row">
+                  <span class="dur-days-num">{{ dur.days }}</span>
+                  <span class="dur-days-label">days</span>
+                </div>
+                @if (dur.discount > 0) {
+                  <span class="dur-discount">{{ dur.discount }}% off on all products</span>
+                } @else {
+                  <span class="dur-no-discount">Standard pricing</span>
                 }
                 <div class="plan-radio" [class.checked]="selectedDuration() === dur.id">
                   <div class="radio-inner"></div>
@@ -116,120 +119,140 @@
             }
           </div>
 
-          <!-- Size Selection -->
-          <div class="step-header size-header">
-            <h2>Choose your bouquet size</h2>
-            <p>How grand do you want each day's delivery to be?</p>
-          </div>
-
-          <div class="size-cards">
-            @for (size of sizes; track size.id) {
-              <div class="size-card"
-                   [class.selected]="selectedSize() === size.id"
-                   (click)="selectSize(size.id)">
-                <span class="size-icon">{{ size.icon }}</span>
-                <h3>{{ size.label }}</h3>
-                <span class="size-stems">{{ size.stems }}</span>
-                @if (size.extraPerDay > 0) {
-                  <span class="size-extra">+₹{{ size.extraPerDay }}/day</span>
-                } @else {
-                  <span class="size-extra included">Included</span>
-                }
-                <p class="size-desc">{{ size.description }}</p>
-                <div class="plan-radio" [class.checked]="selectedSize() === size.id">
-                  <div class="radio-inner"></div>
-                </div>
-              </div>
-            }
-          </div>
-
-          <!-- Live Price Summary -->
-          @if (selectedDuration() && selectedSize()) {
-            <div class="price-summary">
-              <div class="price-summary-inner">
-                <div class="ps-left">
-                  <span class="ps-label">Your daily rate</span>
-                  <span class="ps-daily">₹{{ dailyRate }}/day</span>
-                </div>
-                <div class="ps-right">
-                  <span class="ps-label">Total for {{ selectedDurationOption?.days }} days</span>
-                  <span class="ps-total">₹{{ totalPrice.toLocaleString('en-IN') }}</span>
-                </div>
-                @if (savingsPercent > 0) {
-                  <div class="ps-saving">You save {{ savingsPercent }}% compared to the 7-day plan</div>
-                }
-              </div>
-            </div>
-          }
-
           <div class="step-actions">
             <button class="btn-next" [disabled]="!isStep1Valid" (click)="nextStep()">
-              Continue — Choose Style →
+              Continue — Select Products →
             </button>
           </div>
         </div>
       }
 
-      <!-- ── Step 2: Choose Style ────────────────────────────────────── -->
+      <!-- ── Step 2: Select Products ──────────────────────────────────── -->
       @if (step() === 2) {
         <div class="wizard-step">
           <div class="step-header">
-            <h2>What kind of flowers each day?</h2>
-            <p>Let our florists surprise you daily, or pick one arrangement you love and get it every time.</p>
+            <h2>What would you like delivered daily?</h2>
+            <p>Select one or more products. Set the weight, size, or quantity for each — we'll calculate your daily cost.</p>
           </div>
 
-          <div class="style-cards">
-            <div class="style-card" [class.selected]="selectedStyle() === 'seasonal'" (click)="selectStyle('seasonal')">
-              <span class="style-icon">🌿</span>
-              <h3>Florist's Pick</h3>
-              <p>Our expert florists hand-select the freshest blooms available each morning. Every day is a beautiful surprise — always seasonal, always stunning.</p>
-              <ul class="style-perks">
-                <li>✓ Curated daily by expert florists</li>
-                <li>✓ Freshest seasonal varieties</li>
-                <li>✓ Something new every delivery</li>
-              </ul>
-              <div class="plan-radio" [class.checked]="selectedStyle() === 'seasonal'">
-                <div class="radio-inner"></div>
-              </div>
-            </div>
-
-            <div class="style-card" [class.selected]="selectedStyle() === 'fixed'" (click)="selectStyle('fixed')">
-              <span class="style-icon">💝</span>
-              <h3>Your Favourite</h3>
-              <p>Found an arrangement you love? Pick it once, and we'll deliver the exact same stunning bouquet to your door every single day — consistent, reliable, perfect.</p>
-              <ul class="style-perks">
-                <li>✓ Same beautiful arrangement daily</li>
-                <li>✓ Guaranteed availability</li>
-                <li>✓ Perfect for brand consistency</li>
-              </ul>
-              <div class="plan-radio" [class.checked]="selectedStyle() === 'fixed'">
-                <div class="radio-inner"></div>
-              </div>
-            </div>
+          <!-- Category Filters -->
+          <div class="cat-filters">
+            @for (cat of categories; track cat) {
+              <button class="cat-btn" [class.active]="activeCategory() === cat" (click)="setCategory(cat)">
+                {{ cat }}
+              </button>
+            }
           </div>
 
-          @if (selectedStyle() === 'fixed') {
-            <div class="product-picker">
-              <h3>Choose Your Arrangement</h3>
-              <p class="picker-hint">Select the arrangement you'd like delivered every day.</p>
-              <div class="picker-grid">
-                @for (product of fixedProducts; track product.id) {
-                  <div class="picker-card"
-                       [class.selected]="selectedProductId() === product.id"
-                       (click)="toggleFixedProduct(product.id)">
-                    <img [src]="product.image" [alt]="product.name" loading="lazy">
-                    <div class="picker-info">
-                      <span class="picker-name">{{ product.name }}</span>
-                      <span class="picker-price">₹{{ product.price.toFixed(2) }}</span>
+          <!-- Product Grid -->
+          <div class="product-grid">
+            @for (product of filteredProducts; track product.id) {
+              <div class="prod-card" [class.selected]="isProductSelected(product.id)" (click)="toggleProduct(product)">
+                <div class="prod-img-wrap">
+                  <img [src]="product.image" [alt]="product.name" loading="lazy">
+                  @if (isProductSelected(product.id)) {
+                    <div class="prod-check">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5">
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                      </svg>
                     </div>
-                    @if (selectedProductId() === product.id) {
-                      <div class="picker-check">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5">
-                          <polyline points="20 6 9 17 4 12"></polyline>
-                        </svg>
+                  }
+                </div>
+                <div class="prod-info">
+                  <span class="prod-name">{{ product.name }}</span>
+                  <span class="prod-cat">{{ product.category }}</span>
+                  <span class="prod-price">
+                    ₹{{ product.price }}
+                    @if (product.category === 'Flowers') { /kg }
+                    @if (product.category === 'Bouquets') { /pc }
+                    @if (product.category !== 'Flowers' && product.category !== 'Bouquets') { /pc }
+                  </span>
+                </div>
+              </div>
+            }
+          </div>
+
+          <!-- Selected Products Configuration -->
+          @if (selections().length > 0) {
+            <div class="config-section">
+              <h3>Configure your selections</h3>
+              <p class="config-hint">Set the right amount for each product you've chosen.</p>
+
+              <div class="config-list">
+                @for (sel of selections(); track sel.product.id) {
+                  <div class="config-item">
+                    <div class="config-left">
+                      <img [src]="sel.product.image" [alt]="sel.product.name">
+                      <div class="config-details">
+                        <span class="config-name">{{ sel.product.name }}</span>
+                        <span class="config-cat">{{ sel.product.category }}</span>
                       </div>
-                    }
+                    </div>
+
+                    <div class="config-right">
+                      <!-- Flowers → Weight -->
+                      @if (sel.product.category === 'Flowers') {
+                        <label>Weight (kg)</label>
+                        <select [value]="sel.weight" (change)="updateWeight(sel.product.id, +$any($event).target.value)" (click)="$event.stopPropagation()">
+                          @for (w of weightOptions; track w) {
+                            <option [value]="w">{{ w }} kg</option>
+                          }
+                        </select>
+                      }
+
+                      <!-- Bouquets → Size -->
+                      @if (sel.product.category === 'Bouquets') {
+                        <label>Size</label>
+                        <div class="size-btns">
+                          @for (opt of sizeOptions; track opt.id) {
+                            <button class="size-btn" [class.active]="sel.size === opt.id"
+                                    (click)="$event.stopPropagation(); updateSize(sel.product.id, opt.id)">
+                              {{ opt.label }}
+                            </button>
+                          }
+                        </div>
+                      }
+
+                      <!-- Garlands, Decoration, Gifts → Quantity -->
+                      @if (sel.product.category !== 'Flowers' && sel.product.category !== 'Bouquets') {
+                        <label>Quantity</label>
+                        <div class="qty-control">
+                          <button (click)="$event.stopPropagation(); updateQuantity(sel.product.id, sel.quantity - 1)">−</button>
+                          <span>{{ sel.quantity }}</span>
+                          <button (click)="$event.stopPropagation(); updateQuantity(sel.product.id, sel.quantity + 1)">+</button>
+                        </div>
+                      }
+
+                      <div class="config-cost">₹{{ getItemDailyCost(sel) }}/day</div>
+                    </div>
+
+                    <button class="config-remove" (click)="$event.stopPropagation(); toggleProduct(sel.product)" title="Remove">✕</button>
                   </div>
+                }
+              </div>
+
+              <!-- Price Summary -->
+              <div class="price-summary">
+                <div class="ps-row">
+                  <span>Daily subtotal</span>
+                  <span>₹{{ dailySubtotal }}</span>
+                </div>
+                @if (discountPercent > 0) {
+                  <div class="ps-row ps-discount">
+                    <span>{{ selectedDurationOption?.label }} discount ({{ discountPercent }}%)</span>
+                    <span>−₹{{ dailySubtotal - dailyTotal }}</span>
+                  </div>
+                }
+                <div class="ps-row ps-daily">
+                  <span>Your daily cost</span>
+                  <span>₹{{ dailyTotal }}/day</span>
+                </div>
+                <div class="ps-row ps-grand">
+                  <span>Total for {{ selectedDurationOption?.days }} days</span>
+                  <span>₹{{ grandTotal.toLocaleString('en-IN') }}</span>
+                </div>
+                @if (discountAmount > 0) {
+                  <div class="ps-saving">You save ₹{{ discountAmount.toLocaleString('en-IN') }} with the {{ selectedDurationOption?.label }} plan!</div>
                 }
               </div>
             </div>
@@ -289,7 +312,7 @@
               <textarea [value]="instructions()"
                         (input)="instructions.set($any($event).target.value)"
                         rows="2"
-                        placeholder="e.g. Leave at reception, deliver before 8 AM, no lilies please"></textarea>
+                        placeholder="e.g. Leave at reception, deliver before 8 AM, avoid certain flowers"></textarea>
             </div>
           </div>
 
@@ -317,28 +340,47 @@
 
             <div class="review-card">
               <div class="review-row">
-                <span class="review-label">Duration</span>
-                <span class="review-val">{{ selectedDurationOption?.days }} days — fresh flowers every morning</span>
+                <span class="review-label">Plan</span>
+                <span class="review-val">{{ selectedDurationOption?.label }} — {{ selectedDurationOption?.days }} days of daily delivery</span>
               </div>
+              @if (discountPercent > 0) {
+                <div class="review-row">
+                  <span class="review-label">Discount</span>
+                  <span class="review-val review-discount">{{ discountPercent }}% off on all products</span>
+                </div>
+              }
+              <div class="review-divider"></div>
+
+              <!-- Items -->
+              @for (sel of selections(); track sel.product.id) {
+                <div class="review-row">
+                  <span class="review-label">{{ sel.product.category }}</span>
+                  <span class="review-val">
+                    {{ sel.product.name }}
+                    @if (sel.product.category === 'Flowers') { — {{ sel.weight }} kg }
+                    @if (sel.product.category === 'Bouquets') { — {{ sel.size }} }
+                    @if (sel.product.category !== 'Flowers' && sel.product.category !== 'Bouquets') { × {{ sel.quantity }} }
+                    <span class="review-item-cost">₹{{ getItemDailyCost(sel) }}/day</span>
+                  </span>
+                </div>
+              }
+
+              <div class="review-divider"></div>
               <div class="review-row">
-                <span class="review-label">Bouquet</span>
-                <span class="review-val">{{ selectedSizeOption?.label }} ({{ selectedSizeOption?.stems }})</span>
-              </div>
-              <div class="review-row">
-                <span class="review-label">Style</span>
-                <span class="review-val">
-                  @if (selectedStyle() === 'seasonal') { Florist's Pick — daily surprise }
-                  @if (selectedStyle() === 'fixed') { Your Favourite — {{ selectedProduct?.name }} }
-                </span>
-              </div>
-              <div class="review-row">
-                <span class="review-label">Daily Rate</span>
-                <span class="review-val">₹{{ dailyRate }}/day</span>
+                <span class="review-label">Daily</span>
+                <span class="review-val">₹{{ dailyTotal }}/day</span>
               </div>
               <div class="review-row review-total">
                 <span class="review-label">Total</span>
-                <span class="review-val">₹{{ totalPrice.toLocaleString('en-IN') }}</span>
+                <span class="review-val">₹{{ grandTotal.toLocaleString('en-IN') }}</span>
               </div>
+              @if (discountAmount > 0) {
+                <div class="review-row">
+                  <span class="review-label">Savings</span>
+                  <span class="review-val review-discount">₹{{ discountAmount.toLocaleString('en-IN') }} saved</span>
+                </div>
+              }
+
               <div class="review-divider"></div>
               <div class="review-row">
                 <span class="review-label">Name</span>
@@ -381,9 +423,9 @@
           <div class="success-state">
             <div class="success-icon">🎉</div>
             <h2>You're all set!</h2>
-            <p>Your {{ selectedDurationOption?.days }}-day daily flower delivery has been confirmed. Your first delivery arrives on:</p>
+            <p>Your {{ selectedDurationOption?.label?.toLowerCase() }} flower delivery has been confirmed. Your first delivery arrives on:</p>
             <div class="success-date">{{ formatDate(nextDelivery()) }}</div>
-            <p class="success-sub">We'll deliver fresh {{ selectedSizeOption?.label?.toLowerCase() }} bouquets ({{ selectedSizeOption?.stems }}) to your door every morning for the next {{ selectedDurationOption?.days }} days. Confirmation sent to <strong>{{ email() }}</strong>.</p>
+            <p class="success-sub">We'll deliver your selected products to your door every morning for the next {{ selectedDurationOption?.days }} days. Confirmation sent to <strong>{{ email() }}</strong>.</p>
             <div class="success-actions">
               <a routerLink="/my-subscriptions" class="btn-manage">Manage Subscriptions</a>
               <a routerLink="/" class="btn-home">Back to Shop</a>

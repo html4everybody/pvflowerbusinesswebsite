@@ -18,14 +18,27 @@ export interface Subscription {
   created_at: string;
 }
 
+export interface SubscriptionItem {
+  product_id: number;
+  product_name: string;
+  category: string;
+  weight_kg?: number;
+  size?: string;
+  quantity?: number;
+  daily_cost: number;
+}
+
 export interface CreateSubscriptionRequest {
   customer_email: string;
   customer_name: string;
+  customer_phone: string;
   plan: string;
-  style: string;
-  fixed_product_id?: number;
-  fixed_product_name?: string;
+  items: SubscriptionItem[];
   address: string;
+  instructions?: string;
+  daily_total: number;
+  grand_total: number;
+  discount_percent: number;
 }
 
 @Injectable({ providedIn: 'root' })

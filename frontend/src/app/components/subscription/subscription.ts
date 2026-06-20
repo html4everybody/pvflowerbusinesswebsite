@@ -1,25 +1,24 @@
 import { Component, OnInit, signal, computed } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../services/auth';
-import { SubscriptionService, CreateSubscriptionRequest } from '../../services/subscription';
+import { SubscriptionService, CreateSubscriptionRequest, SubscriptionItem } from '../../services/subscription';
 import { ToastService } from '../../services/toast';
 import { ProductService } from '../../services/product';
 import { Product } from '../../models/product.model';
 
 interface DurationOption {
   id: 'weekly' | 'biweekly' | 'monthly';
+  label: string;
+  subtitle: string;
   days: number;
-  perDay: number;
-  popular?: boolean;
+  discount: number;
 }
 
-interface SizeOption {
-  id: 'essential' | 'standard' | 'premium';
-  label: string;
-  stems: string;
-  extraPerDay: number;
-  icon: string;
-  description: string;
+interface ProductSelection {
+  product: Product;
+  weight: number;       // for Flowers (kg)
+  size: string;         // for Bouquets (small/medium/large)
+  quantity: number;     // for Garlands, Decoration, Gifts
 }
 
 @Component({
@@ -36,93 +35,118 @@ export class Subscription implements OnInit {
   nextDelivery = signal('');
 
   selectedDuration = signal<'weekly' | 'biweekly' | 'monthly' | null>(null);
-  selectedSize = signal<'essential' | 'standard' | 'premium' | null>(null);
-  selectedStyle = signal<'seasonal' | 'fixed' | null>(null);
-  selectedProductId = signal<number | null>(null);
+  selections = signal<ProductSelection[]>([]);
+  activeCategory = signal<string>('All');
 
   name = signal('');
   email = signal('');
-  address = signal('');
   phone = signal('');
+  address = signal('');
   instructions = signal('');
 
   readonly durations: DurationOption[] = [
-    { id: 'weekly', days: 7, perDay: 299 },
-    { id: 'biweekly', days: 14, perDay: 249, popular: true },
-    { id: 'monthly', days: 30, perDay: 199 },
-  ];
-
-  readonly sizes: SizeOption[] = [
     {
-      id: 'essential',
-      label: 'Essential',
-      stems: '6–8 stems',
-      extraPerDay: 0,
-      icon: '🌱',
-      description: 'A neat, everyday arrangement — perfect for desks, small tables, or pooja spaces.',
+      id: 'weekly',
+      label: 'Weekly',
+      subtitle: 'Fresh flowers every day for 1 week',
+      days: 7,
+      discount: 0,
     },
     {
-      id: 'standard',
-      label: 'Standard',
-      stems: '12–15 stems',
-      extraPerDay: 100,
-      icon: '🌷',
-      description: 'A fuller, eye-catching bouquet — great for reception areas, dining tables, and gifting.',
+      id: 'biweekly',
+      label: 'Bi-Weekly',
+      subtitle: 'Fresh flowers every day for 2 weeks',
+      days: 14,
+      discount: 10,
     },
     {
-      id: 'premium',
-      label: 'Premium',
-      stems: '20–25 stems',
-      extraPerDay: 250,
-      icon: '💐',
-      description: 'A grand, show-stopping arrangement — designed for lobbies, events, and luxury spaces.',
+      id: 'monthly',
+      label: 'Monthly',
+      subtitle: 'Fresh flowers every day for 1 full month',
+      days: 30,
+      discount: 20,
     },
   ];
 
-  fixedProducts: Product[] = [];
+  readonly weightOptions = [0.25, 0.5, 1, 1.5, 2, 3, 5];
+  readonly sizeOptions = [
+    { id: 'small', label: 'Small', multiplier: 0.7 },
+    { id: 'medium', label: 'Medium', multiplier: 1.0 },
+    { id: 'large', label: 'Large', multiplier: 1.4 },
+  ];
 
-  get selectedProduct(): Product | null {
-    if (!this.selectedProductId()) return null;
-    return this.fixedProducts.find(p => p.id === this.selectedProductId()) ?? null;
-  }
+  allProducts: Product[] = [];
+  categories: string[] = [];
 
   get selectedDurationOption(): DurationOption | null {
     return this.durations.find(d => d.id === this.selectedDuration()) ?? null;
   }
 
-  get selectedSizeOption(): SizeOption | null {
-    return this.sizes.find(s => s.id === this.selectedSize()) ?? null;
+  get filteredProducts(): Product[] {
+    if (this.activeCategory() === 'All') return this.allProducts;
+    return this.allProducts.filter(p => p.category === this.activeCategory());
   }
 
-  get dailyRate(): number {
-    const dur = this.selectedDurationOption;
-    const size = this.selectedSizeOption;
-    if (!dur || !size) return 0;
-    return dur.perDay + size.extraPerDay;
+  isProductSelected(productId: number): boolean {
+    return this.selections().some(s => s.product.id === productId);
   }
 
-  get totalPrice(): number {
+  getSelection(productId: number): ProductSelection | undefined {
+    return this.selections().find(s => s.product.id === productId);
+  }
+
+  getInputType(category: string): 'weight' | 'size' | 'quantity' {
+    if (category === 'Flowers') return 'weight';
+    if (category === 'Bouquets') return 'size';
+    return 'quantity';
+  }
+
+  getInputLabel(category: string): string {
+    if (category === 'Flowers') return 'Weight (kg)';
+    if (category === 'Bouquets') return 'Size';
+    return 'Quantity';
+  }
+
+  getItemDailyCost(sel: ProductSelection): number {
+    const cat = sel.product.category;
+    if (cat === 'Flowers') {
+      return Math.round(sel.product.price * sel.weight);
+    } else if (cat === 'Bouquets') {
+      const opt = this.sizeOptions.find(s => s.id === sel.size);
+      return Math.round(sel.product.price * (opt?.multiplier ?? 1));
+    } else {
+      return Math.round(sel.product.price * sel.quantity);
+    }
+  }
+
+  get dailySubtotal(): number {
+    return this.selections().reduce((sum, sel) => sum + this.getItemDailyCost(sel), 0);
+  }
+
+  get discountPercent(): number {
+    return this.selectedDurationOption?.discount ?? 0;
+  }
+
+  get dailyTotal(): number {
+    const subtotal = this.dailySubtotal;
+    return Math.round(subtotal * (1 - this.discountPercent / 100));
+  }
+
+  get grandTotal(): number {
     const dur = this.selectedDurationOption;
     if (!dur) return 0;
-    return this.dailyRate * dur.days;
+    return this.dailyTotal * dur.days;
   }
 
-  get savingsPercent(): number {
+  get discountAmount(): number {
     const dur = this.selectedDurationOption;
-    const size = this.selectedSizeOption;
-    if (!dur || !size) return 0;
-    const weeklyRate = 299 + size.extraPerDay;
-    if (dur.id === 'weekly') return 0;
-    return Math.round((1 - this.dailyRate / weeklyRate) * 100);
+    if (!dur) return 0;
+    return (this.dailySubtotal - this.dailyTotal) * dur.days;
   }
 
-  get isStep1Valid(): boolean { return !!this.selectedDuration() && !!this.selectedSize(); }
+  get isStep1Valid(): boolean { return !!this.selectedDuration(); }
 
-  get isStep2Valid(): boolean {
-    if (!this.selectedStyle()) return false;
-    if (this.selectedStyle() === 'fixed' && !this.selectedProductId()) return false;
-    return true;
-  }
+  get isStep2Valid(): boolean { return this.selections().length > 0; }
 
   get isStep3Valid(): boolean {
     return this.name().trim().length >= 2 &&
@@ -145,7 +169,8 @@ export class Subscription implements OnInit {
       this.name.set(user.firstName ?? '');
       this.email.set(user.email ?? '');
     }
-    this.fixedProducts = this.productService.getProducts().filter(p => p.inStock).slice(0, 18);
+    this.allProducts = this.productService.getProducts().filter(p => p.inStock);
+    this.categories = ['All', ...this.productService.getCategories()];
   }
 
   nextStep(): void {
@@ -166,41 +191,72 @@ export class Subscription implements OnInit {
     this.selectedDuration.set(id);
   }
 
-  selectSize(id: 'essential' | 'standard' | 'premium'): void {
-    this.selectedSize.set(id);
+  setCategory(cat: string): void {
+    this.activeCategory.set(cat);
   }
 
-  selectStyle(s: 'seasonal' | 'fixed'): void {
-    this.selectedStyle.set(s);
-    if (s === 'seasonal') this.selectedProductId.set(null);
+  toggleProduct(product: Product): void {
+    const current = this.selections();
+    const exists = current.findIndex(s => s.product.id === product.id);
+    if (exists >= 0) {
+      this.selections.set(current.filter(s => s.product.id !== product.id));
+    } else {
+      const newSel: ProductSelection = {
+        product,
+        weight: 0.5,
+        size: 'medium',
+        quantity: 1,
+      };
+      this.selections.set([...current, newSel]);
+    }
   }
 
-  toggleFixedProduct(id: number): void {
-    this.selectedProductId.set(this.selectedProductId() === id ? null : id);
+  updateWeight(productId: number, weight: number): void {
+    this.selections.update(list =>
+      list.map(s => s.product.id === productId ? { ...s, weight } : s)
+    );
   }
 
-  getDailyRateFor(dur: DurationOption): number {
-    const size = this.selectedSizeOption;
-    return dur.perDay + (size?.extraPerDay ?? 0);
+  updateSize(productId: number, size: string): void {
+    this.selections.update(list =>
+      list.map(s => s.product.id === productId ? { ...s, size } : s)
+    );
   }
 
-  getTotalFor(dur: DurationOption): number {
-    return this.getDailyRateFor(dur) * dur.days;
+  updateQuantity(productId: number, qty: number): void {
+    if (qty < 1) qty = 1;
+    if (qty > 50) qty = 50;
+    this.selections.update(list =>
+      list.map(s => s.product.id === productId ? { ...s, quantity: qty } : s)
+    );
   }
 
   submit(): void {
-    if (!this.isStep3Valid || !this.selectedDuration() || !this.selectedStyle()) return;
+    if (!this.isStep3Valid || !this.selectedDuration() || !this.isStep2Valid) return;
     this.submitting.set(true);
     this.error.set('');
+
+    const items: SubscriptionItem[] = this.selections().map(sel => ({
+      product_id: sel.product.id,
+      product_name: sel.product.name,
+      category: sel.product.category,
+      weight_kg: sel.product.category === 'Flowers' ? sel.weight : undefined,
+      size: sel.product.category === 'Bouquets' ? sel.size : undefined,
+      quantity: !['Flowers', 'Bouquets'].includes(sel.product.category) ? sel.quantity : undefined,
+      daily_cost: this.getItemDailyCost(sel),
+    }));
 
     const req: CreateSubscriptionRequest = {
       customer_email: this.email().trim(),
       customer_name: this.name().trim(),
+      customer_phone: this.phone().trim(),
       plan: this.selectedDuration()!,
-      style: this.selectedStyle()!,
-      fixed_product_id: this.selectedProductId() ?? undefined,
-      fixed_product_name: this.selectedProduct?.name,
+      items,
       address: this.address().trim(),
+      instructions: this.instructions().trim() || undefined,
+      daily_total: this.dailyTotal,
+      grand_total: this.grandTotal,
+      discount_percent: this.discountPercent,
     };
 
     this.subscriptionService.create(req).subscribe({
