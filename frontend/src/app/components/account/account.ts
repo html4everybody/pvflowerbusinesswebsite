@@ -39,11 +39,16 @@ export class Account implements OnInit {
 
   orders        = signal<any[]>([]);
   ordersLoading = signal(false);
-  ordersTab     = signal<'active' | 'cancelled'>('active');
+  orderSearch   = signal('');
+  orderStatus   = signal('all');
 
-  activeOrders    = computed(() => this.orders().filter(o => o.status !== 'cancelled'));
-  cancelledOrders = computed(() => this.orders().filter(o => o.status === 'cancelled'));
-  visibleOrders   = computed(() => this.ordersTab() === 'active' ? this.activeOrders() : this.cancelledOrders());
+  visibleOrders = computed(() => {
+    let list = this.orders();
+    const q = this.orderSearch().trim().toLowerCase();
+    if (q) list = list.filter(o => o.id.toLowerCase().includes(q));
+    if (this.orderStatus() !== 'all') list = list.filter(o => o.status === this.orderStatus());
+    return list;
+  });
 
   get checks() {
     const p = this.pwForm.newPw;

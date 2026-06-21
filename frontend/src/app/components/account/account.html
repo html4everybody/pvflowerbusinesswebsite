@@ -127,15 +127,22 @@
       @if (activeTab() === 'orders') {
         <h1 class="content-title">My Orders</h1>
 
-        <div class="orders-tabs">
-          <button class="orders-tab-btn" [class.active]="ordersTab() === 'active'" (click)="ordersTab.set('active')">
-            All Orders
-            @if (activeOrders().length > 0) { <span class="orders-badge">{{ activeOrders().length }}</span> }
-          </button>
-          <button class="orders-tab-btn" [class.active]="ordersTab() === 'cancelled'" (click)="ordersTab.set('cancelled')">
-            Cancelled
-            @if (cancelledOrders().length > 0) { <span class="orders-badge">{{ cancelledOrders().length }}</span> }
-          </button>
+        <div class="orders-toolbar">
+          <div class="orders-search-wrap">
+            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" placeholder="Search by order ID..." [value]="orderSearch()" (input)="orderSearch.set($any($event.target).value)">
+            @if (orderSearch()) {
+              <button class="orders-search-clear" (click)="orderSearch.set('')">×</button>
+            }
+          </div>
+          <select class="orders-status-filter" [value]="orderStatus()" (change)="orderStatus.set($any($event.target).value)">
+            <option value="all">All Status</option>
+            <option value="confirmed">Confirmed</option>
+            <option value="preparing">Preparing</option>
+            <option value="out_for_delivery">Out for Delivery</option>
+            <option value="delivered">Delivered</option>
+            <option value="cancelled">Cancelled</option>
+          </select>
         </div>
 
         @if (ordersLoading()) {
@@ -145,7 +152,7 @@
           </div>
         } @else if (visibleOrders().length === 0) {
           <div class="orders-empty">
-            <p>{{ ordersTab() === 'active' ? 'No orders yet.' : 'No cancelled orders.' }}</p>
+            <p>{{ orderSearch() || orderStatus() !== 'all' ? 'No orders match your search.' : 'No orders yet.' }}</p>
           </div>
         } @else {
           <div class="orders-list">
