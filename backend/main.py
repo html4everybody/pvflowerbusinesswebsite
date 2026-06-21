@@ -1006,6 +1006,8 @@ def confirm_email(token: str):
         "email_change_token": None,
         "email_change_token_expires_at": None
     }).eq("email", old_email).execute()
+    # Backfill user_id on old orders that only have the old email
+    supabase.table("orders").update({"user_id": user["id"]}).eq("customer_email", old_email).is_("user_id", "null").execute()
     new_token = create_token(new_email)
     return {"message": "Email updated successfully.", "email": new_email, "token": new_token}
 
