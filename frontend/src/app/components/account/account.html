@@ -27,38 +27,51 @@
         <h1 class="content-title">Profile</h1>
 
         <div class="profile-card">
-          <p class="card-title">Personal Info</p>
-
-          <div class="field-row">
-            <div class="field-group">
-              <label>First Name</label>
-              <input type="text" [(ngModel)]="profileForm.firstName" name="firstName" placeholder="First name">
-            </div>
-            <div class="field-group">
-              <label>Last Name</label>
-              <input type="text" [(ngModel)]="profileForm.lastName" name="lastName" placeholder="Last name">
-            </div>
-          </div>
-
-          <div class="field-group">
-            <label>Email Address</label>
-            <input type="email" [value]="authService.user()?.email" disabled class="input-disabled">
-          </div>
-
-          @if (profileSuccess()) {
-            <div class="alert-success">{{ profileSuccess() }}</div>
-          }
-          @if (profileError()) {
-            <div class="alert-error">{{ profileError() }}</div>
-          }
-
-          <button class="btn-save" (click)="saveProfile()" [disabled]="profileSaving()">
-            {{ profileSaving() ? 'Saving...' : 'Save Changes' }}
+          <button class="card-header" (click)="personalInfoOpen.set(!personalInfoOpen())">
+            <span class="card-title">Personal Info</span>
+            <svg class="card-chevron" [class.open]="personalInfoOpen()" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
           </button>
+
+          @if (personalInfoOpen()) {
+            <div class="card-body">
+              <div class="field-row">
+                <div class="field-group">
+                  <label>First Name</label>
+                  <input type="text" [(ngModel)]="profileForm.firstName" name="firstName" placeholder="First name">
+                </div>
+                <div class="field-group">
+                  <label>Last Name</label>
+                  <input type="text" [(ngModel)]="profileForm.lastName" name="lastName" placeholder="Last name">
+                </div>
+              </div>
+
+              <div class="field-group">
+                <label>Email Address</label>
+                <input type="email" [value]="authService.user()?.email" disabled class="input-disabled">
+              </div>
+
+              @if (profileSuccess()) {
+                <div class="alert-success">{{ profileSuccess() }}</div>
+              }
+              @if (profileError()) {
+                <div class="alert-error">{{ profileError() }}</div>
+              }
+
+              <button class="btn-save" (click)="saveProfile()" [disabled]="profileSaving()">
+                {{ profileSaving() ? 'Saving...' : 'Save Changes' }}
+              </button>
+            </div>
+          }
         </div>
 
         <div class="profile-card">
-          <p class="card-title">Update Password</p>
+          <button class="card-header" (click)="updatePasswordOpen.set(!updatePasswordOpen())">
+            <span class="card-title">Update Password</span>
+            <svg class="card-chevron" [class.open]="updatePasswordOpen()" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+
+          @if (updatePasswordOpen()) {
+          <div class="card-body">
 
           <div class="field-group">
             <label>Current Password</label>
@@ -121,6 +134,8 @@
           <button class="btn-save" (click)="changePassword()" [disabled]="pwSaving() || !pwForm.current || !pwValid || pwForm.newPw !== pwForm.confirm">
             {{ pwSaving() ? 'Updating...' : 'Update Password' }}
           </button>
+          </div>
+          }
         </div>
       }
 
