@@ -41,14 +41,7 @@ export class AccountEmail {
     }).subscribe({
       next: (res) => {
         this.saving.set(false);
-        this.success.set('Email updated successfully.');
-        localStorage.setItem('viva_token', res.token);
-        const user = this.authService.user();
-        if (user) {
-          const updated = { ...user, email: res.email };
-          localStorage.setItem('viva_user', JSON.stringify(updated));
-          this.authService.user.set(updated);
-        }
+        this.success.set(res.message);
         this.newEmail = '';
         this.currentPassword = '';
       },

@@ -26,6 +26,7 @@ import { Account } from './components/account/account';
 import { AccountProfile } from './components/account-profile/account-profile';
 import { AccountPassword } from './components/account-password/account-password';
 import { AccountEmail } from './components/account-email/account-email';
+import { ConfirmEmail } from './components/confirm-email/confirm-email';
 
 export const routes: Routes = [
   { path: '', component: Home },
@@ -41,6 +42,7 @@ export const routes: Routes = [
   { path: 'account/profile', component: AccountProfile },
   { path: 'account/password', component: AccountPassword },
   { path: 'account/email', component: AccountEmail },
+  { path: 'confirm-email', component: ConfirmEmail },
   { path: 'orders', component: Orders },
   { path: 'orders/:id', component: OrderDetail },
   { path: 'builder', component: BouquetBuilder },
