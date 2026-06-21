@@ -262,6 +262,8 @@
     font-size: 0.83rem;
     padding: 0.45rem 0.75rem;
 
+    svg { display: none; }
+
     &.active {
       font-weight: 600;
       color: var(--accent);
