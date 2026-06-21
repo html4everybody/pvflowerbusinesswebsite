@@ -87,7 +87,9 @@ export class Account implements OnInit {
     const user = this.authService.user();
     if (!user) return;
     this.ordersLoading.set(true);
-    this.http.get<any[]>(`${environment.apiUrl}/api/orders?email=${encodeURIComponent(user.email)}`).subscribe({
+    const token = localStorage.getItem('viva_token');
+    const params = `email=${encodeURIComponent(user.email)}${token ? `&token=${token}` : ''}`;
+    this.http.get<any[]>(`${environment.apiUrl}/api/orders?${params}`).subscribe({
       next: (data) => { this.orders.set(data); this.ordersLoading.set(false); },
       error: () => this.ordersLoading.set(false)
     });

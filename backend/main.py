@@ -685,6 +685,7 @@ class OrderRequest(BaseModel):
     is_recurring: bool = False
     recurrence_type: Optional[str] = None   # 'annual'
     payment_method: Optional[str] = "cod"   # cod | credit_card | debit_card | phonepe | google_pay
+    token: Optional[str] = None
 
 class UpdateDeliveryRequest(BaseModel):
     delivery_type: str
@@ -998,12 +999,15 @@ def confirm_email(token: str):
     new_email = user.get("pending_email")
     if not new_email:
         raise HTTPException(status_code=400, detail="No pending email change found.")
+    old_email = user["email"]
     supabase.table("users").update({
         "email": new_email,
         "pending_email": None,
         "email_change_token": None,
         "email_change_token_expires_at": None
-    }).eq("email", user["email"]).execute()
+    }).eq("email", old_email).execute()
+    # Backfill user_id on old orders that only have the old email
+    supabase.table("orders").update({"user_id": user["id"]}).eq("customer_email", old_email).is_("user_id", "null").execute()
     new_token = create_token(new_email)
     return {"message": "Email updated successfully.", "email": new_email, "token": new_token}
 
@@ -1459,7 +1463,25 @@ def clear_cart(user_id: str):
 # ── Orders Route ───────────────────────────────────────────────────────────────
 
 @app.get("/api/orders")
-def get_user_orders(email: str):
+def get_user_orders(email: str, token: str = None):
+    # Prefer user_id lookup (survives email changes); fall back to email for old orders
+    if token:
+        token_email = resolve_token(token)
+        if token_email:
+            u = supabase.table("users").select("id").eq("email", token_email).execute()
+            if u.data:
+                uid = u.data[0]["id"]
+                orders_result = supabase.table("orders").select("*").eq("user_id", uid).order("created_at", desc=True).execute()
+                if orders_result.data:
+                    orders = orders_result.data
+                    order_ids = [o["id"] for o in orders]
+                    items_result = supabase.table("order_items").select("*").in_("order_id", order_ids).execute()
+                    items_by_order: dict = {}
+                    for item in items_result.data:
+                        items_by_order.setdefault(item["order_id"], []).append(item)
+                    for o in orders:
+                        o["items"] = items_by_order.get(o["id"], [])
+                    return orders
     orders_result = supabase.table("orders").select("*").eq("customer_email", email).order("created_at", desc=True).execute()
     orders = orders_result.data
     if not orders:
@@ -1557,9 +1579,19 @@ def create_order(req: OrderRequest):
         except Exception:
             pass
 
+    # Resolve user_id from token so orders survive email changes
+    user_id = None
+    if req.token:
+        token_email = resolve_token(req.token)
+        if token_email:
+            u = supabase.table("users").select("id").eq("email", token_email).execute()
+            if u.data:
+                user_id = u.data[0]["id"]
+
     try:
         supabase.table("orders").insert({
             "id": order_id,
+            "user_id": user_id,
             "customer_email": customer_email,
             "customer_name": req.customer.get("name", ""),
             "customer_phone": req.customer.get("phone", ""),

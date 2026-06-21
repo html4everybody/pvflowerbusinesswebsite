@@ -329,6 +329,7 @@ export class Checkout {
       is_recurring: this.isRecurring(),
       recurrence_type: this.isRecurring() ? 'annual' : null,
       payment_method: this.paymentMethod(),
+      token: localStorage.getItem('viva_token') ?? undefined,
     };
 
     this.http.post<{ orderId: string; status: string; points_earned?: number; new_balance?: number }>(`${environment.apiUrl}/api/orders`, payload).subscribe({
