@@ -29,14 +29,10 @@ export class ConfirmEmail implements OnInit {
         this.status.set('success');
         this.message.set(res.message);
         this.newEmail.set(res.email);
-        // Update session with new email and token
-        localStorage.setItem('viva_token', res.token);
-        const user = this.authService.user();
-        if (user) {
-          const updated = { ...user, email: res.email };
-          localStorage.setItem('viva_user', JSON.stringify(updated));
-          this.authService.user.set(updated);
-        }
+        // Sign out so they log in fresh with new email
+        localStorage.removeItem('viva_token');
+        localStorage.removeItem('viva_user');
+        this.authService.user.set(null);
       },
       error: (err) => {
         this.status.set('error');
