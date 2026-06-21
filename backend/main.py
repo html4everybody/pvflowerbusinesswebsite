@@ -892,6 +892,10 @@ class UpdateProfileRequest(BaseModel):
     first_name: str
     last_name: str
 
+class UpdateEmailRequest(BaseModel):
+    token: str
+    new_email: str
+
 class ChangePasswordRequest(BaseModel):
     token: str
     current_password: str
@@ -923,6 +927,85 @@ def update_profile(req: UpdateProfileRequest):
         "last_name": req.last_name.strip()
     }).eq("email", email).execute()
     return {"firstName": req.first_name.strip(), "lastName": req.last_name.strip(), "email": email}
+
+@app.put("/api/auth/update-email")
+def update_email(req: UpdateEmailRequest):
+    email = resolve_token(req.token)
+    if not email:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    result = supabase.table("users").select("first_name").eq("email", email).execute()
+    if not result.data:
+        raise HTTPException(status_code=404, detail="User not found")
+    user = result.data[0]
+    new_email = req.new_email.strip().lower()
+    if new_email == email:
+        raise HTTPException(status_code=400, detail="New email is the same as your current email.")
+    existing = supabase.table("users").select("email").eq("email", new_email).execute()
+    if existing.data:
+        raise HTTPException(status_code=400, detail="This email is already in use.")
+    # Store pending email + send verification to new address
+    change_token = secrets.token_urlsafe(32)
+    token_expires = (datetime.now(timezone.utc) + timedelta(hours=24)).isoformat()
+    supabase.table("users").update({
+        "pending_email": new_email,
+        "email_change_token": change_token,
+        "email_change_token_expires_at": token_expires
+    }).eq("email", email).execute()
+    # Send verification email to new address
+    def send_email_change_verification():
+        if not RESEND_API_KEY:
+            print(f"[Email] Resend not configured — email change token: {change_token}", flush=True)
+            return
+        confirm_url = f"{APP_URL}/confirm-email?token={change_token}"
+        html = f"""<!DOCTYPE html><html><body style="margin:0;padding:0;background:#fdf0f5;font-family:'Segoe UI',Arial,sans-serif;">
+        <table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding:40px 16px;">
+        <table width="520" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(200,75,122,0.1);">
+        <tr><td style="background:linear-gradient(135deg,#c84b7a,#9c2d55);padding:32px 40px;text-align:center;">
+        <div style="font-size:2rem;">🌸</div>
+        <div style="color:#fff;font-size:1.5rem;font-weight:800;margin-top:8px;">VivaPetals</div>
+        </td></tr>
+        <tr><td style="padding:40px;">
+        <h2 style="margin:0 0 12px;color:#1e1e1e;font-size:1.35rem;font-weight:800;">Confirm your new email address</h2>
+        <p style="color:#666;line-height:1.6;margin:0 0 28px;">Hi {user['first_name']}, click below to confirm <strong>{new_email}</strong> as your new email address.</p>
+        <div style="text-align:center;margin-bottom:28px;">
+        <a href="{confirm_url}" style="display:inline-block;padding:14px 36px;background:linear-gradient(135deg,#c84b7a,#9c2d55);color:#fff;text-decoration:none;border-radius:999px;font-weight:700;font-size:1rem;">Confirm New Email</a>
+        </div>
+        <p style="color:#999;font-size:0.82rem;">This link expires in <strong>24 hours</strong>. If you didn't request this, you can ignore this email.</p>
+        </td></tr></table></td></tr></table></body></html>"""
+        try:
+            import httpx
+            httpx.post("https://api.resend.com/emails",
+                headers={"Authorization": f"Bearer {RESEND_API_KEY}", "Content-Type": "application/json"},
+                json={"from": "VivaPetals <orderhere@vivapetals.com>", "to": [new_email],
+                      "subject": "Confirm your new email address — VivaPetals", "html": html},
+                timeout=10)
+        except Exception as e:
+            print(f"[Email] Failed to send email change verification: {e}", flush=True)
+    threading.Thread(target=send_email_change_verification, daemon=True).start()
+    return {"message": f"Verification email sent to {new_email}. Please check your inbox to confirm."}
+
+@app.get("/api/auth/confirm-email")
+def confirm_email(token: str):
+    result = supabase.table("users").select("*").eq("email_change_token", token).execute()
+    if not result.data:
+        raise HTTPException(status_code=400, detail="Invalid or expired confirmation link.")
+    user = result.data[0]
+    expires_at = user.get("email_change_token_expires_at")
+    if expires_at:
+        expiry = datetime.fromisoformat(expires_at.replace("Z", "+00:00"))
+        if datetime.now(timezone.utc) > expiry:
+            raise HTTPException(status_code=400, detail="Confirmation link has expired. Please request a new one.")
+    new_email = user.get("pending_email")
+    if not new_email:
+        raise HTTPException(status_code=400, detail="No pending email change found.")
+    supabase.table("users").update({
+        "email": new_email,
+        "pending_email": None,
+        "email_change_token": None,
+        "email_change_token_expires_at": None
+    }).eq("email", user["email"]).execute()
+    new_token = create_token(new_email)
+    return {"message": "Email updated successfully.", "email": new_email, "token": new_token}
 
 @app.put("/api/auth/change-password")
 def change_password(req: ChangePasswordRequest):
