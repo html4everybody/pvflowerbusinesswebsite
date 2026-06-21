@@ -112,6 +112,7 @@
   cursor: pointer;
   font-family: inherit;
   text-align: left;
+  text-decoration: none;
   transition: background 0.15s;
 
   &:hover { background: var(--bg-raised); }

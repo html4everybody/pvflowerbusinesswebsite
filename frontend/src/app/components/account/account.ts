@@ -16,10 +16,6 @@ type Tab = 'profile' | 'orders';
 export class Account implements OnInit {
   activeTab: ReturnType<typeof signal<Tab>>;
 
-  // ── Profile cards ────────────────────────────────────────────────────────
-  personalInfoOpen = signal(false);
-  updatePasswordOpen = signal(false);
-
   profileForm = { firstName: '', lastName: '' };
   profileSaving  = signal(false);
   profileSuccess = signal('');

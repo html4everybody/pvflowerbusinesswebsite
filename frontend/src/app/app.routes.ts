@@ -23,6 +23,8 @@ import { Reminders } from './components/reminders/reminders';
 import { TrackOrder } from './components/track-order/track-order';
 import { ForgotPassword } from './components/forgot-password/forgot-password';
 import { Account } from './components/account/account';
+import { AccountProfile } from './components/account-profile/account-profile';
+import { AccountPassword } from './components/account-password/account-password';
 
 export const routes: Routes = [
   { path: '', component: Home },
@@ -35,6 +37,8 @@ export const routes: Routes = [
   { path: 'reset-password', component: ResetPassword },
   { path: 'forgot-password', component: ForgotPassword },
   { path: 'account', component: Account },
+  { path: 'account/profile', component: AccountProfile },
+  { path: 'account/password', component: AccountPassword },
   { path: 'orders', component: Orders },
   { path: 'orders/:id', component: OrderDetail },
   { path: 'builder', component: BouquetBuilder },

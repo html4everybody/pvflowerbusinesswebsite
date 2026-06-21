@@ -28,53 +28,23 @@
 
         <div class="profile-list">
 
-          <!-- Personal Info Row -->
-          <div class="profile-list-item" [class.open]="personalInfoOpen()">
-            <button class="list-row" (click)="personalInfoOpen.set(!personalInfoOpen())">
-              <span class="list-icon">
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-              </span>
-              <span class="list-title">Personal Info</span>
-              <svg class="list-chevron" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-            </button>
+          <a class="list-row" routerLink="/account/profile">
+            <span class="list-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            </span>
+            <span class="list-title">Personal Info</span>
+            <svg class="list-chevron" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+          </a>
 
-            @if (personalInfoOpen()) {
-              <div class="list-body">
-                <div class="field-row">
-                  <div class="field-group">
-                    <label>First Name</label>
-                    <input type="text" [(ngModel)]="profileForm.firstName" name="firstName" placeholder="First name">
-                  </div>
-                  <div class="field-group">
-                    <label>Last Name</label>
-                    <input type="text" [(ngModel)]="profileForm.lastName" name="lastName" placeholder="Last name">
-                  </div>
-                </div>
-                <div class="field-group">
-                  <label>Email Address</label>
-                  <input type="email" [value]="authService.user()?.email" disabled class="input-disabled">
-                </div>
-                @if (profileSuccess()) { <div class="alert-success">{{ profileSuccess() }}</div> }
-                @if (profileError()) { <div class="alert-error">{{ profileError() }}</div> }
-                <button class="btn-save" (click)="saveProfile()" [disabled]="profileSaving()">
-                  {{ profileSaving() ? 'Saving...' : 'Save Changes' }}
-                </button>
-              </div>
-            }
-          </div>
+          <a class="list-row" routerLink="/account/password">
+            <span class="list-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            </span>
+            <span class="list-title">Update Password</span>
+            <svg class="list-chevron" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+          </a>
 
-          <!-- Update Password Row -->
-          <div class="profile-list-item" [class.open]="updatePasswordOpen()">
-            <button class="list-row" (click)="updatePasswordOpen.set(!updatePasswordOpen())">
-              <span class="list-icon">
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-              </span>
-              <span class="list-title">Update Password</span>
-              <svg class="list-chevron" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-            </button>
-
-          @if (updatePasswordOpen()) {
-          <div class="list-body">
+          <div style="display:none">
 
           <div class="field-group">
             <label>Current Password</label>
@@ -134,11 +104,6 @@
             <div class="alert-error">{{ pwError() }}</div>
           }
 
-          <button class="btn-save" (click)="changePassword()" [disabled]="pwSaving() || !pwForm.current || !pwValid || pwForm.newPw !== pwForm.confirm">
-            {{ pwSaving() ? 'Updating...' : 'Update Password' }}
-          </button>
-          </div>
-          }
           </div>
 
         </div>
