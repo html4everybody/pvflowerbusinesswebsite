@@ -291,7 +291,7 @@
 }
 
 .orders-status-filter {
-  padding: 0.55rem 2rem 0.55rem 0.85rem;
+  padding: 0.55rem 0.85rem;
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: 8px;
@@ -302,6 +302,10 @@
   transition: border-color 0.2s;
 
   &:focus { outline: none; border-color: var(--accent); }
+
+  @media (min-width: 641px) {
+    padding-right: 2rem;
+  }
 }
 
 .orders-loading {
