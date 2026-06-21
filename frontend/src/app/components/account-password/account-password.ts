@@ -39,13 +39,10 @@ export class AccountPassword {
 
   isSocialUser = false;
 
-  constructor(private authService: AuthService, private http: HttpClient, private location: Location) {
-    const token = localStorage.getItem('viva_token');
-    if (token) {
-      this.http.get<any>(`${environment.apiUrl}/api/auth/me?token=${token}`).subscribe({
-        next: (res) => { this.isSocialUser = res.auth_provider === 'google' || res.auth_provider === 'facebook'; },
-        error: () => {}
-      });
+  constructor(private authService: AuthService, private readonly http: HttpClient, private location: Location) {
+    const user = this.authService.user();
+    if (user) {
+      this.isSocialUser = user.auth_provider === 'google' || user.auth_provider === 'facebook';
     }
   }
 

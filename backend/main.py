@@ -962,7 +962,8 @@ def login(req: LoginRequest):
             "firstName": user["first_name"],
             "lastName": user["last_name"],
             "email": user["email"],
-            "is_admin": user.get("is_admin", False)
+            "is_admin": user.get("is_admin", False),
+            "auth_provider": user.get("auth_provider", "email")
         }
     }
 
@@ -1054,11 +1055,12 @@ def social_auth(req: SocialAuthRequest):
     return {
         "token": token,
         "user": {
-            "id":        user["id"],
-            "firstName": user["first_name"],
-            "lastName":  user["last_name"],
-            "email":     user["email"],
-            "is_admin":  user.get("is_admin", False)
+            "id":            user["id"],
+            "firstName":     user["first_name"],
+            "lastName":      user["last_name"],
+            "email":         user["email"],
+            "is_admin":      user.get("is_admin", False),
+            "auth_provider": user.get("auth_provider", req.provider)
         }
     }
 
