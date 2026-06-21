@@ -900,15 +900,17 @@ def update_profile(req: UpdateProfileRequest):
 
 @app.put("/api/auth/change-password")
 def change_password(req: ChangePasswordRequest):
-    email = tokens.get(req.token)
+    email = resolve_token(req.token)
     if not email:
         raise HTTPException(status_code=401, detail="Unauthorized")
     result = supabase.table("users").select("password", "auth_provider").eq("email", email).execute()
     if not result.data:
         raise HTTPException(status_code=404, detail="User not found")
     user = result.data[0]
-    if user.get("auth_provider") in ("google", "facebook"):
-        raise HTTPException(status_code=400, detail=f"This account uses {user['auth_provider'].title()} sign-in. Use 'Forgot Password' to set a password instead.")
+    has_password = bool(user.get("password"))
+    if not has_password:
+        provider = user.get("auth_provider", "Google")
+        raise HTTPException(status_code=400, detail=f"no_password:{provider.title()}")
     if not verify_password(req.current_password, user["password"]):
         raise HTTPException(status_code=401, detail="Current password is incorrect")
     supabase.table("users").update({"password": hash_password(req.new_password)}).eq("email", email).execute()

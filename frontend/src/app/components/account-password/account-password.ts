@@ -36,16 +36,11 @@ export class AccountPassword {
     return c.length && c.upper && c.lower && c.number && c.special;
   }
 
-  isSocialUser = false;
+  noPassword  = signal(false);
   resetSending = signal(false);
   resetSent    = signal(false);
 
-  constructor(public authService: AuthService, private readonly http: HttpClient, private location: Location) {
-    const user = this.authService.user();
-    if (user) {
-      this.isSocialUser = user.auth_provider === 'google' || user.auth_provider === 'facebook';
-    }
-  }
+  constructor(public authService: AuthService, private readonly http: HttpClient, private location: Location) {}
 
   goBack() { this.location.back(); }
 
@@ -77,7 +72,12 @@ export class AccountPassword {
       },
       error: (err) => {
         this.saving.set(false);
-        this.error.set(err.error?.detail || 'Failed to change password.');
+        const detail: string = err.error?.detail || '';
+        if (detail.startsWith('no_password:')) {
+          this.noPassword.set(true);
+        } else {
+          this.error.set(detail || 'Failed to change password.');
+        }
       }
     });
   }
