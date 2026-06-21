@@ -9,7 +9,21 @@ export class AuthService {
 
   user = signal<any>(this.loadUser());
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient) {
+    this.validateSession();
+  }
+
+  private validateSession(): void {
+    const token = localStorage.getItem('viva_token');
+    if (!token) return;
+    this.http.get<any>(`${this.apiUrl}/api/auth/me?token=${token}`).subscribe({
+      error: () => {
+        localStorage.removeItem('viva_token');
+        localStorage.removeItem('viva_user');
+        this.user.set(null);
+      }
+    });
+  }
 
   private loadUser(): any {
     try {
