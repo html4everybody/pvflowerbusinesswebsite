@@ -871,6 +871,22 @@ class ChangePasswordRequest(BaseModel):
     current_password: str
     new_password: str
 
+@app.get("/api/auth/me")
+def get_me(token: str):
+    email = tokens.get(token)
+    if not email:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    result = supabase.table("users").select("first_name,last_name,email,auth_provider").eq("email", email).execute()
+    if not result.data:
+        raise HTTPException(status_code=404, detail="User not found")
+    user = result.data[0]
+    return {
+        "email": user["email"],
+        "firstName": user["first_name"],
+        "lastName": user["last_name"],
+        "auth_provider": user.get("auth_provider", "email")
+    }
+
 @app.put("/api/auth/profile")
 def update_profile(req: UpdateProfileRequest):
     email = tokens.get(req.token)

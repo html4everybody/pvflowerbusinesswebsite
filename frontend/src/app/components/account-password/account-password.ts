@@ -1,5 +1,6 @@
 import { Component, signal } from '@angular/core';
 import { Location } from '@angular/common';
+import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { AuthService } from '../../services/auth';
@@ -7,7 +8,7 @@ import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-account-password',
-  imports: [FormsModule],
+  imports: [FormsModule, RouterLink],
   templateUrl: './account-password.html',
   styleUrl: './account-password.scss'
 })
@@ -36,7 +37,17 @@ export class AccountPassword {
     return c.length && c.upper && c.lower && c.number && c.special;
   }
 
-  constructor(private authService: AuthService, private http: HttpClient, private location: Location) {}
+  isSocialUser = false;
+
+  constructor(private authService: AuthService, private http: HttpClient, private location: Location) {
+    const token = localStorage.getItem('viva_token');
+    if (token) {
+      this.http.get<any>(`${environment.apiUrl}/api/auth/me?token=${token}`).subscribe({
+        next: (res) => { this.isSocialUser = res.auth_provider === 'google' || res.auth_provider === 'facebook'; },
+        error: () => {}
+      });
+    }
+  }
 
   goBack() { this.location.back(); }
 
