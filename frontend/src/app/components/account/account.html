@@ -26,52 +26,55 @@
       @if (activeTab() === 'profile') {
         <h1 class="content-title">Profile</h1>
 
-        <div class="profile-card">
-          <button class="card-header" (click)="personalInfoOpen.set(!personalInfoOpen())">
-            <span class="card-title">Personal Info</span>
-            <svg class="card-chevron" [class.open]="personalInfoOpen()" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-          </button>
+        <div class="profile-list">
 
-          @if (personalInfoOpen()) {
-            <div class="card-body">
-              <div class="field-row">
-                <div class="field-group">
-                  <label>First Name</label>
-                  <input type="text" [(ngModel)]="profileForm.firstName" name="firstName" placeholder="First name">
+          <!-- Personal Info Row -->
+          <div class="profile-list-item" [class.open]="personalInfoOpen()">
+            <button class="list-row" (click)="personalInfoOpen.set(!personalInfoOpen())">
+              <span class="list-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              </span>
+              <span class="list-title">Personal Info</span>
+              <svg class="list-chevron" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>
+
+            @if (personalInfoOpen()) {
+              <div class="list-body">
+                <div class="field-row">
+                  <div class="field-group">
+                    <label>First Name</label>
+                    <input type="text" [(ngModel)]="profileForm.firstName" name="firstName" placeholder="First name">
+                  </div>
+                  <div class="field-group">
+                    <label>Last Name</label>
+                    <input type="text" [(ngModel)]="profileForm.lastName" name="lastName" placeholder="Last name">
+                  </div>
                 </div>
                 <div class="field-group">
-                  <label>Last Name</label>
-                  <input type="text" [(ngModel)]="profileForm.lastName" name="lastName" placeholder="Last name">
+                  <label>Email Address</label>
+                  <input type="email" [value]="authService.user()?.email" disabled class="input-disabled">
                 </div>
+                @if (profileSuccess()) { <div class="alert-success">{{ profileSuccess() }}</div> }
+                @if (profileError()) { <div class="alert-error">{{ profileError() }}</div> }
+                <button class="btn-save" (click)="saveProfile()" [disabled]="profileSaving()">
+                  {{ profileSaving() ? 'Saving...' : 'Save Changes' }}
+                </button>
               </div>
+            }
+          </div>
 
-              <div class="field-group">
-                <label>Email Address</label>
-                <input type="email" [value]="authService.user()?.email" disabled class="input-disabled">
-              </div>
-
-              @if (profileSuccess()) {
-                <div class="alert-success">{{ profileSuccess() }}</div>
-              }
-              @if (profileError()) {
-                <div class="alert-error">{{ profileError() }}</div>
-              }
-
-              <button class="btn-save" (click)="saveProfile()" [disabled]="profileSaving()">
-                {{ profileSaving() ? 'Saving...' : 'Save Changes' }}
-              </button>
-            </div>
-          }
-        </div>
-
-        <div class="profile-card">
-          <button class="card-header" (click)="updatePasswordOpen.set(!updatePasswordOpen())">
-            <span class="card-title">Update Password</span>
-            <svg class="card-chevron" [class.open]="updatePasswordOpen()" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-          </button>
+          <!-- Update Password Row -->
+          <div class="profile-list-item" [class.open]="updatePasswordOpen()">
+            <button class="list-row" (click)="updatePasswordOpen.set(!updatePasswordOpen())">
+              <span class="list-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+              </span>
+              <span class="list-title">Update Password</span>
+              <svg class="list-chevron" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>
 
           @if (updatePasswordOpen()) {
-          <div class="card-body">
+          <div class="list-body">
 
           <div class="field-group">
             <label>Current Password</label>
@@ -136,6 +139,8 @@
           </button>
           </div>
           }
+          </div>
+
         </div>
       }
 
