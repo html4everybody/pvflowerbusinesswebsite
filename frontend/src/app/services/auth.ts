@@ -11,6 +11,8 @@ export class AuthService {
 
   constructor(private http: HttpClient) {
     this.validateSession();
+    // Re-check every 2 minutes so other-device email changes sign out this session
+    setInterval(() => this.validateSession(), 2 * 60 * 1000);
   }
 
   private validateSession(): void {
