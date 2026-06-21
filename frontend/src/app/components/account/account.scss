@@ -66,10 +66,10 @@
   }
 
   &.active {
-    color: var(--text);
+    color: var(--accent);
     font-weight: 700;
     background: none;
-    svg { opacity: 1; }
+    svg { opacity: 1; color: var(--accent); }
   }
 }
 
