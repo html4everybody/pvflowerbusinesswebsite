@@ -998,12 +998,16 @@ def confirm_email(token: str):
     new_email = user.get("pending_email")
     if not new_email:
         raise HTTPException(status_code=400, detail="No pending email change found.")
+    old_email = user["email"]
     supabase.table("users").update({
         "email": new_email,
         "pending_email": None,
         "email_change_token": None,
         "email_change_token_expires_at": None
-    }).eq("email", user["email"]).execute()
+    }).eq("email", old_email).execute()
+    # Keep orders and cart linked to the account
+    supabase.table("orders").update({"customer_email": new_email}).eq("customer_email", old_email).execute()
+    supabase.table("cart_items").update({"user_id": new_email}).eq("user_id", old_email).execute()
     new_token = create_token(new_email)
     return {"message": "Email updated successfully.", "email": new_email, "token": new_token}
 
