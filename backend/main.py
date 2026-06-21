@@ -895,7 +895,6 @@ class UpdateProfileRequest(BaseModel):
 class UpdateEmailRequest(BaseModel):
     token: str
     new_email: str
-    current_password: str
 
 class ChangePasswordRequest(BaseModel):
     token: str
@@ -934,12 +933,10 @@ def update_email(req: UpdateEmailRequest):
     email = resolve_token(req.token)
     if not email:
         raise HTTPException(status_code=401, detail="Unauthorized")
-    result = supabase.table("users").select("password,first_name").eq("email", email).execute()
+    result = supabase.table("users").select("first_name").eq("email", email).execute()
     if not result.data:
         raise HTTPException(status_code=404, detail="User not found")
     user = result.data[0]
-    if not user.get("password") or not verify_password(req.current_password, user["password"]):
-        raise HTTPException(status_code=401, detail="Current password is incorrect")
     new_email = req.new_email.strip().lower()
     if new_email == email:
         raise HTTPException(status_code=400, detail="New email is the same as your current email.")

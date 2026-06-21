@@ -12,9 +12,7 @@ import { environment } from '../../../environments/environment';
   styleUrl: './account-email.scss'
 })
 export class AccountEmail {
-  newEmail      = '';
-  currentPassword = '';
-  showPassword  = signal(false);
+  newEmail = '';
   saving  = signal(false);
   success = signal('');
   error   = signal('');
@@ -25,7 +23,7 @@ export class AccountEmail {
 
   save() {
     const email = this.newEmail.trim().toLowerCase();
-    if (!email || !email.includes('@') || !this.currentPassword) return;
+    if (!email || !email.includes('@')) return;
     if (email === this.authService.user()?.email) {
       this.error.set('New email is the same as your current email.');
       return;
@@ -36,8 +34,7 @@ export class AccountEmail {
     const token = localStorage.getItem('viva_token');
     this.http.put<any>(`${environment.apiUrl}/api/auth/update-email`, {
       token,
-      new_email: email,
-      current_password: this.currentPassword
+      new_email: email
     }).subscribe({
       next: (res) => {
         this.saving.set(false);
