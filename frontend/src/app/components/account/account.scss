@@ -489,4 +489,12 @@
   .account-content { padding: 1.5rem 1rem; }
 
   .content-title { font-size: 1.3rem; }
+
+  .profile-list {
+    margin-left: -1rem;
+    margin-right: -1rem;
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+  }
 }
