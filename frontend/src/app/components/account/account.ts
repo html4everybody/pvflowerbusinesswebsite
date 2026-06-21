@@ -1,4 +1,4 @@
-import { Component, OnInit, signal, computed } from '@angular/core';
+import { Component, OnInit, signal, computed, effect } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
@@ -14,7 +14,7 @@ type Tab = 'profile' | 'orders';
   styleUrl: './account.scss'
 })
 export class Account implements OnInit {
-  activeTab = signal<Tab>('profile');
+  activeTab = signal<Tab>((sessionStorage.getItem('account_tab') as Tab) || 'profile');
 
   // ── Profile ──────────────────────────────────────────────────────────────
   profileForm = { firstName: '', lastName: '' };
@@ -73,6 +73,7 @@ export class Account implements OnInit {
   }
 
   constructor(public authService: AuthService, private http: HttpClient) {
+    effect(() => sessionStorage.setItem('account_tab', this.activeTab()));
     const user = this.authService.user();
     if (user) {
       this.profileForm.firstName = user.firstName;
