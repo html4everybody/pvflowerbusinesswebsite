@@ -1,5 +1,6 @@
 import { Injectable, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
+import { Router } from '@angular/router';
 import { Observable, tap } from 'rxjs';
 import { environment } from '../../environments/environment';
 
@@ -9,7 +10,7 @@ export class AuthService {
 
   user = signal<any>(this.loadUser());
 
-  constructor(private http: HttpClient) {
+  constructor(private http: HttpClient, private router: Router) {
     this.validateSession();
     // Re-check every 10 seconds so other-device email changes sign out this session immediately
     setInterval(() => this.validateSession(), 10 * 1000);
@@ -23,6 +24,7 @@ export class AuthService {
         localStorage.removeItem('viva_token');
         localStorage.removeItem('viva_user');
         this.user.set(null);
+        this.router.navigate(['/signin']);
       }
     });
   }
