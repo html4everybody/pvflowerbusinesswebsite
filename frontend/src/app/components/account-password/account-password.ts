@@ -1,0 +1,73 @@
+import { Component, signal } from '@angular/core';
+import { Location } from '@angular/common';
+import { RouterLink } from '@angular/router';
+import { FormsModule } from '@angular/forms';
+import { HttpClient } from '@angular/common/http';
+import { AuthService } from '../../services/auth';
+import { environment } from '../../../environments/environment';
+
+@Component({
+  selector: 'app-account-password',
+  imports: [FormsModule, RouterLink],
+  templateUrl: './account-password.html',
+  styleUrl: './account-password.scss'
+})
+export class AccountPassword {
+  pwForm = { current: '', newPw: '', confirm: '' };
+  showCurrent = signal(false);
+  showNew     = signal(false);
+  showConfirm = signal(false);
+  saving  = signal(false);
+  success = signal('');
+  error   = signal('');
+
+  get checks() {
+    const p = this.pwForm.newPw;
+    return {
+      length:  p.length >= 8,
+      upper:   /[A-Z]/.test(p),
+      lower:   /[a-z]/.test(p),
+      number:  /[0-9]/.test(p),
+      special: /[^A-Za-z0-9]/.test(p)
+    };
+  }
+
+  get pwValid() {
+    const c = this.checks;
+    return c.length && c.upper && c.lower && c.number && c.special;
+  }
+
+  isSocialUser = false;
+
+  constructor(private authService: AuthService, private readonly http: HttpClient, private location: Location) {
+    const user = this.authService.user();
+    if (user) {
+      this.isSocialUser = user.auth_provider === 'google' || user.auth_provider === 'facebook';
+    }
+  }
+
+  goBack() { this.location.back(); }
+
+  save() {
+    if (!this.pwValid || this.pwForm.newPw !== this.pwForm.confirm) return;
+    this.saving.set(true);
+    this.success.set('');
+    this.error.set('');
+    const token = localStorage.getItem('viva_token');
+    this.http.put(`${environment.apiUrl}/api/auth/change-password`, {
+      token,
+      current_password: this.pwForm.current,
+      new_password: this.pwForm.newPw
+    }).subscribe({
+      next: () => {
+        this.saving.set(false);
+        this.success.set('Password changed successfully.');
+        this.pwForm = { current: '', newPw: '', confirm: '' };
+      },
+      error: (err) => {
+        this.saving.set(false);
+        this.error.set(err.error?.detail || 'Failed to change password.');
+      }
+    });
+  }
+}

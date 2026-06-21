@@ -88,17 +88,57 @@
   margin: 0 0 2rem;
 }
 
-.content-section {
-  margin-bottom: 2.5rem;
+.profile-list {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
 }
 
-.section-label {
-  font-size: 0.78rem;
-  font-weight: 600;
+.list-row + .list-row {
+  border-top: 1px solid var(--border);
+}
+
+.list-row {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  padding: 1.75rem 1.5rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+  text-decoration: none;
+  transition: background 0.15s;
+
+  &:hover { background: var(--bg-raised); }
+}
+
+.list-icon {
   color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  margin: 0 0 1rem;
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.list-title {
+  flex: 1;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.list-chevron {
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.list-body {
+  padding: 1.25rem 1.5rem 1.5rem;
+  border-top: 1px solid var(--border);
+  background: var(--bg-raised);
 }
 
 // ── Form Fields ───────────────────────────────────────────────────────────────
