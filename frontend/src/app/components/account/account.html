@@ -26,8 +26,8 @@
       @if (activeTab() === 'profile') {
         <h1 class="content-title">Profile</h1>
 
-        <section class="content-section">
-          <p class="section-label">Personal Info</p>
+        <div class="profile-card">
+          <p class="card-title">Personal Info</p>
 
           <div class="field-row">
             <div class="field-group">
@@ -55,10 +55,10 @@
           <button class="btn-save" (click)="saveProfile()" [disabled]="profileSaving()">
             {{ profileSaving() ? 'Saving...' : 'Save Changes' }}
           </button>
-        </section>
+        </div>
 
-        <section class="content-section">
-          <p class="section-label">Security</p>
+        <div class="profile-card">
+          <p class="card-title">Update Password</p>
 
           <div class="field-group">
             <label>Current Password</label>
@@ -121,7 +121,7 @@
           <button class="btn-save" (click)="changePassword()" [disabled]="pwSaving() || !pwForm.current || !pwValid || pwForm.newPw !== pwForm.confirm">
             {{ pwSaving() ? 'Updating...' : 'Update Password' }}
           </button>
-        </section>
+        </div>
       }
 
       @if (activeTab() === 'orders') {

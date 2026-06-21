@@ -88,17 +88,19 @@
   margin: 0 0 2rem;
 }
 
-.content-section {
-  margin-bottom: 2.5rem;
+.profile-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 1.25rem;
 }
 
-.section-label {
-  font-size: 0.78rem;
-  font-weight: 600;
-  color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  margin: 0 0 1rem;
+.card-title {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0 0 1.25rem;
 }
 
 // ── Form Fields ───────────────────────────────────────────────────────────────
