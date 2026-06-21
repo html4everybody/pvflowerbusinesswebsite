@@ -261,6 +261,13 @@
     width: auto;
     font-size: 0.83rem;
     padding: 0.45rem 0.75rem;
+
+    &.active {
+      font-weight: 600;
+      color: var(--accent);
+      border-bottom: 2px solid var(--accent);
+      border-radius: 0;
+    }
   }
 
   .account-content { padding: 1.5rem 1rem; }
