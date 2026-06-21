@@ -1478,9 +1478,12 @@ def get_user_orders(email: str, token: str = None):
                     items_result = supabase.table("order_items").select("*").in_("order_id", order_ids).execute()
                     items_by_order: dict = {}
                     for item in items_result.data:
+                        product = next((p for p in PRODUCTS if p["id"] == item["product_id"]), None)
+                        item["image"] = product["image"] if product else ""
                         items_by_order.setdefault(item["order_id"], []).append(item)
                     for o in orders:
                         o["items"] = items_by_order.get(o["id"], [])
+                        o["notifications"] = []
                     return orders
     orders_result = supabase.table("orders").select("*").eq("customer_email", email).order("created_at", desc=True).execute()
     orders = orders_result.data
