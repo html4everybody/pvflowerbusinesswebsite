@@ -129,7 +129,7 @@
 
         <div class="orders-tabs">
           <button class="orders-tab-btn" [class.active]="ordersTab() === 'active'" (click)="ordersTab.set('active')">
-            Active
+            All Orders
             @if (activeOrders().length > 0) { <span class="orders-badge">{{ activeOrders().length }}</span> }
           </button>
           <button class="orders-tab-btn" [class.active]="ordersTab() === 'cancelled'" (click)="ordersTab.set('cancelled')">
