@@ -40,7 +40,6 @@ export class AccountEmail {
         this.saving.set(false);
         this.success.set(res.message);
         this.newEmail = '';
-        this.currentPassword = '';
       },
       error: (err) => {
         this.saving.set(false);
