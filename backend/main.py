@@ -7,6 +7,8 @@ import uuid
 import base64 as _base64
 import os
 import secrets
+import hmac
+import hashlib
 import httpx as _httpx
 from datetime import datetime, timedelta, timezone
 from collections import Counter
@@ -104,8 +106,32 @@ def hash_password(password: str) -> str:
 def verify_password(password: str, hashed: str) -> bool:
     return bcrypt.checkpw(password.encode(), hashed.encode())
 
-# ── In-memory token store ──────────────────────────────────────────────────────
+# ── Signed token store (survives server restarts) ─────────────────────────────
+_TOKEN_SECRET = os.getenv("TOKEN_SECRET", "viva-petals-dev-secret-2024")
+
+def create_token(email: str) -> str:
+    sig = hmac.new(_TOKEN_SECRET.encode(), email.encode(), hashlib.sha256).hexdigest()
+    payload = _base64.urlsafe_b64encode(email.encode()).decode()
+    return f"{payload}.{sig}"
+
+def verify_token(token: str) -> str | None:
+    try:
+        parts = token.split(".", 1)
+        if len(parts) != 2:
+            return None
+        email = _base64.urlsafe_b64decode(parts[0].encode() + b"==").decode()
+        expected = hmac.new(_TOKEN_SECRET.encode(), email.encode(), hashlib.sha256).hexdigest()
+        if not hmac.compare_digest(parts[1], expected):
+            return None
+        return email
+    except Exception:
+        return None
+
+# fallback for old UUID tokens still in the wild
 tokens: dict = {}
+
+def resolve_token(token: str) -> str | None:
+    return verify_token(token) or tokens.get(token)
 
 # ── Loyalty helpers ────────────────────────────────────────────────────────────
 
@@ -873,7 +899,7 @@ class ChangePasswordRequest(BaseModel):
 
 @app.get("/api/auth/me")
 def get_me(token: str):
-    email = tokens.get(token)
+    email = resolve_token(token)
     if not email:
         raise HTTPException(status_code=401, detail="Unauthorized")
     result = supabase.table("users").select("first_name,last_name,email,auth_provider").eq("email", email).execute()
@@ -889,7 +915,7 @@ def get_me(token: str):
 
 @app.put("/api/auth/profile")
 def update_profile(req: UpdateProfileRequest):
-    email = tokens.get(req.token)
+    email = resolve_token(req.token)
     if not email:
         raise HTTPException(status_code=401, detail="Unauthorized")
     supabase.table("users").update({
@@ -954,8 +980,7 @@ def login(req: LoginRequest):
     if not user.get("is_verified", False):
         raise HTTPException(status_code=403, detail="Please verify your email before signing in. Check your inbox for the verification link.")
 
-    token = str(uuid.uuid4())
-    tokens[token] = req.email
+    token = create_token(req.email)
 
     return {
         "token": token,
@@ -1051,8 +1076,7 @@ def social_auth(req: SocialAuthRequest):
         create_loyalty_account(email)
 
     # Issue app session token
-    token = str(uuid.uuid4())
-    tokens[token] = email
+    token = create_token(email)
 
     return {
         "token": token,
@@ -1070,7 +1094,7 @@ def social_auth(req: SocialAuthRequest):
 # ── Admin Routes ───────────────────────────────────────────────────────────────
 
 def require_admin(token: str):
-    email = tokens.get(token)
+    email = resolve_token(token)
     if not email:
         raise HTTPException(status_code=401, detail="Not authenticated")
     result = supabase.table("users").select("is_admin").eq("email", email).execute()
