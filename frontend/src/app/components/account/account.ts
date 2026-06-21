@@ -1,5 +1,5 @@
 import { Component, OnInit, signal, computed, effect } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { AuthService } from '../../services/auth';
@@ -14,7 +14,7 @@ type Tab = 'profile' | 'orders';
   styleUrl: './account.scss'
 })
 export class Account implements OnInit {
-  activeTab = signal<Tab>((sessionStorage.getItem('account_tab') as Tab) || 'profile');
+  activeTab: ReturnType<typeof signal<Tab>>;
 
   // ── Profile ──────────────────────────────────────────────────────────────
   profileForm = { firstName: '', lastName: '' };
@@ -72,7 +72,10 @@ export class Account implements OnInit {
     return ((user.firstName?.[0] ?? '') + (user.lastName?.[0] ?? '')).toUpperCase();
   }
 
-  constructor(public authService: AuthService, private http: HttpClient) {
+  constructor(public authService: AuthService, private http: HttpClient, private router: Router) {
+    const isBackNav = this.router.getCurrentNavigation()?.trigger === 'popstate';
+    const savedTab = sessionStorage.getItem('account_tab') as Tab;
+    this.activeTab = signal<Tab>(isBackNav && savedTab ? savedTab : 'profile');
     effect(() => sessionStorage.setItem('account_tab', this.activeTab()));
     const user = this.authService.user();
     if (user) {
