@@ -120,6 +120,7 @@
           @if (authService.isAdmin()) {
             <a routerLink="/admin" routerLinkActive="active" class="nav-admin-link" (click)="closeMenu()">Admin Dashboard</a>
           }
+          <a routerLink="/account" routerLinkActive="active" class="nav-orders-link" (click)="closeMenu()">My Account</a>
           <a routerLink="/orders" routerLinkActive="active" class="nav-orders-link" (click)="closeMenu()">My Orders</a>
         }
 
