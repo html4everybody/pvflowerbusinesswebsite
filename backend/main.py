@@ -892,6 +892,10 @@ class UpdateProfileRequest(BaseModel):
     first_name: str
     last_name: str
 
+class UpdateEmailRequest(BaseModel):
+    token: str
+    new_email: str
+
 class ChangePasswordRequest(BaseModel):
     token: str
     current_password: str
@@ -923,6 +927,21 @@ def update_profile(req: UpdateProfileRequest):
         "last_name": req.last_name.strip()
     }).eq("email", email).execute()
     return {"firstName": req.first_name.strip(), "lastName": req.last_name.strip(), "email": email}
+
+@app.put("/api/auth/update-email")
+def update_email(req: UpdateEmailRequest):
+    email = resolve_token(req.token)
+    if not email:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    new_email = req.new_email.strip().lower()
+    if new_email == email:
+        raise HTTPException(status_code=400, detail="New email is the same as your current email.")
+    existing = supabase.table("users").select("email").eq("email", new_email).execute()
+    if existing.data:
+        raise HTTPException(status_code=400, detail="This email is already in use.")
+    supabase.table("users").update({"email": new_email}).eq("email", email).execute()
+    new_token = create_token(new_email)
+    return {"email": new_email, "token": new_token}
 
 @app.put("/api/auth/change-password")
 def change_password(req: ChangePasswordRequest):

@@ -1,0 +1,29 @@
+<main class="subpage">
+  <div class="subpage-inner">
+    <button class="back-btn" (click)="goBack()">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+      Back
+    </button>
+
+    <h1 class="subpage-title">Update Email</h1>
+
+    <div class="form-card">
+      <div class="field-group">
+        <label>Current Email</label>
+        <input type="email" [value]="authService.user()?.email || ''" disabled class="input-disabled">
+      </div>
+
+      <div class="field-group">
+        <label>New Email Address</label>
+        <input type="email" [(ngModel)]="newEmail" name="newEmail" placeholder="Enter new email address">
+      </div>
+
+      @if (success()) { <div class="alert-success">{{ success() }}</div> }
+      @if (error())   { <div class="alert-error">{{ error() }}</div> }
+
+      <button class="btn-save" (click)="save()" [disabled]="saving() || !newEmail.trim()">
+        {{ saving() ? 'Updating...' : 'Update Email' }}
+      </button>
+    </div>
+  </div>
+</main>
