@@ -239,17 +239,28 @@
 
 // ── Mobile ────────────────────────────────────────────────────────────────────
 @media (max-width: 640px) {
+  .account-layout { flex-direction: column; }
+
   .account-sidebar {
-    width: 120px;
-    padding: 1.5rem 0.75rem;
+    width: 100%;
+    height: auto;
+    min-height: unset;
+    position: static;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--border);
   }
 
   .sidebar-back { display: none; }
 
-  .sidebar-item {
-    font-size: 0.8rem;
+  .sidebar-nav {
+    flex-direction: row;
     gap: 0.5rem;
-    padding: 0.5rem 0.5rem;
+  }
+
+  .sidebar-item {
+    width: auto;
+    font-size: 0.83rem;
+    padding: 0.45rem 0.75rem;
   }
 
   .account-content { padding: 1.5rem 1rem; }
