@@ -1,6 +1,5 @@
 import { Component, signal } from '@angular/core';
 import { Location } from '@angular/common';
-import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { AuthService } from '../../services/auth';
@@ -8,7 +7,7 @@ import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-account-password',
-  imports: [FormsModule, RouterLink],
+  imports: [FormsModule],
   templateUrl: './account-password.html',
   styleUrl: './account-password.scss'
 })
@@ -37,16 +36,23 @@ export class AccountPassword {
     return c.length && c.upper && c.lower && c.number && c.special;
   }
 
-  isSocialUser = false;
+  noPassword  = signal(false);
+  resetSending = signal(false);
+  resetSent    = signal(false);
 
-  constructor(private authService: AuthService, private readonly http: HttpClient, private location: Location) {
-    const user = this.authService.user();
-    if (user) {
-      this.isSocialUser = user.auth_provider === 'google' || user.auth_provider === 'facebook';
-    }
-  }
+  constructor(public authService: AuthService, private readonly http: HttpClient, private location: Location) {}
 
   goBack() { this.location.back(); }
+
+  sendResetLink() {
+    const email = this.authService.user()?.email;
+    if (!email) return;
+    this.resetSending.set(true);
+    this.http.post(`${environment.apiUrl}/api/auth/forgot-password`, { email }).subscribe({
+      next: () => { this.resetSending.set(false); this.resetSent.set(true); },
+      error: () => { this.resetSending.set(false); this.resetSent.set(true); }
+    });
+  }
 
   save() {
     if (!this.pwValid || this.pwForm.newPw !== this.pwForm.confirm) return;
@@ -66,7 +72,12 @@ export class AccountPassword {
       },
       error: (err) => {
         this.saving.set(false);
-        this.error.set(err.error?.detail || 'Failed to change password.');
+        const detail: string = err.error?.detail || '';
+        if (detail.startsWith('no_password:')) {
+          this.noPassword.set(true);
+        } else {
+          this.error.set(detail || 'Failed to change password.');
+        }
       }
     });
   }
