@@ -59,13 +59,13 @@ $divider-tx:  #9c968a;
 .vp-card-footer {
   position: absolute;
   bottom: 2rem;
-  left: 0;
-  right: 0;
+  left: 35%;
+  right: 1.25rem;
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: flex-end;
   gap: 0.5rem;
-  text-align: center;
+  text-align: right;
   z-index: 2;
 
   p {
@@ -75,7 +75,7 @@ $divider-tx:  #9c968a;
     color: #2c2820;
     line-height: 1.55;
     margin: 0;
-    text-shadow: 0 1px 8px rgba(255,255,255,0.85);
+    text-shadow: 0 1px 8px rgba(255,255,255,0.9);
   }
 }
 
