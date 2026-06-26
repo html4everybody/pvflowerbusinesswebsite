@@ -26,10 +26,7 @@ $divider-tx:  #9c968a;
   width: clamp(320px, 42vw, 520px);
   flex-shrink: 0;
   overflow: hidden;
-  background: #f0ebe2;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  background: #f5f1ec;
 
   @media (max-width: 768px) { display: none; }
 }
@@ -67,8 +64,8 @@ $divider-tx:  #9c968a;
 }
 
 .vp-left-logo {
-  width: 42px;
-  height: 42px;
+  width: 60px;
+  height: 60px;
   filter: drop-shadow(0 1px 4px rgba(0,0,0,0.12));
 }
 
@@ -125,7 +122,7 @@ $divider-tx:  #9c968a;
   gap: 0.4rem;
   margin-bottom: 2.2rem;
 
-  img { height: 44px; width: 44px; object-fit: contain; }
+  img { height: 68px; width: 68px; object-fit: contain; }
 
   span {
     font-size: 1.05rem;
