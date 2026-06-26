@@ -427,48 +427,43 @@ $divider-tx:  #9c968a;
     align-items: stretch;
     padding: 0;
     background: #f5f0e8;
-    overflow: hidden;
-    height: 100vh;
-    height: 100dvh;
+    height: auto;
+    overflow: visible;
   }
 
-  // Logo above the image — mobile only
   .vp-mobile-top {
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
-    padding: 1rem 1.25rem 0.75rem;
-    flex-shrink: 0;
-    img { height: 38px; width: 38px; object-fit: contain; }
-    span { font-size: 1.05rem; font-weight: 600; color: #1d2433; font-family: 'Hanken Grotesk', sans-serif; }
+    padding: 0.75rem 1.25rem;
+    img { height: 36px; width: 36px; object-fit: contain; }
+    span { font-size: 1rem; font-weight: 600; color: #1d2433; font-family: 'Hanken Grotesk', sans-serif; }
   }
 
   .vp-card {
-    flex: 1;
     flex-direction: column;
     width: 100%;
     max-width: 100%;
+    height: auto;
     max-height: none;
     border-radius: 0;
     box-shadow: none;
     overflow: visible;
   }
 
-  // Flower image — top portion
   .vp-card-left {
     display: block;
     width: 100%;
-    flex: 0 0 42%;
+    height: 260px;
+    flex-shrink: 0;
     position: relative;
     overflow: hidden;
   }
 
-  // White rounded panel overlapping image
   .vp-card-right {
-    flex: 1;
-    min-height: 0;
-    overflow-y: auto;
+    height: auto;
+    overflow: visible;
     border-radius: 24px 24px 0 0;
     margin-top: -24px;
     position: relative;
@@ -476,23 +471,21 @@ $divider-tx:  #9c968a;
     box-shadow: 0 -6px 24px rgba(0,0,0,0.08);
   }
 
-  // Hide desktop logo inside form on mobile
   .vp-logo { display: none; }
 
   .vp-card-footer { display: none; }
 
   .vp-form-wrap {
-    padding: 1.75rem 1.5rem 2.5rem;
+    padding: 1.75rem 1.5rem 3rem;
     justify-content: flex-start;
+    min-height: 0;
   }
-
-  .vp-heading { margin-bottom: 1.25rem; }
 
   .vp-heading h1 { font-size: 1.7rem; }
 
   .vp-field {
     height: 48px;
-    input { font-size: 16px; } // prevents iOS auto-zoom on focus
+    input { font-size: 16px; }
   }
 
   .vp-submit { height: 50px; font-size: 15px; }
@@ -500,5 +493,4 @@ $divider-tx:  #9c968a;
   .vp-social { height: 48px; }
 }
 
-// Desktop: hide mobile-only logo
 .vp-mobile-top { display: none; }
