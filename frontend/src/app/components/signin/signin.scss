@@ -82,7 +82,7 @@ $divider-tx:  #9c968a;
   flex: 1;
   display: flex;
   flex-direction: column;
-  overflow-y: auto;
+  overflow: hidden;
   background: #fff;
 }
 
@@ -104,14 +104,15 @@ $divider-tx:  #9c968a;
   display: flex;
   flex-direction: column;
   justify-content: center;
-  padding: 2.5rem clamp(2rem, 7vw, 5.5rem);
+  padding: 1.25rem clamp(2rem, 7vw, 5.5rem);
   max-width: 520px;
   width: 100%;
   margin: 0 auto;
 
   @media (max-width: 768px) {
-    padding: 2.5rem 1.5rem;
+    padding: 1.5rem 1.5rem;
     max-width: 100%;
+    overflow-y: auto;
   }
 }
 
@@ -120,7 +121,7 @@ $divider-tx:  #9c968a;
   display: flex;
   align-items: center;
   gap: 0.4rem;
-  margin-bottom: 2.2rem;
+  margin-bottom: 1rem;
 
   img { height: 68px; width: 68px; object-fit: contain; }
 
@@ -134,7 +135,7 @@ $divider-tx:  #9c968a;
 
 // ── Heading block ─────────────────────────────────────────────────────────────
 .vp-heading {
-  margin-bottom: 1.6rem;
+  margin-bottom: 1rem;
 }
 
 .vp-label {
@@ -149,11 +150,11 @@ $divider-tx:  #9c968a;
 .vp-heading h1 {
   font-family: 'Cormorant Garamond', Georgia, serif;
   font-weight: 600;
-  font-size: clamp(2rem, 3.5vw, 2.75rem);
+  font-size: clamp(1.75rem, 3.5vw, 2.5rem);
   line-height: 1.08;
   letter-spacing: -0.3px;
   color: $text-head;
-  margin: 0 0 0.65rem;
+  margin: 0 0 0.4rem;
 }
 
 .vp-subtitle {
@@ -173,7 +174,7 @@ $divider-tx:  #9c968a;
 }
 
 .vp-field-group {
-  margin-bottom: 0.9rem;
+  margin-bottom: 0.65rem;
 
   label {
     display: block;
@@ -189,7 +190,7 @@ $divider-tx:  #9c968a;
   display: flex;
   align-items: center;
   gap: 10px;
-  height: 50px;
+  height: 46px;
   background: $field-bg;
   border: 1.5px solid $field-bdr;
   border-radius: 13px;
@@ -245,7 +246,7 @@ $divider-tx:  #9c968a;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin: 0.2rem 0 1rem;
+  margin: 0.1rem 0 0.65rem;
 }
 
 .vp-remember {
@@ -315,7 +316,7 @@ $divider-tx:  #9c968a;
 // ── Submit button ─────────────────────────────────────────────────────────────
 .vp-submit {
   width: 100%;
-  height: 52px;
+  height: 48px;
   border-radius: 13px;
   background: $blue;
   color: #fff;
@@ -328,7 +329,7 @@ $divider-tx:  #9c968a;
   align-items: center;
   justify-content: center;
   gap: 0.4rem;
-  margin-bottom: 1.1rem;
+  margin-bottom: 0.75rem;
   letter-spacing: 0.1px;
   box-shadow: 0 6px 20px -6px rgba(47, 95, 176, 0.5);
   transition: background 0.18s, box-shadow 0.18s, transform 0.12s;
@@ -354,7 +355,7 @@ $divider-tx:  #9c968a;
   gap: 0.75rem;
   font-size: 12.5px;
   color: $divider-tx;
-  margin-bottom: 0.9rem;
+  margin-bottom: 0.65rem;
 
   &::before, &::after {
     content: '';
@@ -369,7 +370,7 @@ $divider-tx:  #9c968a;
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 0.65rem;
-  margin-bottom: 1.3rem;
+  margin-bottom: 0.85rem;
 }
 
 .vp-social {
@@ -377,7 +378,7 @@ $divider-tx:  #9c968a;
   align-items: center;
   justify-content: center;
   gap: 0.55rem;
-  height: 50px;
+  height: 46px;
   border: 1.5px solid $field-bdr;
   border-radius: 13px;
   background: #fff;
