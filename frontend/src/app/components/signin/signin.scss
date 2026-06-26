@@ -490,7 +490,10 @@ $divider-tx:  #9c968a;
 
   .vp-heading h1 { font-size: 1.7rem; }
 
-  .vp-field { height: 48px; }
+  .vp-field {
+    height: 48px;
+    input { font-size: 16px; } // prevents iOS auto-zoom on focus
+  }
 
   .vp-submit { height: 50px; font-size: 15px; }
 
