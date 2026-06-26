@@ -736,6 +736,13 @@ def register(req: RegisterRequest):
     if existing.data:
         user = existing.data[0]
         if user.get("is_verified"):
+            provider = user.get("auth_provider", "email")
+            if provider != "email":
+                provider_name = provider.capitalize()
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"This email is linked to a {provider_name} account. Please sign in with {provider_name} instead."
+                )
             raise HTTPException(status_code=400, detail="Email already registered")
         # Unverified account — resend verification with updated details
         hashed_password = hash_password(req.password)
