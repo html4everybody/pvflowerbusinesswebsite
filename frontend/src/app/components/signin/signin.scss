@@ -10,110 +10,64 @@ $placeholder: #a8a294;
 $divider-ln:  #e5e1d8;
 $divider-tx:  #9c968a;
 
-// ── Page shell ────────────────────────────────────────────────────────────────
+// ── Page — flower background + blur overlay ───────────────────────────────────
 .vp-page {
-  display: flex;
   height: 100vh;
   max-height: 100vh;
   overflow: hidden;
-  background: #fff;
-  font-family: 'Hanken Grotesk', -apple-system, sans-serif;
-}
-
-// ── Left floral panel ─────────────────────────────────────────────────────────
-.vp-left {
-  position: relative;
-  width: clamp(320px, 42vw, 520px);
-  flex-shrink: 0;
-  overflow: hidden;
-  background: #f5f1ec;
-
-  @media (max-width: 768px) { display: none; }
-}
-
-.vp-left-flowers {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: center;
-}
-
-.vp-left-footer {
-  position: absolute;
-  bottom: 2.5rem;
-  left: 0;
-  right: 0;
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 0.55rem;
-  text-align: center;
-  z-index: 2;
+  justify-content: center;
+  padding: 1.5rem;
+  box-sizing: border-box;
+  position: relative;
+  font-family: 'Hanken Grotesk', -apple-system, sans-serif;
+  background: url('signin-flowers.png') center / cover no-repeat;
 
-  p {
-    font-family: 'Cormorant Garamond', Georgia, serif;
-    font-size: 1.05rem;
-    font-style: italic;
-    color: #2c2820;
-    line-height: 1.55;
-    margin: 0;
-    text-shadow: 0 1px 8px rgba(255,255,255,0.8);
+  // warm frosted overlay
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: rgba(248, 243, 236, 0.72);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
   }
 }
 
-.vp-left-logo {
-  width: 60px;
-  height: 60px;
-  filter: drop-shadow(0 1px 4px rgba(0,0,0,0.12));
-}
-
-.vp-left-rule {
-  display: block;
-  width: 32px;
-  height: 2px;
-  background: $blue;
-  border-radius: 2px;
-}
-
-// ── Right form panel ──────────────────────────────────────────────────────────
-.vp-right {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  background: #fff;
-}
-
+// ── Referral banner (above card) ─────────────────────────────────────────────
 .vp-referral-banner {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 20;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  padding: 0.55rem 1.5rem;
+  padding: 0.5rem 1.5rem;
   background: linear-gradient(135deg, #fdf2f8, #fce7f3);
   border-bottom: 1px solid #f9a8d4;
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   color: #9d174d;
 }
 
-// ── Form centring wrapper ─────────────────────────────────────────────────────
-.vp-form-wrap {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  padding: 1.25rem clamp(2rem, 7vw, 5.5rem);
-  max-width: 520px;
+// ── Card ──────────────────────────────────────────────────────────────────────
+.vp-card {
+  position: relative;
+  z-index: 1;
+  background: #ffffff;
+  border-radius: 20px;
+  box-shadow:
+    0 4px 6px rgba(0,0,0,0.04),
+    0 16px 48px rgba(0,0,0,0.12);
+  padding: 2rem 2.25rem 1.75rem;
   width: 100%;
-  margin: 0 auto;
-
-  @media (max-width: 768px) {
-    padding: 1.5rem 1.5rem;
-    max-width: 100%;
-    overflow-y: auto;
-  }
+  max-width: 430px;
+  max-height: calc(100vh - 3rem);
+  overflow: hidden;
+  box-sizing: border-box;
 }
 
 // ── Logo ──────────────────────────────────────────────────────────────────────
@@ -121,26 +75,26 @@ $divider-tx:  #9c968a;
   display: flex;
   align-items: center;
   gap: 0.4rem;
-  margin-bottom: 1rem;
+  margin-bottom: 1.1rem;
 
-  img { height: 68px; width: 68px; object-fit: contain; }
+  img { height: 56px; width: 56px; object-fit: contain; }
 
   span {
-    font-size: 1.05rem;
+    font-size: 1rem;
     font-weight: 600;
     color: $text-head;
     letter-spacing: -0.01em;
   }
 }
 
-// ── Heading block ─────────────────────────────────────────────────────────────
+// ── Heading ───────────────────────────────────────────────────────────────────
 .vp-heading {
   margin-bottom: 1rem;
 }
 
 .vp-label {
-  margin: 0 0 0.45rem;
-  font-size: 11.5px;
+  margin: 0 0 0.3rem;
+  font-size: 11px;
   font-weight: 600;
   letter-spacing: 2.5px;
   text-transform: uppercase;
@@ -150,16 +104,16 @@ $divider-tx:  #9c968a;
 .vp-heading h1 {
   font-family: 'Cormorant Garamond', Georgia, serif;
   font-weight: 600;
-  font-size: clamp(1.75rem, 3.5vw, 2.5rem);
-  line-height: 1.08;
+  font-size: clamp(1.65rem, 3vw, 2.1rem);
+  line-height: 1.1;
   letter-spacing: -0.3px;
   color: $text-head;
-  margin: 0 0 0.4rem;
+  margin: 0 0 0.35rem;
 }
 
 .vp-subtitle {
-  font-size: 14.5px;
-  line-height: 1.55;
+  font-size: 13.5px;
+  line-height: 1.5;
   color: $text-body;
   margin: 0;
 }
@@ -168,7 +122,7 @@ $divider-tx:  #9c968a;
 .vp-field-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 0.65rem;
+  gap: 0.6rem;
 
   @media (max-width: 400px) { grid-template-columns: 1fr; }
 }
@@ -178,28 +132,28 @@ $divider-tx:  #9c968a;
 
   label {
     display: block;
-    font-size: 12px;
+    font-size: 11.5px;
     font-weight: 500;
     color: $text-label;
     letter-spacing: 0.3px;
-    margin-bottom: 7px;
+    margin-bottom: 5px;
   }
 }
 
 .vp-field {
   display: flex;
   align-items: center;
-  gap: 10px;
-  height: 46px;
+  gap: 9px;
+  height: 44px;
   background: $field-bg;
   border: 1.5px solid $field-bdr;
-  border-radius: 13px;
-  padding: 0 14px;
+  border-radius: 11px;
+  padding: 0 12px;
   transition: border-color 0.18s, box-shadow 0.18s;
 
   &:focus-within {
     border-color: $blue;
-    box-shadow: 0 0 0 4px rgba(47, 95, 176, 0.09);
+    box-shadow: 0 0 0 3px rgba(47, 95, 176, 0.09);
   }
 
   input {
@@ -208,7 +162,7 @@ $divider-tx:  #9c968a;
     background: none;
     border: none;
     outline: none;
-    font-size: 15px;
+    font-size: 14.5px;
     color: #2c2a25;
     font-family: inherit;
 
@@ -236,9 +190,9 @@ $divider-tx:  #9c968a;
 }
 
 .vp-field-error {
-  font-size: 11.5px;
+  font-size: 11px;
   color: #e53e3e;
-  margin-top: 4px;
+  margin-top: 3px;
 }
 
 // ── Remember me / Forgot ──────────────────────────────────────────────────────
@@ -246,28 +200,27 @@ $divider-tx:  #9c968a;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin: 0.1rem 0 0.65rem;
+  margin: 0.05rem 0 0.65rem;
 }
 
 .vp-remember {
   display: flex;
   align-items: center;
-  gap: 0.4rem;
-  font-size: 13.5px;
+  gap: 0.38rem;
+  font-size: 13px;
   color: #6f6a5e;
   cursor: pointer;
 
   input[type="checkbox"] {
-    width: 15px;
-    height: 15px;
+    width: 14px;
+    height: 14px;
     accent-color: $blue;
     cursor: pointer;
-    border-radius: 4px;
   }
 }
 
 .vp-forgot {
-  font-size: 13.5px;
+  font-size: 13px;
   font-weight: 500;
   color: $blue;
   text-decoration: none;
@@ -279,24 +232,24 @@ $divider-tx:  #9c968a;
 .vp-success {
   display: flex;
   align-items: center;
-  gap: 0.4rem;
-  font-size: 13px;
+  gap: 0.35rem;
+  font-size: 12.5px;
   color: #16a34a;
   background: rgba(22, 163, 74, 0.07);
   border: 1px solid rgba(22, 163, 74, 0.2);
-  border-radius: 10px;
-  padding: 0.55rem 0.8rem;
-  margin-bottom: 0.85rem;
+  border-radius: 9px;
+  padding: 0.45rem 0.7rem;
+  margin-bottom: 0.7rem;
 }
 
 .vp-error {
-  font-size: 13px;
+  font-size: 12.5px;
   color: #c0392b;
   background: rgba(192, 57, 43, 0.06);
   border: 1px solid rgba(192, 57, 43, 0.18);
-  border-radius: 10px;
-  padding: 0.55rem 0.8rem;
-  margin-bottom: 0.85rem;
+  border-radius: 9px;
+  padding: 0.45rem 0.7rem;
+  margin-bottom: 0.7rem;
 }
 
 .vp-resend { margin-top: 0.2rem; }
@@ -304,24 +257,24 @@ $divider-tx:  #9c968a;
   background: none;
   border: none;
   color: $blue;
-  font-size: 12px;
+  font-size: 11.5px;
   font-weight: 500;
   cursor: pointer;
   padding: 0;
   text-decoration: underline;
   font-family: inherit;
 }
-.vp-resend-done { font-size: 12px; color: #16a34a; }
+.vp-resend-done { font-size: 11.5px; color: #16a34a; }
 
 // ── Submit button ─────────────────────────────────────────────────────────────
 .vp-submit {
   width: 100%;
-  height: 48px;
-  border-radius: 13px;
+  height: 46px;
+  border-radius: 11px;
   background: $blue;
   color: #fff;
   border: none;
-  font-size: 15.5px;
+  font-size: 15px;
   font-weight: 600;
   font-family: inherit;
   cursor: pointer;
@@ -329,14 +282,14 @@ $divider-tx:  #9c968a;
   align-items: center;
   justify-content: center;
   gap: 0.4rem;
-  margin-bottom: 0.75rem;
+  margin-bottom: 0.7rem;
   letter-spacing: 0.1px;
-  box-shadow: 0 6px 20px -6px rgba(47, 95, 176, 0.5);
+  box-shadow: 0 4px 16px -4px rgba(47, 95, 176, 0.5);
   transition: background 0.18s, box-shadow 0.18s, transform 0.12s;
 
   &:hover:not(:disabled) {
     background: $blue-dark;
-    box-shadow: 0 10px 24px -6px rgba(47, 95, 176, 0.45);
+    box-shadow: 0 8px 20px -4px rgba(47, 95, 176, 0.45);
     transform: translateY(-1px);
   }
 
@@ -352,8 +305,8 @@ $divider-tx:  #9c968a;
 .vp-divider {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  font-size: 12.5px;
+  gap: 0.65rem;
+  font-size: 12px;
   color: $divider-tx;
   margin-bottom: 0.65rem;
 
@@ -369,7 +322,7 @@ $divider-tx:  #9c968a;
 .vp-social-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 0.65rem;
+  gap: 0.6rem;
   margin-bottom: 0.85rem;
 }
 
@@ -377,12 +330,12 @@ $divider-tx:  #9c968a;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.55rem;
-  height: 46px;
+  gap: 0.5rem;
+  height: 44px;
   border: 1.5px solid $field-bdr;
-  border-radius: 13px;
+  border-radius: 11px;
   background: #fff;
-  font-size: 14.5px;
+  font-size: 14px;
   font-weight: 500;
   color: #3c3933;
   font-family: inherit;
@@ -399,7 +352,7 @@ $divider-tx:  #9c968a;
 
 // ── Switch mode ───────────────────────────────────────────────────────────────
 .vp-switch {
-  font-size: 14px;
+  font-size: 13.5px;
   color: #6f6a5e;
   text-align: center;
   margin: 0;
@@ -422,15 +375,15 @@ $divider-tx:  #9c968a;
 .vp-pw-reqs {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.2rem 0.6rem;
-  margin-top: 0.4rem;
+  gap: 0.18rem 0.55rem;
+  margin-top: 0.35rem;
 }
 
 .vp-pw-req {
   display: flex;
   align-items: center;
-  gap: 0.3rem;
-  font-size: 11px;
+  gap: 0.28rem;
+  font-size: 10.5px;
   color: #a0998e;
   transition: color 0.2s;
 
@@ -450,15 +403,15 @@ $divider-tx:  #9c968a;
 .vp-terms {
   display: flex;
   align-items: flex-start;
-  gap: 0.4rem;
-  font-size: 12.5px;
+  gap: 0.38rem;
+  font-size: 12px;
   color: #6f6a5e;
-  margin-bottom: 0.9rem;
+  margin-bottom: 0.75rem;
   cursor: pointer;
 
   input[type="checkbox"] {
-    width: 14px;
-    height: 14px;
+    width: 13px;
+    height: 13px;
     margin-top: 2px;
     accent-color: $blue;
     flex-shrink: 0;
@@ -473,6 +426,7 @@ $divider-tx:  #9c968a;
 
 // ── Mobile ────────────────────────────────────────────────────────────────────
 @media (max-width: 480px) {
-  .vp-form-wrap { padding: 2rem 1.25rem; }
-  .vp-heading h1 { font-size: 1.75rem; }
+  .vp-page { padding: 1rem; align-items: flex-start; padding-top: 2rem; overflow-y: auto; }
+  .vp-card { max-height: none; border-radius: 16px; padding: 1.5rem 1.25rem; }
+  .vp-heading h1 { font-size: 1.5rem; }
 }
