@@ -738,11 +738,16 @@ def register(req: RegisterRequest):
         if user.get("is_verified"):
             provider = user.get("auth_provider", "email")
             if provider != "email":
-                provider_name = provider.capitalize()
-                raise HTTPException(
-                    status_code=400,
-                    detail=f"This email is linked to a {provider_name} account. Please sign in with {provider_name} instead."
-                )
+                # Social user — link email+password to their existing account.
+                # Email is already verified via the social provider, so no re-verification needed.
+                hashed_password = hash_password(req.password)
+                supabase.table("users").update({
+                    "password":      hashed_password,
+                    "first_name":    req.firstName,
+                    "last_name":     req.lastName,
+                    "auth_provider": "email"
+                }).eq("email", req.email).execute()
+                return {"message": "Password set! You can now sign in with your email and password."}
             raise HTTPException(status_code=400, detail="Email already registered")
         # Unverified account — resend verification with updated details
         hashed_password = hash_password(req.password)
