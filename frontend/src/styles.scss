@@ -204,8 +204,10 @@ html::-webkit-scrollbar-thumb:hover,
   opacity: 0.92;
 }
 
-// ── Sign-in page dark mode (global scope bypasses Angular view encapsulation) ──
-[data-theme="dark"] {
+// ── Sign-in page dark mode ────────────────────────────────────────────────────
+// Uses html[data-theme="dark"] (specificity 0,2,1) to beat Angular's scoped
+// component styles (.vp-page[_ngcontent-xxx] = 0,2,0)
+html[data-theme="dark"] {
   .vp-page { background: #020617; }
 
   .vp-card {
