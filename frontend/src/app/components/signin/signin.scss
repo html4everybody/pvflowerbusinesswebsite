@@ -421,9 +421,45 @@ $divider-tx:  #9c968a;
 @keyframes spin { to { transform: rotate(360deg); } }
 
 // ── Mobile ────────────────────────────────────────────────────────────────────
-@media (max-width: 480px) {
-  .vp-page { padding: 0; }
-  .vp-card { border-radius: 0; max-height: 100vh; height: 100vh; }
-  .vp-form-wrap { padding: 1.5rem 1.25rem; }
-  .vp-heading h1 { font-size: 1.45rem; }
+@media (max-width: 700px) {
+  .vp-page {
+    padding: 0;
+    align-items: stretch;
+  }
+
+  .vp-card {
+    flex-direction: column;
+    width: 100%;
+    max-width: 100%;
+    height: 100vh;
+    height: 100dvh;
+    max-height: 100vh;
+    max-height: 100dvh;
+    border-radius: 0;
+  }
+
+  // Show flower image as a top banner
+  .vp-card-left {
+    display: block;
+    width: 100%;
+    height: 210px;
+    flex-shrink: 0;
+  }
+
+  .vp-card-footer { display: none; }
+
+  .vp-card-right {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+  }
+
+  .vp-form-wrap {
+    padding: 1.25rem 1.25rem 2rem;
+    justify-content: flex-start;
+  }
+
+  .vp-heading h1 { font-size: 1.55rem; }
+
+  .vp-logo { margin-bottom: 0.75rem; }
 }
