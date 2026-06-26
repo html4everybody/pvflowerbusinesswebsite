@@ -216,15 +216,18 @@ html[data-theme="dark"] {
 
   .vp-card-right { background: #0f172a; }
 
-  .vp-logo span { color: #e2e8f0; }
+  // These need !important — Angular adds _ngcontent to BOTH parts of
+  // descendant selectors (.parent child), making their specificity (0,3,1)
+  // which beats html[data-theme="dark"] at (0,2,2)
+  .vp-logo span { color: #e2e8f0 !important; }
 
   .vp-label { color: #60a5fa; }
 
-  .vp-heading h1 { color: #f1f5f9; }
+  .vp-heading h1 { color: #f1f5f9 !important; }
 
   .vp-subtitle { color: #94a3b8; }
 
-  .vp-field-group label { color: #cbd5e1; }
+  .vp-field-group label { color: #cbd5e1 !important; }
 
   .vp-field {
     background: #1e293b;
@@ -235,10 +238,8 @@ html[data-theme="dark"] {
       box-shadow: 0 0 0 3px rgba(96,165,250,0.12);
     }
 
-    input {
-      color: #f1f5f9;
-      &::placeholder { color: #475569; }
-    }
+    input { color: #f1f5f9 !important; }
+    input::placeholder { color: #475569 !important; }
   }
 
   .vp-field-icon { color: #475569; }
@@ -270,10 +271,10 @@ html[data-theme="dark"] {
   .vp-divider::before, .vp-divider::after { background: #334155; }
 
   .vp-switch { color: #94a3b8; }
-  .vp-switch button { color: #60a5fa; }
+  .vp-switch button { color: #60a5fa !important; }
 
   .vp-terms { color: #94a3b8; }
-  .vp-terms a { color: #60a5fa; }
+  .vp-terms a { color: #60a5fa !important; }
 
   .vp-error {
     color: #fca5a5;
@@ -288,7 +289,7 @@ html[data-theme="dark"] {
   }
 
   .vp-pw-req { color: #475569; }
-  .vp-pw-req.met { color: #86efac; }
+  .vp-pw-req.met { color: #86efac !important; }
   .vp-pw-dot { background: #334155; }
 
   .vp-referral-banner {
