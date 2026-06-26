@@ -22,17 +22,16 @@ $divider-tx:  #9c968a;
   box-sizing: border-box;
   position: relative;
   font-family: 'Hanken Grotesk', -apple-system, sans-serif;
-  background: url('signin-flowers.png') center / cover no-repeat;
+  background: url('/signin-flowers.png') center / cover no-repeat;
 
-  // warm frosted overlay
-  &::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: rgba(248, 243, 236, 0.72);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-  }
+}
+
+.vp-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(248, 243, 236, 0.72);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }
 
 // ── Referral banner (above card) ─────────────────────────────────────────────
