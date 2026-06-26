@@ -427,3 +427,93 @@ $divider-tx:  #9c968a;
   .vp-form-wrap { padding: 1.5rem 1.25rem; }
   .vp-heading h1 { font-size: 1.45rem; }
 }
+
+// ── Dark mode ─────────────────────────────────────────────────────────────────
+[data-theme="dark"] {
+  .vp-page { background: #020617; }
+
+  .vp-card {
+    box-shadow: 0 4px 6px rgba(0,0,0,0.3), 0 20px 60px rgba(0,0,0,0.5);
+  }
+
+  .vp-card-right { background: #0f172a; }
+
+  .vp-logo span { color: #e2e8f0; }
+
+  .vp-label { color: #60a5fa; }
+
+  .vp-heading h1 { color: #f1f5f9; }
+
+  .vp-subtitle { color: #94a3b8; }
+
+  .vp-field-group label { color: #cbd5e1; }
+
+  .vp-field {
+    background: #1e293b;
+    border-color: #334155;
+
+    &:focus-within {
+      border-color: #60a5fa;
+      box-shadow: 0 0 0 3px rgba(96,165,250,0.12);
+    }
+
+    input {
+      color: #f1f5f9;
+      &::placeholder { color: #475569; }
+    }
+  }
+
+  .vp-field-icon { color: #475569; }
+  .vp-eye { color: #475569; &:hover { color: #94a3b8; } }
+
+  .vp-remember { color: #94a3b8; }
+  .vp-forgot { color: #60a5fa; }
+
+  .vp-options { color: #94a3b8; }
+
+  .vp-submit {
+    background: #3b82f6;
+    box-shadow: 0 4px 16px -4px rgba(59,130,246,0.5);
+    &:hover:not(:disabled) {
+      background: #2563eb;
+      box-shadow: 0 8px 20px -4px rgba(59,130,246,0.45);
+    }
+  }
+
+  .vp-social {
+    background: #1e293b;
+    border-color: #334155;
+    color: #e2e8f0;
+    &:hover:not(:disabled) { background: #273548; border-color: #475569; }
+  }
+
+  .vp-divider {
+    color: #475569;
+    &::before, &::after { background: #1e293b; }
+  }
+
+  .vp-switch { color: #94a3b8; button { color: #60a5fa; } }
+
+  .vp-terms { color: #94a3b8; a { color: #60a5fa; } }
+
+  .vp-error {
+    color: #fca5a5;
+    background: rgba(239,68,68,0.1);
+    border-color: rgba(239,68,68,0.25);
+  }
+
+  .vp-success {
+    color: #86efac;
+    background: rgba(34,197,94,0.1);
+    border-color: rgba(34,197,94,0.25);
+  }
+
+  .vp-pw-req { color: #475569; &.met { color: #86efac; } }
+  .vp-pw-dot { background: #334155; }
+
+  .vp-referral-banner {
+    background: linear-gradient(135deg, #1e1b4b, #1e293b);
+    border-color: #3730a3;
+    color: #c4b5fd;
+  }
+}
