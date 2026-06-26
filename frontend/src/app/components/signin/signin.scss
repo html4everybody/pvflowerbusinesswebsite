@@ -424,42 +424,36 @@ $divider-tx:  #9c968a;
 @media (max-width: 700px) {
   .vp-page {
     padding: 0;
-    align-items: stretch;
+    background: #fff;
   }
 
   .vp-card {
-    flex-direction: column;
     width: 100%;
     max-width: 100%;
     height: 100vh;
     height: 100dvh;
-    max-height: 100vh;
-    max-height: 100dvh;
+    max-height: none;
     border-radius: 0;
+    box-shadow: none;
   }
 
-  // Show flower image as a top banner
-  .vp-card-left {
-    display: block;
-    width: 100%;
-    height: 210px;
-    flex-shrink: 0;
-  }
+  .vp-card-left { display: none; }
 
-  .vp-card-footer { display: none; }
-
-  .vp-card-right {
-    flex: 1;
-    min-height: 0;
-    overflow-y: auto;
-  }
+  .vp-card-right { overflow-y: auto; }
 
   .vp-form-wrap {
-    padding: 1.25rem 1.25rem 2rem;
-    justify-content: flex-start;
+    padding: 2rem 1.75rem 2.5rem;
+    justify-content: center;
+    max-width: 420px;
+    margin: 0 auto;
+    width: 100%;
   }
 
-  .vp-heading h1 { font-size: 1.55rem; }
+  .vp-heading h1 { font-size: 1.7rem; }
 
-  .vp-logo { margin-bottom: 0.75rem; }
+  .vp-field { height: 48px; }
+
+  .vp-submit { height: 50px; font-size: 15px; }
+
+  .vp-social { height: 48px; }
 }
