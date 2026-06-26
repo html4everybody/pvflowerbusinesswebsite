@@ -21,230 +21,221 @@
         <span class="auth-logo-name">VivaPetals</span>
       </div>
 
-      @if (!isSignUp()) {
-        <!-- Sign In -->
-        <form class="auth-form" #loginForm="ngForm" (ngSubmit)="onLogin()">
+      <div class="auth-form-wrap">
 
-          <div class="form-heading">
-            <span class="form-label">WELCOME BACK</span>
-            <h1>Let's pick up<br>where you left off</h1>
-            <p class="subtitle">Sign in to track orders, save your favourite bouquets, and never miss a bloom.</p>
-          </div>
+        @if (!isSignUp()) {
+          <form class="auth-form" #loginForm="ngForm" (ngSubmit)="onLogin()">
 
-          @if (successMessage()) {
-            <div class="success-banner">
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-                <polyline points="22 4 12 14.01 9 11.01"></polyline>
-              </svg>
-              {{ successMessage() }}
+            <div class="form-heading">
+              <span class="form-label">WELCOME BACK</span>
+              <h1>Let's pick up<br>where you left off</h1>
+              <p class="subtitle">Sign in to track orders, save your favourite bouquets, and never miss a bloom.</p>
             </div>
-          }
 
-          <div class="form-group">
-            <label for="email">Email address</label>
-            <div class="input-wrap">
-              <svg class="input-icon" xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
-              <input type="email" id="email" #loginEmail="ngModel" [(ngModel)]="loginData.email" name="email" placeholder="you@example.com" required>
-            </div>
-            @if (loginEmail.invalid && loginEmail.touched) {
-              <div class="field-error">Email address is required</div>
+            @if (successMessage()) {
+              <div class="success-banner">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                {{ successMessage() }}
+              </div>
             }
-          </div>
 
-          <div class="form-group">
-            <label for="password">Password</label>
-            <div class="input-wrap">
-              <svg class="input-icon" xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-              <input [type]="showLoginPassword() ? 'text' : 'password'" id="password" #loginPassword="ngModel" [(ngModel)]="loginData.password" name="password" placeholder="Enter your password" required>
-              <button type="button" class="eye-btn" (click)="showLoginPassword.set(!showLoginPassword())" [attr.aria-label]="showLoginPassword() ? 'Hide password' : 'Show password'">
-                @if (showLoginPassword()) {
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
-                } @else {
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            <div class="form-group">
+              <label for="email">Email address</label>
+              <div class="input-wrap">
+                <svg class="input-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+                <input type="email" id="email" #loginEmail="ngModel" [(ngModel)]="loginData.email" name="email" placeholder="you@example.com" required>
+              </div>
+              @if (loginEmail.invalid && loginEmail.touched) {
+                <div class="field-error">Email address is required</div>
+              }
+            </div>
+
+            <div class="form-group">
+              <label for="password">Password</label>
+              <div class="input-wrap">
+                <svg class="input-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                <input [type]="showLoginPassword() ? 'text' : 'password'" id="password" #loginPassword="ngModel" [(ngModel)]="loginData.password" name="password" placeholder="Enter your password" required>
+                <button type="button" class="eye-btn" (click)="showLoginPassword.set(!showLoginPassword())">
+                  @if (showLoginPassword()) {
+                    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                  } @else {
+                    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                  }
+                </button>
+              </div>
+              @if (loginPassword.invalid && loginPassword.touched) {
+                <div class="field-error">Password is required</div>
+              }
+            </div>
+
+            <div class="form-options">
+              <label class="remember-me">
+                <input type="checkbox">
+                <span>Remember me</span>
+              </label>
+              <a routerLink="/forgot-password" class="forgot-link">Forgot password?</a>
+            </div>
+
+            @if (errorMessage()) {
+              <div class="error-msg">
+                {{ errorMessage() }}
+                @if (showResendLink()) {
+                  <div class="resend-inline">
+                    @if (!resendDone()) {
+                      <button type="button" class="resend-link-btn" (click)="resendVerification()" [disabled]="resendLoading()">
+                        {{ resendLoading() ? 'Sending...' : 'Resend verification email' }}
+                      </button>
+                    } @else {
+                      <span class="resend-done">Verification email sent — check your inbox.</span>
+                    }
+                  </div>
                 }
+              </div>
+            }
+
+            <button type="submit" class="btn-submit" [disabled]="loading() || loginForm.invalid">
+              @if (loading()) {
+                <svg class="spin-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+                Signing in...
+              } @else {
+                Sign in &nbsp;→
+              }
+            </button>
+
+            <div class="divider"><span>or continue with</span></div>
+
+            <div class="social-row">
+              <button type="button" class="btn-social" (click)="loginWithGoogle()" [disabled]="googleLoading() || facebookLoading() || loading()">
+                @if (googleLoading()) {
+                  <svg class="spin-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+                } @else {
+                  <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+                }
+                Google
+              </button>
+              <button type="button" class="btn-social" (click)="loginWithFacebook()" [disabled]="googleLoading() || facebookLoading() || loading()">
+                @if (facebookLoading()) {
+                  <svg class="spin-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+                } @else {
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="#1877F2"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+                }
+                Facebook
               </button>
             </div>
-            @if (loginPassword.invalid && loginPassword.touched) {
-              <div class="field-error">Password is required</div>
-            }
-          </div>
 
-          <div class="form-options">
-            <label class="remember-me">
-              <input type="checkbox">
-              <span>Remember me</span>
-            </label>
-            <a routerLink="/forgot-password" class="forgot-password">Forgot password?</a>
-          </div>
+            <p class="switch-mode">New to VivaPetals? <button type="button" (click)="toggleMode()">Create an account</button></p>
 
-          @if (errorMessage()) {
-            <div class="error-msg">
-              {{ errorMessage() }}
-              @if (showResendLink()) {
-                <div class="resend-inline">
-                  @if (!resendDone()) {
-                    <button type="button" class="resend-link-btn" (click)="resendVerification()" [disabled]="resendLoading()">
-                      {{ resendLoading() ? 'Sending...' : 'Resend verification email' }}
-                    </button>
+          </form>
+
+        } @else {
+          <form class="auth-form" #signupForm="ngForm" (ngSubmit)="onSignup()">
+
+            <div class="form-heading">
+              <span class="form-label">JOIN US</span>
+              <h1>Create your<br>account</h1>
+              <p class="subtitle">Join our flower family and get exclusive deals, early access, and more.</p>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="firstName">First Name</label>
+                <div class="input-wrap">
+                  <svg class="input-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                  <input type="text" id="firstName" #firstNameField="ngModel" [(ngModel)]="signupData.firstName" name="firstName" placeholder="John" required>
+                </div>
+                @if (firstNameField.invalid && firstNameField.touched) {
+                  <div class="field-error">Required</div>
+                }
+              </div>
+              <div class="form-group">
+                <label for="lastName">Last Name</label>
+                <div class="input-wrap">
+                  <svg class="input-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                  <input type="text" id="lastName" #lastNameField="ngModel" [(ngModel)]="signupData.lastName" name="lastName" placeholder="Doe" required>
+                </div>
+                @if (lastNameField.invalid && lastNameField.touched) {
+                  <div class="field-error">Required</div>
+                }
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="signupEmail">Email address</label>
+              <div class="input-wrap">
+                <svg class="input-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+                <input type="email" id="signupEmail" #signupEmail="ngModel" [(ngModel)]="signupData.email" name="email" placeholder="you@example.com" required>
+              </div>
+              @if (signupEmail.invalid && signupEmail.touched) {
+                <div class="field-error">Email address is required</div>
+              }
+            </div>
+
+            <div class="form-group">
+              <label for="signupPassword">Password</label>
+              <div class="input-wrap">
+                <svg class="input-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                <input [type]="showSignupPassword() ? 'text' : 'password'" id="signupPassword" #signupPassword="ngModel" [(ngModel)]="signupData.password" name="password" placeholder="Create a password" required>
+                <button type="button" class="eye-btn" (click)="showSignupPassword.set(!showSignupPassword())">
+                  @if (showSignupPassword()) {
+                    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
                   } @else {
-                    <span class="resend-done">Verification email sent — check your inbox.</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                   }
+                </button>
+              </div>
+              @if (signupData.password) {
+                <div class="pw-requirements">
+                  <div class="pw-req" [class.met]="passwordChecks.length"><span class="pw-dot"></span>8+ characters</div>
+                  <div class="pw-req" [class.met]="passwordChecks.upper"><span class="pw-dot"></span>Uppercase</div>
+                  <div class="pw-req" [class.met]="passwordChecks.lower"><span class="pw-dot"></span>Lowercase</div>
+                  <div class="pw-req" [class.met]="passwordChecks.number"><span class="pw-dot"></span>Number</div>
+                  <div class="pw-req" [class.met]="passwordChecks.special"><span class="pw-dot"></span>Special char</div>
                 </div>
               }
             </div>
-          }
 
-          <button type="submit" class="btn-submit" [disabled]="loading() || loginForm.invalid">
-            @if (loading()) {
-              <svg class="spin-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
-              Signing in...
-            } @else {
-              Sign in
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
-            }
-          </button>
-
-          <div class="divider"><span>or continue with</span></div>
-
-          <div class="social-login">
-            <button type="button" class="btn-social google" (click)="loginWithGoogle()" [disabled]="googleLoading() || facebookLoading() || loading()">
-              @if (googleLoading()) {
-                <svg class="spin-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
-              } @else {
-                <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
-              }
-              {{ googleLoading() ? 'Signing in...' : 'Google' }}
-            </button>
-            <button type="button" class="btn-social facebook" (click)="loginWithFacebook()" [disabled]="googleLoading() || facebookLoading() || loading()">
-              @if (facebookLoading()) {
-                <svg class="spin-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
-              } @else {
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="#1877F2"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
-              }
-              {{ facebookLoading() ? 'Signing in...' : 'Facebook' }}
-            </button>
-          </div>
-
-          <p class="switch-mode">
-            New to VivaPetals? <button type="button" (click)="toggleMode()">Create an account</button>
-          </p>
-        </form>
-
-      } @else {
-        <!-- Sign Up -->
-        <form class="auth-form" #signupForm="ngForm" (ngSubmit)="onSignup()">
-
-          <div class="form-heading">
-            <span class="form-label">JOIN US</span>
-            <h1>Create your<br>account</h1>
-            <p class="subtitle">Join our flower family and get exclusive deals, early access, and more.</p>
-          </div>
-
-          <div class="form-row">
             <div class="form-group">
-              <label for="firstName">First Name</label>
+              <label for="confirmPassword">Confirm Password</label>
               <div class="input-wrap">
-                <svg class="input-icon" xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                <input type="text" id="firstName" #firstNameField="ngModel" [(ngModel)]="signupData.firstName" name="firstName" placeholder="John" required>
+                <svg class="input-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                <input [type]="showConfirmPassword() ? 'text' : 'password'" id="confirmPassword" #confirmPasswordField="ngModel" [(ngModel)]="signupData.confirmPassword" name="confirmPassword" placeholder="Confirm your password" required>
+                <button type="button" class="eye-btn" (click)="showConfirmPassword.set(!showConfirmPassword())">
+                  @if (showConfirmPassword()) {
+                    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                  } @else {
+                    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                  }
+                </button>
               </div>
-              @if (firstNameField.invalid && firstNameField.touched) {
-                <div class="field-error">First name is required</div>
+              @if (confirmPasswordField.invalid && confirmPasswordField.touched) {
+                <div class="field-error">Please confirm your password</div>
               }
             </div>
-            <div class="form-group">
-              <label for="lastName">Last Name</label>
-              <div class="input-wrap">
-                <svg class="input-icon" xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                <input type="text" id="lastName" #lastNameField="ngModel" [(ngModel)]="signupData.lastName" name="lastName" placeholder="Doe" required>
-              </div>
-              @if (lastNameField.invalid && lastNameField.touched) {
-                <div class="field-error">Last name is required</div>
+
+            <label class="terms">
+              <input type="checkbox" required>
+              <span>I agree to the <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a></span>
+            </label>
+
+            @if (errorMessage()) {
+              <div class="error-msg">{{ errorMessage() }}</div>
+            }
+
+            <button type="submit" class="btn-submit" [disabled]="loading() || signupForm.invalid || !passwordValid">
+              @if (loading()) {
+                <svg class="spin-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+                Creating account...
+              } @else {
+                Create Account &nbsp;→
               }
-            </div>
-          </div>
+            </button>
 
-          <div class="form-group">
-            <label for="signupEmail">Email address</label>
-            <div class="input-wrap">
-              <svg class="input-icon" xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
-              <input type="email" id="signupEmail" #signupEmail="ngModel" [(ngModel)]="signupData.email" name="email" placeholder="you@example.com" required>
-            </div>
-            @if (signupEmail.invalid && signupEmail.touched) {
-              <div class="field-error">Email address is required</div>
-            }
-          </div>
+            <p class="switch-mode">Already have an account? <button type="button" (click)="toggleMode()">Sign in</button></p>
 
-          <div class="form-group">
-            <label for="signupPassword">Password</label>
-            <div class="input-wrap">
-              <svg class="input-icon" xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-              <input [type]="showSignupPassword() ? 'text' : 'password'" id="signupPassword" #signupPassword="ngModel" [(ngModel)]="signupData.password" name="password" placeholder="Create a password" required>
-              <button type="button" class="eye-btn" (click)="showSignupPassword.set(!showSignupPassword())" [attr.aria-label]="showSignupPassword() ? 'Hide password' : 'Show password'">
-                @if (showSignupPassword()) {
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
-                } @else {
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                }
-              </button>
-            </div>
-            @if (signupPassword.invalid && signupPassword.touched) {
-              <div class="field-error">Password is required</div>
-            }
-            @if (signupData.password) {
-              <div class="pw-requirements">
-                <div class="pw-req" [class.met]="passwordChecks.length"><span class="pw-dot"></span>At least 8 characters</div>
-                <div class="pw-req" [class.met]="passwordChecks.upper"><span class="pw-dot"></span>One uppercase letter</div>
-                <div class="pw-req" [class.met]="passwordChecks.lower"><span class="pw-dot"></span>One lowercase letter</div>
-                <div class="pw-req" [class.met]="passwordChecks.number"><span class="pw-dot"></span>One number</div>
-                <div class="pw-req" [class.met]="passwordChecks.special"><span class="pw-dot"></span>One special character</div>
-              </div>
-            }
-          </div>
+          </form>
+        }
 
-          <div class="form-group">
-            <label for="confirmPassword">Confirm Password</label>
-            <div class="input-wrap">
-              <svg class="input-icon" xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-              <input [type]="showConfirmPassword() ? 'text' : 'password'" id="confirmPassword" #confirmPasswordField="ngModel" [(ngModel)]="signupData.confirmPassword" name="confirmPassword" placeholder="Confirm your password" required>
-              <button type="button" class="eye-btn" (click)="showConfirmPassword.set(!showConfirmPassword())" [attr.aria-label]="showConfirmPassword() ? 'Hide password' : 'Show password'">
-                @if (showConfirmPassword()) {
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
-                } @else {
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                }
-              </button>
-            </div>
-            @if (confirmPasswordField.invalid && confirmPasswordField.touched) {
-              <div class="field-error">Please confirm your password</div>
-            }
-          </div>
-
-          <label class="terms">
-            <input type="checkbox" required>
-            <span>I agree to the <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a></span>
-          </label>
-
-          @if (errorMessage()) {
-            <div class="error-msg">{{ errorMessage() }}</div>
-          }
-
-          <button type="submit" class="btn-submit" [disabled]="loading() || signupForm.invalid || !passwordValid">
-            @if (loading()) {
-              <svg class="spin-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
-              Creating account...
-            } @else {
-              Create Account
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
-            }
-          </button>
-
-          <p class="switch-mode">
-            Already have an account? <button type="button" (click)="toggleMode()">Sign in</button>
-          </p>
-        </form>
-      }
-
+      </div>
     </div>
 
     <!-- ── Right: Decorative Panel ───────────────────────────────────────── -->
@@ -254,19 +245,17 @@
           <span class="badge-dot"></span>
           Fresh-cut, delivered daily
         </div>
-        <div class="panel-image-drop">
-          <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
+        <div class="panel-center">
+          <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
           <span>Drop a bouquet photo</span>
         </div>
         <div class="panel-footer">
-          <blockquote class="panel-quote">
-            "Every order arrives like a little celebration on the doorstep."
-          </blockquote>
-          <div class="panel-social-proof">
+          <p class="panel-quote">"Every order arrives like a little celebration on the doorstep."</p>
+          <div class="panel-proof">
             <div class="avatar-stack">
-              <div class="avatar av-1"></div>
-              <div class="avatar av-2"></div>
-              <div class="avatar av-3"></div>
+              <div class="av av-1"></div>
+              <div class="av av-2"></div>
+              <div class="av av-3"></div>
             </div>
             <span>Loved by 40,000+ flower lovers</span>
           </div>
