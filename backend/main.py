@@ -738,16 +738,20 @@ def register(req: RegisterRequest):
         if user.get("is_verified"):
             provider = user.get("auth_provider", "email")
             if provider != "email":
-                # Social user — link email+password to their existing account.
-                # Email is already verified via the social provider, so no re-verification needed.
+                # Social user adding email+password — store password and send verification email.
+                # auth_provider stays social until they click the link.
                 hashed_password = hash_password(req.password)
+                verification_token = secrets.token_urlsafe(32)
+                token_expires = (datetime.now(timezone.utc) + timedelta(hours=24)).isoformat()
                 supabase.table("users").update({
-                    "password":      hashed_password,
-                    "first_name":    req.firstName,
-                    "last_name":     req.lastName,
-                    "auth_provider": "email"
+                    "password":                      hashed_password,
+                    "first_name":                    req.firstName,
+                    "last_name":                     req.lastName,
+                    "verification_token":            verification_token,
+                    "verification_token_expires_at": token_expires,
                 }).eq("email", req.email).execute()
-                return {"message": "Password set! You can now sign in with your email and password."}
+                threading.Thread(target=send_verification_email, args=(req.email, req.firstName, verification_token), daemon=True).start()
+                return {"message": "Account created! Please check your email to verify your account."}
             raise HTTPException(status_code=400, detail="Email already registered")
         # Unverified account — resend verification with updated details
         hashed_password = hash_password(req.password)
@@ -790,14 +794,21 @@ def verify_email(token: str):
         raise HTTPException(status_code=400, detail="Invalid or expired verification link.")
 
     user = result.data[0]
-    if user.get("is_verified"):
-        return { "message": "Email already verified." }
 
     expires_at = user.get("verification_token_expires_at")
     if expires_at:
         expiry = datetime.fromisoformat(expires_at.replace("Z", "+00:00"))
         if datetime.now(timezone.utc) > expiry:
             raise HTTPException(status_code=400, detail="Verification link has expired. Please request a new one.")
+
+    if user.get("is_verified"):
+        # Social user linking email+password — enable email auth and clear token.
+        supabase.table("users").update({
+            "auth_provider":               "email",
+            "verification_token":          None,
+            "verification_token_expires_at": None,
+        }).eq("email", user["email"]).execute()
+        return { "message": "Email verified! You can now sign in with your email and password." }
 
     supabase.table("users").update({
         "is_verified": True,
