@@ -46,7 +46,9 @@ export class Signin implements AfterViewInit, OnDestroy {
       this.referralCode.set(ref);
       this.isSignUp.set(true);
     }
-    document.documentElement.style.overflow = 'hidden';
+    if (window.innerWidth > 700) {
+      document.documentElement.style.overflow = 'hidden';
+    }
   }
 
   ngOnDestroy(): void {
