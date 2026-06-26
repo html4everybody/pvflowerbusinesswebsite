@@ -18,7 +18,7 @@ $divider-tx:  #9c968a;
   justify-content: center;
   background: linear-gradient(135deg, #f5efe7 0%, #ede5d8 100%);
   font-family: 'Hanken Grotesk', -apple-system, sans-serif;
-  padding: 1.25rem 1.25rem 6rem;
+  padding: 1.25rem 1rem 6rem;
   box-sizing: border-box;
 }
 
@@ -26,9 +26,9 @@ $divider-tx:  #9c968a;
 .vp-card {
   display: flex;
   width: 100%;
-  max-width: 960px;
+  max-width: 1080px;
   height: 100%;
-  max-height: 620px;
+  max-height: 680px;
   border-radius: 20px;
   overflow: hidden;
   box-shadow:
