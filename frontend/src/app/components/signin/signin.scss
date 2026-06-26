@@ -26,28 +26,21 @@ $divider-tx:  #9c968a;
   width: clamp(320px, 42vw, 520px);
   flex-shrink: 0;
   overflow: hidden;
+  background: #f0ebe2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 
   @media (max-width: 768px) { display: none; }
 }
 
-.vp-left-video {
+.vp-left-flowers {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
-}
-
-.vp-left-overlay {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    to bottom,
-    rgba(0,0,0,0.08) 0%,
-    rgba(0,0,0,0.0) 40%,
-    rgba(245,240,232,0.55) 75%,
-    rgba(238,232,220,0.88) 100%
-  );
+  object-position: center;
 }
 
 .vp-left-footer {
@@ -60,6 +53,7 @@ $divider-tx:  #9c968a;
   align-items: center;
   gap: 0.55rem;
   text-align: center;
+  z-index: 2;
 
   p {
     font-family: 'Cormorant Garamond', Georgia, serif;
@@ -68,13 +62,14 @@ $divider-tx:  #9c968a;
     color: #2c2820;
     line-height: 1.55;
     margin: 0;
+    text-shadow: 0 1px 8px rgba(255,255,255,0.8);
   }
 }
 
 .vp-left-logo {
-  width: 40px;
-  height: 40px;
-  filter: drop-shadow(0 1px 3px rgba(0,0,0,0.18));
+  width: 42px;
+  height: 42px;
+  filter: drop-shadow(0 1px 4px rgba(0,0,0,0.12));
 }
 
 .vp-left-rule {
@@ -127,10 +122,10 @@ $divider-tx:  #9c968a;
 .vp-logo {
   display: flex;
   align-items: center;
-  gap: 0.55rem;
+  gap: 0.4rem;
   margin-bottom: 2.2rem;
 
-  img { height: 36px; width: 36px; }
+  img { height: 44px; width: 44px; object-fit: contain; }
 
   span {
     font-size: 1.05rem;
