@@ -198,10 +198,11 @@ html::-webkit-scrollbar-thumb:hover,
   background: #94a3b8;
 }
 
-// Logo has transparent background — invert to white in dark mode
+// logo.png is solid RGB (no alpha) — invert(1) turns white bg to black (invisible on dark header)
+// TODO: replace logo.png with the transparent PNG, then change this to brightness(0) invert(1)
 [data-theme="dark"] .logo-img,
 html[data-theme="dark"] .vp-logo img {
-  filter: brightness(0) invert(1);
+  filter: invert(1);
 }
 
 // ── Sign-in page dark mode ────────────────────────────────────────────────────
