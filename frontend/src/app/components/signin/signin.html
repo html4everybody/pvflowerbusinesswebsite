@@ -36,7 +36,7 @@
         @if (!isSignUp()) {
 
           <!-- ── Sign In ── -->
-          <form #loginForm="ngForm" (ngSubmit)="onLogin()">
+          <form #loginForm="ngForm" (ngSubmit)="onLogin()" class="vp-anim">
 
             <div class="vp-heading">
               <p class="vp-label">WELCOME BACK</p>
@@ -142,7 +142,7 @@
         } @else {
 
           <!-- ── Sign Up ── -->
-          <form #signupForm="ngForm" (ngSubmit)="onSignup()">
+          <form #signupForm="ngForm" (ngSubmit)="onSignup()" class="vp-anim">
 
             <div class="vp-heading">
               <p class="vp-label">JOIN US</p>

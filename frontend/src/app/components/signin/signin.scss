@@ -420,6 +420,23 @@ $divider-tx:  #9c968a;
 .vp-spin { animation: spin 0.8s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
+// ── Form toggle animation (fires when @if swaps sign-in ↔ sign-up) ────────────
+@keyframes vpFadeUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.vp-anim {
+  .vp-heading     { animation: vpFadeUp 0.45s ease both; }
+  .vp-field-group { animation: vpFadeUp 0.4s ease 0.05s both; }
+  .vp-field-row   { animation: vpFadeUp 0.4s ease 0.05s both; }
+  .vp-options     { animation: vpFadeUp 0.4s ease 0.08s both; }
+  .vp-submit      { animation: vpFadeUp 0.45s ease 0.12s both; }
+  .vp-divider     { animation: vpFadeUp 0.45s ease 0.17s both; }
+  .vp-social-row  { animation: vpFadeUp 0.45s ease 0.22s both; }
+  .vp-switch      { animation: vpFadeUp 0.45s ease 0.27s both; }
+}
+
 // ── Mobile ────────────────────────────────────────────────────────────────────
 @media (max-width: 700px) {
   .vp-page {

@@ -10,15 +10,13 @@ import { ToastService } from './services/toast';
   imports: [RouterOutlet, Header, Footer, Toast],
   templateUrl: './app.html',
   styleUrl: './app.scss',
-  host: { '[class.no-chrome]': '!showHeader()' }
 })
 export class App implements OnInit, OnDestroy {
   title = 'VivaPetals';
-  showHeader = signal(true);
   showFooter = signal(true);
   private scrollTimer: ReturnType<typeof setTimeout> | null = null;
 
-  private readonly NO_CHROME_ROUTES = ['/signin', '/verify-email', '/forgot-password', '/reset-password', '/confirm-email'];
+  private readonly NO_FOOTER_ROUTES = ['/signin', '/verify-email', '/forgot-password', '/reset-password', '/confirm-email'];
 
   constructor(private router: Router, private toastService: ToastService) {}
 
@@ -32,9 +30,7 @@ export class App implements OnInit, OnDestroy {
     this.router.events.subscribe(event => {
       if (event instanceof NavigationEnd) {
         window.scrollTo({ top: 0, behavior: 'smooth' });
-        const hideChrome = this.NO_CHROME_ROUTES.some(r => event.urlAfterRedirects.startsWith(r));
-        this.showHeader.set(!hideChrome);
-        this.showFooter.set(!hideChrome);
+        this.showFooter.set(!this.NO_FOOTER_ROUTES.some(r => event.urlAfterRedirects.startsWith(r)));
       }
     });
 
