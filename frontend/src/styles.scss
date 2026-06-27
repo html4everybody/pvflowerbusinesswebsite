@@ -198,10 +198,6 @@ html::-webkit-scrollbar-thumb:hover,
   background: #94a3b8;
 }
 
-// SVG logo is transparent — invert to white silhouette in dark mode
-[data-theme="dark"] .logo-img {
-  filter: brightness(0) invert(1);
-}
 
 // ── Sign-in page dark mode ────────────────────────────────────────────────────
 // Uses html[data-theme="dark"] (specificity 0,2,1) to beat Angular's scoped
