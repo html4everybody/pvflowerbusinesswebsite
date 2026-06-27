@@ -1,5 +1,5 @@
 import { Component, signal } from '@angular/core';
-import { Location } from '@angular/common';
+import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { AuthService } from '../../services/auth';
@@ -7,7 +7,7 @@ import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-account-email',
-  imports: [FormsModule],
+  imports: [FormsModule, RouterLink],
   templateUrl: './account-email.html',
   styleUrl: './account-email.scss'
 })
@@ -17,9 +17,7 @@ export class AccountEmail {
   success = signal('');
   error   = signal('');
 
-  constructor(public authService: AuthService, private http: HttpClient, private location: Location) {}
-
-  goBack() { this.location.back(); }
+  constructor(public authService: AuthService, private http: HttpClient) {}
 
   save() {
     const email = this.newEmail.trim().toLowerCase();

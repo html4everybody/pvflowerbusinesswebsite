@@ -1,5 +1,5 @@
 import { Component, signal } from '@angular/core';
-import { Location } from '@angular/common';
+import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { AuthService } from '../../services/auth';
@@ -7,7 +7,7 @@ import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-account-password',
-  imports: [FormsModule],
+  imports: [FormsModule, RouterLink],
   templateUrl: './account-password.html',
   styleUrl: './account-password.scss'
 })
@@ -40,9 +40,7 @@ export class AccountPassword {
   resetSending = signal(false);
   resetSent    = signal(false);
 
-  constructor(public authService: AuthService, private readonly http: HttpClient, private location: Location) {}
-
-  goBack() { this.location.back(); }
+  constructor(public authService: AuthService, private readonly http: HttpClient) {}
 
   sendResetLink() {
     const email = this.authService.user()?.email;

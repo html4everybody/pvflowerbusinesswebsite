@@ -99,7 +99,10 @@
             <div class="success-icon">✓</div>
             <h2>Message Sent!</h2>
             <p>Thank you for contacting us. We'll get back to you within 24 hours.</p>
-            <button (click)="messageSent.set(false)" class="btn-another">Send Another Message</button>
+            <div class="success-actions">
+              <button (click)="messageSent.set(false)" class="btn-another">Send Another Message</button>
+              <a routerLink="/" class="btn-home">Back to Home</a>
+            </div>
           </div>
         }
       </div>

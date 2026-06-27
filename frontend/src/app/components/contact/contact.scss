@@ -228,6 +228,13 @@
       font-size: 0.93rem;
     }
 
+    .success-actions {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
     .btn-another {
       background: transparent;
       color: var(--text);
@@ -242,6 +249,19 @@
       &:hover {
         border-color: var(--text-muted);
       }
+    }
+
+    .btn-home {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      font-weight: 500;
+      text-decoration: none;
+      transition: color 0.15s;
+
+      &:hover { color: var(--text); }
     }
   }
 }

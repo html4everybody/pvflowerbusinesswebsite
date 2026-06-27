@@ -5,6 +5,24 @@
   min-height: 80vh;
 }
 
+// ── Back Link ──────────────────────────────────────────────────────────────
+.wishlist-back {
+  margin-bottom: 1rem;
+
+  .back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-decoration: none;
+    transition: color 0.15s;
+
+    &:hover { color: var(--text); }
+  }
+}
+
 // ── Header ─────────────────────────────────────────────────────────────────
 .wishlist-header {
   display: flex;

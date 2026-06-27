@@ -1,5 +1,5 @@
 import { Component, signal } from '@angular/core';
-import { Location } from '@angular/common';
+import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { AuthService } from '../../services/auth';
@@ -7,7 +7,7 @@ import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-account-profile',
-  imports: [FormsModule],
+  imports: [FormsModule, RouterLink],
   templateUrl: './account-profile.html',
   styleUrl: './account-profile.scss'
 })
@@ -17,15 +17,13 @@ export class AccountProfile {
   success = signal('');
   error   = signal('');
 
-  constructor(public authService: AuthService, private http: HttpClient, private location: Location) {
+  constructor(public authService: AuthService, private http: HttpClient) {
     const user = authService.user();
     if (user) {
       this.profileForm.firstName = user.firstName;
       this.profileForm.lastName  = user.lastName;
     }
   }
-
-  goBack() { this.location.back(); }
 
   save() {
     if (!this.profileForm.firstName.trim()) return;
