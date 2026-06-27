@@ -1,122 +1,125 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg width="1024" height="1024" viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <title>VivaPetals VP botanical logo</title>
-  <desc>Editable SVG logo: blue VP monogram with green circular botanical wreath, leaves, dots and small flower.</desc>
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024" fill="none">
+  <title>VivaPetals VP Logo - Perfect Circle</title>
+  <desc>Blue VP monogram with green botanical wreath and a perfectly circular ring.</desc>
 
   <defs>
-    <linearGradient id="vpBlue" x1="350" y1="330" x2="710" y2="620" gradientUnits="userSpaceOnUse">
+    <linearGradient id="blueVP" x1="412" y1="360" x2="740" y2="610" gradientUnits="userSpaceOnUse">
       <stop offset="0" stop-color="#1A57FF"/>
-      <stop offset="1" stop-color="#005BEA"/>
+      <stop offset="1" stop-color="#005BEB"/>
     </linearGradient>
 
-    <linearGradient id="wreathGreen" x1="180" y1="250" x2="850" y2="780" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#7AC943"/>
-      <stop offset="0.5" stop-color="#4B9F22"/>
-      <stop offset="1" stop-color="#2E7D1F"/>
+    <linearGradient id="ringGreen" x1="265" y1="250" x2="830" y2="760" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#7CC53B"/>
+      <stop offset="0.5" stop-color="#4F9F22"/>
+      <stop offset="1" stop-color="#3F8C1C"/>
     </linearGradient>
 
-    <linearGradient id="leafGreen" x1="180" y1="290" x2="760" y2="800" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#A6E56A"/>
-      <stop offset="1" stop-color="#2F8B2A"/>
+    <linearGradient id="leafGreen" x1="170" y1="290" x2="930" y2="760" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#A6DF63"/>
+      <stop offset="0.55" stop-color="#6FBB3E"/>
+      <stop offset="1" stop-color="#419B27"/>
     </linearGradient>
 
-    <linearGradient id="flowerGreen" x1="610" y1="640" x2="720" y2="760" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#E5F9B8"/>
-      <stop offset="1" stop-color="#A8DA5A"/>
+    <linearGradient id="flowerPetal" x1="650" y1="680" x2="760" y2="780" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#EDF9C9"/>
+      <stop offset="1" stop-color="#B8D86E"/>
     </linearGradient>
 
-    <filter id="softShadow" x="-20%" y="-20%" width="140%" height="140%">
-      <feDropShadow dx="0" dy="18" stdDeviation="16" flood-color="#000000" flood-opacity="0.14"/>
+    <filter id="softBlur" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="5"/>
     </filter>
 
-    <filter id="leafBlur" x="-40%" y="-40%" width="180%" height="180%">
-      <feGaussianBlur stdDeviation="3"/>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="6"/>
+      <feOffset dy="8"/>
+      <feColorMatrix type="matrix" values="0 0 0 0 0
+                                           0 0 0 0 0
+                                           0 0 0 0 0
+                                           0 0 0 0.15 0"/>
+      <feBlend in2="SourceGraphic" mode="normal"/>
     </filter>
   </defs>
 
-  <!-- transparent canvas -->
+  <!-- Subtle bottom shadow -->
+  <ellipse cx="533" cy="765" rx="145" ry="18" fill="#000000" opacity="0.10" filter="url(#softBlur)"/>
 
-  <!-- soft bottom shadow -->
-  <ellipse cx="510" cy="765" rx="160" ry="22" fill="#000000" opacity="0.10" filter="url(#softShadow)"/>
-
-  <!-- main circular wreath strokes -->
-  <path d="M250 520
-           C250 330 392 210 565 205
-           C700 202 820 286 842 423
-           C868 585 762 728 606 752
-           C442 777 299 690 260 552"
-        stroke="url(#wreathGreen)" stroke-width="7" stroke-linecap="round"/>
-
-  <path d="M225 577
-           C254 670 348 741 475 753
-           C532 758 582 752 622 738"
-        stroke="url(#wreathGreen)" stroke-width="4" stroke-linecap="round" opacity="0.95"/>
-
-  <path d="M196 365
-           C226 305 274 264 330 242"
-        stroke="url(#wreathGreen)" stroke-width="3" stroke-linecap="round" opacity="0.75"/>
-
-  <path d="M208 390
-           C244 326 290 290 350 266"
-        stroke="url(#wreathGreen)" stroke-width="2" stroke-linecap="round" opacity="0.55"/>
-
-  <!-- motion dots -->
-  <circle cx="730" cy="255" r="15" fill="url(#wreathGreen)"/>
-  <circle cx="775" cy="304" r="9" fill="url(#wreathGreen)"/>
-
-  <!-- blue VP mark -->
-  <g stroke="url(#vpBlue)" stroke-width="58" stroke-linecap="round" stroke-linejoin="round">
-    <!-- V -->
-    <path d="M380 380 L505 610 L650 380"/>
-    <!-- P / petal-style curve -->
-    <path d="M650 380
-             C725 378 765 415 765 476
-             C765 540 716 575 650 570"/>
+  <!-- Perfect circular ring -->
+  <g transform="rotate(-16 604 492)">
+    <circle cx="604" cy="492" r="337" stroke="url(#ringGreen)" stroke-width="5"
+            stroke-linecap="round" stroke-dasharray="1780 340"/>
+    <circle cx="604" cy="492" r="332" stroke="url(#ringGreen)" stroke-width="3.5" opacity="0.96"
+            stroke-linecap="round" stroke-dasharray="435 1675" transform="rotate(212 604 492)"/>
   </g>
 
-  <!-- left botanical stem -->
-  <path d="M195 355
-           C190 430 195 505 246 585
-           C294 658 381 708 500 727"
-        stroke="url(#wreathGreen)" stroke-width="4" stroke-linecap="round"/>
+  <!-- top-left motion arcs -->
+  <path d="M237 372 C264 319 294 289 331 271" stroke="#7FBE46" stroke-width="2.2" stroke-linecap="round" opacity="0.55"/>
+  <path d="M249 397 C273 353 301 323 336 307" stroke="#7FBE46" stroke-width="1.7" stroke-linecap="round" opacity="0.40"/>
+
+  <!-- floating leaves -->
+  <g filter="url(#softBlur)" opacity="0.55">
+    <path d="M127 638 C93 637 63 616 48 584 C84 577 117 593 127 638Z" fill="url(#leafGreen)"/>
+    <path d="M850 622 C887 593 928 587 964 603 C931 634 888 640 850 622Z" fill="url(#leafGreen)"/>
+  </g>
+
+  <!-- left botanical vine -->
+  <path d="M221 350
+           C208 426 213 510 250 586
+           C295 676 387 733 510 745"
+        stroke="#4C9D24" stroke-width="4" stroke-linecap="round"/>
 
   <!-- left leaves -->
-  <g fill="url(#leafGreen)" stroke="#2E7D1F" stroke-width="1.2" opacity="0.98">
-    <path d="M192 340 C155 315 136 274 142 230 C183 241 211 276 192 340Z"/>
-    <path d="M190 410 C148 410 115 388 95 350 C138 337 177 356 190 410Z"/>
-    <path d="M232 440 C245 396 279 370 324 365 C314 410 283 441 232 440Z"/>
-    <path d="M253 566 C220 555 194 525 184 486 C225 485 253 512 253 566Z"/>
-    <path d="M330 678 C292 673 265 653 247 617 C287 606 321 625 330 678Z"/>
-    <path d="M450 730 C424 718 405 697 398 670 C428 668 452 690 450 730Z"/>
+  <g fill="url(#leafGreen)">
+    <path d="M192 329 C158 305 142 266 147 220 C184 230 209 264 192 329Z"/>
+    <path d="M182 401 C143 398 110 376 92 343 C130 335 166 355 182 401Z"/>
+    <path d="M240 452 C247 409 278 378 320 370 C314 411 286 444 240 452Z"/>
+    <path d="M255 572 C221 560 195 530 188 492 C228 493 256 523 255 572Z"/>
+    <path d="M345 726 C308 717 278 693 260 654 C300 650 335 674 345 726Z"/>
+    <path d="M477 758 C448 747 424 723 418 690 C449 691 474 716 477 758Z"/>
   </g>
 
   <!-- leaf veins -->
-  <g stroke="#6EBE45" stroke-width="1.5" opacity="0.55" stroke-linecap="round">
-    <path d="M182 320 C167 287 157 260 145 234"/>
-    <path d="M174 397 C143 381 121 365 98 351"/>
-    <path d="M250 426 C276 401 297 383 321 367"/>
-    <path d="M238 546 C220 523 203 505 185 488"/>
-    <path d="M309 662 C287 641 268 627 249 618"/>
-    <path d="M433 715 C421 697 410 684 399 671"/>
+  <g stroke="#7CCB56" stroke-width="1.4" opacity="0.48" stroke-linecap="round">
+    <path d="M185 316 C171 283 159 251 148 225"/>
+    <path d="M171 391 C143 375 118 360 94 344"/>
+    <path d="M253 438 C277 409 297 388 319 371"/>
+    <path d="M243 555 C223 529 205 511 188 494"/>
+    <path d="M329 712 C305 690 284 673 261 655"/>
+    <path d="M461 744 C443 722 430 706 419 691"/>
   </g>
 
-  <!-- right-side leaves -->
-  <g fill="url(#leafGreen)" stroke="#2E7D1F" stroke-width="1.2">
-    <path d="M805 628 C840 601 882 600 918 620 C884 651 842 654 805 628Z"/>
-    <path d="M795 662 C834 663 865 683 883 718 C845 730 809 708 795 662Z"/>
-    <path d="M858 569 C884 532 925 512 967 518 C945 558 907 581 858 569Z"/>
-    <path d="M898 513 C939 488 978 489 1010 509 C975 541 933 548 898 513Z" opacity="0.75" filter="url(#leafBlur)"/>
-    <path d="M150 607 C112 602 80 581 60 547 C99 535 137 556 150 607Z" opacity="0.65" filter="url(#leafBlur)"/>
+  <!-- right-side twig -->
+  <path d="M739 706 C780 697 810 681 842 645" stroke="#4C9D24" stroke-width="4" stroke-linecap="round"/>
+  <g fill="url(#leafGreen)">
+    <path d="M782 641 C813 640 842 655 857 685 C824 691 794 675 782 641Z"/>
+    <path d="M831 617 C861 616 886 630 901 655 C870 662 841 648 831 617Z"/>
+    <path d="M742 700 C772 698 798 712 811 737 C780 743 751 730 742 700Z"/>
   </g>
 
-  <!-- flower at lower right -->
-  <g transform="translate(690 700)">
-    <ellipse cx="0" cy="-42" rx="24" ry="42" fill="url(#flowerGreen)" transform="rotate(0)"/>
-    <ellipse cx="40" cy="-13" rx="24" ry="42" fill="url(#flowerGreen)" transform="rotate(72 40 -13)"/>
-    <ellipse cx="25" cy="35" rx="24" ry="42" fill="url(#flowerGreen)" transform="rotate(144 25 35)"/>
-    <ellipse cx="-25" cy="35" rx="24" ry="42" fill="url(#flowerGreen)" transform="rotate(216 -25 35)"/>
-    <ellipse cx="-40" cy="-13" rx="24" ry="42" fill="url(#flowerGreen)" transform="rotate(288 -40 -13)"/>
-    <circle cx="0" cy="0" r="16" fill="#6DBB29"/>
-    <circle cx="0" cy="0" r="7" fill="#4B9F22"/>
+  <!-- top-right dots -->
+  <circle cx="712" cy="279" r="15" fill="#78BE37"/>
+  <circle cx="756" cy="321" r="8.5" fill="#78BE37"/>
+
+  <!-- flower -->
+  <g transform="translate(686 728)">
+    <ellipse cx="0" cy="-38" rx="23" ry="40" fill="url(#flowerPetal)"/>
+    <ellipse cx="34" cy="-11" rx="23" ry="40" fill="url(#flowerPetal)" transform="rotate(72 34 -11)"/>
+    <ellipse cx="21" cy="30" rx="23" ry="40" fill="url(#flowerPetal)" transform="rotate(144 21 30)"/>
+    <ellipse cx="-21" cy="30" rx="23" ry="40" fill="url(#flowerPetal)" transform="rotate(216 -21 30)"/>
+    <ellipse cx="-34" cy="-11" rx="23" ry="40" fill="url(#flowerPetal)" transform="rotate(288 -34 -11)"/>
+    <circle cx="0" cy="0" r="15" fill="#7DBE34"/>
+    <circle cx="-7" cy="-3" r="3.2" fill="#9ED95B"/>
+    <circle cx="6" cy="-4" r="3.2" fill="#9ED95B"/>
+    <circle cx="-2" cy="7" r="3.2" fill="#9ED95B"/>
+  </g>
+
+  <!-- VP monogram -->
+  <g filter="url(#shadow)">
+    <path d="M414 400 L520 594 L647 402"
+          stroke="url(#blueVP)" stroke-width="56" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M652 401
+             C728 401 770 444 770 500
+             C770 560 724 592 658 590"
+          stroke="url(#blueVP)" stroke-width="56" stroke-linecap="round" stroke-linejoin="round"/>
   </g>
 </svg>
