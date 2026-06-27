@@ -1,4 +1,4 @@
-import { Component, signal, AfterViewInit, OnDestroy } from '@angular/core';
+import { Component, signal, AfterViewInit } from '@angular/core';
 import { Router, ActivatedRoute, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
@@ -16,7 +16,7 @@ declare const FB: any;
   templateUrl: './signin.html',
   styleUrl: './signin.scss'
 })
-export class Signin implements AfterViewInit, OnDestroy {
+export class Signin implements AfterViewInit {
   isSignUp        = signal(false);
   errorMessage    = signal('');
   successMessage  = signal('');
@@ -46,13 +46,6 @@ export class Signin implements AfterViewInit, OnDestroy {
       this.referralCode.set(ref);
       this.isSignUp.set(true);
     }
-    if (window.innerWidth > 700) {
-      document.documentElement.style.overflow = 'hidden';
-    }
-  }
-
-  ngOnDestroy(): void {
-    document.documentElement.style.overflow = '';
   }
 
   ngAfterViewInit(): void {

@@ -4,3 +4,7 @@
   min-height: 100vh;
   padding-top: 68px;
 }
+
+:host.no-chrome {
+  padding-top: 0;
+}
