@@ -198,10 +198,9 @@ html::-webkit-scrollbar-thumb:hover,
   background: #94a3b8;
 }
 
-// Logo PNG has white background — clip to circle and soften in dark mode
+// SVG logo is transparent — invert to white silhouette in dark mode
 [data-theme="dark"] .logo-img {
-  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.12);
-  opacity: 0.92;
+  filter: brightness(0) invert(1);
 }
 
 // ── Sign-in page dark mode ────────────────────────────────────────────────────

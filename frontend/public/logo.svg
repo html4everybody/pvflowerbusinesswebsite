@@ -1,5 +1,125 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 110 110" width="110" height="110">
-  <line x1="20" y1="30" x2="46" y2="73" stroke="#2563eb" stroke-width="9" stroke-linecap="round"/>
-  <line x1="72" y1="30" x2="46" y2="73" stroke="#2563eb" stroke-width="9" stroke-linecap="round"/>
-  <path d="M72,30 Q94,30 94,48 Q94,64 72,64" fill="none" stroke="#2563eb" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024" fill="none">
+  <title>VivaPetals VP Logo - Perfect Circle</title>
+  <desc>Blue VP monogram with green botanical wreath and a perfectly circular ring.</desc>
+
+  <defs>
+    <linearGradient id="blueVP" x1="412" y1="360" x2="740" y2="610" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#1A57FF"/>
+      <stop offset="1" stop-color="#005BEB"/>
+    </linearGradient>
+
+    <linearGradient id="ringGreen" x1="265" y1="250" x2="830" y2="760" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#7CC53B"/>
+      <stop offset="0.5" stop-color="#4F9F22"/>
+      <stop offset="1" stop-color="#3F8C1C"/>
+    </linearGradient>
+
+    <linearGradient id="leafGreen" x1="170" y1="290" x2="930" y2="760" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#A6DF63"/>
+      <stop offset="0.55" stop-color="#6FBB3E"/>
+      <stop offset="1" stop-color="#419B27"/>
+    </linearGradient>
+
+    <linearGradient id="flowerPetal" x1="650" y1="680" x2="760" y2="780" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#EDF9C9"/>
+      <stop offset="1" stop-color="#B8D86E"/>
+    </linearGradient>
+
+    <filter id="softBlur" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="5"/>
+    </filter>
+
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="6"/>
+      <feOffset dy="8"/>
+      <feColorMatrix type="matrix" values="0 0 0 0 0
+                                           0 0 0 0 0
+                                           0 0 0 0 0
+                                           0 0 0 0.15 0"/>
+      <feBlend in2="SourceGraphic" mode="normal"/>
+    </filter>
+  </defs>
+
+  <!-- Subtle bottom shadow -->
+  <ellipse cx="533" cy="765" rx="145" ry="18" fill="#000000" opacity="0.10" filter="url(#softBlur)"/>
+
+  <!-- Perfect circular ring -->
+  <g transform="rotate(-16 604 492)">
+    <circle cx="604" cy="492" r="337" stroke="url(#ringGreen)" stroke-width="5"
+            stroke-linecap="round" stroke-dasharray="1780 340"/>
+    <circle cx="604" cy="492" r="332" stroke="url(#ringGreen)" stroke-width="3.5" opacity="0.96"
+            stroke-linecap="round" stroke-dasharray="435 1675" transform="rotate(212 604 492)"/>
+  </g>
+
+  <!-- top-left motion arcs -->
+  <path d="M237 372 C264 319 294 289 331 271" stroke="#7FBE46" stroke-width="2.2" stroke-linecap="round" opacity="0.55"/>
+  <path d="M249 397 C273 353 301 323 336 307" stroke="#7FBE46" stroke-width="1.7" stroke-linecap="round" opacity="0.40"/>
+
+  <!-- floating leaves -->
+  <g filter="url(#softBlur)" opacity="0.55">
+    <path d="M127 638 C93 637 63 616 48 584 C84 577 117 593 127 638Z" fill="url(#leafGreen)"/>
+    <path d="M850 622 C887 593 928 587 964 603 C931 634 888 640 850 622Z" fill="url(#leafGreen)"/>
+  </g>
+
+  <!-- left botanical vine -->
+  <path d="M221 350
+           C208 426 213 510 250 586
+           C295 676 387 733 510 745"
+        stroke="#4C9D24" stroke-width="4" stroke-linecap="round"/>
+
+  <!-- left leaves -->
+  <g fill="url(#leafGreen)">
+    <path d="M192 329 C158 305 142 266 147 220 C184 230 209 264 192 329Z"/>
+    <path d="M182 401 C143 398 110 376 92 343 C130 335 166 355 182 401Z"/>
+    <path d="M240 452 C247 409 278 378 320 370 C314 411 286 444 240 452Z"/>
+    <path d="M255 572 C221 560 195 530 188 492 C228 493 256 523 255 572Z"/>
+    <path d="M345 726 C308 717 278 693 260 654 C300 650 335 674 345 726Z"/>
+    <path d="M477 758 C448 747 424 723 418 690 C449 691 474 716 477 758Z"/>
+  </g>
+
+  <!-- leaf veins -->
+  <g stroke="#7CCB56" stroke-width="1.4" opacity="0.48" stroke-linecap="round">
+    <path d="M185 316 C171 283 159 251 148 225"/>
+    <path d="M171 391 C143 375 118 360 94 344"/>
+    <path d="M253 438 C277 409 297 388 319 371"/>
+    <path d="M243 555 C223 529 205 511 188 494"/>
+    <path d="M329 712 C305 690 284 673 261 655"/>
+    <path d="M461 744 C443 722 430 706 419 691"/>
+  </g>
+
+  <!-- right-side twig -->
+  <path d="M739 706 C780 697 810 681 842 645" stroke="#4C9D24" stroke-width="4" stroke-linecap="round"/>
+  <g fill="url(#leafGreen)">
+    <path d="M782 641 C813 640 842 655 857 685 C824 691 794 675 782 641Z"/>
+    <path d="M831 617 C861 616 886 630 901 655 C870 662 841 648 831 617Z"/>
+    <path d="M742 700 C772 698 798 712 811 737 C780 743 751 730 742 700Z"/>
+  </g>
+
+  <!-- top-right dots -->
+  <circle cx="712" cy="279" r="15" fill="#78BE37"/>
+  <circle cx="756" cy="321" r="8.5" fill="#78BE37"/>
+
+  <!-- flower -->
+  <g transform="translate(686 728)">
+    <ellipse cx="0" cy="-38" rx="23" ry="40" fill="url(#flowerPetal)"/>
+    <ellipse cx="34" cy="-11" rx="23" ry="40" fill="url(#flowerPetal)" transform="rotate(72 34 -11)"/>
+    <ellipse cx="21" cy="30" rx="23" ry="40" fill="url(#flowerPetal)" transform="rotate(144 21 30)"/>
+    <ellipse cx="-21" cy="30" rx="23" ry="40" fill="url(#flowerPetal)" transform="rotate(216 -21 30)"/>
+    <ellipse cx="-34" cy="-11" rx="23" ry="40" fill="url(#flowerPetal)" transform="rotate(288 -34 -11)"/>
+    <circle cx="0" cy="0" r="15" fill="#7DBE34"/>
+    <circle cx="-7" cy="-3" r="3.2" fill="#9ED95B"/>
+    <circle cx="6" cy="-4" r="3.2" fill="#9ED95B"/>
+    <circle cx="-2" cy="7" r="3.2" fill="#9ED95B"/>
+  </g>
+
+  <!-- VP monogram -->
+  <g filter="url(#shadow)">
+    <path d="M414 400 L520 594 L647 402"
+          stroke="url(#blueVP)" stroke-width="56" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M652 401
+             C728 401 770 444 770 500
+             C770 560 724 592 658 590"
+          stroke="url(#blueVP)" stroke-width="56" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
 </svg>
