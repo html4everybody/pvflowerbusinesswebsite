@@ -1040,14 +1040,15 @@
 
       .nav-orders-link {
         display: flex;
-        font-size: 1.2rem;
-        font-weight: 600;
-        font-family: 'Poppins', sans-serif;
+        font-size: 1.5rem;
+        font-weight: 700;
+        font-family: 'Playfair Display', Georgia, serif;
         color: var(--text);
         padding: 1rem 0;
         border-bottom: 1px solid var(--border);
         border-left: none;
         background: none;
+        letter-spacing: -0.01em;
         &:hover, &.active { color: var(--accent); background: none; border-left: none; }
       }
 
@@ -1162,12 +1163,6 @@
         &:hover { color: var(--accent); }
       }
 
-      .nav-admin-link {
-        font-size: 1rem !important;
-        font-family: 'Poppins', sans-serif !important;
-        font-weight: 600 !important;
-        color: var(--accent) !important;
-      }
     }
 
     .theme-pill    { display: none; }
