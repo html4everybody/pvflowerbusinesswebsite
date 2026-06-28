@@ -971,88 +971,102 @@
 
     .nav {
       display: none;
-      position: absolute;
-      top: 68px; left: 0; right: 0;
-      background: var(--header-bg-solid);
-      backdrop-filter: blur(20px);
-      border-bottom: 1px solid var(--border);
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      background: var(--bg);
       flex-direction: column;
-      height: auto;
-      max-height: 60vh;
+      height: 100dvh;
       overflow-y: auto;
-      scrollbar-width: thin;
-      scrollbar-color: var(--accent) transparent;
+      padding: 1.25rem 2rem 3rem;
+      scrollbar-width: none;
 
-      &::-webkit-scrollbar { width: 4px; }
-      &::-webkit-scrollbar-track { background: transparent; }
-      &::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 99px; }
-      padding: 0.5rem 0;
-      box-shadow: var(--shadow-md);
-      animation: slideDown 0.2s ease;
+      &::-webkit-scrollbar { display: none; }
+      &.open { display: flex; animation: fadeIn 0.2s ease; }
 
-      &.open { display: flex; }
+      .nav-close {
+        display: flex;
+        align-self: flex-end;
+        background: none;
+        border: none;
+        cursor: pointer;
+        color: var(--text);
+        padding: 0.4rem;
+        margin-bottom: 1.75rem;
+        border-radius: var(--radius-sm);
+        transition: background 0.15s ease;
+        &:hover { background: var(--bg-raised); }
+      }
+
+      .nav-user-greeting {
+        display: block;
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: var(--accent);
+        padding: 0 0 1.25rem;
+        border-bottom: 1px solid var(--border);
+        margin-bottom: 0;
+      }
 
       a {
         height: auto;
-        padding: 0.9rem 1.5rem;
-        border-bottom: none;
-        border-left: 3px solid transparent;
+        padding: 1rem 0;
+        border-bottom: 1px solid var(--border);
+        border-left: none;
         font-size: 1rem;
+        font-weight: 700;
+        color: var(--text);
+        font-family: 'Playfair Display', Georgia, serif;
+        letter-spacing: -0.01em;
+        background: none;
 
-        &.active {
-          border-bottom: none;
-          border-left-color: var(--accent);
-          background: var(--accent-light);
-          color: var(--accent);
-        }
-
-        &:hover { background: var(--accent-light); color: var(--accent); }
+        &.active { color: var(--accent); background: none; border-left: none; }
+        &:hover  { color: var(--accent); background: none; }
       }
 
       .nav-signin {
         display: flex;
-        border-top: 1px solid var(--border);
-        margin-top: 0.25rem;
-        padding-top: 0.25rem;
-        color: #333;
-        font-weight: 600;
-      }
-
-      .nav-user-greeting {
-        padding: 0.8rem 1.5rem 0.4rem;
-        font-size: 0.95rem;
-        font-weight: 600;
-        color: var(--accent);
-        display: block;
-      }
-
-      .nav-orders-link,
-      .nav-extra-link {
-        display: flex;
-        padding: 0.9rem 1.5rem;
-        color: #555;
-        font-weight: 500;
         font-size: 1rem;
-        border-left: 3px solid transparent;
-        transition: background 0.15s ease;
+        font-weight: 600;
+        font-family: 'Poppins', sans-serif;
+        color: var(--text);
+        padding: 1rem 0;
+        border-bottom: 1px solid var(--border);
+        border-top: none;
+        margin-top: 0;
+        background: none;
+        &:hover { color: var(--accent); background: none; }
+      }
 
-        &:hover, &.active { background: var(--accent-light); color: var(--accent); border-left-color: var(--accent); }
+      .nav-orders-link {
+        display: flex;
+        font-size: 1rem;
+        font-weight: 700;
+        font-family: 'Playfair Display', Georgia, serif;
+        color: var(--text);
+        padding: 1rem 0;
+        border-bottom: 1px solid var(--border);
+        border-left: none;
+        background: none;
+        letter-spacing: -0.01em;
+        &:hover, &.active { color: var(--accent); background: none; border-left: none; }
       }
 
       .nav-logout-btn {
         display: flex;
         width: 100%;
-        padding: 0.9rem 1.5rem;
+        padding: 1rem 0;
         background: none;
         border: none;
+        border-bottom: 1px solid var(--border);
+        border-left: none;
         color: var(--error);
         font-weight: 500;
         font-size: 1rem;
         cursor: pointer;
         text-align: left;
-        transition: background 0.15s ease;
-
-        &:hover { background: #fff5f5; }
+        font-family: 'Poppins', sans-serif;
+        &:hover { background: none; }
       }
 
       .nav-search { display: none; }
@@ -1061,16 +1075,18 @@
         display: flex;
         align-items: center;
         gap: 0.6rem;
-        padding: 0.9rem 1.5rem;
-        border-top: 1px solid var(--border);
-        border-left: 3px solid transparent;
-        margin-top: 0.25rem;
-        color: #555;
-        font-weight: 500;
+        padding: 1rem 0;
+        border-bottom: 1px solid var(--border);
+        border-left: none;
+        border-top: none;
+        margin-top: 0;
+        color: var(--text);
+        font-weight: 700;
         font-size: 1rem;
-        transition: background 0.15s ease;
+        font-family: 'Playfair Display', Georgia, serif;
+        background: none;
 
-        &:hover, &.active { background: var(--accent-light); color: var(--accent); border-left-color: var(--accent); }
+        &:hover, &.active { color: var(--accent); background: none; border-left: none; }
 
         .nav-wishlist-count {
           background: var(--accent);
@@ -1083,48 +1099,42 @@
           display: flex;
           align-items: center;
           justify-content: center;
+          font-family: 'Poppins', sans-serif;
         }
-
-        &:hover { background: var(--accent-light); color: var(--accent); }
       }
 
-      .nav-hub-divider {
-        padding: 0.5rem 1.5rem 0.25rem;
-        font-size: 0.68rem;
-        font-weight: 800;
-        letter-spacing: 0.8px;
-        text-transform: uppercase;
-        color: var(--text-muted);
-        border-top: 1px solid var(--border);
-        margin-top: 0.25rem;
-        opacity: 0.7;
-      }
+      .nav-hub-divider { display: none; }
 
       .nav-extra-link {
         display: block;
-        padding: 0.75rem 1.5rem;
+        padding: 1rem 0;
         color: var(--text);
-        text-decoration: none;
-        font-size: 0.95rem;
-        font-weight: 500;
-        border-left: 3px solid transparent;
-        transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
-
-        &:hover, &.active {
-          background: var(--accent-light);
-          color: var(--accent);
-          border-left-color: var(--accent);
-        }
+        font-size: 1rem;
+        font-weight: 700;
+        letter-spacing: -0.01em;
+        border-left: none;
+        border-bottom: 1px solid var(--border);
+        font-family: 'Playfair Display', Georgia, serif;
+        background: none;
+        &:hover, &.active { color: var(--accent); background: none; border-left: none; }
       }
 
       .nav-extra-btn {
         width: 100%;
         background: none;
         border: none;
-        border-left: 3px solid transparent;
+        border-left: none;
+        border-bottom: 1px solid var(--border);
         text-align: left;
-        font-family: inherit;
+        font-family: 'Playfair Display', Georgia, serif;
         cursor: pointer;
+        display: block;
+        padding: 1rem 0;
+        color: var(--text);
+        font-size: 1rem;
+        font-weight: 700;
+        letter-spacing: -0.01em;
+        &:hover { color: var(--accent); }
       }
 
       .nav-theme-btn {
@@ -1132,20 +1142,20 @@
         align-items: center;
         gap: 0.6rem;
         width: 100%;
-        padding: 0.9rem 1.5rem;
+        padding: 1rem 0;
         background: none;
         border: none;
-        border-top: 1px solid var(--border);
-        color: #555;
-        font-weight: 500;
+        border-bottom: 1px solid var(--border);
+        color: var(--text);
+        font-weight: 700;
         font-size: 1rem;
+        letter-spacing: -0.01em;
         cursor: pointer;
         text-align: left;
-        font-family: inherit;
-        transition: background 0.15s ease;
-
-        &:hover { background: var(--accent-light); color: var(--accent); }
+        font-family: 'Playfair Display', Georgia, serif;
+        &:hover { color: var(--accent); }
       }
+
     }
 
     .theme-pill    { display: none; }
