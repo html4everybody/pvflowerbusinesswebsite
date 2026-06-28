@@ -209,6 +209,75 @@
   </section>
 
 
+  <!-- ── Live Deals Section ─────────────────────────────────────────────────── -->
+  @if (offers()?.seasonal_offers?.length) {
+    <section class="offers-section" id="offers-section">
+      <div class="container">
+        <div class="section-header" appFadeIn>
+          <span class="section-tag">🔥 Live Deals</span>
+          <h2>Today's Exclusive Offers</h2>
+          <p>Grab these limited-time deals before they're gone — use the code at checkout</p>
+        </div>
+        <div class="offers-grid">
+          @for (offer of offers()!.seasonal_offers; track offer.id) {
+            <div class="offer-card" appFadeIn [fadeDelay]="$index * 80">
+              <span class="offer-badge">{{ offer.badge }}</span>
+              <span class="offer-emoji">{{ offer.emoji }}</span>
+              <h3>{{ offer.title }}</h3>
+              <p>{{ offer.subtitle }}</p>
+              <div class="offer-code-row">
+                <code>{{ offer.code }}</code>
+                <button (click)="copyCode(offer.code)" [class.copied]="copiedCode() === offer.code">
+                  {{ copiedCode() === offer.code ? 'Copied!' : 'Copy' }}
+                </button>
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+    </section>
+  }
+
+  <!-- ── Bundle Offers Section ────────────────────────────────────────────────── -->
+  @if (offers()?.bundle_deals?.length) {
+    <section class="bundles-section" id="bundles-section">
+      <div class="container">
+        <div class="section-header" appFadeIn>
+          <span class="section-tag">🎁 Bundle & Save</span>
+          <h2>Curated Bundles, Unbeatable Prices</h2>
+          <p>Hand-picked flower combos for every occasion — save up to 15% when you buy together</p>
+        </div>
+        <div class="bundles-grid">
+          @for (bundle of offers()!.bundle_deals; track bundle.id) {
+            <div class="bundle-card" appFadeIn [fadeDelay]="$index * 100">
+              <div class="bundle-top">
+                <span class="bundle-emoji">{{ bundle.emoji }}</span>
+                <span class="bundle-save-badge">Save {{ bundle.savings_pct }}%</span>
+              </div>
+              <h3>{{ bundle.name }}</h3>
+              <p>{{ bundle.description }}</p>
+              <div class="bundle-items">
+                @for (product of bundle.products; track product.id) {
+                  <div class="bundle-item">
+                    <img [src]="product.image" [alt]="product.name" loading="lazy">
+                    <span>{{ product.name }}</span>
+                  </div>
+                }
+              </div>
+              <div class="bundle-pricing">
+                <span class="original-price">₹{{ bundle.original_price | number:'1.0-0' }}</span>
+                <span class="bundle-price">₹{{ bundle.bundle_price | number:'1.0-0' }}</span>
+              </div>
+              <button class="btn-add-bundle" (click)="addBundleToCart(bundle)">
+                Add Bundle to Cart
+              </button>
+            </div>
+          }
+        </div>
+      </div>
+    </section>
+  }
+
   <!-- ── Newsletter Section ─────────────────────────────────────────────────── -->
   <section class="newsletter">
     <div class="newsletter-deco" aria-hidden="true">

@@ -919,16 +919,31 @@
     }
   }
 
-  // ── Seasonal Offers ────────────────────────────────────────────────────────
+  // ── Live Deals ─────────────────────────────────────────────────────────────
   .offers-section {
-    padding: 4rem 0;
-    background: var(--bg);
+    padding: 5rem 0 4.5rem;
+    background: linear-gradient(165deg, #fef3c7 0%, #fef9ee 35%, #fff7ed 70%, #fdf2f8 100%);
+    position: relative;
+    overflow: hidden;
+
+    // Decorative warm glow
+    &::before {
+      content: '';
+      position: absolute;
+      top: -80px;
+      right: -60px;
+      width: 300px;
+      height: 300px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(251,191,36,0.15) 0%, transparent 70%);
+      pointer-events: none;
+    }
 
     .offers-grid {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
       gap: 1.25rem;
-      margin-top: 2rem;
+      margin-top: 2.25rem;
 
       @media (max-width: 900px) { grid-template-columns: repeat(2, 1fr); }
       @media (max-width: 480px) { grid-template-columns: 1fr; }
@@ -936,123 +951,134 @@
 
     .offer-card {
       position: relative;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 1.5rem 1.25rem 1.25rem;
+      background: rgba(255,255,255,0.85);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(0,0,0,0.06);
+      border-radius: 20px;
+      padding: 1.75rem 1.25rem 1.5rem;
       display: flex;
       flex-direction: column;
       align-items: center;
       text-align: center;
       gap: 0.5rem;
-      transition: box-shadow 0.2s ease, transform 0.2s ease;
+      transition: box-shadow 0.25s ease, transform 0.25s ease;
 
       &:hover {
-        box-shadow: 0 8px 24px rgba(0,0,0,0.08);
-        transform: translateY(-2px);
+        box-shadow: 0 12px 32px rgba(251,191,36,0.15), 0 4px 12px rgba(0,0,0,0.06);
+        transform: translateY(-4px);
       }
 
       .offer-badge {
         position: absolute;
         top: -10px;
         right: 1rem;
-        background: var(--accent);
+        background: linear-gradient(135deg, #f59e0b, #d97706);
         color: white;
-        font-size: 0.65rem;
-        font-weight: 700;
-        letter-spacing: 0.05em;
+        font-size: 0.62rem;
+        font-weight: 800;
+        letter-spacing: 0.08em;
         text-transform: uppercase;
-        padding: 0.2rem 0.7rem;
+        padding: 0.25rem 0.75rem;
         border-radius: 999px;
+        box-shadow: 0 2px 8px rgba(245,158,11,0.35);
       }
 
       .offer-emoji {
-        font-size: 2.5rem;
+        font-size: 2.75rem;
         line-height: 1;
-        margin-bottom: 0.25rem;
+        margin-bottom: 0.35rem;
+        filter: drop-shadow(0 2px 4px rgba(0,0,0,0.08));
       }
 
       h3 {
-        font-size: 1rem;
+        font-size: 1.05rem;
         font-weight: 700;
-        color: var(--text);
+        color: #1e293b;
         margin: 0;
       }
 
       p {
         font-size: 0.82rem;
-        color: var(--text-muted);
+        color: #64748b;
         margin: 0;
-        line-height: 1.5;
+        line-height: 1.55;
       }
 
       .offer-code-row {
         display: flex;
         align-items: center;
         gap: 0.5rem;
-        margin-top: 0.5rem;
+        margin-top: 0.65rem;
 
         code {
-          background: var(--bg);
-          border: 1.5px dashed var(--border);
-          border-radius: 6px;
-          padding: 0.3rem 0.75rem;
+          background: #fffbeb;
+          border: 1.5px dashed #fbbf24;
+          border-radius: 8px;
+          padding: 0.35rem 0.85rem;
           font-size: 0.88rem;
-          font-weight: 700;
-          letter-spacing: 0.08em;
-          color: var(--accent);
-          font-family: monospace;
+          font-weight: 800;
+          letter-spacing: 0.1em;
+          color: #b45309;
+          font-family: 'SF Mono', 'Fira Code', monospace;
         }
 
         button {
-          padding: 0.3rem 0.8rem;
-          border: 1.5px solid var(--accent);
+          padding: 0.35rem 0.85rem;
+          border: 1.5px solid #f59e0b;
           background: transparent;
-          color: var(--accent);
-          border-radius: 6px;
+          color: #b45309;
+          border-radius: 8px;
           font-size: 0.78rem;
           font-weight: 700;
           cursor: pointer;
-          transition: background 0.15s ease, color 0.15s ease;
+          transition: all 0.18s ease;
           font-family: inherit;
 
-          &:hover, &.copied {
-            background: var(--accent);
+          &:hover {
+            background: #f59e0b;
             color: white;
+            border-color: #f59e0b;
+          }
+
+          &.copied {
+            background: #16a34a;
+            color: white;
+            border-color: #16a34a;
           }
         }
       }
     }
   }
 
-  // ── Bundle Deals ───────────────────────────────────────────────────────────
+  // ── Bundle Offers ──────────────────────────────────────────────────────────
   .bundles-section {
-    padding: 4rem 0;
-    background: var(--surface);
+    padding: 5rem 0 4.5rem;
+    background: var(--bg);
     border-top: 1px solid var(--border);
 
     .bundles-grid {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
       gap: 1.5rem;
-      margin-top: 2rem;
+      margin-top: 2.25rem;
 
-      @media (max-width: 768px) { grid-template-columns: 1fr; }
+      @media (max-width: 900px) { grid-template-columns: repeat(2, 1fr); }
+      @media (max-width: 550px) { grid-template-columns: 1fr; }
     }
 
     .bundle-card {
-      background: var(--bg);
+      background: var(--bg-card);
       border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 1.5rem;
+      border-radius: 20px;
+      padding: 1.75rem 1.5rem 1.5rem;
       display: flex;
       flex-direction: column;
       gap: 0.75rem;
-      transition: box-shadow 0.2s ease, transform 0.2s ease;
+      transition: box-shadow 0.25s ease, transform 0.25s ease;
 
       &:hover {
-        box-shadow: 0 8px 24px rgba(0,0,0,0.08);
-        transform: translateY(-2px);
+        box-shadow: 0 12px 36px rgba(37,99,235,0.1), 0 4px 12px rgba(0,0,0,0.06);
+        transform: translateY(-4px);
       }
 
       .bundle-top {
@@ -1060,27 +1086,32 @@
         align-items: center;
         justify-content: space-between;
 
-        .bundle-emoji { font-size: 2rem; line-height: 1; }
+        .bundle-emoji {
+          font-size: 2.25rem;
+          line-height: 1;
+          filter: drop-shadow(0 2px 4px rgba(0,0,0,0.08));
+        }
 
         .bundle-save-badge {
-          background: #f0fdf4;
-          color: #16a34a;
-          border: 1px solid #bbf7d0;
-          font-size: 0.75rem;
-          font-weight: 700;
-          padding: 0.25rem 0.75rem;
+          background: linear-gradient(135deg, #ecfdf5, #d1fae5);
+          color: #15803d;
+          border: 1px solid #86efac;
+          font-size: 0.72rem;
+          font-weight: 800;
+          letter-spacing: 0.04em;
+          padding: 0.3rem 0.85rem;
           border-radius: 999px;
         }
       }
 
       h3 {
-        font-size: 1.05rem;
+        font-size: 1.1rem;
         font-weight: 700;
         color: var(--text);
         margin: 0;
       }
 
-      p {
+      > p {
         font-size: 0.85rem;
         color: var(--text-muted);
         margin: 0;
@@ -1091,6 +1122,11 @@
         display: flex;
         flex-direction: column;
         gap: 0.6rem;
+        padding: 0.85rem;
+        background: var(--bg-raised);
+        border-radius: 14px;
+        border: 1px solid var(--border);
+        margin-top: 0.25rem;
 
         .bundle-item {
           display: flex;
@@ -1098,10 +1134,10 @@
           gap: 0.75rem;
 
           img {
-            width: 44px;
-            height: 44px;
+            width: 48px;
+            height: 48px;
             object-fit: cover;
-            border-radius: 8px;
+            border-radius: 10px;
             border: 1px solid var(--border);
             flex-shrink: 0;
           }
@@ -1116,18 +1152,18 @@
 
       .bundle-pricing {
         display: flex;
-        align-items: center;
+        align-items: baseline;
         gap: 0.75rem;
-        margin-top: 0.25rem;
+        margin-top: 0.35rem;
 
         .original-price {
-          font-size: 0.9rem;
+          font-size: 0.92rem;
           color: var(--text-muted);
           text-decoration: line-through;
         }
 
         .bundle-price {
-          font-size: 1.15rem;
+          font-size: 1.3rem;
           font-weight: 800;
           color: #16a34a;
         }
@@ -1135,23 +1171,21 @@
 
       .btn-add-bundle {
         margin-top: auto;
-        padding: 0.75rem 1.25rem;
-        background: linear-gradient(180deg, #3b82f6 0%, var(--accent) 50%, #1e56c8 100%);
-        color: white;
+        padding: 0.8rem 1.25rem;
+        background: var(--text);
+        color: var(--bg);
         border: none;
-        border-radius: var(--radius-full);
+        border-radius: 12px;
         font-size: 0.9rem;
         font-weight: 700;
         cursor: pointer;
         text-align: center;
-        box-shadow: 0 4px 14px rgba(37,99,235,0.3), inset 0 1px 0 rgba(255,255,255,0.12);
-        transition: opacity 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+        transition: opacity 0.15s ease, transform 0.15s ease;
         font-family: inherit;
 
         &:hover {
-          opacity: 0.95;
+          opacity: 0.85;
           transform: translateY(-1px);
-          box-shadow: 0 6px 18px rgba(37,99,235,0.42), inset 0 1px 0 rgba(255,255,255,0.12);
         }
       }
     }
@@ -1332,5 +1366,52 @@
     border-color: rgba(37,99,235,0.3);
     .toast-icon { background: var(--accent); }
     .toast-title { color: var(--accent); }
+  }
+}
+
+// ── Dark mode overrides for Live Deals ──────────────────────────────────────
+html[data-theme="dark"] {
+  .offers-section {
+    background: linear-gradient(165deg, #1c1917 0%, #1a1520 35%, #171717 70%, #1a1020 100%);
+
+    &::before {
+      background: radial-gradient(circle, rgba(251,191,36,0.08) 0%, transparent 70%);
+    }
+
+    .offer-card {
+      background: rgba(30,30,30,0.8);
+      border-color: rgba(255,255,255,0.08);
+
+      h3 { color: #f1f5f9; }
+      p { color: #94a3b8; }
+
+      .offer-code-row code {
+        background: rgba(251,191,36,0.1);
+        border-color: rgba(251,191,36,0.3);
+        color: #fbbf24;
+      }
+
+      .offer-code-row button {
+        border-color: #fbbf24;
+        color: #fbbf24;
+        &:hover { background: #fbbf24; color: #1a1a1a; }
+        &.copied { background: #16a34a; color: white; border-color: #16a34a; }
+      }
+
+      &:hover {
+        box-shadow: 0 12px 32px rgba(251,191,36,0.1), 0 4px 12px rgba(0,0,0,0.3);
+      }
+    }
+  }
+
+  .bundle-card .bundle-save-badge {
+    background: rgba(22,163,74,0.15) !important;
+    border-color: rgba(74,222,128,0.3) !important;
+    color: #4ade80 !important;
+  }
+
+  .bundle-card .bundle-items {
+    background: rgba(255,255,255,0.04) !important;
+    border-color: rgba(255,255,255,0.08) !important;
   }
 }
