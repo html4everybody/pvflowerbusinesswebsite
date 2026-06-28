@@ -13,7 +13,7 @@ export class ThemeService {
   private loadTheme(): boolean {
     const stored = localStorage.getItem('viva_theme');
     if (stored) return stored === 'dark';
-    return window.matchMedia('(prefers-color-scheme: dark)').matches;
+    return false;
   }
 
   private applyTheme(dark: boolean): void {
