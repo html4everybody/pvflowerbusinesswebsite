@@ -17,6 +17,7 @@ from supabase import create_client, Client
 import bcrypt
 import threading
 from twilio.rest import Client as TwilioClient
+from apscheduler.schedulers.background import BackgroundScheduler
 
 load_dotenv()
 
@@ -2322,3 +2323,23 @@ def create_review(req: ReviewCreate):
     }).execute()
 
     return result.data[0] if result.data else {"id": review_id}
+
+
+# ── Daily reminder scheduler ──────────────────────────────────────────────────
+def _run_daily_reminders():
+    try:
+        send_occasion_reminders()
+    except Exception as e:
+        print(f"[scheduler] occasion reminders error: {e}")
+    try:
+        send_reminders()
+    except Exception as e:
+        print(f"[scheduler] order reminders error: {e}")
+
+@app.on_event("startup")
+def start_scheduler():
+    scheduler = BackgroundScheduler(timezone="Asia/Kolkata")
+    # Run every day at 8:00 AM IST
+    scheduler.add_job(_run_daily_reminders, "cron", hour=8, minute=0)
+    scheduler.start()
+    print("[scheduler] Daily reminder job scheduled at 08:00 IST")
