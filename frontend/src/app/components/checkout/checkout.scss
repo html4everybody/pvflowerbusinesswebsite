@@ -56,6 +56,8 @@
 
   @media (max-width: 900px) {
     grid-template-columns: 1fr;
+
+    .order-summary { order: -1; }
   }
 }
 
