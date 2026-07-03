@@ -196,28 +196,20 @@
         } @else {
           <div class="orders-list">
             @for (order of visibleOrders(); track order.id) {
-              <div class="order-card" [class.cancelled]="order.status === 'cancelled'">
-                <div class="card-top">
-                  <div class="order-left">
-                    <a class="order-id" [routerLink]="['/orders', order.id]">{{ order.id }}</a>
-                    <span class="order-date">{{ formatDate(order.created_at) }} · {{ formatTime(order.created_at) }}</span>
-                    <span class="order-customer">{{ order.customer_name }} · {{ order.customer_email }}</span>
-                    <span class="order-amount">₹{{ order.total?.toFixed(2) }} · {{ itemCount(order) }} item{{ itemCount(order) !== 1 ? 's' : '' }}</span>
-                  </div>
-                  <div class="order-right">
-                    <span class="order-status" [class]="order.status">{{ STATUS_LABELS[order.status] || order.status }}</span>
-                    @if (NEXT_STATUSES[order.status]?.length) {
-                      <div class="status-actions">
-                        @for (ns of NEXT_STATUSES[order.status]; track ns) {
-                          <button class="btn-status" [disabled]="updatingId() === order.id" (click)="updateStatus(order, ns)">
-                            → {{ STATUS_LABELS[ns] }}
-                          </button>
-                        }
-                      </div>
-                    }
-                  </div>
+              <a class="order-card" [class.cancelled]="order.status === 'cancelled'" [routerLink]="['/orders', order.id]">
+                <div class="order-imgs">
+                  @for (item of (order.items || []).slice(0, 3); track item.product_id) {
+                    <img [src]="item.image" [alt]="item.name" class="order-thumb">
+                  }
                 </div>
-              </div>
+                <div class="order-info">
+                  <span class="order-id">{{ order.id }}</span>
+                  <span class="order-date">{{ formatDate(order.created_at) }} · {{ formatTime(order.created_at) }}</span>
+                  <span class="order-customer">{{ order.customer_name }} · {{ order.customer_email }}</span>
+                  <span class="order-amount">₹{{ order.total?.toFixed(2) }} · {{ itemCount(order) }} item{{ itemCount(order) !== 1 ? 's' : '' }}</span>
+                </div>
+                <span class="order-status" [class]="order.status">{{ STATUS_LABELS[order.status] || order.status }}</span>
+              </a>
             }
           </div>
         }
