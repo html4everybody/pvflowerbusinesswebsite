@@ -1,7 +1,8 @@
 // ── Layout ─────────────────────────────────────────────────────────────────────
 .admin-layout {
   display: flex;
-  min-height: calc(100vh - 68px);
+  height: calc(100vh - 68px);
+  overflow: hidden;
   background: var(--bg-raised);
 }
 
@@ -12,9 +13,7 @@
   background: #0f172a;
   display: flex;
   flex-direction: column;
-  position: sticky;
-  top: 0;
-  height: calc(100vh - 68px);
+  height: 100%;
   overflow-y: auto;
   scrollbar-width: thin;
   scrollbar-color: rgba(255,255,255,0.08) transparent;
@@ -40,7 +39,6 @@
     flex-direction: column;
     padding: 0.6rem 0.6rem;
     gap: 0.15rem;
-    flex: 1;
   }
 
   .nav-item {
@@ -100,6 +98,7 @@
   }
 
   .sidebar-footer {
+    margin-top: auto;
     padding: 0.75rem 1rem;
     border-top: 1px solid rgba(255,255,255,0.08);
 
@@ -121,7 +120,9 @@
   flex: 1;
   min-width: 0;
   padding: 0 0 3rem;
+  overflow-y: auto;
   overflow-x: hidden;
+  height: 100%;
 }
 
 .section-wrap {
