@@ -37,6 +37,10 @@ if _resend_api_key:
 
 app = FastAPI(title="VivaPetals API")
 
+@app.get("/api/ping")
+def ping():
+    return {"status": "ok"}
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],

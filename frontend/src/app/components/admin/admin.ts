@@ -29,9 +29,20 @@ export class Admin implements OnInit {
 
   activeSection = signal<AdminSection>((sessionStorage.getItem('admin_section') as AdminSection) || 'overview');
 
-  // ── Stats ──────────────────────────────────────────────────────────────────
-  stats = signal<any>(null);
+  // ── Stats (derived from orders, no extra API call) ─────────────────────────
   lastRefreshed = signal<Date | null>(null);
+  stats = computed(() => {
+    const list = this.orders();
+    if (!list.length) return null;
+    const today = new Date().toISOString().slice(0, 10);
+    return {
+      total_orders:   list.length,
+      today_orders:   list.filter(o => (o.created_at ?? '').startsWith(today)).length,
+      pending_count:  list.filter(o => o.status === 'confirmed' || o.status === 'preparing').length,
+      revenue_total:  Math.round(list.filter(o => o.status !== 'cancelled').reduce((s, o) => s + (o.total ?? 0), 0) * 100) / 100,
+      revenue_today:  Math.round(list.filter(o => o.status !== 'cancelled' && (o.created_at ?? '').startsWith(today)).reduce((s, o) => s + (o.total ?? 0), 0) * 100) / 100,
+    };
+  });
 
   // ── Orders ─────────────────────────────────────────────────────────────────
   orders = signal<any[]>([]);
@@ -133,7 +144,6 @@ export class Admin implements OnInit {
   ngOnInit(): void {
     if (!this.authService.isLoggedIn()) { this.router.navigate(['/signin']); return; }
     if (!this.authService.isAdmin()) { this.router.navigate(['/']); return; }
-    this.loadStats();
     this.loadOrders();
     // If restored section needs lazy-loaded data, trigger it
     const section = this.activeSection();
@@ -156,18 +166,11 @@ export class Admin implements OnInit {
   }
 
   // ── Stats & Orders ────────────────────────────────────────────────────────
-  loadStats(): void {
-    this.http.get<any>(`${environment.apiUrl}/api/admin/stats?token=${this.token}`).subscribe({
-      next: (s) => { this.stats.set(s); this.lastRefreshed.set(new Date()); },
-      error: () => {}
-    });
-  }
-
   loadOrders(): void {
     this.loadingOrders.set(true);
     this.loadError.set('');
     this.http.get<any[]>(`${environment.apiUrl}/api/admin/orders?token=${this.token}`).subscribe({
-      next: (data) => { this.orders.set(data); this.loadingOrders.set(false); },
+      next: (data) => { this.orders.set(data); this.loadingOrders.set(false); this.lastRefreshed.set(new Date()); },
       error: (err) => {
         this.loadingOrders.set(false);
         if (err.status === 401) this.loadError.set('Session expired. Please log out and back in.');
@@ -178,7 +181,6 @@ export class Admin implements OnInit {
   }
 
   refresh(): void {
-    this.loadStats();
     this.loadOrders();
   }
 
@@ -187,7 +189,6 @@ export class Admin implements OnInit {
     this.http.patch<{ status: string }>(`${environment.apiUrl}/api/orders/${order.id}/status`, { status: newStatus }).subscribe({
       next: (res) => {
         this.orders.update(list => list.map(o => o.id === order.id ? { ...o, status: res.status } : o));
-        this.loadStats();
         this.updatingId.set(null);
         this.toastService.show(`Order ${order.id} → ${this.STATUS_LABELS[res.status]}`);
       },
