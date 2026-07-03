@@ -31,9 +31,9 @@ export class Admin implements OnInit {
 
   // ── Stats (derived from orders, no extra API call) ─────────────────────────
   lastRefreshed = signal<Date | null>(null);
+  statsReady = computed(() => !this.loadingOrders() && this.orders().length > 0);
   stats = computed(() => {
     const list = this.orders();
-    if (!list.length) return null;
     const today = new Date().toISOString().slice(0, 10);
     return {
       total_orders:   list.length,
