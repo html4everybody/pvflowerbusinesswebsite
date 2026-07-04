@@ -6,7 +6,7 @@ import { CartService } from '../../services/cart';
 import { FeedbackService } from '../../services/feedback';
 import { SearchService } from '../../services/search';
 import { WishlistService } from '../../services/wishlist';
-import { PromoService, OffersData, BundleDeal } from '../../services/promo';
+import { PromoService, OffersData, BundleDeal, SeasonalOffer } from '../../services/promo';
 import { Product } from '../../models/product.model';
 import { FadeInDirective } from '../../directives/fade-in';
 
@@ -30,7 +30,9 @@ export class Home implements OnInit, AfterViewInit {
 
   offers = signal<OffersData | null>(null);
   copiedCode = signal('');
+  appliedCode = signal('');
   private copiedTimer: any;
+  private appliedTimer: any;
 
   constructor(
     private productService: ProductService,
@@ -66,6 +68,27 @@ export class Home implements OnInit, AfterViewInit {
       clearTimeout(this.copiedTimer);
       this.copiedTimer = setTimeout(() => this.copiedCode.set(''), 2000);
     });
+  }
+
+  // Live Deal helpers ───────────────────────────────────────────────
+  discountLabel(o: SeasonalOffer): string {
+    if (o.discount_type === 'percent' && o.discount_value != null) return `${o.discount_value}% OFF`;
+    if (o.discount_type === 'flat' && o.discount_value != null) return `₹${o.discount_value} OFF`;
+    return 'Special Deal';
+  }
+
+  conditionLabel(o: SeasonalOffer): string {
+    if (o.first_order_only) return 'First order only';
+    if (o.min_order && o.min_order > 0) return `On orders above ₹${o.min_order}`;
+    return 'No minimum spend';
+  }
+
+  applyDeal(offer: SeasonalOffer): void {
+    sessionStorage.setItem('viva_promo', offer.code);
+    this.appliedCode.set(offer.code);
+    clearTimeout(this.appliedTimer);
+    this.appliedTimer = setTimeout(() => this.appliedCode.set(''), 2500);
+    this.scrollToCollection();
   }
 
   addBundleToCart(bundle: BundleDeal): void {

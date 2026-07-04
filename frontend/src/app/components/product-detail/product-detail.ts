@@ -203,7 +203,7 @@ export class ProductDetail implements OnInit {
         this.loadingReviews.set(false);
       },
       error: () => {
-        this.reviews = this.extrasService.getReviews(productId);
+        this.reviews = [];
         this.loadingReviews.set(false);
       }
     });

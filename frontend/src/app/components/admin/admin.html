@@ -46,11 +46,29 @@
         </svg>
         Analytics
       </button>
+      <button class="nav-item" [class.active]="activeSection() === 'deals'" (click)="navigateTo('deals')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+        </svg>
+        Live Deals
+      </button>
+      <button class="nav-item" [class.active]="activeSection() === 'bundles'" (click)="navigateTo('bundles')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/>
+        </svg>
+        Bundle Offers
+      </button>
       <button class="nav-item" [class.active]="activeSection() === 'zones'" (click)="navigateTo('zones')">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
         </svg>
         Delivery Zones
+      </button>
+      <button class="nav-item" [class.active]="activeSection() === 'plans'" (click)="navigateTo('plans')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M23 4v6h-6"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+        </svg>
+        Subscription Plans
       </button>
     </nav>
     <div class="sidebar-footer">
@@ -221,7 +239,13 @@
       <div class="section-wrap">
         <div class="section-header">
           <h1>Products</h1>
-          <span class="section-meta">{{ products().length }} products</span>
+          <div class="section-header-actions">
+            <span class="section-meta">{{ products().length }} products</span>
+            <button class="btn-primary" (click)="openProductForm()">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Add Product
+            </button>
+          </div>
         </div>
 
         <div class="search-bar-simple">
@@ -241,6 +265,7 @@
                   <th>Category</th>
                   <th>Price</th>
                   <th>Rating</th>
+                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -258,10 +283,64 @@
                     <td>
                       <span class="rating-cell">⭐ {{ p.rating?.toFixed(1) }}</span>
                     </td>
+                    <td>
+                      <div class="stock-btns">
+                        <button class="btn-edit-small" (click)="openProductForm(p)">Edit</button>
+                        <button class="btn-delete-small" (click)="deleteProduct(p)">Delete</button>
+                      </div>
+                    </td>
                   </tr>
                 }
               </tbody>
             </table>
+          </div>
+        }
+
+        <!-- Product Form Modal -->
+        @if (showProductForm()) {
+          <div class="modal-overlay" (click)="closeProductForm()">
+            <div class="modal-box" (click)="$event.stopPropagation()">
+              <div class="modal-header">
+                <h2>{{ editingProduct() ? 'Edit Product' : 'Add Product' }}</h2>
+                <button class="modal-close" (click)="closeProductForm()">✕</button>
+              </div>
+              <div class="modal-body">
+                <label class="form-label">Name
+                  <input type="text" class="form-input" [(ngModel)]="productForm.name" placeholder="e.g. Red Rose Bouquet">
+                </label>
+                <label class="form-label">Description
+                  <input type="text" class="form-input" [(ngModel)]="productForm.description" placeholder="Short description">
+                </label>
+                <div class="form-row">
+                  <label class="form-label">Price (₹)
+                    <input type="number" class="form-input" [(ngModel)]="productForm.price" min="0" step="0.01">
+                  </label>
+                  <label class="form-label">Category
+                    <select class="form-input" [(ngModel)]="productForm.category">
+                      @for (c of productCategories(); track c) {
+                        <option [value]="c">{{ c }}</option>
+                      }
+                    </select>
+                  </label>
+                </div>
+                <label class="form-label">Image URL
+                  <input type="text" class="form-input" [(ngModel)]="productForm.image" placeholder="https://...">
+                </label>
+                @if (productForm.image) {
+                  <img [src]="productForm.image" alt="Preview" class="product-thumb" style="width:64px;height:64px;margin-top:4px;">
+                }
+                <label class="toggle-label">
+                  <input type="checkbox" [(ngModel)]="productForm.inStock">
+                  In stock
+                </label>
+              </div>
+              <div class="modal-footer">
+                <button class="btn-cancel" (click)="closeProductForm()">Cancel</button>
+                <button class="btn-primary" [disabled]="savingProduct() || !productForm.name.trim()" (click)="saveProduct()">
+                  @if (savingProduct()) { Saving... } @else { {{ editingProduct() ? 'Save Changes' : 'Add Product' }} }
+                </button>
+              </div>
+            </div>
           </div>
         }
       </div>
@@ -462,6 +541,280 @@
       </div>
     }
 
+    <!-- ── Live Deals ────────────────────────────────────────────────────── -->
+    @if (activeSection() === 'deals') {
+      <div class="section-wrap">
+        <div class="section-header">
+          <h1>Live Deals</h1>
+        </div>
+
+        @if (loadingDeals()) {
+          <div class="loading-state"><div class="spinner"></div><p>Loading deals...</p></div>
+        } @else {
+
+          <!-- Promo Codes -->
+          <div class="sub-section">
+            <div class="sub-header">
+              <h2>Promo Codes</h2>
+              <button class="btn-primary btn-sm" (click)="openPromoForm()">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                Add Code
+              </button>
+            </div>
+            @if (promoCodes().length === 0) {
+              <div class="empty-state"><p>No promo codes. Create one to get started.</p></div>
+            } @else {
+              <div class="deals-list">
+                @for (promo of promoCodes(); track promo.code) {
+                  <div class="deal-card" [class.inactive]="!promo.active">
+                    <div class="deal-main">
+                      <div class="deal-code-badge">{{ promo.code }}</div>
+                      <div class="deal-info">
+                        <span class="deal-desc">{{ promo.description }}</span>
+                        <div class="deal-meta">
+                          <span class="deal-tag">{{ promo.type === 'percent' ? promo.value + '%' : '₹' + promo.value }} off</span>
+                          @if (promo.min_order > 0) {
+                            <span class="deal-tag subtle">Min ₹{{ promo.min_order }}</span>
+                          }
+                          @if (promo.first_order_only) {
+                            <span class="deal-tag subtle">First order only</span>
+                          }
+                          @if (!promo.active) {
+                            <span class="deal-tag warn">Inactive</span>
+                          }
+                        </div>
+                      </div>
+                    </div>
+                    <div class="zone-actions">
+                      <button class="btn-edit-small" (click)="openPromoForm(promo)">Edit</button>
+                      <button class="btn-delete-small" (click)="deletePromo(promo)">Delete</button>
+                    </div>
+                  </div>
+                }
+              </div>
+            }
+          </div>
+
+          <!-- Seasonal Offers (display cards shown on homepage) -->
+          <div class="sub-section">
+            <div class="sub-header">
+              <h2>Seasonal Offers (Homepage Cards)</h2>
+              <button class="btn-primary btn-sm" (click)="openOfferForm()">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                Add Offer
+              </button>
+            </div>
+            @if (seasonalOffers().length === 0) {
+              <div class="empty-state"><p>No seasonal offers. Create one to display on the homepage.</p></div>
+            } @else {
+              <div class="deals-list">
+                @for (offer of seasonalOffers(); track offer.id) {
+                  <div class="deal-card">
+                    <div class="deal-main">
+                      <span class="deal-emoji">{{ offer.emoji }}</span>
+                      <div class="deal-info">
+                        <span class="deal-title">{{ offer.title }}</span>
+                        <span class="deal-desc">{{ offer.subtitle }}</span>
+                        <div class="deal-meta">
+                          <span class="deal-tag">Code: {{ offer.code }}</span>
+                          <span class="deal-tag subtle">Badge: {{ offer.badge }}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="zone-actions">
+                      <button class="btn-edit-small" (click)="openOfferForm(offer)">Edit</button>
+                      <button class="btn-delete-small" (click)="deleteOffer(offer)">Delete</button>
+                    </div>
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        }
+      </div>
+
+      <!-- Promo Code Form Modal -->
+      @if (showPromoForm()) {
+        <div class="modal-overlay" (click)="closePromoForm()">
+          <div class="modal-box" (click)="$event.stopPropagation()">
+            <div class="modal-header">
+              <h2>{{ editingPromo() ? 'Edit Promo Code' : 'Add Promo Code' }}</h2>
+              <button class="modal-close" (click)="closePromoForm()">✕</button>
+            </div>
+            <div class="modal-body">
+              <label class="form-label">Code
+                <input type="text" class="form-input" [(ngModel)]="promoForm.code" placeholder="e.g. SUMMER20" [disabled]="!!editingPromo()" style="text-transform: uppercase">
+              </label>
+              <div class="form-row">
+                <label class="form-label">Type
+                  <select class="form-input" [(ngModel)]="promoForm.type">
+                    <option value="percent">Percentage</option>
+                    <option value="flat">Flat Amount</option>
+                  </select>
+                </label>
+                <label class="form-label">Value {{ promoForm.type === 'percent' ? '(%)' : '(₹)' }}
+                  <input type="number" class="form-input" [(ngModel)]="promoForm.value" min="0">
+                </label>
+              </div>
+              <label class="form-label">Description
+                <input type="text" class="form-input" [(ngModel)]="promoForm.description" placeholder="e.g. 20% off orders above ₹500">
+              </label>
+              <div class="form-row">
+                <label class="form-label">Min Order (₹)
+                  <input type="number" class="form-input" [(ngModel)]="promoForm.min_order" min="0">
+                </label>
+                <div class="form-checks">
+                  <label class="toggle-label">
+                    <input type="checkbox" [(ngModel)]="promoForm.active">
+                    Active
+                  </label>
+                  <label class="toggle-label">
+                    <input type="checkbox" [(ngModel)]="promoForm.first_order_only">
+                    First order only
+                  </label>
+                </div>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button class="btn-cancel" (click)="closePromoForm()">Cancel</button>
+              <button class="btn-primary" [disabled]="savingPromo() || !promoForm.code.trim()" (click)="savePromo()">
+                @if (savingPromo()) { Saving... } @else { {{ editingPromo() ? 'Save Changes' : 'Create Code' }} }
+              </button>
+            </div>
+          </div>
+        </div>
+      }
+
+      <!-- Seasonal Offer Form Modal -->
+      @if (showOfferForm()) {
+        <div class="modal-overlay" (click)="closeOfferForm()">
+          <div class="modal-box" (click)="$event.stopPropagation()">
+            <div class="modal-header">
+              <h2>{{ editingOffer() ? 'Edit Offer' : 'Add Seasonal Offer' }}</h2>
+              <button class="modal-close" (click)="closeOfferForm()">✕</button>
+            </div>
+            <div class="modal-body">
+              <div class="form-row">
+                <label class="form-label">Emoji
+                  <input type="text" class="form-input" [(ngModel)]="offerForm.emoji" placeholder="e.g. 🌸">
+                </label>
+                <label class="form-label">Badge Text
+                  <input type="text" class="form-input" [(ngModel)]="offerForm.badge" placeholder="e.g. Limited Time">
+                </label>
+              </div>
+              <label class="form-label">Title
+                <input type="text" class="form-input" [(ngModel)]="offerForm.title" placeholder="e.g. Spring Sale">
+              </label>
+              <label class="form-label">Subtitle
+                <input type="text" class="form-input" [(ngModel)]="offerForm.subtitle" placeholder="e.g. Up to 20% off on all bouquets">
+              </label>
+              <label class="form-label">Promo Code (must exist)
+                <select class="form-input" [(ngModel)]="offerForm.code">
+                  <option value="" disabled>Select a promo code</option>
+                  @for (p of promoCodes(); track p.code) {
+                    <option [value]="p.code">{{ p.code }} — {{ p.description }}</option>
+                  }
+                </select>
+              </label>
+            </div>
+            <div class="modal-footer">
+              <button class="btn-cancel" (click)="closeOfferForm()">Cancel</button>
+              <button class="btn-primary" [disabled]="savingOffer() || !offerForm.title.trim() || !offerForm.code" (click)="saveOffer()">
+                @if (savingOffer()) { Saving... } @else { {{ editingOffer() ? 'Save Changes' : 'Create Offer' }} }
+              </button>
+            </div>
+          </div>
+        </div>
+      }
+    }
+
+    <!-- ── Bundle Offers ──────────────────────────────────────────────────── -->
+    @if (activeSection() === 'bundles') {
+      <div class="section-wrap">
+        <div class="section-header">
+          <h1>Bundle Offers</h1>
+          <button class="btn-primary" (click)="openBundleForm()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Add Bundle
+          </button>
+        </div>
+
+        @if (loadingBundles()) {
+          <div class="loading-state"><div class="spinner"></div><p>Loading bundles...</p></div>
+        } @else if (bundleDeals().length === 0) {
+          <div class="empty-state"><p>No bundle deals. Create one to show on the homepage.</p></div>
+        } @else {
+          <div class="deals-list">
+            @for (bundle of bundleDeals(); track bundle.id) {
+              <div class="deal-card">
+                <div class="deal-main">
+                  <span class="deal-emoji">{{ bundle.emoji }}</span>
+                  <div class="deal-info">
+                    <span class="deal-title">{{ bundle.name }}</span>
+                    <span class="deal-desc">{{ bundle.description }}</span>
+                    <div class="deal-meta">
+                      <span class="deal-tag">Save {{ bundle.savings_pct }}%</span>
+                      <span class="deal-tag subtle">Code: {{ bundle.promo_code }}</span>
+                      <span class="deal-tag subtle">Products: {{ bundle.product_ids.join(', ') }}</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="zone-actions">
+                  <button class="btn-edit-small" (click)="openBundleForm(bundle)">Edit</button>
+                  <button class="btn-delete-small" (click)="deleteBundle(bundle)">Delete</button>
+                </div>
+              </div>
+            }
+          </div>
+        }
+      </div>
+
+      <!-- Bundle Form Modal -->
+      @if (showBundleForm()) {
+        <div class="modal-overlay" (click)="closeBundleForm()">
+          <div class="modal-box" (click)="$event.stopPropagation()">
+            <div class="modal-header">
+              <h2>{{ editingBundle() ? 'Edit Bundle' : 'Add Bundle Deal' }}</h2>
+              <button class="modal-close" (click)="closeBundleForm()">✕</button>
+            </div>
+            <div class="modal-body">
+              <div class="form-row">
+                <label class="form-label">Emoji
+                  <input type="text" class="form-input" [(ngModel)]="bundleForm.emoji" placeholder="e.g. ❤️">
+                </label>
+                <label class="form-label">Savings %
+                  <input type="number" class="form-input" [(ngModel)]="bundleForm.savings_pct" min="1" max="50">
+                </label>
+              </div>
+              <label class="form-label">Bundle Name
+                <input type="text" class="form-input" [(ngModel)]="bundleForm.name" placeholder="e.g. Romance Bundle">
+              </label>
+              <label class="form-label">Description
+                <input type="text" class="form-input" [(ngModel)]="bundleForm.description" placeholder="e.g. Perfect for date nights">
+              </label>
+              <label class="form-label">Product IDs (comma-separated)
+                <input type="text" class="form-input" [(ngModel)]="bundleForm.product_ids" placeholder="e.g. 1, 5, 42">
+              </label>
+              <label class="form-label">Promo Code
+                <select class="form-input" [(ngModel)]="bundleForm.promo_code">
+                  <option value="" disabled>Select a promo code</option>
+                  @for (p of promoCodes(); track p.code) {
+                    <option [value]="p.code">{{ p.code }} — {{ p.description }}</option>
+                  }
+                </select>
+              </label>
+            </div>
+            <div class="modal-footer">
+              <button class="btn-cancel" (click)="closeBundleForm()">Cancel</button>
+              <button class="btn-primary" [disabled]="savingBundle() || !bundleForm.name.trim()" (click)="saveBundle()">
+                @if (savingBundle()) { Saving... } @else { {{ editingBundle() ? 'Save Changes' : 'Create Bundle' }} }
+              </button>
+            </div>
+          </div>
+        </div>
+      }
+    }
+
     <!-- ── Delivery Zones ─────────────────────────────────────────────────── -->
     @if (activeSection() === 'zones') {
       <div class="section-wrap">
@@ -544,6 +897,52 @@
           </div>
         </div>
       }
+    }
+
+    <!-- ── Subscription Plans ─────────────────────────────────────────────── -->
+    @if (activeSection() === 'plans') {
+      <div class="section-wrap">
+        <div class="section-header">
+          <h1>Subscription Plans</h1>
+          <span class="section-meta">Edit the discount shown on the subscribe page</span>
+        </div>
+
+        @if (loadingPlans()) {
+          <div class="loading-state"><div class="spinner"></div><p>Loading plans...</p></div>
+        } @else {
+          <div class="products-table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr><th>Plan</th><th>Subtitle</th><th>Cadence</th><th>Discount</th><th>Action</th></tr>
+              </thead>
+              <tbody>
+                @for (plan of subPlans(); track plan.id) {
+                  <tr>
+                    @if (editingPlan() === plan.id) {
+                      <td><input type="text" class="form-input" [(ngModel)]="editPlanForm.label"></td>
+                      <td><input type="text" class="form-input" [(ngModel)]="editPlanForm.subtitle"></td>
+                      <td class="mono">Every {{ plan.days }} days</td>
+                      <td><input type="number" class="stock-input" [(ngModel)]="editPlanForm.discount_percent" min="0" max="100"> %</td>
+                      <td>
+                        <div class="stock-btns">
+                          <button class="btn-save-small" [disabled]="savingPlan()" (click)="savePlan(plan)">Save</button>
+                          <button class="btn-cancel-small" (click)="editingPlan.set(null)">Cancel</button>
+                        </div>
+                      </td>
+                    } @else {
+                      <td><span class="product-name">{{ plan.label }}</span></td>
+                      <td>{{ plan.subtitle }}</td>
+                      <td class="mono">Every {{ plan.days }} days</td>
+                      <td><span class="stock-badge ok">{{ plan.discount_percent }}%</span></td>
+                      <td><button class="btn-edit-small" (click)="startEditPlan(plan)">Edit</button></td>
+                    }
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </div>
     }
 
   </main>

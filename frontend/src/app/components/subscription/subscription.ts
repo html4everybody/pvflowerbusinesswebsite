@@ -1,10 +1,12 @@
 import { Component, OnInit, signal, computed } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
+import { HttpClient } from '@angular/common/http';
 import { AuthService } from '../../services/auth';
 import { SubscriptionService, CreateSubscriptionRequest, SubscriptionItem } from '../../services/subscription';
 import { ToastService } from '../../services/toast';
 import { ProductService } from '../../services/product';
 import { Product } from '../../models/product.model';
+import { environment } from '../../../environments/environment';
 
 interface DurationOption {
   id: 'weekly' | 'biweekly' | 'monthly';
@@ -46,7 +48,8 @@ export class Subscription implements OnInit {
   address = signal('');
   instructions = signal('');
 
-  readonly durations: DurationOption[] = [
+  // Defaults shown instantly; overwritten by /api/subscription-plans in ngOnInit.
+  durations: DurationOption[] = [
     {
       id: 'weekly',
       label: 'Weekly',
@@ -178,6 +181,7 @@ export class Subscription implements OnInit {
     private toastService: ToastService,
     private productService: ProductService,
     private router: Router,
+    private http: HttpClient,
   ) {}
 
   ngOnInit(): void {
@@ -188,6 +192,21 @@ export class Subscription implements OnInit {
     }
     this.allProducts = this.productService.getProducts().filter(p => p.inStock);
     this.categories = ['All', ...this.productService.getCategories()];
+    this.loadPlans();
+  }
+
+  private loadPlans(): void {
+    this.http.get<any[]>(`${environment.apiUrl}/api/subscription-plans`).subscribe({
+      next: (plans) => {
+        if (plans?.length) {
+          this.durations = plans.map(p => ({
+            id: p.id, label: p.label, subtitle: p.subtitle,
+            days: p.days, discount: p.discount_percent,
+          }));
+        }
+      },
+      error: () => {} // keep hardcoded defaults on failure
+    });
   }
 
   nextStep(): void {

@@ -19,6 +19,10 @@ export interface SeasonalOffer {
   subtitle: string;
   code: string;
   badge: string;
+  discount_type?: 'percent' | 'flat' | null;
+  discount_value?: number | null;
+  min_order?: number;
+  first_order_only?: boolean;
 }
 
 export interface BundleProduct {
@@ -42,6 +46,8 @@ export interface BundleDeal {
   products: BundleProduct[];
   original_price: number;
   bundle_price: number;
+  savings_amount: number;
+  item_count: number;
 }
 
 export interface OffersData {

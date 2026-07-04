@@ -209,26 +209,35 @@
   </section>
 
 
-  <!-- ── Live Deals Section ─────────────────────────────────────────────────── -->
+  <!-- ── Live Deals Section (Coupons) ───────────────────────────────────────── -->
   @if (offers()?.seasonal_offers?.length) {
     <section class="offers-section" id="offers-section">
       <div class="container">
         <div class="section-header" appFadeIn>
           <span class="section-tag">🔥 Live Deals</span>
-          <h2>Today's Exclusive Offers</h2>
-          <p>Grab these limited-time deals before they're gone — use the code at checkout</p>
+          <h2>Today's Coupons</h2>
+          <p>Grab a code — copy it, or tap <strong>Apply &amp; Shop</strong> and we'll add the discount for you at checkout.</p>
         </div>
         <div class="offers-grid">
           @for (offer of offers()!.seasonal_offers; track offer.id) {
-            <div class="offer-card" appFadeIn [fadeDelay]="$index * 80">
-              <span class="offer-badge">{{ offer.badge }}</span>
-              <span class="offer-emoji">{{ offer.emoji }}</span>
-              <h3>{{ offer.title }}</h3>
-              <p>{{ offer.subtitle }}</p>
-              <div class="offer-code-row">
-                <code>{{ offer.code }}</code>
-                <button (click)="copyCode(offer.code)" [class.copied]="copiedCode() === offer.code">
-                  {{ copiedCode() === offer.code ? 'Copied!' : 'Copy' }}
+            <div class="coupon-card" appFadeIn [fadeDelay]="$index * 80">
+              <div class="coupon-stub">
+                <span class="coupon-emoji">{{ offer.emoji }}</span>
+                <span class="coupon-discount">{{ discountLabel(offer) }}</span>
+              </div>
+              <div class="coupon-body">
+                <span class="offer-badge">{{ offer.badge }}</span>
+                <h3>{{ offer.title }}</h3>
+                <p>{{ offer.subtitle }}</p>
+                <span class="coupon-condition">✓ {{ conditionLabel(offer) }}</span>
+                <div class="coupon-code-row">
+                  <code>{{ offer.code }}</code>
+                  <button class="coupon-copy" (click)="copyCode(offer.code)" [class.copied]="copiedCode() === offer.code">
+                    {{ copiedCode() === offer.code ? 'Copied ✓' : 'Copy' }}
+                  </button>
+                </div>
+                <button class="coupon-apply" (click)="applyDeal(offer)" [class.applied]="appliedCode() === offer.code">
+                  {{ appliedCode() === offer.code ? '✓ Applied — Shop now' : 'Apply & Shop →' }}
                 </button>
               </div>
             </div>
@@ -238,21 +247,21 @@
     </section>
   }
 
-  <!-- ── Bundle Offers Section ────────────────────────────────────────────────── -->
+  <!-- ── Bundle Offers Section (Kits) ─────────────────────────────────────────── -->
   @if (offers()?.bundle_deals?.length) {
     <section class="bundles-section" id="bundles-section">
       <div class="container">
         <div class="section-header" appFadeIn>
           <span class="section-tag">🎁 Bundle & Save</span>
-          <h2>Curated Bundles, Unbeatable Prices</h2>
-          <p>Hand-picked flower combos for every occasion — save up to 15% when you buy together</p>
+          <h2>Ready-Made Flower Kits</h2>
+          <p>Hand-picked combos for every occasion. Add the whole set in one tap — the savings apply automatically, no code needed.</p>
         </div>
         <div class="bundles-grid">
           @for (bundle of offers()!.bundle_deals; track bundle.id) {
             <div class="bundle-card" appFadeIn [fadeDelay]="$index * 100">
               <div class="bundle-top">
                 <span class="bundle-emoji">{{ bundle.emoji }}</span>
-                <span class="bundle-save-badge">Save {{ bundle.savings_pct }}%</span>
+                <span class="bundle-item-count">{{ bundle.item_count }} items · Save {{ bundle.savings_pct }}%</span>
               </div>
               <h3>{{ bundle.name }}</h3>
               <p>{{ bundle.description }}</p>
@@ -265,11 +274,14 @@
                 }
               </div>
               <div class="bundle-pricing">
-                <span class="original-price">₹{{ bundle.original_price | number:'1.0-0' }}</span>
-                <span class="bundle-price">₹{{ bundle.bundle_price | number:'1.0-0' }}</span>
+                <div class="bundle-price-block">
+                  <span class="original-price">₹{{ bundle.original_price | number:'1.0-0' }}</span>
+                  <span class="bundle-price">₹{{ bundle.bundle_price | number:'1.0-0' }}</span>
+                </div>
+                <span class="bundle-savings">You save ₹{{ bundle.savings_amount | number:'1.0-0' }}</span>
               </div>
               <button class="btn-add-bundle" (click)="addBundleToCart(bundle)">
-                Add Bundle to Cart
+                Add all {{ bundle.item_count }} to cart →
               </button>
             </div>
           }

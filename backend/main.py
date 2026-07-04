@@ -112,7 +112,7 @@ def verify_password(password: str, hashed: str) -> bool:
     return bcrypt.checkpw(password.encode(), hashed.encode())
 
 # ── Signed token store (survives server restarts) ─────────────────────────────
-_TOKEN_SECRET = os.getenv("TOKEN_SECRET", "viva-petals-dev-secret-2024")
+_TOKEN_SECRET = os.getenv("TOKEN_SECRET") or secrets.token_hex(32)
 
 def create_token(email: str) -> str:
     sig = hmac.new(_TOKEN_SECRET.encode(), email.encode(), hashlib.sha256).hexdigest()
@@ -507,8 +507,12 @@ def send_sms_whatsapp_reminder(order: dict, days_before: int, is_recurrence: boo
             pass
     return result
 
-# ── Products (in-memory) ───────────────────────────────────────────────────────
-PRODUCTS = [
+# ── Products ───────────────────────────────────────────────────────────────────
+# Hardcoded seed list. Actual products live in the Supabase `products` table and
+# are loaded into the in-memory PRODUCTS cache below (load_products). This seed is
+# used to populate the table on first run, and as a fallback if the DB is
+# unavailable so the storefront keeps working.
+_SEED_PRODUCTS = [
     {"id": 1, "name": "Red Rose Bouquet", "description": "A stunning arrangement of 12 premium red roses, perfect for expressing love and romance.", "price": 49.99, "image": "https://oydmbenbhjwclpxqlnuf.supabase.co/storage/v1/object/public/Products/ChatGPT%20Image%20Feb%2022%2C%202026%2C%2010_49_55%20PM.png", "category": "Garlands", "inStock": True},
     {"id": 2, "name": "Sunflower Delight", "description": "Bright and cheerful sunflowers that bring warmth and happiness to any space.", "price": 34.99, "image": "https://oydmbenbhjwclpxqlnuf.supabase.co/storage/v1/object/public/Products/ChatGPT%20Image%20Feb%2022%2C%202026%2C%2010_49_55%20PM.png", "category": "Garlands", "inStock": True},
     {"id": 3, "name": "Elegant Lily Collection", "description": "Pure white lilies symbolizing elegance and sophistication.", "price": 54.99, "image": "https://oydmbenbhjwclpxqlnuf.supabase.co/storage/v1/object/public/Products/ChatGPT%20Image%20Feb%2022%2C%202026%2C%2011_00_56%20PM.png", "category": "Garlands", "inStock": True},
@@ -611,27 +615,127 @@ PRODUCTS = [
     {"id": 100, "name": "Dried Flower Bundle", "description": "Long-lasting dried flower arrangement.", "price": 38.99, "image": "https://images.unsplash.com/photo-1468327768560-75b778cbb551?w=400", "category": "Decoration", "inStock": True},
 ]
 
-# ── Promo Codes (in-memory) ────────────────────────────────────────────────────
-PROMO_CODES = {
-    "WELCOME10": {"type": "percent", "value": 10, "description": "10% off your first order", "first_order_only": True, "min_order": 0, "active": True},
-    "SUMMER20":  {"type": "percent", "value": 20, "description": "20% off orders above ₹500", "first_order_only": False, "min_order": 500, "active": True},
-    "FLAT100":   {"type": "flat",    "value": 100, "description": "₹100 off on orders above ₹800", "first_order_only": False, "min_order": 800, "active": True},
-    "BUNDLE15":  {"type": "percent", "value": 15, "description": "15% off on bundle deals", "first_order_only": False, "min_order": 0, "active": True},
-    "FLORANVIP": {"type": "percent", "value": 25, "description": "VIP exclusive — 25% off orders above ₹1000", "first_order_only": False, "min_order": 1000, "active": True},
-}
+# In-memory cache of products, refreshed from Supabase on startup and after every
+# admin add/edit/delete. Starts as a copy of the seed so it's always populated.
+PRODUCTS = list(_SEED_PRODUCTS)
 
-SEASONAL_OFFERS = [
-    {"id": "spring",  "emoji": "🌸", "title": "Spring Sale",    "subtitle": "Up to 20% off on all bouquets",     "code": "SUMMER20",  "badge": "Limited Time"},
-    {"id": "bundle",  "emoji": "🎁", "title": "Bundle & Save",  "subtitle": "Buy a bundle and save 15%",          "code": "BUNDLE15",  "badge": "Bundle Deal"},
-    {"id": "newuser", "emoji": "🎉", "title": "New Here?",       "subtitle": "10% off your very first order",      "code": "WELCOME10", "badge": "First Order"},
-    {"id": "vip",     "emoji": "💎", "title": "VIP Offer",       "subtitle": "25% off orders above ₹1000",         "code": "FLORANVIP", "badge": "VIP Only"},
-]
+def _row_to_product(r: dict) -> dict:
+    return {
+        "id": r["id"],
+        "name": r.get("name", ""),
+        "description": r.get("description", ""),
+        "price": float(r.get("price", 0)),
+        "image": r.get("image", ""),
+        "category": r.get("category", ""),
+        "inStock": r.get("in_stock", True),
+    }
 
-BUNDLE_DEALS = [
-    {"id": "romance",  "name": "Romance Bundle",    "description": "Perfect for date nights and anniversaries", "emoji": "❤️", "product_ids": [1, 5, 42],   "promo_code": "BUNDLE15", "savings_pct": 15},
-    {"id": "wedding",  "name": "Wedding Elegance",  "description": "Everything for a perfect wedding",           "emoji": "💍", "product_ids": [94, 9, 42],  "promo_code": "BUNDLE15", "savings_pct": 15},
-    {"id": "birthday", "name": "Birthday Surprise", "description": "Make their birthday extra special",          "emoji": "🎂", "product_ids": [76, 4, 14],  "promo_code": "BUNDLE15", "savings_pct": 15},
+def load_products():
+    """Refresh the in-memory PRODUCTS cache from Supabase.
+    Falls back to the hardcoded seed list if the table is missing/empty."""
+    global PRODUCTS
+    try:
+        rows = supabase.table("products").select("*").order("id").execute().data or []
+        PRODUCTS = [_row_to_product(r) for r in rows] if rows else list(_SEED_PRODUCTS)
+    except Exception as e:
+        print(f"[Products] Could not load from DB — using seed list: {e}", flush=True)
+        PRODUCTS = list(_SEED_PRODUCTS)
+
+def seed_products():
+    """Populate the products table with the seed list if it's empty."""
+    try:
+        existing = supabase.table("products").select("id").limit(1).execute()
+        if not existing.data:
+            supabase.table("products").insert([{
+                "id": p["id"], "name": p["name"], "description": p["description"],
+                "price": p["price"], "image": p["image"], "category": p["category"],
+                "in_stock": p["inStock"],
+            } for p in _SEED_PRODUCTS]).execute()
+            print("[Seed] Inserted default products", flush=True)
+    except Exception as e:
+        print(f"[Seed] Products seeding skipped (table may not exist — run supabase_migration.sql): {e}", flush=True)
+
+# ── Subscription plans (DB-backed config) ────────────────────────────────────────
+# Plan cadence + discount live in the `subscription_plans` table so the discount
+# can be tuned from the admin panel without a redeploy. Seeded on first run.
+_SEED_SUBSCRIPTION_PLANS = [
+    {"id": "weekly",   "label": "Weekly",    "subtitle": "Fresh flowers every day for 1 week",       "days": 7,  "discount_percent": 0,  "sort_order": 1},
+    {"id": "biweekly", "label": "Bi-Weekly", "subtitle": "Fresh flowers every day for 2 weeks",      "days": 14, "discount_percent": 10, "sort_order": 2},
+    {"id": "monthly",  "label": "Monthly",   "subtitle": "Fresh flowers every day for 1 full month", "days": 30, "discount_percent": 20, "sort_order": 3},
 ]
+SUBSCRIPTION_PLANS = list(_SEED_SUBSCRIPTION_PLANS)
+
+def load_subscription_plans():
+    """Refresh the in-memory subscription plan cache from Supabase."""
+    global SUBSCRIPTION_PLANS
+    try:
+        rows = supabase.table("subscription_plans").select("*").order("sort_order").execute().data or []
+        SUBSCRIPTION_PLANS = rows if rows else list(_SEED_SUBSCRIPTION_PLANS)
+    except Exception as e:
+        print(f"[SubscriptionPlans] Could not load from DB — using seed: {e}", flush=True)
+        SUBSCRIPTION_PLANS = list(_SEED_SUBSCRIPTION_PLANS)
+
+def seed_subscription_plans():
+    try:
+        existing = supabase.table("subscription_plans").select("id").limit(1).execute()
+        if not existing.data:
+            supabase.table("subscription_plans").insert(_SEED_SUBSCRIPTION_PLANS).execute()
+            print("[Seed] Inserted default subscription plans", flush=True)
+    except Exception as e:
+        print(f"[Seed] Subscription plans seeding skipped (table may not exist — run supabase_migration.sql): {e}", flush=True)
+
+def plan_days(plan: str) -> int:
+    for p in SUBSCRIPTION_PLANS:
+        if p["id"] == plan:
+            return p.get("days", 7)
+    return 7
+
+# ── Seed default promo/offers/bundles if tables are empty ─────────────────────
+
+def seed_defaults():
+    """Populate promo_codes, seasonal_offers, bundle_deals with defaults if empty."""
+    try:
+        # Promo codes
+        existing = supabase.table("promo_codes").select("code").limit(1).execute()
+        if not existing.data:
+            supabase.table("promo_codes").insert([
+                {"code": "WELCOME10", "type": "percent", "value": 10, "description": "10% off your first order", "first_order_only": True, "min_order": 0, "active": True},
+                {"code": "SUMMER20",  "type": "percent", "value": 20, "description": "20% off orders above ₹500", "first_order_only": False, "min_order": 500, "active": True},
+                {"code": "FLAT100",   "type": "flat",    "value": 100, "description": "₹100 off on orders above ₹800", "first_order_only": False, "min_order": 800, "active": True},
+                {"code": "BUNDLE15",  "type": "percent", "value": 15, "description": "15% off on bundle deals", "first_order_only": False, "min_order": 0, "active": True},
+                {"code": "FLORANVIP", "type": "percent", "value": 25, "description": "VIP exclusive — 25% off orders above ₹1000", "first_order_only": False, "min_order": 1000, "active": True},
+            ]).execute()
+            print("[Seed] Inserted default promo codes", flush=True)
+
+        # Seasonal offers
+        existing = supabase.table("seasonal_offers").select("id").limit(1).execute()
+        if not existing.data:
+            supabase.table("seasonal_offers").insert([
+                {"id": "spring",  "emoji": "🌸", "title": "Spring Sale",   "subtitle": "Up to 20% off on all bouquets",  "code": "SUMMER20",  "badge": "Limited Time"},
+                {"id": "bundle",  "emoji": "🎁", "title": "Bundle & Save", "subtitle": "Buy a bundle and save 15%",       "code": "BUNDLE15",  "badge": "Bundle Deal"},
+                {"id": "newuser", "emoji": "🎉", "title": "New Here?",      "subtitle": "10% off your very first order",   "code": "WELCOME10", "badge": "First Order"},
+                {"id": "vip",     "emoji": "💎", "title": "VIP Offer",      "subtitle": "25% off orders above ₹1000",      "code": "FLORANVIP", "badge": "VIP Only"},
+            ]).execute()
+            print("[Seed] Inserted default seasonal offers", flush=True)
+
+        # Bundle deals
+        existing = supabase.table("bundle_deals").select("id").limit(1).execute()
+        if not existing.data:
+            supabase.table("bundle_deals").insert([
+                {"id": "romance",  "name": "Romance Bundle",    "description": "Perfect for date nights and anniversaries", "emoji": "❤️", "product_ids": [1, 5, 42],  "promo_code": "BUNDLE15", "savings_pct": 15},
+                {"id": "wedding",  "name": "Wedding Elegance",  "description": "Everything for a perfect wedding",          "emoji": "💍", "product_ids": [94, 9, 42], "promo_code": "BUNDLE15", "savings_pct": 15},
+                {"id": "birthday", "name": "Birthday Surprise", "description": "Make their birthday extra special",         "emoji": "🎂", "product_ids": [76, 4, 14], "promo_code": "BUNDLE15", "savings_pct": 15},
+            ]).execute()
+            print("[Seed] Inserted default bundle deals", flush=True)
+
+    except Exception as e:
+        print(f"[Seed] Error seeding defaults (tables may not exist yet — run supabase_migration.sql): {e}", flush=True)
+
+seed_defaults()
+seed_products()
+load_products()
+seed_subscription_plans()
+load_subscription_plans()
 
 # ── Order Status ───────────────────────────────────────────────────────────────
 STATUS_MESSAGES = {
@@ -699,6 +803,46 @@ class UpdateDeliveryRequest(BaseModel):
 class StatusUpdateRequest(BaseModel):
     status: str
 
+class PromoCodeCreate(BaseModel):
+    code: str
+    type: str          # "percent" or "flat"
+    value: float
+    description: str
+    first_order_only: bool = False
+    min_order: float = 0
+    active: bool = True
+
+class ProductCreate(BaseModel):
+    name: str
+    description: str = ""
+    price: float
+    image: str = ""
+    category: str
+    inStock: bool = True
+
+class ProductUpdate(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+    price: Optional[float] = None
+    image: Optional[str] = None
+    category: Optional[str] = None
+    inStock: Optional[bool] = None
+
+class SeasonalOfferCreate(BaseModel):
+    emoji: str
+    title: str
+    subtitle: str
+    code: str          # must reference an existing promo code
+    badge: str
+
+class BundleDealCreate(BaseModel):
+    name: str
+    description: str
+    emoji: str
+    product_ids: list[int]
+    promo_code: str
+    savings_pct: float = 15
+
 class CartItemRequest(BaseModel):
     user_id: str
     product_id: int
@@ -731,6 +875,49 @@ def get_product(product_id: int):
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
     return product
+
+# ── Admin: Products CRUD (Supabase) ──────────────────────────────────────────────
+
+@app.post("/api/admin/products")
+def create_product(req: ProductCreate, token: str):
+    require_admin(token)
+    rows = supabase.table("products").select("id").order("id", desc=True).limit(1).execute().data
+    next_id = (rows[0]["id"] + 1) if rows else 1
+    supabase.table("products").insert({
+        "id": next_id, "name": req.name, "description": req.description,
+        "price": float(req.price), "image": req.image, "category": req.category,
+        "in_stock": req.inStock,
+    }).execute()
+    load_products()
+    return next(p for p in PRODUCTS if p["id"] == next_id)
+
+@app.put("/api/admin/products/{product_id}")
+def update_product(product_id: int, req: ProductUpdate, token: str):
+    require_admin(token)
+    col_map = {"name": "name", "description": "description", "price": "price",
+               "image": "image", "category": "category", "inStock": "in_stock"}
+    data = {}
+    for field, col in col_map.items():
+        val = getattr(req, field)
+        if val is not None:
+            data[col] = float(val) if field == "price" else val
+    if not data:
+        raise HTTPException(status_code=400, detail="No fields to update")
+    result = supabase.table("products").update(data).eq("id", product_id).execute()
+    if not result.data:
+        raise HTTPException(status_code=404, detail="Product not found")
+    load_products()
+    return next(p for p in PRODUCTS if p["id"] == product_id)
+
+@app.delete("/api/admin/products/{product_id}")
+def delete_product(product_id: int, token: str):
+    require_admin(token)
+    result = supabase.table("products").delete().eq("id", product_id).execute()
+    if not result.data:
+        raise HTTPException(status_code=404, detail="Product not found")
+    supabase.table("product_stock").delete().eq("product_id", product_id).execute()
+    load_products()
+    return {"status": "ok"}
 
 # ── Auth Routes ────────────────────────────────────────────────────────────────
 
@@ -1387,6 +1574,141 @@ def delete_delivery_zone(zone_id: int, token: str):
     supabase.table("delivery_zones").delete().eq("id", zone_id).execute()
     return {"status": "ok"}
 
+# ── Admin: Promo Codes (Supabase) ─────────────────────────────────────────────
+
+@app.get("/api/admin/promo-codes")
+def list_promo_codes(token: str):
+    require_admin(token)
+    result = supabase.table("promo_codes").select("*").order("created_at", desc=True).execute()
+    return result.data
+
+@app.post("/api/admin/promo-codes")
+def create_promo_code(req: PromoCodeCreate, token: str):
+    require_admin(token)
+    code = req.code.strip().upper()
+    existing = supabase.table("promo_codes").select("code").eq("code", code).execute()
+    if existing.data:
+        raise HTTPException(status_code=400, detail="Promo code already exists")
+    result = supabase.table("promo_codes").insert({
+        "code": code, "type": req.type, "value": float(req.value),
+        "description": req.description, "first_order_only": req.first_order_only,
+        "min_order": float(req.min_order), "active": req.active
+    }).execute()
+    return result.data[0]
+
+@app.put("/api/admin/promo-codes/{code}")
+def update_promo_code(code: str, req: PromoCodeCreate, token: str):
+    require_admin(token)
+    code = code.strip().upper()
+    result = supabase.table("promo_codes").update({
+        "type": req.type, "value": float(req.value), "description": req.description,
+        "first_order_only": req.first_order_only, "min_order": float(req.min_order),
+        "active": req.active
+    }).eq("code", code).execute()
+    if not result.data:
+        raise HTTPException(status_code=404, detail="Promo code not found")
+    return result.data[0]
+
+@app.delete("/api/admin/promo-codes/{code}")
+def delete_promo_code(code: str, token: str):
+    require_admin(token)
+    code = code.strip().upper()
+    result = supabase.table("promo_codes").delete().eq("code", code).execute()
+    if not result.data:
+        raise HTTPException(status_code=404, detail="Promo code not found")
+    return {"status": "ok"}
+
+# ── Admin: Seasonal Offers (Supabase) ────────────────────────────────────────
+
+@app.get("/api/admin/seasonal-offers")
+def list_seasonal_offers(token: str):
+    require_admin(token)
+    result = supabase.table("seasonal_offers").select("*").order("created_at", desc=True).execute()
+    return result.data
+
+@app.post("/api/admin/seasonal-offers")
+def create_seasonal_offer(req: SeasonalOfferCreate, token: str):
+    require_admin(token)
+    new_id = req.title.lower().replace(" ", "_")
+    # Ensure unique id
+    existing = supabase.table("seasonal_offers").select("id").execute()
+    existing_ids = {o["id"] for o in existing.data}
+    counter = 1
+    base_id = new_id
+    while new_id in existing_ids:
+        new_id = f"{base_id}_{counter}"
+        counter += 1
+    result = supabase.table("seasonal_offers").insert({
+        "id": new_id, "emoji": req.emoji, "title": req.title,
+        "subtitle": req.subtitle, "code": req.code.strip().upper(), "badge": req.badge
+    }).execute()
+    return result.data[0]
+
+@app.put("/api/admin/seasonal-offers/{offer_id}")
+def update_seasonal_offer(offer_id: str, req: SeasonalOfferCreate, token: str):
+    require_admin(token)
+    result = supabase.table("seasonal_offers").update({
+        "emoji": req.emoji, "title": req.title, "subtitle": req.subtitle,
+        "code": req.code.strip().upper(), "badge": req.badge
+    }).eq("id", offer_id).execute()
+    if not result.data:
+        raise HTTPException(status_code=404, detail="Offer not found")
+    return result.data[0]
+
+@app.delete("/api/admin/seasonal-offers/{offer_id}")
+def delete_seasonal_offer(offer_id: str, token: str):
+    require_admin(token)
+    result = supabase.table("seasonal_offers").delete().eq("id", offer_id).execute()
+    if not result.data:
+        raise HTTPException(status_code=404, detail="Offer not found")
+    return {"status": "ok"}
+
+# ── Admin: Bundle Deals (Supabase) ───────────────────────────────────────────
+
+@app.get("/api/admin/bundle-deals")
+def list_bundle_deals(token: str):
+    require_admin(token)
+    result = supabase.table("bundle_deals").select("*").order("created_at", desc=True).execute()
+    return result.data
+
+@app.post("/api/admin/bundle-deals")
+def create_bundle_deal(req: BundleDealCreate, token: str):
+    require_admin(token)
+    new_id = req.name.lower().replace(" ", "_")
+    existing = supabase.table("bundle_deals").select("id").execute()
+    existing_ids = {b["id"] for b in existing.data}
+    counter = 1
+    base_id = new_id
+    while new_id in existing_ids:
+        new_id = f"{base_id}_{counter}"
+        counter += 1
+    result = supabase.table("bundle_deals").insert({
+        "id": new_id, "name": req.name, "description": req.description,
+        "emoji": req.emoji, "product_ids": req.product_ids,
+        "promo_code": req.promo_code.strip().upper(), "savings_pct": float(req.savings_pct)
+    }).execute()
+    return result.data[0]
+
+@app.put("/api/admin/bundle-deals/{deal_id}")
+def update_bundle_deal(deal_id: str, req: BundleDealCreate, token: str):
+    require_admin(token)
+    result = supabase.table("bundle_deals").update({
+        "name": req.name, "description": req.description, "emoji": req.emoji,
+        "product_ids": req.product_ids, "promo_code": req.promo_code.strip().upper(),
+        "savings_pct": float(req.savings_pct)
+    }).eq("id", deal_id).execute()
+    if not result.data:
+        raise HTTPException(status_code=404, detail="Bundle deal not found")
+    return result.data[0]
+
+@app.delete("/api/admin/bundle-deals/{deal_id}")
+def delete_bundle_deal(deal_id: str, token: str):
+    require_admin(token)
+    result = supabase.table("bundle_deals").delete().eq("id", deal_id).execute()
+    if not result.data:
+        raise HTTPException(status_code=404, detail="Bundle deal not found")
+    return {"status": "ok"}
+
 # ── Contact Route ──────────────────────────────────────────────────────────────
 
 @app.post("/api/contact")
@@ -1416,10 +1738,11 @@ def get_loyalty(email: str):
 @app.post("/api/promo/validate")
 def validate_promo(req: PromoValidateRequest):
     code = req.code.strip().upper()
-    promo = PROMO_CODES.get(code)
-    if not promo or not promo["active"]:
+    result = supabase.table("promo_codes").select("*").eq("code", code).execute()
+    if not result.data or not result.data[0]["active"]:
         raise HTTPException(status_code=404, detail="Invalid promo code")
-    if req.order_total < promo["min_order"]:
+    promo = result.data[0]
+    if req.order_total < float(promo["min_order"]):
         raise HTTPException(status_code=400, detail=f"Minimum order ₹{promo['min_order']} required for this code")
     if promo["first_order_only"]:
         if not req.customer_email:
@@ -1428,9 +1751,9 @@ def validate_promo(req: PromoValidateRequest):
         if existing_orders.data:
             raise HTTPException(status_code=400, detail="Code valid for first order only")
     if promo["type"] == "percent":
-        discount_amount = round(req.order_total * promo["value"] / 100, 2)
+        discount_amount = round(req.order_total * float(promo["value"]) / 100, 2)
     else:
-        discount_amount = min(promo["value"], req.order_total)
+        discount_amount = min(float(promo["value"]), req.order_total)
     return {
         "valid": True,
         "code": code,
@@ -1442,20 +1765,42 @@ def validate_promo(req: PromoValidateRequest):
 
 @app.get("/api/offers")
 def get_offers():
+    # Fetch from Supabase
+    offers_result = supabase.table("seasonal_offers").select("*").execute()
+    bundles_result = supabase.table("bundle_deals").select("*").execute()
+    promos_result = supabase.table("promo_codes").select("*").execute()
+
+    # Map promo code -> details so Live Deals can show the real discount/conditions
+    promo_map = {p["code"]: p for p in (promos_result.data or [])}
+
+    enriched_offers = []
+    for offer in offers_result.data:
+        promo = promo_map.get(offer.get("code"))
+        enriched_offers.append({
+            **offer,
+            "discount_type": promo["type"] if promo else None,
+            "discount_value": float(promo["value"]) if promo else None,
+            "min_order": float(promo["min_order"]) if promo else 0,
+            "first_order_only": promo["first_order_only"] if promo else False,
+        })
+
     enriched_bundles = []
-    for bundle in BUNDLE_DEALS:
-        products = [p for p in PRODUCTS if p["id"] in bundle["product_ids"]]
-        # preserve order of product_ids
-        products_ordered = sorted(products, key=lambda p: bundle["product_ids"].index(p["id"]))
+    for bundle in bundles_result.data:
+        product_ids = bundle["product_ids"]
+        products = [p for p in PRODUCTS if p["id"] in product_ids]
+        products_ordered = sorted(products, key=lambda p: product_ids.index(p["id"]))
         original_price = sum(p["price"] for p in products_ordered)
-        bundle_price = round(original_price * (1 - bundle["savings_pct"] / 100), 2)
+        savings_pct = float(bundle["savings_pct"])
+        bundle_price = round(original_price * (1 - savings_pct / 100), 2)
         enriched_bundles.append({
             **bundle,
             "products": products_ordered,
             "original_price": round(original_price, 2),
-            "bundle_price": bundle_price
+            "bundle_price": bundle_price,
+            "savings_amount": round(original_price - bundle_price, 2),
+            "item_count": len(products_ordered),
         })
-    return {"seasonal_offers": SEASONAL_OFFERS, "bundle_deals": enriched_bundles}
+    return {"seasonal_offers": enriched_offers, "bundle_deals": enriched_bundles}
 
 # ── Cart Routes ─────────────────────────────────────────────────────────────────
 
@@ -1720,19 +2065,45 @@ def create_order(req: OrderRequest):
 
 # ── Subscription helpers ────────────────────────────────────────────────────────
 
-PLAN_INTERVALS = {"weekly": 7, "biweekly": 14, "monthly": 30}
-
 def next_delivery_date(plan: str) -> str:
-    days = PLAN_INTERVALS.get(plan, 7)
+    days = plan_days(plan)
     return (datetime.utcnow() + timedelta(days=days)).strftime("%Y-%m-%d")
 
 def advance_delivery_date(plan: str, current: str) -> str:
-    days = PLAN_INTERVALS.get(plan, 7)
+    days = plan_days(plan)
     try:
         base = datetime.strptime(current, "%Y-%m-%d")
     except Exception:
         base = datetime.utcnow()
     return (base + timedelta(days=days)).strftime("%Y-%m-%d")
+
+# ── Subscription Plans (DB-backed config) ────────────────────────────────────────
+
+class SubscriptionPlanUpdate(BaseModel):
+    label: Optional[str] = None
+    subtitle: Optional[str] = None
+    discount_percent: Optional[float] = None
+
+@app.get("/api/subscription-plans")
+def get_subscription_plans():
+    return SUBSCRIPTION_PLANS
+
+@app.get("/api/admin/subscription-plans")
+def admin_list_subscription_plans(token: str):
+    require_admin(token)
+    return SUBSCRIPTION_PLANS
+
+@app.put("/api/admin/subscription-plans/{plan_id}")
+def admin_update_subscription_plan(plan_id: str, req: SubscriptionPlanUpdate, token: str):
+    require_admin(token)
+    data = {k: v for k, v in req.model_dump().items() if v is not None}
+    if not data:
+        raise HTTPException(status_code=400, detail="No fields to update")
+    result = supabase.table("subscription_plans").update(data).eq("id", plan_id).execute()
+    if not result.data:
+        raise HTTPException(status_code=404, detail="Plan not found")
+    load_subscription_plans()
+    return next(p for p in SUBSCRIPTION_PLANS if p["id"] == plan_id)
 
 # ── Subscription Routes ─────────────────────────────────────────────────────────
 # Requires a `subscriptions` Supabase table with columns:

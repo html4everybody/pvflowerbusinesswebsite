@@ -157,6 +157,12 @@
     padding: 0.28rem 0.75rem;
     border-radius: 999px;
   }
+
+  .section-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
 }
 
 // ── Buttons ───────────────────────────────────────────────────────────────────
@@ -637,6 +643,109 @@
   .peak-bar-wrap { flex: 1; width: 100%; display: flex; align-items: flex-end; }
   .peak-bar { width: 100%; min-height: 2px; background: #e7c8d8; border-radius: 3px 3px 0 0; transition: height 0.35s; &.highlight { background: #c84b7a; } }
   .peak-label { font-size: 0.61rem; color: var(--text-muted); margin-top: 4px; white-space: nowrap; }
+}
+
+// ── Live Deals & Bundles ─────────────────────────────────────────────────────
+.sub-section {
+  margin-bottom: 2rem;
+
+  &:last-child { margin-bottom: 0; }
+}
+
+.sub-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+
+  h2 {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text);
+    margin: 0;
+  }
+}
+
+.btn-sm {
+  padding: 0.4rem 0.85rem !important;
+  font-size: 0.78rem !important;
+}
+
+.deals-list { display: flex; flex-direction: column; gap: 0.6rem; }
+
+.deal-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1rem 1.25rem;
+  transition: border-color 0.15s;
+  flex-wrap: wrap;
+  &.inactive { opacity: 0.5; }
+  &:hover { border-color: var(--text-muted); }
+}
+
+.deal-main { display: flex; align-items: center; gap: 0.85rem; flex: 1; min-width: 0; }
+
+.deal-emoji { font-size: 1.75rem; line-height: 1; flex-shrink: 0; }
+
+.deal-code-badge {
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: var(--accent);
+  background: var(--accent-light);
+  border: 1.5px dashed var(--accent-mid);
+  border-radius: 8px;
+  padding: 0.35rem 0.75rem;
+  flex-shrink: 0;
+}
+
+.deal-info { display: flex; flex-direction: column; gap: 0.2rem; min-width: 0; }
+.deal-title { font-weight: 700; font-size: 0.92rem; color: var(--text); }
+.deal-desc { font-size: 0.8rem; color: var(--text-muted); }
+
+.deal-meta { display: flex; gap: 0.4rem; flex-wrap: wrap; margin-top: 0.2rem; }
+
+.deal-tag {
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  background: var(--accent-light);
+  color: var(--accent);
+
+  &.subtle {
+    background: var(--bg-raised);
+    color: var(--text-muted);
+  }
+
+  &.warn {
+    background: rgba(239,68,68,0.1);
+    color: #ef4444;
+  }
+}
+
+.form-checks {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  justify-content: center;
+}
+
+.toggle-label {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  input[type="checkbox"] { cursor: pointer; accent-color: var(--accent); }
 }
 
 // ── Delivery Zones ────────────────────────────────────────────────────────────

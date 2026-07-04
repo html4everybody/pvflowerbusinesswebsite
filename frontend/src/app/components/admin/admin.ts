@@ -6,7 +6,7 @@ import { AuthService } from '../../services/auth';
 import { ToastService } from '../../services/toast';
 import { environment } from '../../../environments/environment';
 
-export type AdminSection = 'overview' | 'orders' | 'products' | 'inventory' | 'customers' | 'analytics' | 'zones';
+export type AdminSection = 'overview' | 'orders' | 'products' | 'inventory' | 'customers' | 'analytics' | 'zones' | 'deals' | 'bundles' | 'plans';
 
 @Component({
   selector: 'app-admin',
@@ -91,6 +91,22 @@ export class Admin implements OnInit {
     const q = this.productSearch().toLowerCase();
     return q ? this.products().filter(p => p.name.toLowerCase().includes(q) || p.category.toLowerCase().includes(q)) : this.products();
   });
+  readonly PRODUCT_CATEGORIES = ['Flowers', 'Bouquets', 'Garlands', 'Gifts', 'Decoration'];
+  productCategories = computed(() => {
+    const fromData = Array.from(new Set(this.products().map(p => p.category).filter(Boolean)));
+    return Array.from(new Set([...this.PRODUCT_CATEGORIES, ...fromData]));
+  });
+  showProductForm = signal(false);
+  editingProduct = signal<any | null>(null);
+  savingProduct = signal(false);
+  productForm = { name: '', description: '', price: 0, image: '', category: 'Flowers', inStock: true };
+
+  // ── Subscription Plans ───────────────────────────────────────────────────────
+  subPlans = signal<any[]>([]);
+  loadingPlans = signal(true);
+  editingPlan = signal<string | null>(null);
+  editPlanForm = { label: '', subtitle: '', discount_percent: 0 };
+  savingPlan = signal(false);
 
   // ── Inventory ──────────────────────────────────────────────────────────────
   inventory = signal<any[]>([]);
@@ -131,6 +147,27 @@ export class Admin implements OnInit {
   zoneForm = { zone_name: '', areas: '', delivery_charge: 0, min_order: 0, active: true };
   savingZone = signal(false);
 
+  // ── Live Deals (Promo Codes + Seasonal Offers) ────────────────────────────
+  promoCodes = signal<any[]>([]);
+  seasonalOffers = signal<any[]>([]);
+  loadingDeals = signal(true);
+  showPromoForm = signal(false);
+  editingPromo = signal<any | null>(null);
+  promoForm = { code: '', type: 'percent', value: 0, description: '', first_order_only: false, min_order: 0, active: true };
+  savingPromo = signal(false);
+  showOfferForm = signal(false);
+  editingOffer = signal<any | null>(null);
+  offerForm = { emoji: '', title: '', subtitle: '', code: '', badge: '' };
+  savingOffer = signal(false);
+
+  // ── Bundle Offers ────────────────────────────────────────────────────────
+  bundleDeals = signal<any[]>([]);
+  loadingBundles = signal(true);
+  showBundleForm = signal(false);
+  editingBundle = signal<any | null>(null);
+  bundleForm = { name: '', description: '', emoji: '', product_ids: '' as string, promo_code: '', savings_pct: 15 };
+  savingBundle = signal(false);
+
   constructor(
     private authService: AuthService,
     private http: HttpClient,
@@ -152,6 +189,9 @@ export class Admin implements OnInit {
     if (section === 'customers' && !this.customers().length) this.loadCustomers();
     if (section === 'analytics' && !this.analytics()) this.loadAnalytics();
     if (section === 'zones' && !this.zones().length) this.loadZones();
+    if (section === 'deals') this.loadDeals();
+    if (section === 'bundles') this.loadBundles();
+    if (section === 'plans' && !this.subPlans().length) this.loadPlans();
   }
 
   get token(): string { return this.authService.getToken(); }
@@ -163,6 +203,9 @@ export class Admin implements OnInit {
     if (section === 'customers' && !this.customers().length) this.loadCustomers();
     if (section === 'analytics' && !this.analytics()) this.loadAnalytics();
     if (section === 'zones' && !this.zones().length) this.loadZones();
+    if (section === 'deals') this.loadDeals();
+    if (section === 'bundles') this.loadBundles();
+    if (section === 'plans' && !this.subPlans().length) this.loadPlans();
   }
 
   // ── Stats & Orders ────────────────────────────────────────────────────────
@@ -202,6 +245,67 @@ export class Admin implements OnInit {
     this.http.get<any[]>(`${environment.apiUrl}/api/products`).subscribe({
       next: (data) => { this.products.set(data || []); this.loadingProducts.set(false); },
       error: () => this.loadingProducts.set(false)
+    });
+  }
+
+  openProductForm(product: any = null): void {
+    this.editingProduct.set(product);
+    this.productForm = product
+      ? { name: product.name, description: product.description || '', price: product.price, image: product.image || '', category: product.category, inStock: product.inStock !== false }
+      : { name: '', description: '', price: 0, image: '', category: this.productCategories()[0] || 'Flowers', inStock: true };
+    this.showProductForm.set(true);
+  }
+
+  closeProductForm(): void { this.showProductForm.set(false); this.editingProduct.set(null); }
+
+  saveProduct(): void {
+    if (!this.productForm.name.trim() || !this.productForm.category.trim()) return;
+    this.savingProduct.set(true);
+    const editing = this.editingProduct();
+    const url = editing
+      ? `${environment.apiUrl}/api/admin/products/${editing.id}?token=${this.token}`
+      : `${environment.apiUrl}/api/admin/products?token=${this.token}`;
+    const req = editing
+      ? this.http.put(url, this.productForm)
+      : this.http.post(url, this.productForm);
+    req.subscribe({
+      next: () => { this.savingProduct.set(false); this.closeProductForm(); this.loadProducts(); this.toastService.show(editing ? 'Product updated' : 'Product added'); },
+      error: (err) => { this.savingProduct.set(false); this.toastService.show(err.error?.detail || 'Failed to save product', 'error'); }
+    });
+  }
+
+  deleteProduct(product: any): void {
+    if (!confirm(`Delete "${product.name}"? This cannot be undone.`)) return;
+    this.http.delete(`${environment.apiUrl}/api/admin/products/${product.id}?token=${this.token}`).subscribe({
+      next: () => { this.products.update(list => list.filter(p => p.id !== product.id)); this.toastService.show('Product deleted'); },
+      error: (err) => this.toastService.show(err.error?.detail || 'Failed to delete product', 'error')
+    });
+  }
+
+  // ── Subscription Plans ────────────────────────────────────────────────────
+  loadPlans(): void {
+    this.loadingPlans.set(true);
+    this.http.get<any[]>(`${environment.apiUrl}/api/admin/subscription-plans?token=${this.token}`).subscribe({
+      next: (data) => { this.subPlans.set(data || []); this.loadingPlans.set(false); },
+      error: () => this.loadingPlans.set(false)
+    });
+  }
+
+  startEditPlan(plan: any): void {
+    this.editingPlan.set(plan.id);
+    this.editPlanForm = { label: plan.label, subtitle: plan.subtitle, discount_percent: plan.discount_percent };
+  }
+
+  savePlan(plan: any): void {
+    this.savingPlan.set(true);
+    this.http.put(`${environment.apiUrl}/api/admin/subscription-plans/${plan.id}?token=${this.token}`, this.editPlanForm).subscribe({
+      next: (updated: any) => {
+        this.subPlans.update(list => list.map(p => p.id === plan.id ? updated : p));
+        this.editingPlan.set(null);
+        this.savingPlan.set(false);
+        this.toastService.show('Plan updated');
+      },
+      error: (err) => { this.savingPlan.set(false); this.toastService.show(err.error?.detail || 'Failed to update plan', 'error'); }
     });
   }
 
@@ -354,6 +458,142 @@ export class Admin implements OnInit {
     this.http.patch(`${environment.apiUrl}/api/admin/delivery-zones/${zone.id}?token=${this.token}`, { active: !zone.active }).subscribe({
       next: (updated: any) => this.zones.update(list => list.map(z => z.id === zone.id ? updated : z)),
       error: () => this.toastService.show('Failed to update zone', 'error')
+    });
+  }
+
+  // ── Live Deals (Promo Codes + Seasonal Offers) ───────────────────────────
+  loadDeals(): void {
+    this.loadingDeals.set(true);
+    const t = this.token;
+    this.http.get<any[]>(`${environment.apiUrl}/api/admin/promo-codes?token=${t}`).subscribe({
+      next: (codes) => {
+        this.promoCodes.set(codes || []);
+        this.http.get<any[]>(`${environment.apiUrl}/api/admin/seasonal-offers?token=${t}`).subscribe({
+          next: (offers) => { this.seasonalOffers.set(offers || []); this.loadingDeals.set(false); },
+          error: () => this.loadingDeals.set(false)
+        });
+      },
+      error: () => this.loadingDeals.set(false)
+    });
+  }
+
+  openPromoForm(promo: any = null): void {
+    this.editingPromo.set(promo);
+    this.promoForm = promo
+      ? { code: promo.code, type: promo.type, value: promo.value, description: promo.description, first_order_only: promo.first_order_only, min_order: promo.min_order, active: promo.active }
+      : { code: '', type: 'percent', value: 0, description: '', first_order_only: false, min_order: 0, active: true };
+    this.showPromoForm.set(true);
+  }
+
+  closePromoForm(): void { this.showPromoForm.set(false); this.editingPromo.set(null); }
+
+  savePromo(): void {
+    if (!this.promoForm.code.trim()) return;
+    this.savingPromo.set(true);
+    const editing = this.editingPromo();
+    const url = editing
+      ? `${environment.apiUrl}/api/admin/promo-codes/${editing.code}?token=${this.token}`
+      : `${environment.apiUrl}/api/admin/promo-codes?token=${this.token}`;
+    const req$ = editing
+      ? this.http.put(url, this.promoForm)
+      : this.http.post(url, this.promoForm);
+    req$.subscribe({
+      next: () => { this.savingPromo.set(false); this.closePromoForm(); this.loadDeals(); this.toastService.show(editing ? 'Promo updated' : 'Promo created'); },
+      error: (err) => { this.savingPromo.set(false); this.toastService.show(err.error?.detail || 'Failed to save promo', 'error'); }
+    });
+  }
+
+  deletePromo(promo: any): void {
+    if (!confirm(`Delete promo code "${promo.code}"?`)) return;
+    this.http.delete(`${environment.apiUrl}/api/admin/promo-codes/${promo.code}?token=${this.token}`).subscribe({
+      next: () => { this.promoCodes.update(list => list.filter(p => p.code !== promo.code)); this.toastService.show('Promo deleted'); },
+      error: () => this.toastService.show('Failed to delete promo', 'error')
+    });
+  }
+
+  openOfferForm(offer: any = null): void {
+    this.editingOffer.set(offer);
+    this.offerForm = offer
+      ? { emoji: offer.emoji, title: offer.title, subtitle: offer.subtitle, code: offer.code, badge: offer.badge }
+      : { emoji: '', title: '', subtitle: '', code: '', badge: '' };
+    this.showOfferForm.set(true);
+  }
+
+  closeOfferForm(): void { this.showOfferForm.set(false); this.editingOffer.set(null); }
+
+  saveOffer(): void {
+    if (!this.offerForm.title.trim()) return;
+    this.savingOffer.set(true);
+    const editing = this.editingOffer();
+    const url = editing
+      ? `${environment.apiUrl}/api/admin/seasonal-offers/${editing.id}?token=${this.token}`
+      : `${environment.apiUrl}/api/admin/seasonal-offers?token=${this.token}`;
+    const req$ = editing
+      ? this.http.put(url, this.offerForm)
+      : this.http.post(url, this.offerForm);
+    req$.subscribe({
+      next: () => { this.savingOffer.set(false); this.closeOfferForm(); this.loadDeals(); this.toastService.show(editing ? 'Offer updated' : 'Offer created'); },
+      error: (err) => { this.savingOffer.set(false); this.toastService.show(err.error?.detail || 'Failed to save offer', 'error'); }
+    });
+  }
+
+  deleteOffer(offer: any): void {
+    if (!confirm(`Delete offer "${offer.title}"?`)) return;
+    this.http.delete(`${environment.apiUrl}/api/admin/seasonal-offers/${offer.id}?token=${this.token}`).subscribe({
+      next: () => { this.seasonalOffers.update(list => list.filter(o => o.id !== offer.id)); this.toastService.show('Offer deleted'); },
+      error: () => this.toastService.show('Failed to delete offer', 'error')
+    });
+  }
+
+  // ── Bundle Offers ───────────────────────────────────────────────────────
+  loadBundles(): void {
+    this.loadingBundles.set(true);
+    // Also load promo codes for the dropdown in bundle form
+    if (!this.promoCodes().length) {
+      this.http.get<any[]>(`${environment.apiUrl}/api/admin/promo-codes?token=${this.token}`).subscribe({
+        next: (codes) => this.promoCodes.set(codes || []),
+        error: () => {}
+      });
+    }
+    this.http.get<any[]>(`${environment.apiUrl}/api/admin/bundle-deals?token=${this.token}`).subscribe({
+      next: (data) => { this.bundleDeals.set(data || []); this.loadingBundles.set(false); },
+      error: () => this.loadingBundles.set(false)
+    });
+  }
+
+  openBundleForm(bundle: any = null): void {
+    this.editingBundle.set(bundle);
+    this.bundleForm = bundle
+      ? { name: bundle.name, description: bundle.description, emoji: bundle.emoji, product_ids: bundle.product_ids.join(', '), promo_code: bundle.promo_code, savings_pct: bundle.savings_pct }
+      : { name: '', description: '', emoji: '', product_ids: '', promo_code: '', savings_pct: 15 };
+    this.showBundleForm.set(true);
+  }
+
+  closeBundleForm(): void { this.showBundleForm.set(false); this.editingBundle.set(null); }
+
+  saveBundle(): void {
+    if (!this.bundleForm.name.trim()) return;
+    this.savingBundle.set(true);
+    const ids = this.bundleForm.product_ids.split(',').map(s => parseInt(s.trim(), 10)).filter(n => !isNaN(n));
+    const payload = { ...this.bundleForm, product_ids: ids };
+    const editing = this.editingBundle();
+    const url = editing
+      ? `${environment.apiUrl}/api/admin/bundle-deals/${editing.id}?token=${this.token}`
+      : `${environment.apiUrl}/api/admin/bundle-deals?token=${this.token}`;
+    const req$ = editing
+      ? this.http.put(url, payload)
+      : this.http.post(url, payload);
+    req$.subscribe({
+      next: () => { this.savingBundle.set(false); this.closeBundleForm(); this.loadBundles(); this.toastService.show(editing ? 'Bundle updated' : 'Bundle created'); },
+      error: (err) => { this.savingBundle.set(false); this.toastService.show(err.error?.detail || 'Failed to save bundle', 'error'); }
+    });
+  }
+
+  deleteBundle(bundle: any): void {
+    if (!confirm(`Delete bundle "${bundle.name}"?`)) return;
+    this.http.delete(`${environment.apiUrl}/api/admin/bundle-deals/${bundle.id}?token=${this.token}`).subscribe({
+      next: () => { this.bundleDeals.update(list => list.filter(b => b.id !== bundle.id)); this.toastService.show('Bundle deleted'); },
+      error: () => this.toastService.show('Failed to delete bundle', 'error')
     });
   }
 
