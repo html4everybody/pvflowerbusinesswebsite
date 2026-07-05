@@ -1,7 +1,9 @@
 import { Injectable, signal, computed, effect } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
+import { Router } from '@angular/router';
 import { Product, CartItem } from '../models/product.model';
 import { AuthService } from './auth';
+import { ToastService } from './toast';
 import { environment } from '../../environments/environment';
 
 @Injectable({
@@ -21,7 +23,12 @@ export class CartService {
     this.cartItems().reduce((total, item) => total + (item.product.price * item.quantity), 0)
   );
 
-  constructor(private authService: AuthService, private http: HttpClient) {
+  constructor(
+    private authService: AuthService,
+    private http: HttpClient,
+    private router: Router,
+    private toastService: ToastService
+  ) {
     // Load cart on startup
     this.fetchCart();
 
@@ -41,7 +48,10 @@ export class CartService {
         error: () => this.cartItems.set([])
       });
     } else {
-      this.cartItems.set(this.loadFromLocalStorage());
+      // Cart requires login — a logged-out user has no cart. Also drop any
+      // legacy guest cart that may linger from before login was required.
+      this.cartItems.set([]);
+      localStorage.removeItem('viva_cart_guest');
     }
   }
 
@@ -62,7 +72,14 @@ export class CartService {
 
   // ── Cart mutations ──────────────────────────────────────────────────────────
 
-  addToCart(product: Product, quantity: number = 1): void {
+  addToCart(product: Product, quantity: number = 1): boolean {
+    // Cart is per-user — require login before adding anything.
+    if (!this.authService.isLoggedIn()) {
+      this.toastService.show('Please sign in to add items to your cart', 'error');
+      this.router.navigate(['/signin'], { queryParams: { returnUrl: this.router.url } });
+      return false;
+    }
+
     const currentItems = this.cartItems();
     const existing = currentItems.find(item => item.product.id === product.id);
     const newQuantity = existing ? existing.quantity + quantity : quantity;
@@ -79,6 +96,7 @@ export class CartService {
 
     this.persist(product.id, newQuantity);
     this.triggerBounce();
+    return true;
   }
 
   private triggerBounce(): void {

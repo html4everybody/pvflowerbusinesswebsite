@@ -80,6 +80,22 @@ export class Home implements OnInit, AfterViewInit {
     });
   }
 
+  // The single best percentage deal / highest-saving bundle get a premium highlight
+  get bestOfferId(): string | null {
+    let id: string | null = null, best = 0;
+    for (const o of this.offers()?.seasonal_offers ?? []) {
+      if (o.discount_type === 'percent' && (o.discount_value ?? 0) > best) { best = o.discount_value!; id = o.id; }
+    }
+    return id;
+  }
+  get bestBundleId(): string | null {
+    let id: string | null = null, best = -1;
+    for (const b of this.offers()?.bundle_deals ?? []) {
+      if ((b.savings_amount ?? 0) > best) { best = b.savings_amount ?? 0; id = b.id; }
+    }
+    return id;
+  }
+
   // Live Deal helpers ───────────────────────────────────────────────
   discountLabel(o: SeasonalOffer): string {
     if (o.discount_type === 'percent' && o.discount_value != null) return `${o.discount_value}% OFF`;
@@ -103,7 +119,8 @@ export class Home implements OnInit, AfterViewInit {
 
   addBundleToCart(bundle: BundleDeal): void {
     for (const product of bundle.products) {
-      this.cartService.addToCart(product as unknown as Product, 1);
+      // First add redirects to sign-in when logged out; bail out then
+      if (!this.cartService.addToCart(product as unknown as Product, 1)) return;
     }
     sessionStorage.setItem('viva_promo', bundle.promo_code);
     this.router.navigate(['/cart']);
@@ -163,20 +180,22 @@ export class Home implements OnInit, AfterViewInit {
   toggleWishlist(product: Product, event: Event): void {
     event.stopPropagation();
     const wasWishlisted = this.wishlistService.has(product.id);
-    this.wishlistService.toggle(product);
-    this.showToast(product.name, wasWishlisted ? 'wish-removed' : 'wish-added');
+    // toggle() returns false and redirects to sign-in when logged out
+    if (this.wishlistService.toggle(product)) {
+      this.showToast(product.name, wasWishlisted ? 'wish-removed' : 'wish-added');
+    }
   }
 
   addToCart(product: Product): void {
+    if (!this.cartService.addToCart(product)) return; // redirected to sign-in
     this.cartQuantities[product.id] = 1;
-    this.cartService.addToCart(product);
     this.feedbackService.addToCartFeedback();
     this.showToast(product.name, 'added');
   }
 
   incrementQuantity(product: Product): void {
+    if (!this.cartService.addToCart(product)) return;
     this.cartQuantities[product.id] = (this.cartQuantities[product.id] || 0) + 1;
-    this.cartService.addToCart(product);
     this.feedbackService.addToCartFeedback();
   }
 

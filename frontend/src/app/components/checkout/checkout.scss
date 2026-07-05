@@ -726,6 +726,54 @@
       &.promo-msg-error   { color: #dc2626; }
       &.promo-msg-success { color: #16a34a; }
     }
+
+    .promo-offers {
+      margin-top: 0.9rem;
+
+      .promo-offers-label {
+        display: block;
+        font-size: 0.7rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--text-muted, #6b7280);
+        margin-bottom: 0.5rem;
+      }
+
+      .promo-offers-list { display: flex; flex-direction: column; gap: 0.5rem; }
+
+      .promo-offer {
+        display: flex;
+        align-items: center;
+        gap: 0.7rem;
+        width: 100%;
+        text-align: left;
+        padding: 0.6rem 0.75rem;
+        border: 1.5px dashed var(--border, #e5e7eb);
+        border-radius: 10px;
+        background: var(--bg-raised, #f9fafb);
+        cursor: pointer;
+        font-family: inherit;
+        transition: border-color 0.15s, background 0.15s, transform 0.1s;
+
+        &:hover:not(:disabled) { border-color: var(--accent, #c84b7a); background: var(--bg-card, #fff); transform: translateY(-1px); }
+
+        .po-emoji { font-size: 1.3rem; flex-shrink: 0; }
+
+        .po-main {
+          display: flex;
+          flex-direction: column;
+          flex: 1;
+          min-width: 0;
+          .po-discount { font-size: 0.88rem; font-weight: 800; color: var(--text, #111827); }
+          .po-code { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.08em; color: var(--accent, #c84b7a); font-family: 'SF Mono', monospace; }
+        }
+
+        .po-cond { font-size: 0.72rem; font-weight: 600; color: var(--text-muted, #6b7280); flex-shrink: 0; white-space: nowrap; }
+
+        &.locked { opacity: 0.6; cursor: not-allowed; .po-cond { color: #d97706; } }
+      }
+    }
   }
 
   .promo-discount-row {

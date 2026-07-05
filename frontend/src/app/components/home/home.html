@@ -220,13 +220,18 @@
         </div>
         <div class="offers-grid">
           @for (offer of offers()!.seasonal_offers; track offer.id) {
-            <div class="coupon-card" appFadeIn [fadeDelay]="$index * 80">
+            <div class="coupon-card" [class.best]="offer.id === bestOfferId" appFadeIn [fadeDelay]="$index * 80">
               <div class="coupon-stub">
+                <span class="coupon-shine" aria-hidden="true"></span>
                 <span class="coupon-emoji">{{ offer.emoji }}</span>
                 <span class="coupon-discount">{{ discountLabel(offer) }}</span>
               </div>
               <div class="coupon-body">
-                <span class="offer-badge">{{ offer.badge }}</span>
+                @if (offer.id === bestOfferId) {
+                  <span class="offer-badge best-badge">⭐ Best Deal</span>
+                } @else {
+                  <span class="offer-badge">{{ offer.badge }}</span>
+                }
                 <h3>{{ offer.title }}</h3>
                 <p>{{ offer.subtitle }}</p>
                 <span class="coupon-condition">✓ {{ conditionLabel(offer) }}</span>
@@ -258,19 +263,27 @@
         </div>
         <div class="bundles-grid">
           @for (bundle of offers()!.bundle_deals; track bundle.id) {
-            <div class="bundle-card" appFadeIn [fadeDelay]="$index * 100">
+            <div class="bundle-card" [class.best]="bundle.id === bestBundleId" appFadeIn [fadeDelay]="$index * 100">
+              @if (bundle.id === bestBundleId) { <span class="bundle-best-badge">💎 Best Value</span> }
               <div class="bundle-top">
                 <span class="bundle-emoji">{{ bundle.emoji }}</span>
                 <span class="bundle-item-count">{{ bundle.item_count }} items · Save {{ bundle.savings_pct }}%</span>
               </div>
               <h3>{{ bundle.name }}</h3>
               <p>{{ bundle.description }}</p>
-              <div class="bundle-items">
+              <div class="bundle-fan">
+                @for (product of bundle.products; track product.id; let i = $index) {
+                  <img class="fan-img" [style.--i]="i" [src]="product.image" [alt]="product.name"
+                       [title]="'View ' + product.name" (click)="goToProduct(product.id)" loading="lazy">
+                }
+              </div>
+              <div class="bundle-contents">
+                <span class="contents-label">In this kit:</span>
                 @for (product of bundle.products; track product.id) {
-                  <div class="bundle-item">
-                    <img [src]="product.image" [alt]="product.name" loading="lazy">
-                    <span>{{ product.name }}</span>
-                  </div>
+                  <button type="button" class="content-chip" (click)="goToProduct(product.id)" [title]="'View ' + product.name">
+                    {{ product.name }}
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M17 7H8M17 7V16"/></svg>
+                  </button>
                 }
               </div>
               <div class="bundle-pricing">

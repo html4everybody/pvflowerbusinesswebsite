@@ -975,17 +975,27 @@
       border: 1px solid rgba(0,0,0,0.06);
       border-radius: 18px;
       overflow: hidden;
-      transition: box-shadow 0.25s ease, transform 0.25s ease;
+      transition: box-shadow 0.3s ease, transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
 
       &:hover {
-        box-shadow: 0 14px 34px rgba(245,158,11,0.18), 0 4px 12px rgba(0,0,0,0.06);
-        transform: translateY(-4px);
+        box-shadow: 0 20px 44px rgba(245,158,11,0.22), 0 6px 16px rgba(0,0,0,0.08);
+        transform: translateY(-6px);
+        .coupon-stub .coupon-emoji { transform: scale(1.08) rotate(-4deg); }
+      }
+
+      // Premium highlight for the single best deal
+      &.best {
+        border-color: rgba(245,158,11,0.55);
+        box-shadow: 0 0 0 1px rgba(245,158,11,0.4), 0 10px 30px rgba(245,158,11,0.2);
+        &:hover { box-shadow: 0 0 0 1px rgba(245,158,11,0.5), 0 22px 48px rgba(245,158,11,0.3); }
       }
 
       .coupon-stub {
+        position: relative;
+        overflow: hidden;
         flex-shrink: 0;
         width: 118px;
-        background: linear-gradient(160deg, #f59e0b, #d97706);
+        background: linear-gradient(160deg, #fbbf24, #f59e0b 45%, #d97706);
         color: #fff;
         display: flex;
         flex-direction: column;
@@ -995,8 +1005,26 @@
         padding: 1.25rem 0.75rem;
         text-align: center;
 
-        .coupon-emoji { font-size: 2.4rem; line-height: 1; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.15)); }
-        .coupon-discount { font-size: 1.05rem; font-weight: 900; letter-spacing: -0.01em; line-height: 1.1; }
+        .coupon-emoji { font-size: 2.4rem; line-height: 1; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.15)); transition: transform 0.3s ease; }
+        .coupon-discount { font-size: 1.05rem; font-weight: 900; letter-spacing: -0.01em; line-height: 1.1; text-shadow: 0 1px 2px rgba(0,0,0,0.12); }
+
+        // Holographic shine sweep
+        .coupon-shine {
+          position: absolute;
+          top: -20%; left: -70%;
+          width: 45%; height: 140%;
+          background: linear-gradient(105deg, transparent, rgba(255,255,255,0.55), transparent);
+          transform: skewX(-18deg);
+          animation: coupon-shine 4.5s ease-in-out infinite;
+          pointer-events: none;
+        }
+      }
+
+      .best-badge {
+        background: linear-gradient(135deg, #f59e0b, #d97706) !important;
+        color: #fff !important;
+        border: none !important;
+        box-shadow: 0 2px 8px rgba(245,158,11,0.4);
       }
 
       // Perforated divider with punched notches at top & bottom
@@ -1146,6 +1174,7 @@
     }
 
     .bundle-card {
+      position: relative;
       background: var(--bg-card);
       border: 1px solid var(--border);
       border-radius: 20px;
@@ -1153,11 +1182,33 @@
       display: flex;
       flex-direction: column;
       gap: 0.75rem;
-      transition: box-shadow 0.25s ease, transform 0.25s ease;
+      transition: box-shadow 0.3s ease, transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
 
       &:hover {
-        box-shadow: 0 12px 36px rgba(37,99,235,0.1), 0 4px 12px rgba(0,0,0,0.06);
-        transform: translateY(-4px);
+        box-shadow: 0 22px 48px rgba(139,92,246,0.16), 0 6px 16px rgba(0,0,0,0.08);
+        transform: translateY(-6px);
+        .bundle-fan .fan-img { margin-left: -6px; transform: translateY(-2px); }
+      }
+
+      &.best {
+        border-color: rgba(139,92,246,0.5);
+        box-shadow: 0 0 0 1px rgba(139,92,246,0.35), 0 12px 34px rgba(139,92,246,0.16);
+        &:hover { box-shadow: 0 0 0 1px rgba(139,92,246,0.45), 0 24px 52px rgba(139,92,246,0.24); }
+      }
+
+      .bundle-best-badge {
+        position: absolute;
+        top: -11px;
+        right: 16px;
+        background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+        color: #fff;
+        font-size: 0.66rem;
+        font-weight: 800;
+        letter-spacing: 0.03em;
+        padding: 0.3rem 0.7rem;
+        border-radius: 999px;
+        box-shadow: 0 4px 12px rgba(139,92,246,0.4);
+        z-index: 2;
       }
 
       .bundle-top {
@@ -1197,35 +1248,53 @@
         line-height: 1.5;
       }
 
-      .bundle-items {
+      // Overlapping "fanned" product images — boutique feel
+      .bundle-fan {
         display: flex;
-        flex-direction: column;
-        gap: 0.6rem;
-        padding: 0.85rem;
-        background: var(--bg-raised);
-        border-radius: 14px;
-        border: 1px solid var(--border);
-        margin-top: 0.25rem;
+        align-items: center;
+        margin: 0.4rem 0 0.15rem;
+        padding-left: 6px;
 
-        .bundle-item {
-          display: flex;
+        .fan-img {
+          width: 62px;
+          height: 62px;
+          object-fit: cover;
+          border-radius: 50%;
+          border: 3px solid var(--bg-card);
+          box-shadow: 0 3px 10px rgba(0,0,0,0.12);
+          margin-left: -14px;
+          cursor: pointer;
+          transition: transform 0.28s cubic-bezier(0.22,1,0.36,1), margin 0.28s ease, box-shadow 0.2s;
+          &:first-child { margin-left: 0; }
+          &:hover { transform: translateY(-5px) scale(1.06); box-shadow: 0 8px 18px rgba(0,0,0,0.22); z-index: 3; position: relative; }
+        }
+      }
+
+      .bundle-contents {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.4rem;
+        margin-top: 0.15rem;
+
+        .contents-label { font-size: 0.72rem; font-weight: 700; color: var(--text-muted); margin-right: 0.1rem; }
+
+        .content-chip {
+          display: inline-flex;
           align-items: center;
-          gap: 0.75rem;
-
-          img {
-            width: 48px;
-            height: 48px;
-            object-fit: cover;
-            border-radius: 10px;
-            border: 1px solid var(--border);
-            flex-shrink: 0;
-          }
-
-          span {
-            font-size: 0.85rem;
-            font-weight: 500;
-            color: var(--text);
-          }
+          gap: 0.25rem;
+          font-size: 0.74rem;
+          font-weight: 600;
+          color: var(--text);
+          background: var(--bg-raised);
+          border: 1px solid var(--border);
+          padding: 0.24rem 0.6rem;
+          border-radius: 999px;
+          cursor: pointer;
+          font-family: inherit;
+          transition: all 0.15s;
+          svg { opacity: 0.5; transition: opacity 0.15s; }
+          &:hover { border-color: var(--accent); color: var(--accent); background: var(--bg-card); svg { opacity: 1; } }
         }
       }
 
@@ -1537,4 +1606,11 @@ html[data-theme="dark"] {
     background: rgba(139,92,246,0.2);
     color: #c4b5fd;
   }
+}
+
+// Holographic shine sweep across the coupon stub
+@keyframes coupon-shine {
+  0%   { left: -70%; }
+  55%  { left: -70%; }
+  100% { left: 130%; }
 }

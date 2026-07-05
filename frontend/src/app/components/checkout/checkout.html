@@ -486,6 +486,33 @@
             @if (promoResult()) {
               <p class="promo-msg promo-msg-success">{{ promoResult()!.description }}</p>
             }
+
+            @if (!promoResult() && availableOffers().length) {
+              <div class="promo-offers">
+                <span class="promo-offers-label">Available offers — tap to apply</span>
+                <div class="promo-offers-list">
+                  @for (o of availableOffers(); track o.id) {
+                    <button type="button" class="promo-offer"
+                            [class.locked]="!offerEligible(o)"
+                            [disabled]="!offerEligible(o) || promoLoading()"
+                            (click)="selectOffer(o)">
+                      <span class="po-emoji">{{ o.emoji }}</span>
+                      <span class="po-main">
+                        <span class="po-discount">{{ offerDiscountLabel(o) }}</span>
+                        <span class="po-code">{{ o.code }}</span>
+                      </span>
+                      <span class="po-cond">
+                        @if (offerEligible(o)) {
+                          {{ offerCondition(o) }}
+                        } @else {
+                          Add ₹{{ amountToUnlock(o) | number:'1.0-0' }} more
+                        }
+                      </span>
+                    </button>
+                  }
+                </div>
+              </div>
+            }
           </div>
 
           @if (authService.user() && loyaltyBalance() > 0) {

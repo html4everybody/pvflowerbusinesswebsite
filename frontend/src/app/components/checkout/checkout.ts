@@ -6,7 +6,7 @@ import { CartService } from '../../services/cart';
 import { AuthService } from '../../services/auth';
 import { ConfettiService } from '../../services/confetti';
 import { LoyaltyService } from '../../services/loyalty';
-import { PromoService, PromoResult } from '../../services/promo';
+import { PromoService, PromoResult, SeasonalOffer } from '../../services/promo';
 import { environment } from '../../../environments/environment';
 import { CommonModule } from '@angular/common';
 
@@ -38,6 +38,7 @@ export class Checkout {
   promoLoading = signal(false);
   promoError = signal('');
   promoDiscountAmount = computed(() => this.promoResult()?.discount_amount ?? 0);
+  availableOffers = signal<SeasonalOffer[]>([]);
 
   minDate = new Date().toISOString().split('T')[0];
 
@@ -233,6 +234,12 @@ export class Checkout {
       });
     }
 
+    // Load the live promo codes so the user can pick an eligible one here
+    this.promoService.getOffers(user?.email).subscribe({
+      next: d => this.availableOffers.set(d.seasonal_offers || []),
+      error: () => {}
+    });
+
     // Auto-apply pending promo from sessionStorage (e.g. set by bundle flow)
     const pending = sessionStorage.getItem('viva_promo');
     if (pending) {
@@ -240,6 +247,31 @@ export class Checkout {
       sessionStorage.removeItem('viva_promo');
       setTimeout(() => this.applyPromo(), 100);
     }
+  }
+
+  // ── Available offer picker ──────────────────────────────────────────────────
+  offerDiscountLabel(o: SeasonalOffer): string {
+    if (o.discount_type === 'percent' && o.discount_value != null) return `${o.discount_value}% OFF`;
+    if (o.discount_type === 'flat' && o.discount_value != null) return `₹${o.discount_value} OFF`;
+    return 'Deal';
+  }
+  offerCondition(o: SeasonalOffer): string {
+    if (o.first_order_only) return 'First order only';
+    if (o.min_order && o.min_order > 0) return `Min ₹${o.min_order}`;
+    return 'No minimum';
+  }
+  private preDiscountTotal(): number {
+    return this.cartService.cartTotal() + this.getShipping() - this.pointsDiscountAmount();
+  }
+  offerEligible(o: SeasonalOffer): boolean {
+    return this.preDiscountTotal() >= (o.min_order || 0);
+  }
+  amountToUnlock(o: SeasonalOffer): number {
+    return Math.max(0, (o.min_order || 0) - this.preDiscountTotal());
+  }
+  selectOffer(o: SeasonalOffer): void {
+    this.promoCode.set(o.code);
+    this.applyPromo();
   }
 
   getShipping(): number {
@@ -329,7 +361,7 @@ export class Checkout {
       is_recurring: this.isRecurring(),
       recurrence_type: this.isRecurring() ? 'annual' : null,
       payment_method: this.paymentMethod(),
-      token: localStorage.getItem('viva_token') ?? undefined,
+      token: this.authService.getToken() || undefined,
     };
 
     this.http.post<{ orderId: string; status: string; points_earned?: number; new_balance?: number }>(`${environment.apiUrl}/api/orders`, payload).subscribe({
