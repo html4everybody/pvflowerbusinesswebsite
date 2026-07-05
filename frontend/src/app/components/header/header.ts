@@ -1,4 +1,4 @@
-import { Component, ElementRef, HostListener, ViewChild } from '@angular/core';
+import { Component, ElementRef, HostListener, ViewChild, signal } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { CartService } from '../../services/cart';
 import { SearchService } from '../../services/search';
@@ -24,11 +24,59 @@ export class Header {
 
   @ViewChild('searchInput') searchInputRef?: ElementRef<HTMLInputElement>;
 
+  // ── Premium search: recent, trending, popular, keyboard nav ────────────────
+  private readonly RECENT_KEY = 'viva_recent_searches';
+  recentSearches = signal<string[]>(this.loadRecent());
+  readonly trendingSearches = ['Roses', 'Lily', 'Sunflower', 'Orchid', 'Tulip', 'Peony', 'Carnation', 'Hydrangea'];
+  highlightIndex = -1;
+
+  private loadRecent(): string[] {
+    try { return JSON.parse(localStorage.getItem(this.RECENT_KEY) ?? '[]'); } catch { return []; }
+  }
+  private addRecent(term: string): void {
+    const t = (term || '').trim();
+    if (t.length < 2) return;
+    const list = [t, ...this.recentSearches().filter(x => x.toLowerCase() !== t.toLowerCase())].slice(0, 6);
+    this.recentSearches.set(list);
+    localStorage.setItem(this.RECENT_KEY, JSON.stringify(list));
+  }
+  clearRecent(): void {
+    this.recentSearches.set([]);
+    localStorage.removeItem(this.RECENT_KEY);
+  }
+
+  /** Apply a recent/trending term and run the search. */
+  applyTerm(term: string): void {
+    this.searchService.query.set(term);
+    this.addRecent(term);
+    this.closeSearch();
+    this.goToCollection();
+  }
+
+  onSearchKeydown(event: KeyboardEvent): void {
+    const list = this.suggestions;
+    if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      this.highlightIndex = Math.min(this.highlightIndex + 1, list.length - 1);
+    } else if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      this.highlightIndex = Math.max(this.highlightIndex - 1, -1);
+    } else if (event.key === 'Enter') {
+      if (this.highlightIndex >= 0 && list[this.highlightIndex]) {
+        this.selectSuggestion(list[this.highlightIndex]);
+      } else {
+        this.performSearch();
+      }
+    } else if (event.key === 'Escape') {
+      this.closeSearch();
+    }
+  }
+
   @HostListener('window:scroll')
   onScroll(): void {
     this.isScrolled = window.scrollY > 20;
     this.menuOpen = false;
-    this.searchOpen = false;
+    // Do NOT close the search here — it's a full overlay with its own scroll.
   }
 
   @HostListener('document:click', ['$event'])
@@ -36,13 +84,12 @@ export class Header {
     const target = event.target as Node;
     const headerEl = this.el.nativeElement;
 
-    // Clicked outside header entirely — close everything
+    // Clicked outside header entirely — close the dropdowns (search is a full
+    // overlay that manages its own open/close via the backdrop + Esc).
     if (!headerEl.contains(target)) {
-      this.showSuggestions = false;
       this.userMenuOpen = false;
       this.navStackOpen = false;
       this.menuOpen = false;
-      this.searchOpen = false;
       return;
     }
 
@@ -51,14 +98,6 @@ export class Header {
     const hamburger = headerEl.querySelector('.hamburger');
     if (!nav?.contains(target) && !hamburger?.contains(target)) {
       this.menuOpen = false;
-    }
-
-    // Inside header — close search unless click was inside search panel or on search button
-    const searchPanel = headerEl.querySelector('.search-panel');
-    const searchBtn = headerEl.querySelector('.search-icon-btn');
-    if (!searchPanel?.contains(target) && !searchBtn?.contains(target)) {
-      this.searchOpen = false;
-      this.showSuggestions = false;
     }
 
     // Close user dropdown unless click was inside it
@@ -92,18 +131,19 @@ export class Header {
   onSearchInput(value: string): void {
     this.searchService.query.set(value);
     this.showSuggestions = value.trim().length >= 2;
+    this.highlightIndex = -1;
   }
 
   selectSuggestion(product: Product): void {
     this.searchService.query.set(product.name);
-    this.showSuggestions = false;
-    this.searchOpen = false;
+    this.addRecent(product.name);
+    this.closeSearch();
     this.goToCollection();
   }
 
   performSearch(): void {
-    this.showSuggestions = false;
-    this.searchOpen = false;
+    this.addRecent(this.searchService.query());
+    this.closeSearch();
     this.goToCollection();
   }
 
@@ -144,13 +184,44 @@ export class Header {
   }
 
   toggleSearch(): void {
-    this.searchOpen = !this.searchOpen;
-    if (!this.searchOpen) {
-      this.searchService.clearAll();
-      this.showSuggestions = false;
-    } else {
-      this.searchInputRef?.nativeElement.focus();
-    }
+    this.searchOpen ? this.closeSearch() : this.openSearch();
+  }
+
+  openSearch(): void {
+    this.searchOpen = true;
+    this.highlightIndex = -1;
+    this.showSuggestions = this.searchService.query().trim().length >= 2;
+    document.documentElement.style.overflow = 'hidden'; // lock body scroll behind the overlay
+    setTimeout(() => this.searchInputRef?.nativeElement.focus(), 60);
+  }
+
+  closeSearch(): void {
+    this.searchOpen = false;
+    this.showSuggestions = false;
+    this.highlightIndex = -1;
+    document.documentElement.style.overflow = '';
+  }
+
+  // Category glyph + match highlighting for the text-based results
+  categoryEmoji(cat: string): string {
+    const map: Record<string, string> = { Flowers: '🌸', Bouquets: '💐', Garlands: '🌼', Gifts: '🎁', Decoration: '🪴' };
+    return map[cat] || '🌷';
+  }
+  get quickCategories(): string[] { return this.productService.getCategories(); }
+
+  /** Live count of products matching the current query + facets (for the Show-results button). */
+  get facetResultCount(): number {
+    return this.searchService.filterProducts(this.productService.getProducts()).length;
+  }
+  highlight(text: string): string {
+    const q = this.searchService.query().trim();
+    const safe = this.escapeHtml(text);
+    if (!q) return safe;
+    const eq = this.escapeHtml(q).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    return safe.replace(new RegExp(`(${eq})`, 'ig'), '<strong>$1</strong>');
+  }
+  private escapeHtml(s: string): string {
+    return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   }
 
   toggleUserMenu(): void {

@@ -21,8 +21,11 @@ export class Home implements OnInit, AfterViewInit {
   @ViewChild('heroVideo') heroVideoRef!: ElementRef<HTMLVideoElement>;
   products: Product[] = [];
   categories: string[] = [];
-  selectedCategory: string = 'All';
   cartQuantities: { [productId: number]: number } = {};
+
+  // Category is a single source of truth shared with the search facet, so
+  // picking a category in search reflects in the collection tabs (and vice-versa).
+  get selectedCategory(): string { return this.searchService.selectedCategory() || 'All'; }
 
   toastVisible = signal(false);
   toastProductName = signal('');
@@ -127,10 +130,8 @@ export class Home implements OnInit, AfterViewInit {
   }
 
   get filteredProducts(): Product[] {
-    const byCategory = this.selectedCategory === 'All'
-      ? this.products
-      : this.products.filter(p => p.category === this.selectedCategory);
-    return this.searchService.filterProducts(byCategory);
+    // Category, query, occasion, colour and price are all handled by the service.
+    return this.searchService.filterProducts(this.products);
   }
 
   scrollToCollection(): void {
@@ -152,7 +153,7 @@ export class Home implements OnInit, AfterViewInit {
   }
 
   selectCategory(category: string): void {
-    this.selectedCategory = category;
+    this.searchService.selectedCategory.set(category === 'All' ? '' : category);
   }
 
   getQuantity(productId: number): number {
