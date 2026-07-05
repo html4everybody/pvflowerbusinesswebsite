@@ -8,7 +8,9 @@ import { ProductService } from './services/product';
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
-    provideRouter(routes, withViewTransitions(), withInMemoryScrolling({ scrollPositionRestoration: 'top' })),
+    // scroll-to-top handled manually in app.ts (NavigationEnd) so it can be
+    // skipped for ?scrollTo= navigations (Live Deals / Bundle Offers).
+    provideRouter(routes, withViewTransitions(), withInMemoryScrolling({ scrollPositionRestoration: 'disabled' })),
     provideHttpClient(),
     {
       provide: APP_INITIALIZER,

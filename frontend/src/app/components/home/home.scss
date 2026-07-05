@@ -926,6 +926,24 @@
     position: relative;
     overflow: hidden;
 
+    // Header (theme-aware so it's visible in dark mode too)
+    .section-header {
+      text-align: center;
+      .section-tag {
+        display: inline-block;
+        background: rgba(245, 158, 11, 0.14);
+        color: #b45309;
+        padding: 0.3rem 0.85rem;
+        border-radius: var(--radius-full);
+        font-size: 0.75rem;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        margin-bottom: 0.85rem;
+      }
+      h2 { font-size: clamp(1.6rem, 3vw, 2.25rem); color: var(--text); margin: 0 0 0.65rem; }
+      p  { color: var(--text-muted); font-size: 0.95rem; max-width: 540px; margin: 0 auto; line-height: 1.55; }
+    }
+
     // Decorative warm glow
     &::before {
       content: '';
@@ -1098,6 +1116,24 @@
     padding: 5rem 0 4.5rem;
     background: var(--bg);
     border-top: 1px solid var(--border);
+
+    // Header (theme-aware so it's visible in dark mode too)
+    .section-header {
+      text-align: center;
+      .section-tag {
+        display: inline-block;
+        background: rgba(139, 92, 246, 0.14);
+        color: #6d28d9;
+        padding: 0.3rem 0.85rem;
+        border-radius: var(--radius-full);
+        font-size: 0.75rem;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        margin-bottom: 0.85rem;
+      }
+      h2 { font-size: clamp(1.6rem, 3vw, 2.25rem); color: var(--text); margin: 0 0 0.65rem; }
+      p  { color: var(--text-muted); font-size: 0.95rem; max-width: 540px; margin: 0 auto; line-height: 1.55; }
+    }
 
     .bundles-grid {
       display: grid;
@@ -1439,6 +1475,8 @@ html[data-theme="dark"] {
       background: radial-gradient(circle, rgba(251,191,36,0.08) 0%, transparent 70%);
     }
 
+    .section-header .section-tag { background: rgba(251,191,36,0.15); color: #fbbf24; }
+
     .coupon-card {
       background: rgba(30,30,30,0.85);
       border-color: rgba(255,255,255,0.08);
@@ -1493,5 +1531,10 @@ html[data-theme="dark"] {
   .bundle-card .bundle-items {
     background: rgba(255,255,255,0.04) !important;
     border-color: rgba(255,255,255,0.08) !important;
+  }
+
+  .bundles-section .section-header .section-tag {
+    background: rgba(139,92,246,0.2);
+    color: #c4b5fd;
   }
 }

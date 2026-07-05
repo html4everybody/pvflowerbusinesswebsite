@@ -118,18 +118,9 @@ export class Header {
   goToHomeSection(sectionId: string): void {
     this.navStackOpen = false;
     this.menuOpen = false;
-    // The Live Deals / Bundle sections render only after /api/offers resolves,
-    // so poll for the element instead of scrolling after a fixed delay.
-    this.router.navigate(['/']).then(() => this.scrollToSectionWhenReady(sectionId));
-  }
-
-  private scrollToSectionWhenReady(sectionId: string, attempts = 0): void {
-    const el = document.getElementById(sectionId);
-    if (el) {
-      el.scrollIntoView({ behavior: 'smooth' });
-    } else if (attempts < 25) {
-      setTimeout(() => this.scrollToSectionWhenReady(sectionId, attempts + 1), 120);
-    }
+    // Navigate home with the target section; the Home component owns those
+    // sections and scrolls to them once they've rendered (deterministic).
+    this.router.navigate(['/'], { queryParams: { scrollTo: sectionId } });
   }
 
   toggleMenu(): void {

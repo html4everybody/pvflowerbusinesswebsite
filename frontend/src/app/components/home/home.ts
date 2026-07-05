@@ -1,6 +1,6 @@
 import { Component, OnInit, AfterViewInit, ViewChild, ElementRef, signal } from '@angular/core';
-import { DecimalPipe } from '@angular/common';
-import { Router, RouterLink } from '@angular/router';
+import { DecimalPipe, Location } from '@angular/common';
+import { Router, RouterLink, ActivatedRoute } from '@angular/router';
 import { ProductService } from '../../services/product';
 import { CartService } from '../../services/cart';
 import { FeedbackService } from '../../services/feedback';
@@ -43,13 +43,21 @@ export class Home implements OnInit, AfterViewInit {
     public wishlistService: WishlistService,
     private promoService: PromoService,
     private authService: AuthService,
-    private router: Router
+    private router: Router,
+    private route: ActivatedRoute,
+    private location: Location
   ) {}
 
   ngOnInit(): void {
     this.products = this.productService.getProducts();
     this.categories = this.productService.getCategories();
     this.promoService.getOffers(this.authService.user()?.email).subscribe({ next: d => this.offers.set(d), error: () => {} });
+
+    // Header "Live Deals" / "Bundle Offers" navigate here with ?scrollTo=<id>.
+    // The home page owns those sections, so it scrolls once they've rendered.
+    this.route.queryParams.subscribe(params => {
+      if (params['scrollTo']) this.scrollToSection(params['scrollTo']);
+    });
   }
 
   ngAfterViewInit(): void {
@@ -110,6 +118,20 @@ export class Home implements OnInit, AfterViewInit {
 
   scrollToCollection(): void {
     document.getElementById('collection')?.scrollIntoView({ behavior: 'smooth' });
+  }
+
+  // Poll for the section (it only exists after offers render), scroll to it,
+  // then clear the query param so the link works again on the next click.
+  // Use Location.replaceState (not router.navigate) so clearing the param
+  // does NOT fire a NavigationEnd — which would scroll the page back to top.
+  private scrollToSection(id: string, attempts = 0): void {
+    const el = document.getElementById(id);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth' });
+      this.location.replaceState('/');
+    } else if (attempts < 30) {
+      setTimeout(() => this.scrollToSection(id, attempts + 1), 100);
+    }
   }
 
   selectCategory(category: string): void {

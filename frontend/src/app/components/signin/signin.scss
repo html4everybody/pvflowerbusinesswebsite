@@ -228,17 +228,39 @@ $divider-tx:  #9c968a;
     &::placeholder { color: $placeholder; }
 
     // Kill the browser autofill's white/pale box — paint the field bg over it
-    // and keep our own text colour.
+    // and keep our own text colour. Covers Chromium (-webkit) and the standard
+    // :autofill (Firefox/Safari); !important so the UA style can't win.
     &:-webkit-autofill,
     &:-webkit-autofill:hover,
     &:-webkit-autofill:focus,
-    &:-webkit-autofill:active {
-      -webkit-text-fill-color: #2c2a25;
-      -webkit-box-shadow: 0 0 0 1000px $field-bg inset;
-      box-shadow: 0 0 0 1000px $field-bg inset;
+    &:-webkit-autofill:active,
+    &:autofill,
+    &:autofill:hover,
+    &:autofill:focus {
+      -webkit-text-fill-color: #2c2a25 !important;
+      -webkit-box-shadow: 0 0 0 1000px $field-bg inset !important;
+      box-shadow: 0 0 0 1000px $field-bg inset !important;
+      background-clip: content-box !important;
       caret-color: #2c2a25;
       transition: background-color 9999s ease-in-out 0s;
     }
+  }
+}
+
+// In dark mode the field is dark (#1e293b), so autofill must paint the dark
+// bg — otherwise selecting a suggested email flashes a white box.
+:host-context([data-theme="dark"]) .vp-field input {
+  &:-webkit-autofill,
+  &:-webkit-autofill:hover,
+  &:-webkit-autofill:focus,
+  &:-webkit-autofill:active,
+  &:autofill,
+  &:autofill:hover,
+  &:autofill:focus {
+    -webkit-text-fill-color: #f1f5f9 !important;
+    -webkit-box-shadow: 0 0 0 1000px #1e293b inset !important;
+    box-shadow: 0 0 0 1000px #1e293b inset !important;
+    caret-color: #f1f5f9;
   }
 }
 

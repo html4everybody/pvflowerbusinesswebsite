@@ -30,7 +30,11 @@ export class App implements OnInit, OnDestroy {
 
     this.router.events.subscribe(event => {
       if (event instanceof NavigationEnd) {
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        // Don't jump to top when navigating to a specific section (Live Deals /
+        // Bundle Offers use ?scrollTo=…); the home page handles that scroll.
+        if (!event.urlAfterRedirects.includes('scrollTo=')) {
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
         this.showFooter.set(!this.NO_FOOTER_ROUTES.some(r => event.urlAfterRedirects.startsWith(r)));
       }
     });
