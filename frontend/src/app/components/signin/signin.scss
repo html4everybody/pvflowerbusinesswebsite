@@ -226,6 +226,19 @@ $divider-tx:  #9c968a;
     font-family: inherit;
 
     &::placeholder { color: $placeholder; }
+
+    // Kill the browser autofill's white/pale box — paint the field bg over it
+    // and keep our own text colour.
+    &:-webkit-autofill,
+    &:-webkit-autofill:hover,
+    &:-webkit-autofill:focus,
+    &:-webkit-autofill:active {
+      -webkit-text-fill-color: #2c2a25;
+      -webkit-box-shadow: 0 0 0 1000px $field-bg inset;
+      box-shadow: 0 0 0 1000px $field-bg inset;
+      caret-color: #2c2a25;
+      transition: background-color 9999s ease-in-out 0s;
+    }
   }
 }
 
