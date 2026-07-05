@@ -1093,3 +1093,20 @@
 }
 
 .sub-plans-hint { font-size: 0.82rem; color: var(--text-muted); margin: 0 0 1rem; }
+
+.cust-delete {
+  flex-shrink: 0;
+  align-self: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text-muted);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s;
+  &:hover { border-color: #fca5a5; color: #dc2626; background: rgba(220,38,38,0.06); }
+}

@@ -1467,6 +1467,24 @@ def admin_customers(token: str):
         result.append({**u, "order_count": stats["count"], "total_spent": round(stats["total"], 2), "last_order": stats["last_order"]})
     return result
 
+@app.delete("/api/admin/customers/{email}")
+def admin_delete_customer(email: str, token: str):
+    admin_email = require_admin(token)
+    if email == admin_email:
+        raise HTTPException(status_code=400, detail="You can't delete your own account")
+    rows = supabase.table("users").select("id, is_admin").eq("email", email).execute().data
+    if not rows:
+        raise HTTPException(status_code=404, detail="Customer not found")
+    if rows[0].get("is_admin"):
+        raise HTTPException(status_code=400, detail="Cannot delete an admin account")
+    # Remove the account + their active cart; orders/subscriptions stay as records.
+    try:
+        supabase.table("cart_items").delete().eq("user_id", rows[0].get("id")).execute()
+    except Exception:
+        pass
+    supabase.table("users").delete().eq("email", email).execute()
+    return {"status": "ok"}
+
 @app.get("/api/admin/analytics")
 def admin_analytics(token: str):
     require_admin(token)

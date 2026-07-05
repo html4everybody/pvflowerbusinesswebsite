@@ -326,6 +326,20 @@ export class Admin implements OnInit {
     });
   }
 
+  async deleteCustomer(customer: any): Promise<void> {
+    const ok = await this.confirmService.ask({
+      title: 'Delete customer?',
+      message: `${customer.first_name || ''} ${customer.last_name || ''} (${customer.email}) will be permanently removed. Their past orders are kept as records.`,
+      confirmText: 'Delete',
+      danger: true,
+    });
+    if (!ok) return;
+    this.http.delete(`${environment.apiUrl}/api/admin/customers/${encodeURIComponent(customer.email)}?token=${this.token}`).subscribe({
+      next: () => { this.customers.update(list => list.filter(c => c.email !== customer.email)); this.toastService.show('Customer deleted'); },
+      error: (err) => this.toastService.show(err.error?.detail || 'Failed to delete customer', 'error')
+    });
+  }
+
   async deleteOrder(order: any): Promise<void> {
     const ok = await this.confirmService.ask({
       title: 'Delete order?',
