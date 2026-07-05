@@ -1,4 +1,4 @@
-<main class="loyalty-page">
+<main class="rewards-page">
   <div class="container">
 
     <div class="page-header">
@@ -6,114 +6,171 @@
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
         Back to Home
       </a>
-      <h1>My Loyalty Points</h1>
     </div>
 
     @if (loading()) {
-      <div class="loyalty-loading">
+      <div class="rewards-loading">
         <div class="spinner"></div>
-        <p>Loading your loyalty account...</p>
+        <p>Loading your rewards…</p>
       </div>
     } @else if (!account()) {
-      <div class="loyalty-empty">
-        <span class="empty-icon">⭐</span>
-        <h2>No Loyalty Account Yet</h2>
-        <p>Place your first order to start earning loyalty points!</p>
-        <a routerLink="/" class="btn-primary">Shop Now</a>
+      <div class="rewards-empty">
+        <span class="empty-icon">🌸</span>
+        <h2>Your Petal Rewards await</h2>
+        <p>Place your first order to start collecting points and unlock perks.</p>
+        <a routerLink="/" class="btn-primary">Start Shopping</a>
       </div>
     } @else {
 
-      <!-- ── Points Hero ───────────────────────────────── -->
-      <div class="loyalty-hero">
-        <div class="hero-balance">
-          <span class="balance-label">Your Points Balance</span>
-          <span class="balance-number">{{ account()!.points_balance }}</span>
-          <span class="balance-subtext">= ₹{{ (account()!.points_balance / 10).toFixed(2) }} redeemable discount</span>
+      <!-- ── Membership card ─────────────────────────────── -->
+      <section class="membership-card" [style.--tier-accent]="currentTier.accent">
+        <div class="mc-glow" aria-hidden="true"></div>
+        <div class="mc-top">
+          <span class="mc-brand">🌸 Petal Rewards</span>
+          <span class="mc-tier">{{ currentTier.emoji }} {{ currentTier.key }}</span>
         </div>
-        <div class="hero-tier">
-          <span class="tier-badge">{{ tier.emoji }} {{ tier.label }}</span>
-          <div class="tier-progress-wrap">
-            <div class="tier-progress-bar">
-              <div class="tier-progress-fill" [style.width.%]="tierProgress"></div>
-            </div>
-            @if (tier.next > 0) {
-              <span class="tier-progress-label">{{ account()!.points_earned_total }} / {{ tier.next }} pts to next tier</span>
-            } @else {
-              <span class="tier-progress-label">Maximum tier reached!</span>
-            }
+        <div class="mc-balance">
+          <span class="mc-label">Points Balance</span>
+          <span class="mc-points">{{ balance | number }}</span>
+          <span class="mc-worth">worth ₹{{ (balance / 10) | number:'1.0-0' }} off your next order</span>
+        </div>
+        <div class="mc-bottom">
+          <div class="mc-member">
+            <span class="mc-name">{{ memberName }}</span>
+            @if (memberSince) { <span class="mc-since">Member since {{ memberSince }}</span> }
           </div>
-          <span class="total-earned">{{ account()!.points_earned_total }} pts earned all-time</span>
+          <span class="mc-flower" aria-hidden="true">🌸</span>
+        </div>
+      </section>
+
+      <!-- ── Stat chips ──────────────────────────────────── -->
+      <div class="stat-chips">
+        <div class="chip">
+          <span class="chip-val">{{ earned | number }}</span>
+          <span class="chip-lbl">All-time points</span>
+        </div>
+        <div class="chip">
+          <span class="chip-val">₹{{ (balance / 10) | number:'1.0-0' }}</span>
+          <span class="chip-lbl">Redeemable now</span>
+        </div>
+        <div class="chip">
+          <span class="chip-val">{{ referralCount }}</span>
+          <span class="chip-lbl">Referral rewards</span>
         </div>
       </div>
 
-      <!-- ── Referral Card ────────────────────────────── -->
-      <div class="referral-card">
-        <div class="referral-header">
+      <!-- ── Tier journey ────────────────────────────────── -->
+      <section class="panel">
+        <div class="panel-head">
+          <h2>Your Tier Journey</h2>
+          @if (nextTier) {
+            <span class="panel-sub">{{ pointsToNext | number }} pts to {{ nextTier.emoji }} {{ nextTier.key }}</span>
+          } @else {
+            <span class="panel-sub">Top tier unlocked! 🎉</span>
+          }
+        </div>
+
+        <div class="tier-track">
+          @for (t of TIERS; track t.key; let i = $index) {
+            <div class="tier-step" [class.reached]="i <= tierIndex" [class.current]="i === tierIndex">
+              <span class="ts-dot"><span class="ts-emoji">{{ t.emoji }}</span></span>
+              <span class="ts-name">{{ t.key }}</span>
+              <span class="ts-min">{{ t.min | number }}+ pts</span>
+            </div>
+          }
+          <div class="tier-line"><div class="tier-line-fill" [style.width.%]="((tierIndex + (tierProgress/100)) / (TIERS.length - 1)) * 100"></div></div>
+        </div>
+
+        <div class="tier-perk">
+          <span class="perk-emoji">{{ currentTier.emoji }}</span>
+          <span class="perk-text"><strong>{{ currentTier.key }} perk —</strong> {{ currentTier.perk }}</span>
+        </div>
+      </section>
+
+      <!-- ── Redeem ──────────────────────────────────────── -->
+      <section class="panel">
+        <div class="panel-head">
+          <h2>Redeem Your Points</h2>
+          <span class="panel-sub">1 point = ₹0.10 off</span>
+        </div>
+        <div class="redeem-grid">
+          @for (r of REDEEM; track r.points) {
+            <div class="redeem-card" [class.unlocked]="isRedeemable(r.points)">
+              <div class="rc-value">₹{{ r.value }}<span class="rc-off"> off</span></div>
+              <div class="rc-points">{{ r.points | number }} pts</div>
+              @if (isRedeemable(r.points)) {
+                <span class="rc-badge is-unlocked">✓ Available</span>
+              } @else {
+                <span class="rc-badge">{{ (r.points - balance) | number }} pts to go</span>
+              }
+            </div>
+          }
+        </div>
+        <p class="redeem-hint">Your points apply automatically as a discount at checkout.</p>
+      </section>
+
+      <!-- ── Referral ────────────────────────────────────── -->
+      <section class="panel referral-panel">
+        <div class="referral-top">
+          <span class="referral-emoji">👥</span>
           <div>
-            <h2>Refer Friends & Earn</h2>
-            <p>Share your link — earn <strong>200 pts</strong> when they sign up, <strong>150 more</strong> on their first order</p>
+            <h2>Refer Friends, Grow Together</h2>
+            <p>Earn <strong>200 pts</strong> when a friend signs up, plus <strong>150 pts</strong> on their first order.</p>
           </div>
-          <span class="referral-icon">👥</span>
         </div>
         <div class="referral-link-row">
-          <input type="text" readonly [value]="shareUrl" class="referral-input">
+          <input type="text" readonly [value]="shareUrl" class="referral-input" aria-label="Your referral link">
           <button class="btn-copy" (click)="copyReferralLink()" [class.copied]="copySuccess()">
-            @if (copySuccess()) {
-              ✓ Copied!
-            } @else {
-              Copy Link
-            }
+            @if (copySuccess()) { ✓ Copied } @else { Copy Link }
           </button>
         </div>
         <p class="referral-code-hint">Your code: <strong>{{ account()!.referral_code }}</strong></p>
-      </div>
+      </section>
 
-      <!-- ── How to Earn ───────────────────────────────── -->
-      <div class="earn-section">
-        <h2 class="section-title">How to Earn Points</h2>
-        <div class="earn-cards">
+      <!-- ── Ways to earn ────────────────────────────────── -->
+      <section class="panel">
+        <div class="panel-head"><h2>Ways to Earn</h2></div>
+        <div class="earn-grid">
           <div class="earn-card">
             <span class="earn-icon">🛍️</span>
-            <h3>Shop & Earn</h3>
-            <p>Earn <strong>1 point</strong> for every ₹1 spent on any order</p>
+            <h3>Shop &amp; Earn</h3>
+            <p>1 point for every <strong>₹1</strong> spent on any order.</p>
           </div>
           <div class="earn-card">
             <span class="earn-icon">👥</span>
             <h3>Refer a Friend</h3>
-            <p>Get <strong>200 points</strong> when someone signs up using your link</p>
+            <p><strong>200 pts</strong> when someone joins with your link.</p>
           </div>
           <div class="earn-card">
             <span class="earn-icon">🎁</span>
-            <h3>Referral Purchase</h3>
-            <p>Earn <strong>150 more points</strong> when your referred friend places their first order</p>
+            <h3>Friend's First Order</h3>
+            <p><strong>150 pts</strong> when they place their first order.</p>
           </div>
         </div>
-      </div>
+      </section>
 
-      <!-- ── Transaction History ───────────────────────── -->
-      <div class="transactions-section">
-        <h2 class="section-title">Transaction History</h2>
+      <!-- ── Activity ────────────────────────────────────── -->
+      <section class="panel">
+        <div class="panel-head"><h2>Points Activity</h2></div>
         @if (account()!.transactions.length === 0) {
-          <div class="no-transactions">
-            <p>No transactions yet. Start shopping to earn points!</p>
-          </div>
+          <div class="no-activity"><p>No activity yet — start shopping to see your points roll in!</p></div>
         } @else {
-          <div class="transactions-list">
+          <div class="activity-list">
             @for (txn of account()!.transactions; track txn.id) {
-              <div class="txn-row">
-                <span class="txn-icon">{{ typeIcon(txn.type) }}</span>
-                <div class="txn-info">
-                  <span class="txn-desc">{{ txn.description }}</span>
-                  <span class="txn-date">{{ formatDate(txn.created_at) }}</span>
+              <div class="activity-row">
+                <span class="activity-icon">{{ typeIcon(txn.type) }}</span>
+                <div class="activity-info">
+                  <span class="activity-desc">{{ txn.description }}</span>
+                  <span class="activity-date">{{ formatDate(txn.created_at) }}</span>
                 </div>
-                <span class="txn-points" [class.positive]="txn.points > 0" [class.negative]="txn.points < 0">
-                  {{ txn.points > 0 ? '+' : '' }}{{ txn.points }} pts
+                <span class="activity-points" [class.positive]="txn.points > 0" [class.negative]="txn.points < 0">
+                  {{ txn.points > 0 ? '+' : '' }}{{ txn.points }}
                 </span>
               </div>
             }
           </div>
         }
-      </div>
+      </section>
 
     }
   </div>

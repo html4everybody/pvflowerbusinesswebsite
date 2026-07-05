@@ -1,11 +1,14 @@
-import { Component, signal, computed, OnInit } from '@angular/core';
+import { Component, signal, OnInit } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
+import { DecimalPipe } from '@angular/common';
 import { AuthService } from '../../services/auth';
 import { LoyaltyService, LoyaltyData } from '../../services/loyalty';
 
+interface Tier { key: string; emoji: string; min: number; perk: string; accent: string; }
+
 @Component({
   selector: 'app-my-loyalty',
-  imports: [RouterLink],
+  imports: [RouterLink, DecimalPipe],
   templateUrl: './my-loyalty.html',
   styleUrl: './my-loyalty.scss'
 })
@@ -13,6 +16,21 @@ export class MyLoyalty implements OnInit {
   account = signal<LoyaltyData | null>(null);
   loading = signal(true);
   copySuccess = signal(false);
+
+  // Floral tiers themed for "Petal Rewards"
+  readonly TIERS: Tier[] = [
+    { key: 'Sprout',      emoji: '🌱', min: 0,    perk: 'Earn 1 point for every ₹1 you spend',    accent: '#84cc16' },
+    { key: 'Bloom',       emoji: '🌷', min: 500,  perk: '+5% bonus points on every order',        accent: '#ec4899' },
+    { key: 'Blossom',     emoji: '🌺', min: 1500, perk: 'Free delivery + 10% bonus points',       accent: '#a855f7' },
+    { key: 'Petal Elite', emoji: '💎', min: 5000, perk: 'Priority support + 15% bonus points',    accent: '#f59e0b' },
+  ];
+
+  readonly REDEEM = [
+    { points: 500,  value: 50 },
+    { points: 1000, value: 100 },
+    { points: 2500, value: 250 },
+    { points: 5000, value: 550 },
+  ];
 
   constructor(
     public authService: AuthService,
@@ -27,31 +45,46 @@ export class MyLoyalty implements OnInit {
       return;
     }
     this.loyaltyService.getAccount(user.email).subscribe({
-      next: data => {
-        this.account.set(data);
-        this.loading.set(false);
-      },
+      next: data => { this.account.set(data); this.loading.set(false); },
       error: () => this.loading.set(false)
     });
   }
 
-  get tier(): { label: string; emoji: string; next: number } {
-    const e = this.account()?.points_earned_total ?? 0;
-    if (e >= 5000) return { label: 'Platinum', emoji: '💎', next: 0 };
-    if (e >= 1500) return { label: 'Gold', emoji: '🥇', next: 5000 };
-    if (e >= 500)  return { label: 'Silver', emoji: '🥈', next: 1500 };
-    return { label: 'Bronze', emoji: '🥉', next: 500 };
+  get earned(): number { return this.account()?.points_earned_total ?? 0; }
+  get balance(): number { return this.account()?.points_balance ?? 0; }
+
+  get tierIndex(): number {
+    let idx = 0;
+    this.TIERS.forEach((t, i) => { if (this.earned >= t.min) idx = i; });
+    return idx;
   }
+  get currentTier(): Tier { return this.TIERS[this.tierIndex]; }
+  get nextTier(): Tier | null { return this.TIERS[this.tierIndex + 1] ?? null; }
 
   get tierProgress(): number {
-    const e = this.account()?.points_earned_total ?? 0;
-    const t = this.tier;
-    if (t.next === 0) return 100;
-    const thresholds = [0, 500, 1500, 5000];
-    const tierIndex = ['Bronze','Silver','Gold','Platinum'].indexOf(t.label);
-    const from = thresholds[tierIndex];
-    return Math.min(100, Math.round(((e - from) / (t.next - from)) * 100));
+    const next = this.nextTier;
+    if (!next) return 100;
+    const from = this.currentTier.min;
+    return Math.min(100, Math.max(0, Math.round(((this.earned - from) / (next.min - from)) * 100)));
   }
+  get pointsToNext(): number {
+    return this.nextTier ? Math.max(0, this.nextTier.min - this.earned) : 0;
+  }
+
+  get memberName(): string {
+    const u = this.authService.user();
+    if (!u) return 'Member';
+    return `${u.firstName ?? ''} ${u.lastName ?? ''}`.trim() || 'Member';
+  }
+  get memberSince(): string {
+    const c = this.account()?.created_at;
+    return c ? new Date(c).getFullYear().toString() : '';
+  }
+  get referralCount(): number {
+    return (this.account()?.transactions ?? []).filter(t => (t.type || '').includes('referral')).length;
+  }
+
+  isRedeemable(points: number): boolean { return this.balance >= points; }
 
   get shareUrl(): string {
     const code = this.account()?.referral_code ?? '';
