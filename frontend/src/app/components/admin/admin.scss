@@ -855,3 +855,241 @@
   .zone-card { flex-direction: column; align-items: flex-start; }
   .bar-row { grid-template-columns: 100px 1fr 60px; }
 }
+
+// ── Subscriptions (admin tracking) ───────────────────────────────────────────
+.admin-tabs {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.25rem;
+}
+.admin-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 0.85rem;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text-muted);
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.15s;
+  &:hover { color: var(--text); }
+  &.active { background: var(--text); color: var(--bg); border-color: var(--text); }
+
+  .tab-count {
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 0.05rem 0.42rem;
+    border-radius: 999px;
+    background: var(--bg-raised);
+    color: var(--text-muted);
+  }
+  &.active .tab-count { background: rgba(255,255,255,0.2); color: var(--bg); }
+}
+
+.sub-customer {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  .txn-date { font-size: 0.74rem; color: var(--text-muted); }
+}
+
+.status-badge {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0.24rem 0.62rem;
+  border-radius: 999px;
+  background: var(--bg-raised);
+  color: var(--text-muted);
+  &.status-active    { background: rgba(22,163,74,0.15);  color: #16a34a; }
+  &.status-paused    { background: rgba(245,158,11,0.15); color: #d97706; }
+  &.status-cancelled { background: rgba(220,38,38,0.15);  color: #dc2626; }
+}
+
+// ── Subscription fulfilment cards ────────────────────────────────────────────
+.sub-fulfil-list { display: flex; flex-direction: column; gap: 0.9rem; }
+
+.sub-fulfil-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 1.1rem 1.25rem;
+
+  .sfc-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    padding-bottom: 0.85rem;
+    border-bottom: 1px solid var(--border);
+
+    .sfc-cust { display: flex; flex-direction: column; gap: 0.1rem; }
+    .sfc-name { font-size: 1rem; font-weight: 800; color: var(--text); }
+    .sfc-id { font-size: 0.72rem; color: var(--text-muted); }
+    .sfc-head-right { display: flex; align-items: center; gap: 0.5rem; }
+  }
+
+  .sfc-grid {
+    display: grid;
+    grid-template-columns: 1fr 1.4fr;
+    gap: 1rem;
+    padding: 0.9rem 0;
+
+    @media (max-width: 640px) { grid-template-columns: 1fr; }
+  }
+
+  .sfc-block { display: flex; flex-direction: column; gap: 0.2rem; }
+
+  .sfc-label {
+    font-size: 0.66rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+    margin-bottom: 0.15rem;
+  }
+  .sfc-val { font-size: 0.9rem; font-weight: 600; color: var(--text); }
+  .sfc-sub { font-size: 0.8rem; color: var(--text-muted); }
+
+  .sfc-what {
+    padding-top: 0.9rem;
+    border-top: 1px solid var(--border);
+
+    .sfc-items {
+      list-style: none;
+      margin: 0.35rem 0 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+
+      li {
+        display: flex;
+        align-items: baseline;
+        gap: 0.5rem;
+        font-size: 0.88rem;
+        padding: 0.4rem 0.6rem;
+        background: var(--bg-raised);
+        border-radius: 8px;
+      }
+      .sfc-item-name { font-weight: 600; color: var(--text); }
+      .sfc-item-meta { font-size: 0.78rem; color: var(--text-muted); }
+    }
+
+    .sfc-florist {
+      margin: 0.35rem 0 0;
+      font-size: 0.88rem;
+      color: var(--text);
+      background: var(--bg-raised);
+      padding: 0.55rem 0.7rem;
+      border-radius: 8px;
+    }
+  }
+
+  .sfc-note {
+    margin-top: 0.85rem;
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    background: var(--bg-raised);
+    border-radius: 8px;
+    padding: 0.5rem 0.7rem;
+  }
+}
+
+// ── "Due today" delivery emphasis ────────────────────────────────────────────
+.today-banner {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: linear-gradient(135deg, rgba(37,99,235,0.12), rgba(37,99,235,0.04));
+  border: 1px solid rgba(37,99,235,0.3);
+  color: var(--text);
+  font-size: 0.88rem;
+  font-weight: 700;
+  padding: 0.7rem 1rem;
+  border-radius: 10px;
+  margin-bottom: 1rem;
+  cursor: pointer;
+  transition: background 0.15s;
+  &:hover { background: linear-gradient(135deg, rgba(37,99,235,0.18), rgba(37,99,235,0.06)); }
+}
+
+.admin-tab.tab-today {
+  border-color: rgba(37,99,235,0.4);
+  .tab-count { background: var(--accent); color: #fff; }
+  &.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+}
+
+.today-pill {
+  font-size: 0.7rem;
+  font-weight: 800;
+  padding: 0.24rem 0.6rem;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #fff;
+  white-space: nowrap;
+}
+
+.sub-fulfil-card.due-today {
+  border-color: rgba(37,99,235,0.45);
+  box-shadow: 0 0 0 1px rgba(37,99,235,0.25), 0 6px 20px rgba(37,99,235,0.1);
+}
+
+.sfc-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+  margin-top: 0.9rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid var(--border);
+}
+
+.order-delete {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text-muted);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s;
+  &:hover { border-color: #fca5a5; color: #dc2626; background: rgba(220,38,38,0.06); }
+}
+
+// ── Subscriptions view toggle (customers vs plans) ───────────────────────────
+.sub-segment {
+  display: inline-flex;
+  gap: 0.25rem;
+  padding: 0.25rem;
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  margin-bottom: 1.25rem;
+
+  button {
+    border: none;
+    background: none;
+    color: var(--text-muted);
+    font-size: 0.84rem;
+    font-weight: 600;
+    padding: 0.4rem 0.9rem;
+    border-radius: 7px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.15s;
+    &:hover { color: var(--text); }
+    &.active { background: var(--bg-card); color: var(--text); box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+  }
+}
+
+.sub-plans-hint { font-size: 0.82rem; color: var(--text-muted); margin: 0 0 1rem; }

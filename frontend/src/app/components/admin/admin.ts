@@ -2,16 +2,17 @@ import { Component, OnInit, signal, computed, effect } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
+import { TitleCasePipe } from '@angular/common';
 import { AuthService } from '../../services/auth';
 import { ToastService } from '../../services/toast';
 import { ConfirmService } from '../../services/confirm';
 import { environment } from '../../../environments/environment';
 
-export type AdminSection = 'overview' | 'orders' | 'products' | 'inventory' | 'customers' | 'analytics' | 'zones' | 'deals' | 'bundles' | 'plans';
+export type AdminSection = 'overview' | 'orders' | 'products' | 'inventory' | 'customers' | 'analytics' | 'zones' | 'deals' | 'bundles' | 'plans' | 'subscriptions';
 
 @Component({
   selector: 'app-admin',
-  imports: [RouterLink, FormsModule],
+  imports: [RouterLink, FormsModule, TitleCasePipe],
   templateUrl: './admin.html',
   styleUrl: './admin.scss'
 })
@@ -109,6 +110,28 @@ export class Admin implements OnInit {
   editPlanForm = { label: '', subtitle: '', discount_percent: 0 };
   savingPlan = signal(false);
 
+  // ── Customer Subscriptions (Bloom Plan tracking) ──────────────────────────────
+  subView = signal<'list' | 'plans'>('list');   // toggle within the Subscriptions section
+  subscriptions = signal<any[]>([]);
+  loadingSubscriptions = signal(true);
+  subStatusFilter = signal<'today' | 'all' | 'active' | 'paused' | 'cancelled'>('all');
+  readonly subTabs: { key: 'today' | 'all' | 'active' | 'paused' | 'cancelled'; label: string }[] = [
+    { key: 'today', label: 'Due today' },
+    { key: 'all', label: 'All' },
+    { key: 'active', label: 'Active' },
+    { key: 'paused', label: 'Paused' },
+    { key: 'cancelled', label: 'Cancelled' },
+  ];
+  get todayStr(): string { return new Date().toISOString().slice(0, 10); }
+  isDueToday(sub: any): boolean { return sub.status === 'active' && (sub.next_delivery || '').slice(0, 10) === this.todayStr; }
+  filteredSubscriptions = computed(() => {
+    const f = this.subStatusFilter();
+    const list = this.subscriptions();
+    if (f === 'all') return list;
+    if (f === 'today') return list.filter(s => this.isDueToday(s));
+    return list.filter(s => s.status === f);
+  });
+
   // ── Inventory ──────────────────────────────────────────────────────────────
   inventory = signal<any[]>([]);
   loadingInventory = signal(true);
@@ -183,6 +206,8 @@ export class Admin implements OnInit {
   ngOnInit(): void {
     if (!this.authService.isLoggedIn()) { this.router.navigate(['/signin']); return; }
     if (!this.authService.isAdmin()) { this.router.navigate(['/']); return; }
+    // Plans is now a sub-view of Subscriptions — migrate any restored 'plans' section.
+    if ((this.activeSection() as string) === 'plans') { this.activeSection.set('subscriptions'); this.subView.set('plans'); this.loadPlans(); }
     this.loadOrders();
     // If restored section needs lazy-loaded data, trigger it
     const section = this.activeSection();
@@ -194,6 +219,7 @@ export class Admin implements OnInit {
     if (section === 'deals') this.loadDeals();
     if (section === 'bundles') this.loadBundles();
     if (section === 'plans' && !this.subPlans().length) this.loadPlans();
+    if (section === 'subscriptions' && !this.subscriptions().length) this.loadSubscriptions();
   }
 
   get token(): string { return this.authService.getToken(); }
@@ -208,6 +234,7 @@ export class Admin implements OnInit {
     if (section === 'deals') this.loadDeals();
     if (section === 'bundles') this.loadBundles();
     if (section === 'plans' && !this.subPlans().length) this.loadPlans();
+    if (section === 'subscriptions' && !this.subscriptions().length) this.loadSubscriptions();
   }
 
   // ── Stats & Orders ────────────────────────────────────────────────────────
@@ -296,6 +323,106 @@ export class Admin implements OnInit {
     this.http.get<any[]>(`${environment.apiUrl}/api/admin/subscription-plans?token=${this.token}`).subscribe({
       next: (data) => { this.subPlans.set(data || []); this.loadingPlans.set(false); },
       error: () => this.loadingPlans.set(false)
+    });
+  }
+
+  async deleteOrder(order: any): Promise<void> {
+    const ok = await this.confirmService.ask({
+      title: 'Delete order?',
+      message: `Order ${order.id} will be permanently removed. This cannot be undone.`,
+      confirmText: 'Delete',
+      danger: true,
+    });
+    if (!ok) return;
+    this.http.delete(`${environment.apiUrl}/api/admin/orders/${order.id}?token=${this.token}`).subscribe({
+      next: () => { this.orders.update(list => list.filter(o => o.id !== order.id)); this.toastService.show('Order deleted'); },
+      error: (err) => this.toastService.show(err.error?.detail || 'Failed to delete order', 'error')
+    });
+  }
+
+  // ── Customer Subscriptions ────────────────────────────────────────────────
+  loadSubscriptions(): void {
+    this.loadingSubscriptions.set(true);
+    this.http.get<any[]>(`${environment.apiUrl}/api/admin/subscriptions?token=${this.token}`).subscribe({
+      next: (data) => { this.subscriptions.set(data || []); this.loadingSubscriptions.set(false); },
+      error: () => this.loadingSubscriptions.set(false)
+    });
+  }
+
+  setSubView(v: 'list' | 'plans'): void {
+    this.subView.set(v);
+    if (v === 'plans' && !this.subPlans().length) this.loadPlans();
+  }
+
+  subCount(status: string): number {
+    if (status === 'all') return this.subscriptions().length;
+    if (status === 'today') return this.subscriptions().filter(s => this.isDueToday(s)).length;
+    return this.subscriptions().filter(s => s.status === status).length;
+  }
+
+  planFreqText(plan: string): string {
+    const map: Record<string, string> = {
+      weekly: 'Delivers every 7 days', biweekly: 'Delivers every 14 days', monthly: 'Delivers every 30 days',
+    };
+    return map[plan] || plan;
+  }
+
+  itemMeta(it: any): string {
+    const parts: string[] = [];
+    if (it.weight_kg) parts.push(`${it.weight_kg} kg`);
+    if (it.size) parts.push(it.size);
+    if (it.quantity) parts.push(`qty ${it.quantity}`);
+    return parts.length ? '· ' + parts.join(' · ') : '';
+  }
+
+  // Admin edit / delete for a subscription
+  showSubForm = signal(false);
+  editingSub = signal<any | null>(null);
+  savingSub = signal(false);
+  subForm = { status: 'active', plan: 'weekly', next_delivery: '', address: '', customer_phone: '', instructions: '' };
+  readonly SUB_STATUSES = ['active', 'paused', 'cancelled'];
+  readonly SUB_PLANS = ['weekly', 'biweekly', 'monthly'];
+
+  openSubForm(sub: any): void {
+    this.editingSub.set(sub);
+    this.subForm = {
+      status: sub.status || 'active',
+      plan: sub.plan || 'weekly',
+      next_delivery: (sub.next_delivery || '').slice(0, 10),
+      address: sub.address || '',
+      customer_phone: sub.customer_phone || '',
+      instructions: sub.instructions || '',
+    };
+    this.showSubForm.set(true);
+  }
+  closeSubForm(): void { this.showSubForm.set(false); this.editingSub.set(null); }
+
+  saveSub(): void {
+    const editing = this.editingSub();
+    if (!editing) return;
+    this.savingSub.set(true);
+    this.http.put(`${environment.apiUrl}/api/admin/subscriptions/${editing.id}?token=${this.token}`, this.subForm).subscribe({
+      next: (updated: any) => {
+        this.subscriptions.update(list => list.map(s => s.id === editing.id ? updated : s));
+        this.savingSub.set(false);
+        this.closeSubForm();
+        this.toastService.show('Subscription updated');
+      },
+      error: (err) => { this.savingSub.set(false); this.toastService.show(err.error?.detail || 'Failed to update', 'error'); }
+    });
+  }
+
+  async deleteSub(sub: any): Promise<void> {
+    const ok = await this.confirmService.ask({
+      title: 'Delete subscription?',
+      message: `${sub.customer_name || sub.customer_email}'s ${sub.plan} subscription will be permanently removed.`,
+      confirmText: 'Delete',
+      danger: true,
+    });
+    if (!ok) return;
+    this.http.delete(`${environment.apiUrl}/api/admin/subscriptions/${sub.id}?token=${this.token}`).subscribe({
+      next: () => { this.subscriptions.update(list => list.filter(s => s.id !== sub.id)); this.toastService.show('Subscription deleted'); },
+      error: (err) => this.toastService.show(err.error?.detail || 'Failed to delete', 'error')
     });
   }
 

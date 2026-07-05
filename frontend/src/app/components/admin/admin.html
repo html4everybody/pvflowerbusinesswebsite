@@ -64,11 +64,11 @@
         </svg>
         Delivery Zones
       </button>
-      <button class="nav-item" [class.active]="activeSection() === 'plans'" (click)="navigateTo('plans')">
+      <button class="nav-item" [class.active]="activeSection() === 'subscriptions'" (click)="navigateTo('subscriptions')">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M23 4v6h-6"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+          <path d="M3 3v18h18"/><path d="M18.7 8l-5.1 5.2-2.8-2.7L7 14"/>
         </svg>
-        Subscription Plans
+        Subscriptions
       </button>
     </nav>
     <div class="sidebar-footer">
@@ -227,6 +227,10 @@
                   <span class="order-amount">₹{{ order.total?.toFixed(2) }} · {{ itemCount(order) }} item{{ itemCount(order) !== 1 ? 's' : '' }}</span>
                 </div>
                 <span class="order-status" [class]="order.status">{{ STATUS_LABELS[order.status] || order.status }}</span>
+                <button class="order-delete" title="Delete order" aria-label="Delete order"
+                        (click)="$event.preventDefault(); $event.stopPropagation(); deleteOrder(order)">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                </button>
               </a>
             }
           </div>
@@ -899,48 +903,192 @@
       }
     }
 
-    <!-- ── Subscription Plans ─────────────────────────────────────────────── -->
-    @if (activeSection() === 'plans') {
+    <!-- ── Subscriptions (customers + plans, merged) ──────────────────────── -->
+    @if (activeSection() === 'subscriptions') {
       <div class="section-wrap">
         <div class="section-header">
-          <h1>Subscription Plans</h1>
-          <span class="section-meta">Edit the discount shown on the subscribe page</span>
+          <h1>Subscriptions</h1>
+          @if (subView() === 'list') {
+            <button class="btn-refresh" (click)="loadSubscriptions()">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+              Refresh
+            </button>
+          }
         </div>
 
-        @if (loadingPlans()) {
-          <div class="loading-state"><div class="spinner"></div><p>Loading plans...</p></div>
+        <!-- Toggle: customer subscriptions vs plan config -->
+        <div class="sub-segment">
+          <button [class.active]="subView() === 'list'" (click)="setSubView('list')">Customer subscriptions</button>
+          <button [class.active]="subView() === 'plans'" (click)="setSubView('plans')">Plans &amp; pricing</button>
+        </div>
+
+        @if (subView() === 'list') {
+
+        @if (!loadingSubscriptions() && subCount('today') > 0) {
+          <button class="today-banner" (click)="subStatusFilter.set('today')">
+            🚚 {{ subCount('today') }} deliver{{ subCount('today') === 1 ? 'y is' : 'ies are' }} due today — click to view
+          </button>
+        }
+
+        <div class="admin-tabs">
+          @for (t of subTabs; track t.key) {
+            <button class="admin-tab" [class.active]="subStatusFilter() === t.key"
+                    [class.tab-today]="t.key === 'today' && subCount('today') > 0"
+                    (click)="subStatusFilter.set(t.key)">
+              {{ t.label }} <span class="tab-count">{{ subCount(t.key) }}</span>
+            </button>
+          }
+        </div>
+
+        @if (loadingSubscriptions()) {
+          <div class="loading-state"><div class="spinner"></div><p>Loading subscriptions...</p></div>
+        } @else if (filteredSubscriptions().length === 0) {
+          <div class="empty-state"><p>No subscriptions in this view.</p></div>
         } @else {
-          <div class="products-table-wrap">
-            <table class="data-table">
-              <thead>
-                <tr><th>Plan</th><th>Subtitle</th><th>Cadence</th><th>Discount</th><th>Action</th></tr>
-              </thead>
-              <tbody>
-                @for (plan of subPlans(); track plan.id) {
-                  <tr>
-                    @if (editingPlan() === plan.id) {
-                      <td><input type="text" class="form-input" [(ngModel)]="editPlanForm.label"></td>
-                      <td><input type="text" class="form-input" [(ngModel)]="editPlanForm.subtitle"></td>
-                      <td class="mono">Every {{ plan.days }} days</td>
-                      <td><input type="number" class="stock-input" [(ngModel)]="editPlanForm.discount_percent" min="0" max="100"> %</td>
-                      <td>
-                        <div class="stock-btns">
-                          <button class="btn-save-small" [disabled]="savingPlan()" (click)="savePlan(plan)">Save</button>
-                          <button class="btn-cancel-small" (click)="editingPlan.set(null)">Cancel</button>
-                        </div>
-                      </td>
-                    } @else {
-                      <td><span class="product-name">{{ plan.label }}</span></td>
-                      <td>{{ plan.subtitle }}</td>
-                      <td class="mono">Every {{ plan.days }} days</td>
-                      <td><span class="stock-badge ok">{{ plan.discount_percent }}%</span></td>
-                      <td><button class="btn-edit-small" (click)="startEditPlan(plan)">Edit</button></td>
-                    }
-                  </tr>
+          <div class="sub-fulfil-list">
+            @for (sub of filteredSubscriptions(); track sub.id) {
+              <div class="sub-fulfil-card" [class.due-today]="isDueToday(sub)">
+                <div class="sfc-head">
+                  <div class="sfc-cust">
+                    <span class="sfc-name">{{ sub.customer_name || 'Customer' }}</span>
+                    <span class="sfc-id mono">{{ sub.id }}</span>
+                  </div>
+                  <div class="sfc-head-right">
+                    @if (isDueToday(sub)) { <span class="today-pill">🚚 Deliver today</span> }
+                    <span class="category-pill">{{ sub.plan | titlecase }}</span>
+                    <span class="status-badge" [class.status-active]="sub.status === 'active'"
+                          [class.status-paused]="sub.status === 'paused'"
+                          [class.status-cancelled]="sub.status === 'cancelled'">
+                      {{ sub.status | titlecase }}
+                    </span>
+                  </div>
+                </div>
+
+                <div class="sfc-grid">
+                  <div class="sfc-block">
+                    <span class="sfc-label">When to deliver</span>
+                    <span class="sfc-val">📅 {{ sub.next_delivery || 'Not scheduled' }}{{ isDueToday(sub) ? ' — Today' : '' }}</span>
+                    <span class="sfc-sub">{{ planFreqText(sub.plan) }}</span>
+                  </div>
+                  <div class="sfc-block">
+                    <span class="sfc-label">Deliver to</span>
+                    <span class="sfc-val">{{ sub.address || '—' }}</span>
+                    @if (sub.customer_phone) { <span class="sfc-sub">📞 {{ sub.customer_phone }}</span> }
+                    <span class="sfc-sub">✉️ {{ sub.customer_email }}</span>
+                  </div>
+                </div>
+
+                <div class="sfc-what">
+                  <span class="sfc-label">What to deliver</span>
+                  @if (sub.style === 'custom' && sub.items?.length) {
+                    <ul class="sfc-items">
+                      @for (it of sub.items; track it.product_id) {
+                        <li>
+                          <span class="sfc-item-name">{{ it.product_name }}</span>
+                          <span class="sfc-item-meta">{{ itemMeta(it) }}</span>
+                        </li>
+                      }
+                    </ul>
+                  } @else {
+                    <p class="sfc-florist">🌸 Florist's choice — curate a fresh seasonal arrangement each delivery.</p>
+                  }
+                </div>
+
+                @if (sub.instructions) {
+                  <div class="sfc-note">📝 {{ sub.instructions }}</div>
                 }
-              </tbody>
-            </table>
+
+                <div class="sfc-actions">
+                  <button class="btn-edit-small" (click)="openSubForm(sub)">Edit</button>
+                  <button class="btn-delete-small" (click)="deleteSub(sub)">Delete</button>
+                </div>
+              </div>
+            }
           </div>
+        }
+
+        <!-- Edit Subscription Modal -->
+        @if (showSubForm()) {
+          <div class="modal-overlay" (click)="closeSubForm()">
+            <div class="modal-box" (click)="$event.stopPropagation()">
+              <div class="modal-header">
+                <h2>Edit Subscription</h2>
+                <button class="modal-close" (click)="closeSubForm()">✕</button>
+              </div>
+              <div class="modal-body">
+                <div class="form-row">
+                  <label class="form-label">Status
+                    <select class="form-input" [(ngModel)]="subForm.status">
+                      @for (s of SUB_STATUSES; track s) { <option [value]="s">{{ s | titlecase }}</option> }
+                    </select>
+                  </label>
+                  <label class="form-label">Plan
+                    <select class="form-input" [(ngModel)]="subForm.plan">
+                      @for (p of SUB_PLANS; track p) { <option [value]="p">{{ p | titlecase }}</option> }
+                    </select>
+                  </label>
+                </div>
+                <label class="form-label">Next delivery date
+                  <input type="date" class="form-input" [(ngModel)]="subForm.next_delivery">
+                </label>
+                <label class="form-label">Delivery address
+                  <input type="text" class="form-input" [(ngModel)]="subForm.address">
+                </label>
+                <label class="form-label">Phone
+                  <input type="text" class="form-input" [(ngModel)]="subForm.customer_phone">
+                </label>
+                <label class="form-label">Instructions
+                  <input type="text" class="form-input" [(ngModel)]="subForm.instructions">
+                </label>
+              </div>
+              <div class="modal-footer">
+                <button class="btn-cancel" (click)="closeSubForm()">Cancel</button>
+                <button class="btn-primary" [disabled]="savingSub()" (click)="saveSub()">
+                  @if (savingSub()) { Saving... } @else { Save Changes }
+                </button>
+              </div>
+            </div>
+          </div>
+        }
+        }
+
+        @if (subView() === 'plans') {
+          <p class="sub-plans-hint">Edit the label, subtitle and discount shown on the Bloom Plan (subscribe) page.</p>
+          @if (loadingPlans()) {
+            <div class="loading-state"><div class="spinner"></div><p>Loading plans...</p></div>
+          } @else {
+            <div class="products-table-wrap">
+              <table class="data-table">
+                <thead>
+                  <tr><th>Plan</th><th>Subtitle</th><th>Cadence</th><th>Discount</th><th>Action</th></tr>
+                </thead>
+                <tbody>
+                  @for (plan of subPlans(); track plan.id) {
+                    <tr>
+                      @if (editingPlan() === plan.id) {
+                        <td><input type="text" class="form-input" [(ngModel)]="editPlanForm.label"></td>
+                        <td><input type="text" class="form-input" [(ngModel)]="editPlanForm.subtitle"></td>
+                        <td class="mono">Every {{ plan.days }} days</td>
+                        <td><input type="number" class="stock-input" [(ngModel)]="editPlanForm.discount_percent" min="0" max="100"> %</td>
+                        <td>
+                          <div class="stock-btns">
+                            <button class="btn-save-small" [disabled]="savingPlan()" (click)="savePlan(plan)">Save</button>
+                            <button class="btn-cancel-small" (click)="editingPlan.set(null)">Cancel</button>
+                          </div>
+                        </td>
+                      } @else {
+                        <td><span class="product-name">{{ plan.label }}</span></td>
+                        <td>{{ plan.subtitle }}</td>
+                        <td class="mono">Every {{ plan.days }} days</td>
+                        <td><span class="stock-badge ok">{{ plan.discount_percent }}%</span></td>
+                        <td><button class="btn-edit-small" (click)="startEditPlan(plan)">Edit</button></td>
+                      }
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
         }
       </div>
     }
