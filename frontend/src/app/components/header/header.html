@@ -436,7 +436,7 @@
             @if (facetResultCount === 0) {
               No matches — adjust filters
             } @else {
-              Show {{ facetResultCount }} result{{ facetResultCount === 1 ? '' : 's' }} →
+              Show {{ facetResultCount > 100 ? '100+' : facetResultCount }} result{{ facetResultCount === 1 ? '' : 's' }} →
             }
           </button>
         </div>
