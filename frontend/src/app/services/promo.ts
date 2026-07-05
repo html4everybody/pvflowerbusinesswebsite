@@ -69,7 +69,8 @@ export class PromoService {
     });
   }
 
-  getOffers(): Observable<OffersData> {
-    return this.http.get<OffersData>(`${this.apiUrl}/api/offers`);
+  getOffers(email?: string): Observable<OffersData> {
+    const q = email ? `?email=${encodeURIComponent(email)}` : '';
+    return this.http.get<OffersData>(`${this.apiUrl}/api/offers${q}`);
   }
 }

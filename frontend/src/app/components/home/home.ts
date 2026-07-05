@@ -7,6 +7,7 @@ import { FeedbackService } from '../../services/feedback';
 import { SearchService } from '../../services/search';
 import { WishlistService } from '../../services/wishlist';
 import { PromoService, OffersData, BundleDeal, SeasonalOffer } from '../../services/promo';
+import { AuthService } from '../../services/auth';
 import { Product } from '../../models/product.model';
 import { FadeInDirective } from '../../directives/fade-in';
 
@@ -41,13 +42,14 @@ export class Home implements OnInit, AfterViewInit {
     public searchService: SearchService,
     public wishlistService: WishlistService,
     private promoService: PromoService,
+    private authService: AuthService,
     private router: Router
   ) {}
 
   ngOnInit(): void {
     this.products = this.productService.getProducts();
     this.categories = this.productService.getCategories();
-    this.promoService.getOffers().subscribe({ next: d => this.offers.set(d), error: () => {} });
+    this.promoService.getOffers(this.authService.user()?.email).subscribe({ next: d => this.offers.set(d), error: () => {} });
   }
 
   ngAfterViewInit(): void {

@@ -1763,22 +1763,10 @@ def validate_promo(req: PromoValidateRequest):
         "description": promo["description"]
     }
 
-def _build_offers_response(offers: list, bundles: list, promos: list) -> dict:
-    # Map promo code -> details so Live Deals can show the real discount/conditions
-    promo_map = {p["code"]: p for p in (promos or [])}
+_DEFAULT_DEAL_EMOJI = "🎟️"
 
-    enriched_offers = []
-    for offer in offers:
-        promo = promo_map.get(offer.get("code"))
-        enriched_offers.append({
-            **offer,
-            "discount_type": promo["type"] if promo else None,
-            "discount_value": float(promo["value"]) if promo else None,
-            "min_order": float(promo["min_order"]) if promo else 0,
-            "first_order_only": promo["first_order_only"] if promo else False,
-        })
-
-    enriched_bundles = []
+def _enrich_bundles(bundles: list) -> list:
+    enriched = []
     for bundle in bundles:
         product_ids = bundle["product_ids"]
         products = [p for p in PRODUCTS if p["id"] in product_ids]
@@ -1786,7 +1774,7 @@ def _build_offers_response(offers: list, bundles: list, promos: list) -> dict:
         original_price = sum(p["price"] for p in products_ordered)
         savings_pct = float(bundle["savings_pct"])
         bundle_price = round(original_price * (1 - savings_pct / 100), 2)
-        enriched_bundles.append({
+        enriched.append({
             **bundle,
             "products": products_ordered,
             "original_price": round(original_price, 2),
@@ -1794,15 +1782,65 @@ def _build_offers_response(offers: list, bundles: list, promos: list) -> dict:
             "savings_amount": round(original_price - bundle_price, 2),
             "item_count": len(products_ordered),
         })
-    return {"seasonal_offers": enriched_offers, "bundle_deals": enriched_bundles}
+    return enriched
+
+def _deal_from_promo(promo: dict, offer: dict | None) -> dict:
+    """Build a home-page live-deal card from a promo code, using a curated
+    seasonal_offer for display data when one exists (else sensible defaults)."""
+    return {
+        "id": offer["id"] if offer else promo["code"].lower(),
+        "emoji": offer["emoji"] if offer else _DEFAULT_DEAL_EMOJI,
+        "title": offer["title"] if offer else promo["code"],
+        "subtitle": offer["subtitle"] if offer else promo.get("description", ""),
+        "code": promo["code"],
+        "badge": offer["badge"] if offer else "Deal",
+        "discount_type": promo["type"],
+        "discount_value": float(promo["value"]),
+        "min_order": float(promo["min_order"]),
+        "first_order_only": promo["first_order_only"],
+    }
 
 @app.get("/api/offers")
-def get_offers():
-    # Fetch from Supabase
+def get_offers(email: Optional[str] = None):
     offers = supabase.table("seasonal_offers").select("*").execute().data or []
     bundles = supabase.table("bundle_deals").select("*").execute().data or []
     promos = supabase.table("promo_codes").select("*").execute().data or []
-    return _build_offers_response(offers, bundles, promos)
+
+    # Has this customer already ordered? Used to hide first-order-only deals.
+    has_ordered = False
+    if email:
+        try:
+            prior = (supabase.table("orders").select("id")
+                     .eq("customer_email", email).neq("status", "cancelled")
+                     .limit(1).execute().data)
+            has_ordered = bool(prior)
+        except Exception:
+            has_ordered = False
+
+    # Show a live deal for every ACTIVE promo code. Curated seasonal_offers
+    # (in their stored order) come first; remaining active codes are appended.
+    offer_by_code = {o["code"]: o for o in offers}
+    active_promos = [p for p in promos if p.get("active")]
+    promo_by_code = {p["code"]: p for p in active_promos}
+
+    live_deals, used = [], set()
+    for o in offers:
+        promo = promo_by_code.get(o["code"])
+        if not promo or promo["code"] in used:
+            continue
+        used.add(promo["code"])
+        if promo["first_order_only"] and has_ordered:
+            continue
+        live_deals.append(_deal_from_promo(promo, o))
+    for promo in active_promos:
+        if promo["code"] in used:
+            continue
+        used.add(promo["code"])
+        if promo["first_order_only"] and has_ordered:
+            continue
+        live_deals.append(_deal_from_promo(promo, offer_by_code.get(promo["code"])))
+
+    return {"seasonal_offers": live_deals, "bundle_deals": _enrich_bundles(bundles)}
 
 # ── Cart Routes ─────────────────────────────────────────────────────────────────
 
