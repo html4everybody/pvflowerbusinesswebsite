@@ -1763,18 +1763,12 @@ def validate_promo(req: PromoValidateRequest):
         "description": promo["description"]
     }
 
-@app.get("/api/offers")
-def get_offers():
-    # Fetch from Supabase
-    offers_result = supabase.table("seasonal_offers").select("*").execute()
-    bundles_result = supabase.table("bundle_deals").select("*").execute()
-    promos_result = supabase.table("promo_codes").select("*").execute()
-
+def _build_offers_response(offers: list, bundles: list, promos: list) -> dict:
     # Map promo code -> details so Live Deals can show the real discount/conditions
-    promo_map = {p["code"]: p for p in (promos_result.data or [])}
+    promo_map = {p["code"]: p for p in (promos or [])}
 
     enriched_offers = []
-    for offer in offers_result.data:
+    for offer in offers:
         promo = promo_map.get(offer.get("code"))
         enriched_offers.append({
             **offer,
@@ -1785,7 +1779,7 @@ def get_offers():
         })
 
     enriched_bundles = []
-    for bundle in bundles_result.data:
+    for bundle in bundles:
         product_ids = bundle["product_ids"]
         products = [p for p in PRODUCTS if p["id"] in product_ids]
         products_ordered = sorted(products, key=lambda p: product_ids.index(p["id"]))
@@ -1801,6 +1795,14 @@ def get_offers():
             "item_count": len(products_ordered),
         })
     return {"seasonal_offers": enriched_offers, "bundle_deals": enriched_bundles}
+
+@app.get("/api/offers")
+def get_offers():
+    # Fetch from Supabase
+    offers = supabase.table("seasonal_offers").select("*").execute().data or []
+    bundles = supabase.table("bundle_deals").select("*").execute().data or []
+    promos = supabase.table("promo_codes").select("*").execute().data or []
+    return _build_offers_response(offers, bundles, promos)
 
 # ── Cart Routes ─────────────────────────────────────────────────────────────────
 
