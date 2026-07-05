@@ -1,0 +1,111 @@
+.confirm-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 3000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.25rem;
+  background: rgba(15, 23, 42, 0.55);
+  backdrop-filter: blur(4px);
+  animation: confirm-fade 0.18s ease;
+}
+
+.confirm-box {
+  width: 100%;
+  max-width: 400px;
+  background: var(--bg-card, #ffffff);
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 18px;
+  padding: 1.75rem 1.75rem 1.5rem;
+  text-align: center;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.28);
+  animation: confirm-pop 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.confirm-icon {
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 1rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #4f46e5;
+  background: rgba(79, 70, 229, 0.12);
+
+  &.danger {
+    color: #dc2626;
+    background: rgba(220, 38, 38, 0.12);
+  }
+}
+
+.confirm-title {
+  margin: 0 0 0.5rem;
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: var(--text, #111827);
+  letter-spacing: -0.01em;
+}
+
+.confirm-message {
+  margin: 0 0 1.5rem;
+  font-size: 0.9rem;
+  line-height: 1.55;
+  color: var(--text-muted, #6b7280);
+}
+
+.confirm-actions {
+  display: flex;
+  gap: 0.75rem;
+
+  button {
+    flex: 1;
+    padding: 0.72rem 1rem;
+    border-radius: 10px;
+    font-size: 0.9rem;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+    transition: transform 0.12s ease, opacity 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+
+    &:hover { transform: translateY(-1px); }
+    &:active { transform: translateY(0); }
+  }
+
+  .confirm-cancel {
+    background: transparent;
+    border: 1.5px solid var(--border, #d1d5db);
+    color: var(--text-muted, #4b5563);
+
+    &:hover { border-color: var(--text-muted, #9ca3af); color: var(--text, #111827); }
+  }
+
+  .confirm-ok {
+    background: var(--text, #111827);
+    border: 1.5px solid transparent;
+    color: var(--bg, #ffffff);
+
+    &:hover { opacity: 0.88; }
+
+    &.danger {
+      background: #dc2626;
+      color: #ffffff;
+      &:hover { background: #b91c1c; opacity: 1; }
+    }
+  }
+}
+
+@keyframes confirm-fade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes confirm-pop {
+  from { opacity: 0; transform: scale(0.94) translateY(6px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+@media (max-width: 480px) {
+  .confirm-actions { flex-direction: column-reverse; }
+}

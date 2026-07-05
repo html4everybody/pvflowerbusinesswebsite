@@ -3,11 +3,12 @@ import { Router, NavigationEnd, RouterOutlet } from '@angular/router';
 import { Header } from './components/header/header';
 import { Footer } from './components/footer/footer';
 import { Toast } from './components/toast/toast';
+import { ConfirmDialog } from './components/confirm-dialog/confirm-dialog';
 import { ToastService } from './services/toast';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, Header, Footer, Toast],
+  imports: [RouterOutlet, Header, Footer, Toast, ConfirmDialog],
   templateUrl: './app.html',
   styleUrl: './app.scss',
 })

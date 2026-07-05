@@ -4,6 +4,7 @@ import { HttpClient } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../services/auth';
 import { ToastService } from '../../services/toast';
+import { ConfirmService } from '../../services/confirm';
 import { environment } from '../../../environments/environment';
 
 export type AdminSection = 'overview' | 'orders' | 'products' | 'inventory' | 'customers' | 'analytics' | 'zones' | 'deals' | 'bundles' | 'plans';
@@ -172,7 +173,8 @@ export class Admin implements OnInit {
     private authService: AuthService,
     private http: HttpClient,
     private router: Router,
-    private toastService: ToastService
+    private toastService: ToastService,
+    private confirmService: ConfirmService
   ) {
     effect(() => sessionStorage.setItem('admin_section', this.activeSection()));
     effect(() => sessionStorage.setItem('admin_tab', this.activeTab()));
@@ -274,8 +276,14 @@ export class Admin implements OnInit {
     });
   }
 
-  deleteProduct(product: any): void {
-    if (!confirm(`Delete "${product.name}"? This cannot be undone.`)) return;
+  async deleteProduct(product: any): Promise<void> {
+    const ok = await this.confirmService.ask({
+      title: 'Delete product?',
+      message: `"${product.name}" will be permanently removed. This can't be undone.`,
+      confirmText: 'Delete',
+      danger: true,
+    });
+    if (!ok) return;
     this.http.delete(`${environment.apiUrl}/api/admin/products/${product.id}?token=${this.token}`).subscribe({
       next: () => { this.products.update(list => list.filter(p => p.id !== product.id)); this.toastService.show('Product deleted'); },
       error: (err) => this.toastService.show(err.error?.detail || 'Failed to delete product', 'error')
@@ -443,8 +451,14 @@ export class Admin implements OnInit {
     }
   }
 
-  deleteZone(zone: any): void {
-    if (!confirm(`Delete zone "${zone.zone_name}"?`)) return;
+  async deleteZone(zone: any): Promise<void> {
+    const ok = await this.confirmService.ask({
+      title: 'Delete delivery zone?',
+      message: `"${zone.zone_name}" will be removed from your delivery areas.`,
+      confirmText: 'Delete',
+      danger: true,
+    });
+    if (!ok) return;
     this.http.delete(`${environment.apiUrl}/api/admin/delivery-zones/${zone.id}?token=${this.token}`).subscribe({
       next: () => {
         this.zones.update(list => list.filter(z => z.id !== zone.id));
@@ -503,8 +517,14 @@ export class Admin implements OnInit {
     });
   }
 
-  deletePromo(promo: any): void {
-    if (!confirm(`Delete promo code "${promo.code}"?`)) return;
+  async deletePromo(promo: any): Promise<void> {
+    const ok = await this.confirmService.ask({
+      title: 'Delete promo code?',
+      message: `Code "${promo.code}" will stop working for customers immediately.`,
+      confirmText: 'Delete',
+      danger: true,
+    });
+    if (!ok) return;
     this.http.delete(`${environment.apiUrl}/api/admin/promo-codes/${promo.code}?token=${this.token}`).subscribe({
       next: () => { this.promoCodes.update(list => list.filter(p => p.code !== promo.code)); this.toastService.show('Promo deleted'); },
       error: () => this.toastService.show('Failed to delete promo', 'error')
@@ -537,8 +557,14 @@ export class Admin implements OnInit {
     });
   }
 
-  deleteOffer(offer: any): void {
-    if (!confirm(`Delete offer "${offer.title}"?`)) return;
+  async deleteOffer(offer: any): Promise<void> {
+    const ok = await this.confirmService.ask({
+      title: 'Delete live deal?',
+      message: `"${offer.title}" will be removed from the home page.`,
+      confirmText: 'Delete',
+      danger: true,
+    });
+    if (!ok) return;
     this.http.delete(`${environment.apiUrl}/api/admin/seasonal-offers/${offer.id}?token=${this.token}`).subscribe({
       next: () => { this.seasonalOffers.update(list => list.filter(o => o.id !== offer.id)); this.toastService.show('Offer deleted'); },
       error: () => this.toastService.show('Failed to delete offer', 'error')
@@ -589,8 +615,14 @@ export class Admin implements OnInit {
     });
   }
 
-  deleteBundle(bundle: any): void {
-    if (!confirm(`Delete bundle "${bundle.name}"?`)) return;
+  async deleteBundle(bundle: any): Promise<void> {
+    const ok = await this.confirmService.ask({
+      title: 'Delete bundle?',
+      message: `"${bundle.name}" will be removed from the home page.`,
+      confirmText: 'Delete',
+      danger: true,
+    });
+    if (!ok) return;
     this.http.delete(`${environment.apiUrl}/api/admin/bundle-deals/${bundle.id}?token=${this.token}`).subscribe({
       next: () => { this.bundleDeals.update(list => list.filter(b => b.id !== bundle.id)); this.toastService.show('Bundle deleted'); },
       error: () => this.toastService.show('Failed to delete bundle', 'error')
