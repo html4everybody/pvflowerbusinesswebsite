@@ -10,6 +10,14 @@
       <a routerLink="/subscribe" class="btn-new-sub">+ New Subscription</a>
     </div>
 
+    <!-- Delivery today banner -->
+    @if (!loading() && hasDeliveryToday) {
+      <div class="today-delivery-banner">
+        <span class="tdb-emoji">🌸</span>
+        <span>A Bloom Plan delivery is arriving <strong>today</strong> — please make sure someone's available to receive it.</span>
+      </div>
+    }
+
     <!-- Loading -->
     @if (loading()) {
       <div class="loading-state">
@@ -37,9 +45,10 @@
         </h2>
         <div class="sub-cards">
           @for (sub of activeList; track sub.id) {
-            <div class="sub-card">
+            <div class="sub-card" [class.arriving-today]="isArrivingToday(sub)">
               <div class="sub-card-top">
                 <div class="sub-badges">
+                  @if (isArrivingToday(sub)) { <span class="badge badge-today">🚚 Arriving today</span> }
                   <span class="badge badge-active">Active</span>
                   <span class="badge badge-plan">{{ planLabel(sub.plan) }}</span>
                 </div>
@@ -69,23 +78,6 @@
                 </div>
               </div>
 
-              <div class="sub-actions">
-                <button class="btn-skip"
-                        [disabled]="isLoading(sub.id)"
-                        (click)="skip(sub)">
-                  @if (actionId() === sub.id + '-skip') { Skipping... } @else { Skip Next }
-                </button>
-                <button class="btn-pause"
-                        [disabled]="isLoading(sub.id)"
-                        (click)="pause(sub)">
-                  @if (actionId() === sub.id) { Pausing... } @else { Pause }
-                </button>
-                <button class="btn-cancel"
-                        [disabled]="isLoading(sub.id)"
-                        (click)="confirmCancel(sub)">
-                  Cancel
-                </button>
-              </div>
             </div>
           }
         </div>
@@ -125,18 +117,6 @@
                 </div>
               </div>
 
-              <div class="sub-actions">
-                <button class="btn-resume"
-                        [disabled]="isLoading(sub.id)"
-                        (click)="resume(sub)">
-                  @if (actionId() === sub.id) { Resuming... } @else { Resume Subscription }
-                </button>
-                <button class="btn-cancel"
-                        [disabled]="isLoading(sub.id)"
-                        (click)="confirmCancel(sub)">
-                  Cancel
-                </button>
-              </div>
             </div>
           }
         </div>
@@ -179,24 +159,19 @@
       </section>
     }
 
+    <!-- Contact for changes (subscriptions are managed by our team) -->
+    @if (!loading() && subscriptions().length > 0) {
+      <div class="sub-contact-note">
+        <span class="scn-icon">💬</span>
+        <div class="scn-body">
+          <strong>Need to pause, change, or cancel a subscription?</strong>
+          <p>Our florists manage all subscription changes personally to keep your deliveries perfect.
+             Just reach out at
+             <a href="mailto:orderhere&#64;vivapetals.com">orderhere&#64;vivapetals.com</a>
+             or through our <a routerLink="/contact">Contact page</a> and we'll take care of it.</p>
+        </div>
+      </div>
+    }
+
   </div>
 </main>
-
-<!-- ── Cancel Confirm Dialog ──────────────────────────────────────────── -->
-@if (confirmCancelId()) {
-  <div class="confirm-overlay" (click)="dismissCancel()">
-    <div class="confirm-dialog" (click)="$event.stopPropagation()">
-      <div class="confirm-icon">⚠️</div>
-      <h3>Cancel Subscription?</h3>
-      <p>This will permanently cancel your subscription. You can start a new one anytime.</p>
-      <div class="confirm-actions">
-        <button class="btn-keep" (click)="dismissCancel()">Keep Subscription</button>
-        @for (sub of subscriptions(); track sub.id) {
-          @if (sub.id === confirmCancelId()) {
-            <button class="btn-cancel-confirm" (click)="cancelConfirmed(sub)">Yes, Cancel</button>
-          }
-        }
-      </div>
-    </div>
-  </div>
-}

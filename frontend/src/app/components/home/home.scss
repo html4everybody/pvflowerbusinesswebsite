@@ -1614,3 +1614,19 @@ html[data-theme="dark"] {
   55%  { left: -70%; }
   100% { left: 130%; }
 }
+
+// ── Bloom Plan "arriving today" home banner ──────────────────────────────────
+.bloom-today-banner {
+  display: block;
+  text-align: center;
+  text-decoration: none;
+  background: linear-gradient(135deg, #c84b7a, #9c2d55);
+  color: #fff;
+  font-size: 0.9rem;
+  font-weight: 700;
+  padding: 0.7rem 1rem;
+  letter-spacing: 0.01em;
+  transition: filter 0.15s;
+  strong { text-decoration: underline; }
+  &:hover { filter: brightness(1.08); }
+}

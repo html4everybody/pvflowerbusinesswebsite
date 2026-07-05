@@ -119,4 +119,10 @@ export class MySubscriptions implements OnInit {
     const map: Record<string, string> = { weekly: 'Every week', biweekly: 'Every 2 weeks', monthly: 'Once a month' };
     return map[plan] ?? '';
   }
+
+  get todayStr(): string { return new Date().toISOString().slice(0, 10); }
+  isArrivingToday(sub: Subscription): boolean {
+    return sub.status === 'active' && (sub.next_delivery || '').slice(0, 10) === this.todayStr;
+  }
+  get hasDeliveryToday(): boolean { return this.subscriptions().some(s => this.isArrivingToday(s)); }
 }

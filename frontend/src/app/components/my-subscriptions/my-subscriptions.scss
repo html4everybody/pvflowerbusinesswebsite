@@ -360,3 +360,54 @@
   from { opacity: 0; }
   to   { opacity: 1; }
 }
+
+// ── Arriving-today emphasis ──────────────────────────────────────────────────
+.today-delivery-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  background: linear-gradient(135deg, rgba(200,75,122,0.14), rgba(200,75,122,0.05));
+  border: 1px solid rgba(200,75,122,0.35);
+  border-radius: 14px;
+  padding: 0.9rem 1.1rem;
+  margin-bottom: 1.5rem;
+  font-size: 0.92rem;
+  color: var(--text);
+  line-height: 1.5;
+
+  .tdb-emoji { font-size: 1.4rem; flex-shrink: 0; }
+  strong { color: #c84b7a; }
+}
+
+.badge-today {
+  background: #c84b7a !important;
+  color: #fff !important;
+  animation: today-pulse 1.8s ease-in-out infinite;
+}
+
+.sub-card.arriving-today {
+  border-color: rgba(200,75,122,0.5);
+  box-shadow: 0 0 0 1px rgba(200,75,122,0.3), 0 8px 26px rgba(200,75,122,0.12);
+}
+
+@keyframes today-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(200,75,122,0.4); }
+  50%      { box-shadow: 0 0 0 5px rgba(200,75,122,0); }
+}
+
+// ── Contact note (subscriptions are team-managed, view-only for users) ────────
+.sub-contact-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.85rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 1.1rem 1.25rem;
+  margin-top: 1.5rem;
+
+  .scn-icon { font-size: 1.5rem; flex-shrink: 0; line-height: 1; }
+  .scn-body strong { display: block; font-size: 0.95rem; color: var(--text); margin-bottom: 0.25rem; }
+  .scn-body p { margin: 0; font-size: 0.86rem; color: var(--text-muted); line-height: 1.55; }
+  .scn-body a { color: var(--accent); font-weight: 600; text-decoration: none; &:hover { text-decoration: underline; } }
+}

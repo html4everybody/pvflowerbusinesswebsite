@@ -1,5 +1,11 @@
 <main class="home">
 
+  @if (subDeliveryToday()) {
+    <a routerLink="/my-subscriptions" class="bloom-today-banner">
+      🌸 Your Bloom Plan delivery arrives <strong>today</strong>! Tap to view details →
+    </a>
+  }
+
   <!-- ── Hero Section ──────────────────────────────────────────── -->
   <section class="hero">
     <video #heroVideo class="hero-video" autoplay muted loop playsinline>

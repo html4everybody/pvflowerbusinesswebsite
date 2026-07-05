@@ -8,6 +8,7 @@ import { SearchService } from '../../services/search';
 import { WishlistService } from '../../services/wishlist';
 import { PromoService, OffersData, BundleDeal, SeasonalOffer } from '../../services/promo';
 import { AuthService } from '../../services/auth';
+import { SubscriptionService } from '../../services/subscription';
 import { Product } from '../../models/product.model';
 import { FadeInDirective } from '../../directives/fade-in';
 
@@ -46,15 +47,30 @@ export class Home implements OnInit, AfterViewInit {
     public wishlistService: WishlistService,
     private promoService: PromoService,
     private authService: AuthService,
+    private subscriptionService: SubscriptionService,
     private router: Router,
     private route: ActivatedRoute,
     private location: Location
   ) {}
 
+  subDeliveryToday = signal(false);
+
   ngOnInit(): void {
     this.products = this.productService.getProducts();
     this.categories = this.productService.getCategories();
     this.promoService.getOffers(this.authService.user()?.email).subscribe({ next: d => this.offers.set(d), error: () => {} });
+
+    // Heads-up if the logged-in user has a Bloom Plan delivery due today
+    const user = this.authService.user();
+    if (user?.email) {
+      this.subscriptionService.getAll(user.email).subscribe({
+        next: subs => {
+          const today = new Date().toISOString().slice(0, 10);
+          this.subDeliveryToday.set(subs.some(s => s.status === 'active' && (s.next_delivery || '').slice(0, 10) === today));
+        },
+        error: () => {}
+      });
+    }
 
     // Header "Live Deals" / "Bundle Offers" navigate here with ?scrollTo=<id>.
     // The home page owns those sections, so it scrolls once they've rendered.
