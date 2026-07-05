@@ -150,7 +150,7 @@ export class Signin implements AfterViewInit, OnDestroy {
         localStorage.setItem('viva_user', JSON.stringify(res.user));
         this.authService.user.set(res.user);
         this.toastService.show(`Welcome${res.user.firstName ? ', ' + res.user.firstName : ''}! 🌸`);
-        this.router.navigate(['/']);
+        this.router.navigateByUrl(this.returnUrl());
       },
       error: (err) => {
         this.googleLoading.set(false);
@@ -159,6 +159,13 @@ export class Signin implements AfterViewInit, OnDestroy {
         this.errorMessage.set(err.error?.detail || `${providerName} sign-in failed. Please try again.`);
       }
     });
+  }
+
+  /** Where to go after a successful sign-in: the guard's returnUrl, or home. */
+  private returnUrl(): string {
+    const url = this.route.snapshot.queryParams['returnUrl'];
+    // only allow same-app relative paths (avoid open-redirect to /signin loops)
+    return url && url.startsWith('/') && !url.startsWith('/signin') ? url : '/';
   }
 
   // ── Existing methods ────────────────────────────────────────────────────────
@@ -188,7 +195,7 @@ export class Signin implements AfterViewInit, OnDestroy {
         this.loading.set(false);
         const user = this.authService.user();
         this.toastService.show(`Hi ${user.firstName}, signed in successfully!`);
-        this.router.navigate(['/']);
+        this.router.navigateByUrl(this.returnUrl());
       },
       error: (err) => {
         this.loading.set(false);

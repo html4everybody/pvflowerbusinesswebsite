@@ -27,36 +27,41 @@ import { AccountProfile } from './components/account-profile/account-profile';
 import { AccountPassword } from './components/account-password/account-password';
 import { AccountEmail } from './components/account-email/account-email';
 import { ConfirmEmail } from './components/confirm-email/confirm-email';
+import { authGuard } from './guards/auth-guard';
 
 export const routes: Routes = [
+  // ── Public routes ──────────────────────────────────────────────────────────
   { path: '', component: Home },
   { path: 'products/:id', component: ProductDetail },
-  { path: 'cart', component: Cart },
-  { path: 'checkout', component: Checkout },
   { path: 'contact', component: Contact },
   { path: 'signin', component: Signin },
   { path: 'verify-email', component: VerifyEmail },
   { path: 'reset-password', component: ResetPassword },
   { path: 'forgot-password', component: ForgotPassword },
-  { path: 'account', component: Account },
-  { path: 'account/profile', component: AccountProfile },
-  { path: 'account/password', component: AccountPassword },
-  { path: 'account/email', component: AccountEmail },
   { path: 'confirm-email', component: ConfirmEmail },
-  { path: 'orders', component: Orders },
-  { path: 'orders/:id', component: OrderDetail },
   { path: 'builder', component: BouquetBuilder },
-  { path: 'wishlist', component: Wishlist },
   { path: 'occasions', component: OccasionPage },
   { path: 'occasions/:slug', component: OccasionPage },
-  { path: 'subscribe', component: Subscription },
-  { path: 'my-subscriptions', component: MySubscriptions },
   { path: 'corporate', component: CorporatePortal },
-  { path: 'corporate-order', component: CorporateOrder },
-  { path: 'my-corporate', component: MyCorporate },
-  { path: 'my-loyalty', component: MyLoyalty },
-  { path: 'reminders', component: Reminders },
   { path: 'track', component: TrackOrder },
-  { path: 'admin', component: Admin },
+
+  // ── Login-required routes ──────────────────────────────────────────────────
+  { path: 'cart', component: Cart, canActivate: [authGuard] },
+  { path: 'checkout', component: Checkout, canActivate: [authGuard] },
+  { path: 'wishlist', component: Wishlist, canActivate: [authGuard] },
+  { path: 'account', component: Account, canActivate: [authGuard] },
+  { path: 'account/profile', component: AccountProfile, canActivate: [authGuard] },
+  { path: 'account/password', component: AccountPassword, canActivate: [authGuard] },
+  { path: 'account/email', component: AccountEmail, canActivate: [authGuard] },
+  { path: 'orders', component: Orders, canActivate: [authGuard] },
+  { path: 'orders/:id', component: OrderDetail, canActivate: [authGuard] },
+  { path: 'subscribe', component: Subscription, canActivate: [authGuard] },
+  { path: 'my-subscriptions', component: MySubscriptions, canActivate: [authGuard] },
+  { path: 'corporate-order', component: CorporateOrder, canActivate: [authGuard] },
+  { path: 'my-corporate', component: MyCorporate, canActivate: [authGuard] },
+  { path: 'my-loyalty', component: MyLoyalty, canActivate: [authGuard] },
+  { path: 'reminders', component: Reminders, canActivate: [authGuard] },
+  { path: 'admin', component: Admin, canActivate: [authGuard] },
+
   { path: '**', redirectTo: '' }
 ];
