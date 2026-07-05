@@ -3,6 +3,36 @@
 -- Run this SQL in your Supabase Dashboard → SQL Editor → New Query
 -- ============================================================================
 
+-- 0a. Subscriptions (Bloom Plan) — recurring flower deliveries.
+CREATE TABLE IF NOT EXISTS subscriptions (
+    id                 TEXT PRIMARY KEY,
+    customer_email     TEXT NOT NULL,
+    customer_name      TEXT NOT NULL DEFAULT '',
+    customer_phone     TEXT,
+    plan               TEXT NOT NULL,
+    style              TEXT NOT NULL DEFAULT 'florist',
+    fixed_product_id   INTEGER,
+    fixed_product_name TEXT,
+    items              JSONB NOT NULL DEFAULT '[]',
+    instructions       TEXT,
+    daily_total        NUMERIC,
+    grand_total        NUMERIC,
+    discount_percent   NUMERIC,
+    status             TEXT NOT NULL DEFAULT 'active',
+    next_delivery      TEXT NOT NULL DEFAULT '',
+    address            TEXT NOT NULL DEFAULT '',
+    skipped_count      INTEGER NOT NULL DEFAULT 0,
+    created_at         TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- If the subscriptions table already exists from an earlier run, add the new columns:
+ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS customer_phone   TEXT;
+ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS items            JSONB NOT NULL DEFAULT '[]';
+ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS instructions     TEXT;
+ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS daily_total      NUMERIC;
+ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS grand_total      NUMERIC;
+ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS discount_percent NUMERIC;
+
 -- 0. Products (admin-managed catalog). Rows are auto-seeded by the backend on
 --    first run from the built-in list, so no INSERTs are needed here.
 CREATE TABLE IF NOT EXISTS products (

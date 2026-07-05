@@ -851,11 +851,14 @@ class CartItemRequest(BaseModel):
 class SubscriptionRequest(BaseModel):
     customer_email: str
     customer_name: str
+    customer_phone: Optional[str] = None
     plan: str                          # weekly | biweekly | monthly
-    style: str                         # seasonal | fixed
-    fixed_product_id: Optional[int] = None
-    fixed_product_name: Optional[str] = None
     address: str
+    items: list[dict] = []             # selected products (florist choice = empty)
+    instructions: Optional[str] = None
+    daily_total: Optional[float] = None
+    grand_total: Optional[float] = None
+    discount_percent: Optional[float] = None
 
 # ── Products Routes ────────────────────────────────────────────────────────────
 
@@ -1981,6 +1984,15 @@ def update_order_status(order_id: str, req: StatusUpdateRequest):
     send_notifications(order_id, req.status, order.get("customer_phone") or "")
     return {"status": req.status}
 
+@app.delete("/api/admin/orders/{order_id}")
+def admin_delete_order(order_id: str, token: str):
+    require_admin(token)
+    supabase.table("order_items").delete().eq("order_id", order_id).execute()
+    result = supabase.table("orders").delete().eq("id", order_id).execute()
+    if not result.data:
+        raise HTTPException(status_code=404, detail="Order not found")
+    return {"status": "ok"}
+
 @app.post("/api/orders")
 def create_order(req: OrderRequest):
     order_id = "FLR" + str(uuid.uuid4())[:8].upper()
@@ -2157,17 +2169,58 @@ def get_subscriptions(email: str):
     result = supabase.table("subscriptions").select("*").eq("customer_email", email).order("created_at", desc=True).execute()
     return result.data
 
+@app.get("/api/admin/subscriptions")
+def admin_list_subscriptions(token: str):
+    require_admin(token)
+    result = supabase.table("subscriptions").select("*").order("created_at", desc=True).execute()
+    return result.data or []
+
+class AdminSubscriptionUpdate(BaseModel):
+    status: Optional[str] = None
+    plan: Optional[str] = None
+    next_delivery: Optional[str] = None
+    address: Optional[str] = None
+    customer_phone: Optional[str] = None
+    instructions: Optional[str] = None
+
+@app.put("/api/admin/subscriptions/{sub_id}")
+def admin_update_subscription(sub_id: str, req: AdminSubscriptionUpdate, token: str):
+    require_admin(token)
+    data = {k: v for k, v in req.model_dump().items() if v is not None}
+    if not data:
+        raise HTTPException(status_code=400, detail="No fields to update")
+    result = supabase.table("subscriptions").update(data).eq("id", sub_id).execute()
+    if not result.data:
+        raise HTTPException(status_code=404, detail="Subscription not found")
+    return result.data[0]
+
+@app.delete("/api/admin/subscriptions/{sub_id}")
+def admin_delete_subscription(sub_id: str, token: str):
+    require_admin(token)
+    result = supabase.table("subscriptions").delete().eq("id", sub_id).execute()
+    if not result.data:
+        raise HTTPException(status_code=404, detail="Subscription not found")
+    return {"status": "ok"}
+
 @app.post("/api/subscriptions")
 def create_subscription(req: SubscriptionRequest):
     sub_id = "SUB" + str(uuid.uuid4())[:8].upper()
+    # "florist" = let us pick (no items); otherwise a custom hand-picked set
+    first = req.items[0] if req.items else None
     supabase.table("subscriptions").insert({
         "id": sub_id,
         "customer_email": req.customer_email,
         "customer_name": req.customer_name,
+        "customer_phone": req.customer_phone,
         "plan": req.plan,
-        "style": req.style,
-        "fixed_product_id": req.fixed_product_id,
-        "fixed_product_name": req.fixed_product_name,
+        "style": "custom" if req.items else "florist",
+        "fixed_product_id": (first or {}).get("product_id"),
+        "fixed_product_name": (first or {}).get("product_name"),
+        "items": req.items,                       # full list — what to deliver
+        "instructions": req.instructions,
+        "daily_total": req.daily_total,
+        "grand_total": req.grand_total,
+        "discount_percent": req.discount_percent,
         "status": "active",
         "next_delivery": next_delivery_date(req.plan),
         "address": req.address,
