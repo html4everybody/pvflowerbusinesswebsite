@@ -33,6 +33,7 @@ export class Signin implements AfterViewInit, OnDestroy {
 
   loginData  = { email: '', password: '' };
   signupData = { firstName: '', lastName: '', email: '', password: '', confirmPassword: '' };
+  rememberMe = true;
 
   constructor(
     private authService: AuthService,
@@ -146,9 +147,7 @@ export class Signin implements AfterViewInit, OnDestroy {
       next: (res) => {
         this.googleLoading.set(false);
         this.facebookLoading.set(false);
-        localStorage.setItem('viva_token', res.token);
-        localStorage.setItem('viva_user', JSON.stringify(res.user));
-        this.authService.user.set(res.user);
+        this.authService.setSession(res.token, res.user, this.rememberMe);
         this.toastService.show(`Welcome${res.user.firstName ? ', ' + res.user.firstName : ''}! 🌸`);
         this.router.navigateByUrl(this.returnUrl());
       },
@@ -190,7 +189,7 @@ export class Signin implements AfterViewInit, OnDestroy {
     this.successMessage.set('');
     this.loading.set(true);
 
-    this.authService.login(this.loginData.email, this.loginData.password).subscribe({
+    this.authService.login(this.loginData.email, this.loginData.password, this.rememberMe).subscribe({
       next: () => {
         this.loading.set(false);
         const user = this.authService.user();

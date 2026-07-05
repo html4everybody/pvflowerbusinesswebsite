@@ -30,9 +30,7 @@ export class ConfirmEmail implements OnInit {
         this.message.set(res.message);
         this.newEmail.set(res.email);
         // Sign out so they log in fresh with new email
-        localStorage.removeItem('viva_token');
-        localStorage.removeItem('viva_user');
-        this.authService.user.set(null);
+        this.authService.logout();
       },
       error: (err) => {
         this.status.set('error');

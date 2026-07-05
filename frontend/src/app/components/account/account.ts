@@ -87,7 +87,7 @@ export class Account implements OnInit {
     const user = this.authService.user();
     if (!user) return;
     this.ordersLoading.set(true);
-    const token = localStorage.getItem('viva_token');
+    const token = this.authService.getToken();
     const params = `email=${encodeURIComponent(user.email)}${token ? `&token=${token}` : ''}`;
     this.http.get<any[]>(`${environment.apiUrl}/api/orders?${params}`).subscribe({
       next: (data) => { this.orders.set(data); this.ordersLoading.set(false); },
@@ -100,7 +100,7 @@ export class Account implements OnInit {
     this.profileSaving.set(true);
     this.profileSuccess.set('');
     this.profileError.set('');
-    const token = localStorage.getItem('viva_token');
+    const token = this.authService.getToken();
     this.http.put(`${environment.apiUrl}/api/auth/profile`, {
       token,
       first_name: this.profileForm.firstName,
@@ -112,8 +112,7 @@ export class Account implements OnInit {
         const user = this.authService.user();
         if (user) {
           const updated = { ...user, firstName: res.firstName, lastName: res.lastName };
-          localStorage.setItem('viva_user', JSON.stringify(updated));
-          this.authService.user.set(updated);
+          this.authService.updateStoredUser(updated);
         }
       },
       error: (err) => {
@@ -132,7 +131,7 @@ export class Account implements OnInit {
     this.pwSaving.set(true);
     this.pwSuccess.set('');
     this.pwError.set('');
-    const token = localStorage.getItem('viva_token');
+    const token = this.authService.getToken();
     this.http.put(`${environment.apiUrl}/api/auth/change-password`, {
       token,
       current_password: this.pwForm.current,

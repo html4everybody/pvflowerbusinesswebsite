@@ -30,7 +30,7 @@ export class AccountProfile {
     this.saving.set(true);
     this.success.set('');
     this.error.set('');
-    const token = localStorage.getItem('viva_token');
+    const token = this.authService.getToken();
     this.http.put(`${environment.apiUrl}/api/auth/profile`, {
       token,
       first_name: this.profileForm.firstName,
@@ -42,8 +42,7 @@ export class AccountProfile {
         const user = this.authService.user();
         if (user) {
           const updated = { ...user, firstName: res.firstName, lastName: res.lastName };
-          localStorage.setItem('viva_user', JSON.stringify(updated));
-          this.authService.user.set(updated);
+          this.authService.updateStoredUser(updated);
         }
       },
       error: (err) => {

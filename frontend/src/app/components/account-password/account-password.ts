@@ -57,7 +57,7 @@ export class AccountPassword {
     this.saving.set(true);
     this.success.set('');
     this.error.set('');
-    const token = localStorage.getItem('viva_token');
+    const token = this.authService.getToken();
     this.http.put(`${environment.apiUrl}/api/auth/change-password`, {
       token,
       current_password: this.pwForm.current,

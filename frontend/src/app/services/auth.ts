@@ -17,13 +17,11 @@ export class AuthService {
   }
 
   private validateSession(): void {
-    const token = localStorage.getItem('viva_token');
+    const token = this.getToken();
     if (!token) return;
     this.http.get<any>(`${this.apiUrl}/api/auth/me?token=${token}`).subscribe({
       error: () => {
-        localStorage.removeItem('viva_token');
-        localStorage.removeItem('viva_user');
-        this.user.set(null);
+        this.clearSession();
         this.router.navigate(['/signin']);
       }
     });
@@ -31,22 +29,46 @@ export class AuthService {
 
   private loadUser(): any {
     try {
-      const stored = localStorage.getItem('viva_user');
+      const stored = localStorage.getItem('viva_user') || sessionStorage.getItem('viva_user');
       return stored && stored !== 'undefined' ? JSON.parse(stored) : null;
     } catch {
       localStorage.removeItem('viva_user');
+      sessionStorage.removeItem('viva_user');
       return null;
     }
   }
 
-  login(email: string, password: string): Observable<any> {
+  login(email: string, password: string, remember: boolean = true): Observable<any> {
     return this.http.post<any>(`${this.apiUrl}/api/auth/login`, { email, password }).pipe(
-      tap(res => {
-        localStorage.setItem('viva_token', res.token);
-        localStorage.setItem('viva_user', JSON.stringify(res.user));
-        this.user.set(res.user);
-      })
+      tap(res => this.setSession(res.token, res.user, remember))
     );
+  }
+
+  /**
+   * Persist the session in localStorage (Remember me → survives browser
+   * restarts) or sessionStorage (this browser session only, cleared on close).
+   */
+  setSession(token: string, user: any, remember: boolean): void {
+    this.clearSession();
+    const store = remember ? localStorage : sessionStorage;
+    store.setItem('viva_token', token);
+    store.setItem('viva_user', JSON.stringify(user));
+    this.user.set(user);
+  }
+
+  private clearSession(): void {
+    localStorage.removeItem('viva_token');
+    localStorage.removeItem('viva_user');
+    sessionStorage.removeItem('viva_token');
+    sessionStorage.removeItem('viva_user');
+    this.user.set(null);
+  }
+
+  /** Update the stored user (after profile/email changes) in whichever storage holds the session. */
+  updateStoredUser(user: any): void {
+    const store = localStorage.getItem('viva_token') ? localStorage : sessionStorage;
+    store.setItem('viva_user', JSON.stringify(user));
+    this.user.set(user);
   }
 
   register(data: { firstName: string; lastName: string; email: string; password: string; referral_code?: string }): Observable<any> {
@@ -60,13 +82,11 @@ export class AuthService {
   }
 
   logout(): void {
-    localStorage.removeItem('viva_token');
-    localStorage.removeItem('viva_user');
-    this.user.set(null);
+    this.clearSession();
   }
 
   isLoggedIn(): boolean {
-    return !!localStorage.getItem('viva_token');
+    return !!this.getToken();
   }
 
   isAdmin(): boolean {
@@ -74,6 +94,6 @@ export class AuthService {
   }
 
   getToken(): string {
-    return localStorage.getItem('viva_token') || '';
+    return localStorage.getItem('viva_token') || sessionStorage.getItem('viva_token') || '';
   }
 }

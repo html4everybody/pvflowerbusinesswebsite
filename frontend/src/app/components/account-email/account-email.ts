@@ -29,7 +29,7 @@ export class AccountEmail {
     this.saving.set(true);
     this.success.set('');
     this.error.set('');
-    const token = localStorage.getItem('viva_token');
+    const token = this.authService.getToken();
     this.http.put<any>(`${environment.apiUrl}/api/auth/update-email`, {
       token,
       new_email: email
