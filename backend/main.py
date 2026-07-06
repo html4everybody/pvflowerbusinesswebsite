@@ -781,6 +781,13 @@ def _compute_occasion_products(occ: dict) -> list:
         for p in _SEED_PRODUCTS:
             if p["id"] not in ids and p["price"] >= occ["min_price"]:
                 ids.append(p["id"])
+    # Guarantee every default occasion shows a handful of products.
+    if len(ids) < 4:
+        for p in _SEED_PRODUCTS:
+            if p["id"] not in ids:
+                ids.append(p["id"])
+            if len(ids) >= 6:
+                break
     return ids[:12]
 
 def seed_occasions():
