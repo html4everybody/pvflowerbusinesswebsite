@@ -1,42 +1,45 @@
-<main class="my-corp-page">
-  <div class="container">
+<main class="account-page">
+  <div class="account-layout">
+    <app-account-nav></app-account-nav>
+    <div class="my-corp-page account-body">
+      <div class="container">
 
     <!-- Header -->
     <div class="page-header">
       <div class="page-header-left">
-        <h1>Corporate Orders</h1>
-        <p>Manage your bulk floral gifting orders</p>
+        <h1>Petal Studio Bookings</h1>
+        <p>Manage your event florals &amp; décor bookings</p>
       </div>
-      <a routerLink="/corporate-order" class="btn-new-order">+ New Order</a>
+      <a routerLink="/petal-studio/book" class="btn-new-order">+ New Booking</a>
     </div>
 
     <!-- Loading -->
     @if (loading()) {
       <div class="loading-state">
         <div class="spinner"></div>
-        <p>Loading your corporate orders...</p>
+        <p>Loading your bookings...</p>
       </div>
     }
 
     <!-- Empty state -->
     @if (!loading() && orders().length === 0) {
       <div class="empty-state">
-        <span class="empty-icon">🏢</span>
-        <h2>No corporate orders yet</h2>
-        <p>Place your first bulk order to impress clients and reward your team.</p>
-        <a routerLink="/corporate-order" class="btn-start">Place First Order</a>
+        <span class="empty-icon">🎉</span>
+        <h2>No bookings yet</h2>
+        <p>Book Petal Studio to flower and decorate your next wedding, party, or event.</p>
+        <a routerLink="/petal-studio/book" class="btn-start">Start a Booking</a>
       </div>
     }
 
-    <!-- Active Orders -->
-    @if (!loading() && activeOrders.length > 0) {
+    <!-- Upcoming Events -->
+    @if (!loading() && upcomingOrders.length > 0) {
       <section class="orders-section">
         <h2 class="section-title">
           <span class="status-dot active"></span>
-          Active ({{ activeOrders.length }})
+          Upcoming Events ({{ upcomingOrders.length }})
         </h2>
         <div class="order-cards">
-          @for (order of activeOrders; track order.id) {
+          @for (order of upcomingOrders; track order.id) {
             <div class="order-card">
               <div class="order-card-top">
                 <div class="order-badges">
@@ -50,8 +53,8 @@
 
               <div class="order-info-grid">
                 <div class="order-info-item">
-                  <span class="info-label">Company</span>
-                  <span class="info-val">{{ order.company_name }}</span>
+                  <span class="info-label">Event</span>
+                  <span class="info-val">{{ order.event_type || order.company_name || '—' }}</span>
                 </div>
                 <div class="order-info-item">
                   <span class="info-label">Product</span>
@@ -97,18 +100,58 @@
               </div>
 
               <div class="order-actions">
-                @if (order.is_recurring) {
-                  <button class="btn-skip"
+                @if (order.status === 'pending') {
+                  <button class="btn-cancel"
                           [disabled]="isLoading(order.id)"
-                          (click)="skip(order)">
-                    @if (actionId() === order.id + '-skip') { Skipping... } @else { Skip Next }
+                          (click)="confirmCancel(order.id)">
+                    Cancel Booking
                   </button>
+                } @else {
+                  <p class="cancel-locked-note">
+                    🔒 We've started preparing this booking, so it can no longer be cancelled here.
+                    Need help? <a routerLink="/contact">Reach out to our team</a>.
+                  </p>
                 }
-                <button class="btn-cancel"
-                        [disabled]="isLoading(order.id)"
-                        (click)="confirmCancel(order.id)">
-                  Cancel Order
-                </button>
+              </div>
+            </div>
+          }
+        </div>
+      </section>
+    }
+
+    <!-- Past Events -->
+    @if (!loading() && pastOrders.length > 0) {
+      <section class="orders-section">
+        <h2 class="section-title">
+          <span class="status-dot past"></span>
+          Past Events ({{ pastOrders.length }})
+        </h2>
+        <div class="order-cards">
+          @for (order of pastOrders; track order.id) {
+            <div class="order-card past">
+              <div class="order-card-top">
+                <div class="order-badges">
+                  <span class="badge badge-done">Completed</span>
+                </div>
+                <span class="order-id">#{{ order.id }}</span>
+              </div>
+              <div class="order-info-grid">
+                <div class="order-info-item">
+                  <span class="info-label">Event</span>
+                  <span class="info-val">{{ order.event_type || order.company_name || '—' }}</span>
+                </div>
+                <div class="order-info-item">
+                  <span class="info-label">Event Date</span>
+                  <span class="info-val">{{ formatDate(order.delivery_date) }}</span>
+                </div>
+                <div class="order-info-item">
+                  <span class="info-label">Products</span>
+                  <span class="info-val">{{ order.product_name }}</span>
+                </div>
+                <div class="order-info-item">
+                  <span class="info-label">Total</span>
+                  <span class="info-val">₹{{ order.final_amount.toFixed(2) }}</span>
+                </div>
               </div>
             </div>
           }
@@ -134,8 +177,8 @@
               </div>
               <div class="order-info-grid">
                 <div class="order-info-item">
-                  <span class="info-label">Company</span>
-                  <span class="info-val">{{ order.company_name }}</span>
+                  <span class="info-label">Event</span>
+                  <span class="info-val">{{ order.event_type || order.company_name || '—' }}</span>
                 </div>
                 <div class="order-info-item">
                   <span class="info-label">Product</span>
@@ -156,6 +199,8 @@
       </section>
     }
 
+      </div>
+    </div>
   </div>
 </main>
 
@@ -163,10 +208,10 @@
 @if (confirmCancelId()) {
   <div class="dialog-overlay" (click)="closeDialog()">
     <div class="dialog-box" (click)="$event.stopPropagation()">
-      <h3>Cancel this order?</h3>
-      <p>This action cannot be undone. The order will be moved to the cancelled section.</p>
+      <h3>Cancel this booking?</h3>
+      <p>This action cannot be undone. The booking will be moved to the cancelled section.</p>
       <div class="dialog-actions">
-        <button class="btn-dialog-cancel" (click)="closeDialog()">Keep Order</button>
+        <button class="btn-dialog-cancel" (click)="closeDialog()">Keep Booking</button>
         <button class="btn-dialog-confirm"
                 [disabled]="isLoading(confirmCancelId())"
                 (click)="doCancel()">

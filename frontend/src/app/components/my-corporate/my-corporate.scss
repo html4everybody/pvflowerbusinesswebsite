@@ -353,3 +353,34 @@
     &:disabled { opacity: 0.55; cursor: not-allowed; }
   }
 }
+
+// ── Past / completed events ──────────────────────────────────────────────────
+.status-dot.past { background: #94a3b8; }
+.badge-done { background: rgba(148,163,184,0.2); color: #64748b; }
+.order-card.past {
+  .order-info-grid { opacity: 0.9; }
+}
+
+// ── Cancellation locked (packing started — admin only) ───────────────────────
+.cancel-locked-note {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  line-height: 1.55;
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.7rem 0.9rem;
+  margin: 0;
+  a { color: var(--accent); font-weight: 600; text-decoration: none; &:hover { text-decoration: underline; } }
+}
+
+// ── Account layout (shared sidebar) ──────────────────────────────────────────
+.account-page { min-height: calc(100vh - 68px); background: var(--bg); }
+.account-layout {
+  display: flex;
+  align-items: flex-start;
+  min-height: calc(100vh - 68px);
+  @media (max-width: 640px) { flex-direction: column; }
+}
+.account-body { flex: 1; min-width: 0; }
+.my-corp-page.account-body { min-height: auto; }

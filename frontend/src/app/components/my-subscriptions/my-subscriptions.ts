@@ -3,10 +3,11 @@ import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../services/auth';
 import { SubscriptionService, Subscription } from '../../services/subscription';
 import { ToastService } from '../../services/toast';
+import { AccountNav } from '../account-nav/account-nav';
 
 @Component({
   selector: 'app-my-subscriptions',
-  imports: [RouterLink],
+  imports: [RouterLink, AccountNav],
   templateUrl: './my-subscriptions.html',
   styleUrl: './my-subscriptions.scss'
 })

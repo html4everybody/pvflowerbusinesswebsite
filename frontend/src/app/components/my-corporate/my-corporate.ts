@@ -3,10 +3,11 @@ import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../services/auth';
 import { CorporateService, CorporateOrder } from '../../services/corporate';
 import { ToastService } from '../../services/toast';
+import { AccountNav } from '../account-nav/account-nav';
 
 @Component({
   selector: 'app-my-corporate',
-  imports: [RouterLink],
+  imports: [RouterLink, AccountNav],
   templateUrl: './my-corporate.html',
   styleUrl: './my-corporate.scss'
 })
@@ -45,8 +46,16 @@ export class MyCorporate implements OnInit {
     });
   }
 
-  get activeOrders(): CorporateOrder[] {
-    return this.orders().filter(o => o.status !== 'cancelled');
+  private readonly todayStr = new Date().toISOString().slice(0, 10);
+
+  /** Ongoing = not cancelled and event date is today or later. */
+  get upcomingOrders(): CorporateOrder[] {
+    return this.orders().filter(o => o.status !== 'cancelled' && (o.delivery_date || '') >= this.todayStr);
+  }
+
+  /** Past = not cancelled and the event date has passed. */
+  get pastOrders(): CorporateOrder[] {
+    return this.orders().filter(o => o.status !== 'cancelled' && (o.delivery_date || '') < this.todayStr);
   }
 
   get cancelledOrders(): CorporateOrder[] {

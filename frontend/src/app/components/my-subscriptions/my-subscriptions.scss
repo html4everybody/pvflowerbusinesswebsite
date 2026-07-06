@@ -411,3 +411,14 @@
   .scn-body p { margin: 0; font-size: 0.86rem; color: var(--text-muted); line-height: 1.55; }
   .scn-body a { color: var(--accent); font-weight: 600; text-decoration: none; &:hover { text-decoration: underline; } }
 }
+
+// ── Account layout (shared sidebar) ──────────────────────────────────────────
+.account-page { min-height: calc(100vh - 68px); background: var(--bg); }
+.account-layout {
+  display: flex;
+  align-items: flex-start;
+  min-height: calc(100vh - 68px);
+  @media (max-width: 640px) { flex-direction: column; }
+}
+.account-body { flex: 1; min-width: 0; }
+.my-subs-page.account-body { min-height: auto; }
