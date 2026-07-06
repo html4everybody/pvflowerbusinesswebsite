@@ -1410,3 +1410,11 @@
     }
   }
 }
+
+// ── Bootstrap-icon sizing (match previous SVG sizes) ─────────────────────────
+.search-icon-btn .bi { font-size: 20px; }
+.wishlist-icon .bi, .cart-icon .bi, .notif-icon .bi { font-size: 20px; }
+.theme-pill-thumb .bi { font-size: 11px; }
+.hub-icon .bi { font-size: 16px; }
+.hub-arrow.bi { font-size: 14px; }
+.nav-wishlist-link .bi, .nav-theme-btn .bi { font-size: 16px; }

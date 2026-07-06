@@ -518,7 +518,7 @@
           @if (authService.user() && loyaltyBalance() > 0) {
             <div class="points-panel">
               <div class="points-panel-header">
-                <span class="points-icon">⭐</span>
+                <span class="points-icon"><i class="bi bi-star-fill"></i></span>
                 <div>
                   <strong>{{ loyaltyBalance() }} Loyalty Points</strong>
                   <span class="points-subtext">= ₹{{ (loyaltyBalance() / 10).toFixed(2) }} possible discount</span>
@@ -550,11 +550,11 @@
               <span class="shipping-val">{{ getShipping() === 0 ? 'FREE' : '₹' + getShipping().toFixed(2) }}</span>
             </div>
             @if (getShipping() === 0) {
-              <div class="free-shipping-badge">🎉 You qualify for free shipping!</div>
+              <div class="free-shipping-badge"><i class="bi bi-truck"></i> You qualify for free shipping!</div>
             }
             @if (loyaltyEnabled() && pointsDiscountAmount() > 0) {
               <div class="summary-row points-discount-row">
-                <span>⭐ Points Discount</span>
+                <span><i class="bi bi-star-fill"></i> Points Discount</span>
                 <span>− ₹{{ pointsDiscountAmount().toFixed(2) }}</span>
               </div>
             }
@@ -591,20 +591,20 @@
         </p>
         <div class="success-details">
           <div class="detail-item">
-            <span class="icon">📧</span>
+            <span class="icon"><i class="bi bi-envelope-check-fill"></i></span>
             <span>Confirmation email sent</span>
           </div>
           <div class="detail-item">
-            <span class="icon">🚚</span>
+            <span class="icon"><i class="bi bi-truck"></i></span>
             <span>Estimated delivery: 2–3 business days</span>
           </div>
           <div class="detail-item">
-            <span class="icon">🌸</span>
+            <span class="icon"><i class="bi bi-flower1"></i></span>
             <span>Fresh flowers guaranteed</span>
           </div>
           @if (pointsEarned() > 0) {
             <div class="detail-item">
-              <span class="icon">⭐</span>
+              <span class="icon"><i class="bi bi-star-fill"></i></span>
               <span>You'll earn {{ pointsEarned() }} Petal points once this order is delivered.</span>
             </div>
           }

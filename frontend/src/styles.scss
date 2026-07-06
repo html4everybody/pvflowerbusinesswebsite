@@ -403,3 +403,44 @@ html {
 
   &:active { transform: translateY(0); }
 }
+
+// ══ Global motion layer ═════════════════════════════════════════════════════
+// Smooth page-to-page transition (the routed component is the sibling after
+// <router-outlet>). Runs once each navigation since Angular recreates it.
+router-outlet + * {
+  display: block;
+  animation: vpPageIn 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes vpPageIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+// App-wide smoothing for interactive elements (colours only — no transform surprises)
+a, button {
+  transition: color 0.18s ease, background-color 0.18s ease,
+              border-color 0.18s ease, box-shadow 0.2s ease, opacity 0.18s ease;
+}
+
+// Bootstrap Icons: crisp inline alignment
+.bi { display: inline-block; line-height: 1; vertical-align: -0.125em; }
+
+// Reusable premium keyframes + helpers
+@keyframes vpPop   { 0% { transform: scale(0.75); opacity: 0; } 60% { transform: scale(1.08); } 100% { transform: scale(1); opacity: 1; } }
+@keyframes vpFloat { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+@keyframes vpRise  { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
+@keyframes vpSpinSlow { to { transform: rotate(360deg); } }
+
+.vp-pop   { animation: vpPop 0.5s cubic-bezier(0.22,1,0.36,1) both; }
+.vp-float { animation: vpFloat 3.6s ease-in-out infinite; }
+.vp-rise  { animation: vpRise 0.5s ease both; }
+
+// Honour users who prefer less motion
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}

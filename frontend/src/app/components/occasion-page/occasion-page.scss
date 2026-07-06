@@ -630,3 +630,9 @@
 
 // Themed CTA on index / other-occasion cards
 .index-card .index-card-cta { color: #fff; }
+
+// ── Bootstrap-icon sizing ───────────────────────────────────────────────────
+.wishlist-btn .bi { font-size: 15px; }
+.btn-add-front .bi { font-size: 12px; }
+.back-link .bi { font-size: 16px; }
+.perk-icon .bi { color: var(--occ-accent, var(--accent)); }

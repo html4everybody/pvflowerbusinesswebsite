@@ -1630,3 +1630,7 @@ html[data-theme="dark"] {
   strong { text-decoration: underline; }
   &:hover { filter: brightness(1.08); }
 }
+
+// ── Bootstrap-icon colour for features/tags ─────────────────────────────────
+.features .feature-icon { color: var(--accent); }
+.features .feature-card { transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease; }

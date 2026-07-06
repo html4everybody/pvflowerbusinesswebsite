@@ -4,7 +4,7 @@ import { DecimalPipe } from '@angular/common';
 import { AuthService } from '../../services/auth';
 import { LoyaltyService, LoyaltyData } from '../../services/loyalty';
 
-interface Tier { key: string; emoji: string; min: number; perk: string; accent: string; }
+interface Tier { key: string; icon: string; min: number; perk: string; accent: string; }
 
 @Component({
   selector: 'app-my-loyalty',
@@ -19,10 +19,10 @@ export class MyLoyalty implements OnInit {
 
   // Floral tiers themed for "Petal Rewards"
   readonly TIERS: Tier[] = [
-    { key: 'Sprout',      emoji: '🌱', min: 0,    perk: 'Earn 1 point for every ₹1 you spend',    accent: '#84cc16' },
-    { key: 'Bloom',       emoji: '🌷', min: 500,  perk: '+5% bonus points on every order',        accent: '#ec4899' },
-    { key: 'Blossom',     emoji: '🌺', min: 1500, perk: 'Free delivery + 10% bonus points',       accent: '#a855f7' },
-    { key: 'Petal Elite', emoji: '💎', min: 5000, perk: 'Priority support + 15% bonus points',    accent: '#f59e0b' },
+    { key: 'Sprout',      icon: 'bi-flower3', min: 0,    perk: 'Earn 1 point for every ₹1 you spend',    accent: '#84cc16' },
+    { key: 'Bloom',       icon: 'bi-flower1', min: 500,  perk: '+5% bonus points on every order',        accent: '#ec4899' },
+    { key: 'Blossom',     icon: 'bi-flower2', min: 1500, perk: 'Free delivery + 10% bonus points',       accent: '#a855f7' },
+    { key: 'Petal Elite', icon: 'bi-gem',     min: 5000, perk: 'Priority support + 15% bonus points',    accent: '#f59e0b' },
   ];
 
   readonly REDEEM = [
@@ -101,13 +101,13 @@ export class MyLoyalty implements OnInit {
 
   typeIcon(type: string): string {
     switch (type) {
-      case 'earned_purchase': return '🛍️';
-      case 'earned_referral_signup': return '👥';
-      case 'earned_referral_purchase': return '🎁';
-      case 'earned_welcome': return '🎉';
-      case 'redeemed': return '💸';
-      case 'refund_redeemed': return '↩️';
-      default: return '⭐';
+      case 'earned_purchase': return 'bi-bag-check-fill';
+      case 'earned_referral_signup': return 'bi-person-plus-fill';
+      case 'earned_referral_purchase': return 'bi-gift-fill';
+      case 'earned_welcome': return 'bi-stars';
+      case 'redeemed': return 'bi-cash-coin';
+      case 'refund_redeemed': return 'bi-arrow-counterclockwise';
+      default: return 'bi-star-fill';
     }
   }
 
