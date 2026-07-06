@@ -53,51 +53,18 @@
         <p>Curated collections crafted for life's most meaningful moments</p>
       </div>
       <div class="occasion-cards">
-        <a routerLink="/occasions/birthday" class="occ-card occ-birthday" appFadeIn [fadeDelay]="0">
-          <div class="occ-img-overlay"></div>
-          <div class="occ-card-content">
-            <span class="occ-emoji">🎂</span>
-            <h3>Birthday</h3>
-            <p>Bright & joyful arrangements</p>
-            <span class="occ-cta-label">Shop Now →</span>
-          </div>
-        </a>
-        <a routerLink="/occasions/wedding" class="occ-card occ-wedding" appFadeIn [fadeDelay]="80">
-          <div class="occ-img-overlay"></div>
-          <div class="occ-card-content">
-            <span class="occ-emoji">💍</span>
-            <h3>Wedding</h3>
-            <p>Elegant bridal collections</p>
-            <span class="occ-cta-label">Shop Now →</span>
-          </div>
-        </a>
-        <a routerLink="/occasions/sympathy" class="occ-card occ-sympathy" appFadeIn [fadeDelay]="160">
-          <div class="occ-img-overlay"></div>
-          <div class="occ-card-content">
-            <span class="occ-emoji">🕊️</span>
-            <h3>Sympathy</h3>
-            <p>Gentle & comforting blooms</p>
-            <span class="occ-cta-label">Shop Now →</span>
-          </div>
-        </a>
-        <a routerLink="/occasions/romance" class="occ-card occ-romance" appFadeIn [fadeDelay]="240">
-          <div class="occ-img-overlay"></div>
-          <div class="occ-card-content">
-            <span class="occ-emoji">❤️</span>
-            <h3>Love</h3>
-            <p>Roses & passion blooms</p>
-            <span class="occ-cta-label">Shop Now →</span>
-          </div>
-        </a>
-        <a routerLink="/occasions/corporate" class="occ-card occ-corporate" appFadeIn [fadeDelay]="320">
-          <div class="occ-img-overlay"></div>
-          <div class="occ-card-content">
-            <span class="occ-emoji">🏢</span>
-            <h3>Corporate</h3>
-            <p>Premium professional gifts</p>
-            <span class="occ-cta-label">Shop Now →</span>
-          </div>
-        </a>
+        @for (occ of occasions(); track occ.slug; let i = $index) {
+          <a [routerLink]="['/occasions', occ.slug]" class="occ-card" appFadeIn [fadeDelay]="i * 80"
+             [style.background-image]="occ.hero_image ? 'url(' + occ.hero_image + ')' : null">
+            <div class="occ-img-overlay" [style.background]="occ.gradient || null"></div>
+            <div class="occ-card-content">
+              <span class="occ-emoji">{{ occ.emoji }}</span>
+              <h3>{{ occ.title }}</h3>
+              <p>{{ occ.tagline }}</p>
+              <span class="occ-cta-label">Shop Now →</span>
+            </div>
+          </a>
+        }
       </div>
     </div>
   </section>

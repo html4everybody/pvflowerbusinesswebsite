@@ -8,7 +8,7 @@ import { ToastService } from '../../services/toast';
 import { ConfirmService } from '../../services/confirm';
 import { environment } from '../../../environments/environment';
 
-export type AdminSection = 'overview' | 'orders' | 'products' | 'inventory' | 'customers' | 'analytics' | 'zones' | 'deals' | 'bundles' | 'plans' | 'subscriptions' | 'studio';
+export type AdminSection = 'overview' | 'orders' | 'products' | 'inventory' | 'customers' | 'analytics' | 'zones' | 'deals' | 'bundles' | 'plans' | 'subscriptions' | 'studio' | 'occasions';
 
 @Component({
   selector: 'app-admin',
@@ -221,6 +221,7 @@ export class Admin implements OnInit {
     if (section === 'plans' && !this.subPlans().length) this.loadPlans();
     if (section === 'subscriptions' && !this.subscriptions().length) this.loadSubscriptions();
     if (section === 'studio' && !this.studioBookings().length) this.loadStudio();
+    if (section === 'occasions' && !this.occasions().length) this.loadOccasions();
   }
 
   get token(): string { return this.authService.getToken(); }
@@ -237,6 +238,7 @@ export class Admin implements OnInit {
     if (section === 'plans' && !this.subPlans().length) this.loadPlans();
     if (section === 'subscriptions' && !this.subscriptions().length) this.loadSubscriptions();
     if (section === 'studio' && !this.studioBookings().length) this.loadStudio();
+    if (section === 'occasions' && !this.occasions().length) this.loadOccasions();
   }
 
   // ── Stats & Orders ────────────────────────────────────────────────────────
@@ -371,6 +373,82 @@ export class Admin implements OnInit {
   setSubView(v: 'list' | 'plans'): void {
     this.subView.set(v);
     if (v === 'plans' && !this.subPlans().length) this.loadPlans();
+  }
+
+  // ── Occasions (storefront festivals) ──────────────────────────────────────
+  occasions = signal<any[]>([]);
+  loadingOccasions = signal(true);
+  showOccForm = signal(false);
+  editingOcc = signal<any | null>(null);
+  savingOcc = signal(false);
+  occProductSearch = signal('');
+  occForm: any = { slug: '', title: '', tagline: '', story: '', quote: '', emoji: '🎉', hero_image: '', gradient: '', accent_color: '#c84b7a', product_ids: [], active: true, sort_order: 100 };
+
+  loadOccasions(): void {
+    this.loadingOccasions.set(true);
+    this.http.get<any[]>(`${environment.apiUrl}/api/admin/occasions?token=${this.token}`).subscribe({
+      next: (data) => { this.occasions.set(data || []); this.loadingOccasions.set(false); },
+      error: () => this.loadingOccasions.set(false)
+    });
+  }
+
+  occProducts = computed(() => {
+    const q = this.occProductSearch().trim().toLowerCase();
+    const list = this.products();
+    return q ? list.filter(p => p.name.toLowerCase().includes(q) || p.category.toLowerCase().includes(q)) : list;
+  });
+
+  openOccForm(occ?: any): void {
+    if (!this.products().length) this.loadProducts();
+    this.occProductSearch.set('');
+    if (occ) {
+      this.editingOcc.set(occ);
+      this.occForm = { slug: occ.slug, title: occ.title, tagline: occ.tagline || '', story: occ.story || '', quote: occ.quote || '', emoji: occ.emoji || '🎉', hero_image: occ.hero_image || '', gradient: occ.gradient || '', accent_color: occ.accent_color || '#c84b7a', product_ids: [...(occ.product_ids || [])], active: occ.active !== false, sort_order: occ.sort_order || 100 };
+    } else {
+      this.editingOcc.set(null);
+      this.occForm = { slug: '', title: '', tagline: '', story: '', quote: '', emoji: '🎉', hero_image: '', gradient: '', accent_color: '#c84b7a', product_ids: [], active: true, sort_order: 100 };
+    }
+    this.showOccForm.set(true);
+  }
+  closeOccForm(): void { this.showOccForm.set(false); this.editingOcc.set(null); }
+
+  isOccProduct(id: number): boolean { return this.occForm.product_ids.includes(id); }
+  toggleOccProduct(id: number): void {
+    this.occForm.product_ids = this.isOccProduct(id)
+      ? this.occForm.product_ids.filter((x: number) => x !== id)
+      : [...this.occForm.product_ids, id];
+  }
+
+  saveOcc(): void {
+    if (!this.occForm.title.trim()) return;
+    this.savingOcc.set(true);
+    const editing = this.editingOcc();
+    const url = editing
+      ? `${environment.apiUrl}/api/admin/occasions/${editing.id}?token=${this.token}`
+      : `${environment.apiUrl}/api/admin/occasions?token=${this.token}`;
+    const req = editing ? this.http.put<any>(url, this.occForm) : this.http.post<any>(url, this.occForm);
+    req.subscribe({
+      next: (saved) => {
+        this.occasions.update(list => editing ? list.map(o => o.id === editing.id ? saved : o) : [...list, saved]);
+        this.savingOcc.set(false);
+        this.closeOccForm();
+        this.toastService.show(editing ? 'Occasion updated' : 'Occasion created');
+      },
+      error: (err) => { this.savingOcc.set(false); this.toastService.show(err.error?.detail || 'Failed to save', 'error'); }
+    });
+  }
+
+  async deleteOcc(occ: any): Promise<void> {
+    const ok = await this.confirmService.ask({
+      title: 'Delete occasion?',
+      message: `"${occ.title}" and its product collection will be removed from the store. Products themselves are not deleted.`,
+      confirmText: 'Delete', danger: true,
+    });
+    if (!ok) return;
+    this.http.delete(`${environment.apiUrl}/api/admin/occasions/${occ.id}?token=${this.token}`).subscribe({
+      next: () => { this.occasions.update(list => list.filter(o => o.id !== occ.id)); this.toastService.show('Occasion deleted'); },
+      error: (err) => this.toastService.show(err.error?.detail || 'Failed to delete', 'error')
+    });
   }
 
   // ── Petal Studio bookings ─────────────────────────────────────────────────

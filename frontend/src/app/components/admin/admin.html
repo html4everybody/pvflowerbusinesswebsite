@@ -76,6 +76,12 @@
         </svg>
         Petal Studio
       </button>
+      <button class="nav-item" [class.active]="activeSection() === 'occasions'" (click)="navigateTo('occasions')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M20 12v10H4V12"/><path d="M2 7h20v5H2z"/><path d="M12 22V7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/>
+        </svg>
+        Occasions
+      </button>
     </nav>
     <div class="sidebar-footer">
       <a routerLink="/" class="back-link">
@@ -1194,6 +1200,115 @@
                 </div>
               </div>
             }
+          </div>
+        }
+      </div>
+    }
+
+    <!-- ── Occasions ──────────────────────────────────────────────────────── -->
+    @if (activeSection() === 'occasions') {
+      <div class="section-wrap">
+        <div class="section-header">
+          <h1>Occasions</h1>
+          <div class="section-header-actions">
+            <span class="section-meta">{{ occasions().length }} occasions</span>
+            <button class="btn-primary" (click)="openOccForm()">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              New Occasion
+            </button>
+          </div>
+        </div>
+        <p class="sub-plans-hint">Create festivals/occasions and add existing catalog products to each. To add a brand-new product, add it in Products first, then include it here.</p>
+
+        @if (loadingOccasions()) {
+          <div class="loading-state"><div class="spinner"></div><p>Loading occasions...</p></div>
+        } @else if (occasions().length === 0) {
+          <div class="empty-state"><p>No occasions yet. Create your first one.</p></div>
+        } @else {
+          <div class="occ-admin-grid">
+            @for (occ of occasions(); track occ.id) {
+              <div class="occ-admin-card" [class.inactive]="occ.active === false">
+                <div class="occ-admin-top">
+                  <span class="occ-admin-emoji">{{ occ.emoji }}</span>
+                  <div class="occ-admin-info">
+                    <span class="occ-admin-title">{{ occ.title }}</span>
+                    <span class="occ-admin-slug mono">/occasions/{{ occ.slug }}</span>
+                  </div>
+                  @if (occ.active === false) { <span class="status-badge">Hidden</span> }
+                </div>
+                <div class="occ-admin-meta">{{ (occ.product_ids || []).length }} product{{ (occ.product_ids || []).length === 1 ? '' : 's' }} · {{ occ.tagline }}</div>
+                <div class="sfc-actions">
+                  <button class="btn-edit-small" (click)="openOccForm(occ)">Edit</button>
+                  <button class="btn-delete-small" (click)="deleteOcc(occ)">Delete</button>
+                </div>
+              </div>
+            }
+          </div>
+        }
+
+        <!-- Create / Edit Occasion modal -->
+        @if (showOccForm()) {
+          <div class="modal-overlay" (click)="closeOccForm()">
+            <div class="modal-box occ-modal" (click)="$event.stopPropagation()">
+              <div class="modal-header">
+                <h2>{{ editingOcc() ? 'Edit Occasion' : 'New Occasion' }}</h2>
+                <button class="modal-close" (click)="closeOccForm()">✕</button>
+              </div>
+              <div class="modal-body">
+                <div class="form-row">
+                  <label class="form-label">Emoji
+                    <input type="text" class="form-input" [(ngModel)]="occForm.emoji" maxlength="4">
+                  </label>
+                  <label class="form-label">Title
+                    <input type="text" class="form-input" [(ngModel)]="occForm.title" placeholder="e.g. Diwali Festival">
+                  </label>
+                </div>
+                <label class="form-label">Tagline
+                  <input type="text" class="form-input" [(ngModel)]="occForm.tagline" placeholder="Short line shown on the card">
+                </label>
+                <label class="form-label">Hero image URL
+                  <input type="text" class="form-input" [(ngModel)]="occForm.hero_image" placeholder="https://...">
+                </label>
+                <label class="form-label">Story
+                  <textarea class="form-input" rows="3" [(ngModel)]="occForm.story" placeholder="Description shown on the occasion page"></textarea>
+                </label>
+                <div class="form-row">
+                  <label class="form-label">Accent colour
+                    <input type="color" class="form-input color-input" [(ngModel)]="occForm.accent_color">
+                  </label>
+                  <label class="form-label">Sort order
+                    <input type="number" class="form-input" [(ngModel)]="occForm.sort_order">
+                  </label>
+                </div>
+                <label class="form-check">
+                  <input type="checkbox" [(ngModel)]="occForm.active"> Visible on the store
+                </label>
+
+                <div class="occ-picker">
+                  <div class="occ-picker-head">
+                    <span>Products in this occasion <strong>({{ occForm.product_ids.length }})</strong></span>
+                    <input type="text" class="form-input occ-search" placeholder="Search products..." [value]="occProductSearch()" (input)="occProductSearch.set($any($event.target).value)">
+                  </div>
+                  <div class="occ-picker-list">
+                    @for (p of occProducts(); track p.id) {
+                      <label class="occ-pick-row" [class.picked]="isOccProduct(p.id)">
+                        <input type="checkbox" [checked]="isOccProduct(p.id)" (change)="toggleOccProduct(p.id)">
+                        <img [src]="p.image" [alt]="p.name" class="occ-pick-thumb">
+                        <span class="occ-pick-name">{{ p.name }}</span>
+                        <span class="occ-pick-cat">{{ p.category }}</span>
+                        <span class="occ-pick-price">₹{{ p.price }}</span>
+                      </label>
+                    }
+                  </div>
+                </div>
+              </div>
+              <div class="modal-footer">
+                <button class="btn-cancel" (click)="closeOccForm()">Cancel</button>
+                <button class="btn-primary" [disabled]="savingOcc() || !occForm.title.trim()" (click)="saveOcc()">
+                  @if (savingOcc()) { Saving... } @else { {{ editingOcc() ? 'Save Changes' : 'Create Occasion' }} }
+                </button>
+              </div>
+            </div>
           </div>
         }
       </div>
