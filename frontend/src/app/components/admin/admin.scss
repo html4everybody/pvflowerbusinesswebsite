@@ -1110,3 +1110,33 @@
   transition: all 0.15s;
   &:hover { border-color: #fca5a5; color: #dc2626; background: rgba(220,38,38,0.06); }
 }
+
+// ── Inline status changer (subscriptions & Petal Studio cards) ───────────────
+.sfc-actions { align-items: center; }
+
+.status-changer {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-right: auto;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+}
+
+.status-select {
+  padding: 0.35rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--bg-card);
+  color: var(--text);
+  font-size: 0.8rem;
+  font-weight: 600;
+  font-family: inherit;
+  text-transform: none;
+  letter-spacing: normal;
+  cursor: pointer;
+  &:focus { outline: none; border-color: var(--accent); }
+}

@@ -343,14 +343,17 @@ export class Admin implements OnInit {
   }
 
   async deleteOrder(order: any): Promise<void> {
-    const ok = await this.confirmService.ask({
+    const res = await this.confirmService.askReason({
       title: 'Delete order?',
-      message: `Order ${order.id} will be permanently removed. This cannot be undone.`,
+      message: `Order ${order.id} will be permanently removed. The customer will be notified in their account.`,
+      promptLabel: 'Reason for the customer (optional)',
+      promptPlaceholder: "e.g. Item out of stock — we've issued a full refund",
       confirmText: 'Delete',
       danger: true,
     });
-    if (!ok) return;
-    this.http.delete(`${environment.apiUrl}/api/admin/orders/${order.id}?token=${this.token}`).subscribe({
+    if (!res.ok) return;
+    const rp = res.reason ? `&reason=${encodeURIComponent(res.reason)}` : '';
+    this.http.delete(`${environment.apiUrl}/api/admin/orders/${order.id}?token=${this.token}${rp}`).subscribe({
       next: () => { this.orders.update(list => list.filter(o => o.id !== order.id)); this.toastService.show('Order deleted'); },
       error: (err) => this.toastService.show(err.error?.detail || 'Failed to delete order', 'error')
     });
@@ -406,16 +409,28 @@ export class Admin implements OnInit {
   });
 
   async deleteStudioBooking(b: any): Promise<void> {
-    const ok = await this.confirmService.ask({
+    const res = await this.confirmService.askReason({
       title: 'Delete booking?',
-      message: `${b.contact_name || b.contact_email}'s ${b.event_type || 'event'} booking (${b.id}) will be permanently removed.`,
+      message: `${b.contact_name || b.contact_email}'s ${b.event_type || 'event'} booking (${b.id}) will be removed. The customer will be notified.`,
+      promptLabel: 'Reason for the customer (optional)',
+      promptPlaceholder: 'e.g. Date unavailable — please rebook',
       confirmText: 'Delete',
       danger: true,
     });
-    if (!ok) return;
-    this.http.delete(`${environment.apiUrl}/api/admin/corporate-orders/${b.id}?token=${this.token}`).subscribe({
+    if (!res.ok) return;
+    const rp = res.reason ? `&reason=${encodeURIComponent(res.reason)}` : '';
+    this.http.delete(`${environment.apiUrl}/api/admin/corporate-orders/${b.id}?token=${this.token}${rp}`).subscribe({
       next: () => { this.studioBookings.update(list => list.filter(x => x.id !== b.id)); this.toastService.show('Booking deleted'); },
       error: (err) => this.toastService.show(err.error?.detail || 'Failed to delete', 'error')
+    });
+  }
+
+  readonly STUDIO_STATUSES = ['pending', 'confirmed', 'preparing', 'completed', 'cancelled'];
+  setStudioStatus(b: any, status: string): void {
+    if (!status || status === b.status) return;
+    this.http.patch(`${environment.apiUrl}/api/admin/corporate-orders/${b.id}/status?token=${this.token}`, { status }).subscribe({
+      next: () => { this.studioBookings.update(list => list.map(x => x.id === b.id ? { ...x, status } : x)); this.toastService.show('Status updated'); },
+      error: (err) => this.toastService.show(err.error?.detail || 'Failed to update status', 'error')
     });
   }
 
@@ -478,16 +493,27 @@ export class Admin implements OnInit {
   }
 
   async deleteSub(sub: any): Promise<void> {
-    const ok = await this.confirmService.ask({
+    const res = await this.confirmService.askReason({
       title: 'Delete subscription?',
-      message: `${sub.customer_name || sub.customer_email}'s ${sub.plan} subscription will be permanently removed.`,
+      message: `${sub.customer_name || sub.customer_email}'s ${sub.plan} subscription will be removed. The customer will be notified.`,
+      promptLabel: 'Reason for the customer (optional)',
+      promptPlaceholder: 'e.g. Paused indefinitely at your request',
       confirmText: 'Delete',
       danger: true,
     });
-    if (!ok) return;
-    this.http.delete(`${environment.apiUrl}/api/admin/subscriptions/${sub.id}?token=${this.token}`).subscribe({
+    if (!res.ok) return;
+    const rp = res.reason ? `&reason=${encodeURIComponent(res.reason)}` : '';
+    this.http.delete(`${environment.apiUrl}/api/admin/subscriptions/${sub.id}?token=${this.token}${rp}`).subscribe({
       next: () => { this.subscriptions.update(list => list.filter(s => s.id !== sub.id)); this.toastService.show('Subscription deleted'); },
       error: (err) => this.toastService.show(err.error?.detail || 'Failed to delete', 'error')
+    });
+  }
+
+  setSubStatus(sub: any, status: string): void {
+    if (!status || status === sub.status) return;
+    this.http.put(`${environment.apiUrl}/api/admin/subscriptions/${sub.id}?token=${this.token}`, { status }).subscribe({
+      next: (updated: any) => { this.subscriptions.update(list => list.map(s => s.id === sub.id ? updated : s)); this.toastService.show('Status updated'); },
+      error: (err) => this.toastService.show(err.error?.detail || 'Failed to update status', 'error')
     });
   }
 

@@ -17,6 +17,15 @@
       <h3 class="confirm-title" id="confirm-title">{{ c.title }}</h3>
       <p class="confirm-message">{{ c.message }}</p>
 
+      @if (c.promptLabel) {
+        <div class="confirm-prompt">
+          <label>{{ c.promptLabel }}</label>
+          <textarea rows="3" [placeholder]="c.promptPlaceholder"
+                    [value]="confirm.reasonInput()"
+                    (input)="confirm.reasonInput.set($any($event.target).value)"></textarea>
+        </div>
+      }
+
       <div class="confirm-actions">
         <button type="button" class="confirm-cancel" (click)="confirm.cancel()">{{ c.cancelText }}</button>
         <button type="button" class="confirm-ok" [class.danger]="c.danger" (click)="confirm.confirm()">{{ c.confirmText }}</button>

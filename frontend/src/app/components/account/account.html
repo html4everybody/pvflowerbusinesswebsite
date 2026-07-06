@@ -169,6 +169,31 @@
         }
       }
 
+      @if (activeTab() === 'notifications') {
+        <h1 class="content-title">Notifications</h1>
+
+        @if (noticeService.notices().length === 0) {
+          <div class="orders-empty">
+            <p>No notifications yet. We'll let you know here if anything changes with your orders, subscriptions or bookings.</p>
+          </div>
+        } @else {
+          <div class="notices-list">
+            @for (n of noticeService.notices(); track n.id) {
+              <div class="notice-card" [class.unread]="!n.read">
+                <div class="notice-top">
+                  <span class="notice-title">{{ n.title }}</span>
+                  <div class="notice-top-right">
+                    <span class="notice-date">{{ formatDate(n.created_at) }}</span>
+                    <button class="notice-dismiss" title="Dismiss" (click)="noticeService.dismiss(n.id)">×</button>
+                  </div>
+                </div>
+                <p class="notice-msg">{{ n.message }}</p>
+              </div>
+            }
+          </div>
+        }
+      }
+
     </div>
   </div>
 </main>

@@ -109,3 +109,31 @@
 @media (max-width: 480px) {
   .confirm-actions { flex-direction: column-reverse; }
 }
+
+// ── Reason prompt (delete-with-reason) ───────────────────────────────────────
+.confirm-prompt {
+  margin: 0.25rem 0 1rem;
+  text-align: left;
+
+  label {
+    display: block;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    margin-bottom: 0.4rem;
+  }
+  textarea {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 0.6rem 0.7rem;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    background: var(--bg-card);
+    color: var(--text);
+    font-family: inherit;
+    font-size: 0.88rem;
+    resize: vertical;
+    &:focus { outline: none; border-color: var(--accent); }
+    &::placeholder { color: var(--text-muted); }
+  }
+}

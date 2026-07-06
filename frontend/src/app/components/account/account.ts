@@ -3,10 +3,11 @@ import { Router, ActivatedRoute, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { AuthService } from '../../services/auth';
+import { NoticeService } from '../../services/notice';
 import { AccountNav } from '../account-nav/account-nav';
 import { environment } from '../../../environments/environment';
 
-type Tab = 'profile' | 'orders';
+type Tab = 'profile' | 'orders' | 'notifications';
 
 @Component({
   selector: 'app-account',
@@ -72,11 +73,16 @@ export class Account implements OnInit {
     return ((user.firstName?.[0] ?? '') + (user.lastName?.[0] ?? '')).toUpperCase();
   }
 
-  constructor(public authService: AuthService, private http: HttpClient, private router: Router, private route: ActivatedRoute) {
+  constructor(public authService: AuthService, private http: HttpClient, private router: Router, private route: ActivatedRoute, public noticeService: NoticeService) {
     const isBackNav = this.router.getCurrentNavigation()?.trigger === 'popstate';
     const savedTab = sessionStorage.getItem('account_tab') as Tab;
     this.activeTab = signal<Tab>(isBackNav && savedTab ? savedTab : 'profile');
     effect(() => sessionStorage.setItem('account_tab', this.activeTab()));
+    // Mark notices read when the user opens the Notifications tab (re-runs once they load).
+    effect(() => {
+      this.noticeService.notices();
+      if (this.activeTab() === 'notifications') this.noticeService.markAllRead();
+    });
     const user = this.authService.user();
     if (user) {
       this.profileForm.firstName = user.firstName;
@@ -85,10 +91,11 @@ export class Account implements OnInit {
   }
 
   ngOnInit(): void {
+    this.noticeService.load();
     // Sidebar links drive the active tab via ?tab=; keep the URL in sync.
     this.route.queryParams.subscribe(p => {
       const t = p['tab'] as Tab;
-      if (t === 'profile' || t === 'orders') this.activeTab.set(t);
+      if (t === 'profile' || t === 'orders' || t === 'notifications') this.activeTab.set(t);
     });
     if (!this.route.snapshot.queryParams['tab']) {
       this.router.navigate([], { relativeTo: this.route, queryParams: { tab: this.activeTab() }, replaceUrl: true });
