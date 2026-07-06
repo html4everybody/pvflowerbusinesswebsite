@@ -1982,8 +1982,9 @@ def cancel_order(order_id: str):
     if not result.data:
         raise HTTPException(status_code=404, detail="Order not found")
     order = result.data[0]
-    if order["status"] not in ("confirmed", "preparing"):
-        raise HTTPException(status_code=400, detail="Only confirmed or preparing orders can be cancelled")
+    # Customers can only cancel before we start packing; admins cancel via status update.
+    if order["status"] != "confirmed":
+        raise HTTPException(status_code=400, detail="This order is already being prepared. Please contact us to cancel.")
     supabase.table("orders").update({"status": "cancelled"}).eq("id", order_id).execute()
     send_notifications(order_id, "cancelled", order.get("customer_phone") or "")
     send_order_cancellation_email(order)
@@ -2497,20 +2498,21 @@ def send_occasion_reminders(days: str = "3,1"):
 # ── Corporate Orders ────────────────────────────────────────────────────────────
 
 class CorporateOrderRequest(BaseModel):
-    company_name: str
+    company_name: Optional[str] = None
+    event_type: Optional[str] = None
+    theme: Optional[str] = None
     contact_name: str
     contact_email: str
-    product_id: int
-    product_name: str
-    unit_price: float
-    quantity: int
+    items: list[dict] = []            # [{product_id, product_name, unit_price, quantity}]
+    # legacy single-product fields (kept optional for backward compatibility)
+    product_id: Optional[int] = None
+    product_name: Optional[str] = None
+    unit_price: Optional[float] = None
+    quantity: Optional[int] = None
     branding_logo_url: Optional[str] = None
     branding_message: Optional[str] = None
     delivery_address: str
     delivery_date: Optional[str] = None
-    is_recurring: bool = False
-    recurring_day: Optional[str] = None
-    recurring_frequency: Optional[str] = None
 
 def corp_discount(qty: int) -> int:
     if qty >= 50: return 15
@@ -2550,24 +2552,54 @@ def get_corporate_orders(email: str):
     result = supabase.table("corporate_orders").select("*").eq("contact_email", email).order("created_at", desc=True).execute()
     return result.data
 
+@app.get("/api/admin/corporate-orders")
+def admin_list_corporate_orders(token: str):
+    require_admin(token)
+    result = supabase.table("corporate_orders").select("*").order("created_at", desc=True).execute()
+    return result.data or []
+
+@app.delete("/api/admin/corporate-orders/{order_id}")
+def admin_delete_corporate_order(order_id: str, token: str):
+    require_admin(token)
+    result = supabase.table("corporate_orders").delete().eq("id", order_id).execute()
+    if not result.data:
+        raise HTTPException(status_code=404, detail="Booking not found")
+    return {"status": "ok"}
+
 @app.post("/api/corporate-orders")
 def create_corporate_order(req: CorporateOrderRequest):
-    order_id = "CGT" + str(uuid.uuid4())[:8].upper()
-    discount = corp_discount(req.quantity)
-    total_amount = round(req.unit_price * req.quantity, 2)
+    order_id = "PS" + str(uuid.uuid4())[:8].upper()
+
+    # Build the item list (multi-product), falling back to the legacy single product.
+    items = req.items or []
+    if not items and req.product_id is not None:
+        items = [{
+            "product_id": req.product_id, "product_name": req.product_name,
+            "unit_price": req.unit_price or 0, "quantity": req.quantity or 0,
+        }]
+
+    total_quantity = sum(int(i.get("quantity", 0) or 0) for i in items)
+    total_amount = round(sum(float(i.get("unit_price", 0) or 0) * int(i.get("quantity", 0) or 0) for i in items), 2)
+    discount = corp_discount(total_quantity)
     final_amount = round(total_amount * (1 - discount / 100), 2)
-    nd = None
-    if req.is_recurring and req.recurring_day and req.recurring_frequency:
-        nd = next_corp_delivery(req.recurring_day, req.recurring_frequency)
+
+    first = items[0] if items else {}
+    summary_name = first.get("product_name") or "—"
+    if len(items) > 1:
+        summary_name += f" + {len(items) - 1} more"
+
     supabase.table("corporate_orders").insert({
         "id": order_id,
         "company_name": req.company_name,
+        "event_type": req.event_type,
+        "theme": req.theme,
         "contact_name": req.contact_name,
         "contact_email": req.contact_email,
-        "product_id": req.product_id,
-        "product_name": req.product_name,
-        "quantity": req.quantity,
-        "unit_price": req.unit_price,
+        "items": items,
+        "product_id": first.get("product_id"),
+        "product_name": summary_name,
+        "quantity": total_quantity,
+        "unit_price": first.get("unit_price"),
         "discount_pct": discount,
         "total_amount": total_amount,
         "final_amount": final_amount,
@@ -2575,19 +2607,20 @@ def create_corporate_order(req: CorporateOrderRequest):
         "branding_message": req.branding_message,
         "delivery_address": req.delivery_address,
         "delivery_date": req.delivery_date,
-        "is_recurring": req.is_recurring,
-        "recurring_day": req.recurring_day,
-        "recurring_frequency": req.recurring_frequency,
-        "next_delivery": nd,
+        "is_recurring": False,
+        "next_delivery": None,
         "status": "pending",
     }).execute()
-    return {"id": order_id, "final_amount": final_amount, "next_delivery": nd}
+    return {"id": order_id, "final_amount": final_amount, "next_delivery": None}
 
 @app.patch("/api/corporate-orders/{order_id}/cancel")
 def cancel_corporate_order(order_id: str):
-    result = supabase.table("corporate_orders").select("id").eq("id", order_id).execute()
+    result = supabase.table("corporate_orders").select("id, status").eq("id", order_id).execute()
     if not result.data:
         raise HTTPException(status_code=404, detail="Corporate order not found")
+    # Customers can only cancel while still pending; once we've confirmed/started, admin only.
+    if result.data[0]["status"] != "pending":
+        raise HTTPException(status_code=400, detail="This booking is already being prepared. Please contact us to cancel.")
     supabase.table("corporate_orders").update({"status": "cancelled"}).eq("id", order_id).execute()
     return {"status": "cancelled"}
 

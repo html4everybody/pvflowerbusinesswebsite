@@ -33,6 +33,39 @@ ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS daily_total      NUMERIC;
 ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS grand_total      NUMERIC;
 ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS discount_percent NUMERIC;
 
+-- 0b. Petal Studio (event florals & bulk décor) — bookings table.
+CREATE TABLE IF NOT EXISTS corporate_orders (
+    id                  TEXT PRIMARY KEY,
+    company_name        TEXT,
+    event_type          TEXT,
+    theme               TEXT,
+    contact_name        TEXT NOT NULL DEFAULT '',
+    contact_email       TEXT NOT NULL DEFAULT '',
+    items               JSONB NOT NULL DEFAULT '[]',
+    product_id          INTEGER,
+    product_name        TEXT,
+    quantity            INTEGER NOT NULL DEFAULT 0,
+    unit_price          NUMERIC NOT NULL DEFAULT 0,
+    discount_pct        INTEGER NOT NULL DEFAULT 0,
+    total_amount        NUMERIC NOT NULL DEFAULT 0,
+    final_amount        NUMERIC NOT NULL DEFAULT 0,
+    branding_logo_url   TEXT,
+    branding_message    TEXT,
+    delivery_address    TEXT NOT NULL DEFAULT '',
+    delivery_date       TEXT,
+    is_recurring        BOOLEAN NOT NULL DEFAULT FALSE,
+    recurring_day       TEXT,
+    recurring_frequency TEXT,
+    next_delivery       TEXT,
+    status              TEXT NOT NULL DEFAULT 'pending',
+    created_at          TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- If corporate_orders already exists from an earlier run, add the new columns:
+ALTER TABLE corporate_orders ADD COLUMN IF NOT EXISTS event_type TEXT;
+ALTER TABLE corporate_orders ADD COLUMN IF NOT EXISTS theme      TEXT;
+ALTER TABLE corporate_orders ADD COLUMN IF NOT EXISTS items      JSONB NOT NULL DEFAULT '[]';
+
 -- 0. Products (admin-managed catalog). Rows are auto-seeded by the backend on
 --    first run from the built-in list, so no INSERTs are needed here.
 CREATE TABLE IF NOT EXISTS products (
