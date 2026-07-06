@@ -878,12 +878,9 @@ def admin_delete_occasion(occ_id: str, token: str):
         raise HTTPException(status_code=404, detail="Occasion not found")
     return {"status": "ok"}
 
-seed_defaults()
-seed_products()
+# Seeding disabled — the database is the source of truth. We only load caches.
 load_products()
-seed_subscription_plans()
 load_subscription_plans()
-seed_occasions()
 
 # ── Order Status ───────────────────────────────────────────────────────────────
 STATUS_MESSAGES = {
