@@ -89,10 +89,7 @@
     <div class="header-actions">
       <nav class="nav" [class.open]="menuOpen">
         <button class="nav-close" (click)="closeMenu()" aria-label="Close menu">
-          <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="18" y1="6" x2="6" y2="18"></line>
-            <line x1="6" y1="6" x2="18" y2="18"></line>
-          </svg>
+          <i class="bi bi-x-lg"></i>
         </button>
         @if (authService.user()) {
           <span class="nav-user-greeting">Hi, {{ authService.user().firstName }}</span>
@@ -236,10 +233,7 @@
 
       @if (!authService.user()) {
         <a routerLink="/signin" class="signin-link" title="Sign In">
-          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-            <circle cx="12" cy="7" r="4"></circle>
-          </svg>
+          <i class="bi bi-person"></i>
         </a>
       } @else {
         <div class="user-menu-wrapper">
@@ -249,10 +243,7 @@
           @if (userMenuOpen) {
             <div class="user-dropdown">
               <a routerLink="/account" (click)="closeMenu()">
-                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                  <circle cx="12" cy="7" r="4"></circle>
-                </svg>
+                <i class="bi bi-person"></i>
                 My Account
               </a>
               <button class="logout-btn" (click)="logout()">
@@ -282,10 +273,7 @@
 
         <!-- Input -->
         <div class="search-input-wrap">
-          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" class="search-icon">
-            <circle cx="11" cy="11" r="8"></circle>
-            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-          </svg>
+          <i class="bi bi-search"></i>
           <input
             #searchInput
             type="text"
@@ -296,10 +284,7 @@
             (keydown)="onSearchKeydown($event)">
           @if (searchService.query()) {
             <button class="clear-query-btn" (click)="searchService.query.set(''); showSuggestions = false" aria-label="Clear">
-              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                <line x1="18" y1="6" x2="6" y2="18"></line>
-                <line x1="6" y1="6" x2="18" y2="18"></line>
-              </svg>
+              <i class="bi bi-x-lg"></i>
             </button>
           }
           <button class="search-esc" (click)="closeSearch()" aria-label="Close search">Esc</button>
@@ -403,7 +388,7 @@
                 <button class="color-swatch" [class.active]="searchService.selectedColor() === color.name"
                         [title]="color.name" (click)="searchService.toggleColor(color.name)" [style.background]="color.hex">
                   @if (searchService.selectedColor() === color.name) {
-                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                    <i class="bi bi-check-lg"></i>
                   }
                 </button>
               }

@@ -12,9 +12,7 @@
                  (click)="goToStep(s)" [style.cursor]="step() > s ? 'pointer' : 'default'">
               <div class="step-dot">
                 @if (step() > s) {
-                  <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5">
-                    <polyline points="20 6 9 17 4 12"></polyline>
-                  </svg>
+                  <i class="bi bi-check-lg"></i>
                 } @else {
                   {{ s }}
                 }
@@ -168,9 +166,7 @@
                     <img [src]="product.image" [alt]="product.name" loading="lazy">
                     @if (isProductSelected(product.id)) {
                       <div class="prod-check">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5">
-                          <polyline points="20 6 9 17 4 12"></polyline>
-                        </svg>
+                        <i class="bi bi-check-lg"></i>
                       </div>
                     }
                   </div>

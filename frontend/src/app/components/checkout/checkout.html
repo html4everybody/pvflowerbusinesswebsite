@@ -3,7 +3,7 @@
     @if (!orderPlaced()) {
 
       <a routerLink="/cart" class="back-link">
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+        <i class="bi bi-arrow-left"></i>
         Back to Cart
       </a>
 
@@ -132,39 +132,27 @@
             <div class="delivery-options">
               <div class="delivery-card" [class.selected]="deliveryType() === 'immediate'" (click)="selectImmediate()">
                 <div class="delivery-option-icon">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="12" cy="12" r="10"></circle>
-                    <polyline points="12 6 12 12 16 14"></polyline>
-                  </svg>
+                  <i class="bi bi-clock"></i>
                 </div>
                 <div class="delivery-option-text">
                   <strong>Deliver Immediately</strong>
                   <span>As soon as possible — typically within 2–3 hours</span>
                 </div>
                 <div class="delivery-check">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-                    <polyline points="20 6 9 17 4 12"></polyline>
-                  </svg>
+                  <i class="bi bi-check-lg"></i>
                 </div>
               </div>
 
               <div class="delivery-card" [class.selected]="deliveryType() === 'scheduled'" (click)="deliveryType.set('scheduled')">
                 <div class="delivery-option-icon">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-                    <line x1="16" y1="2" x2="16" y2="6"></line>
-                    <line x1="8" y1="2" x2="8" y2="6"></line>
-                    <line x1="3" y1="10" x2="21" y2="10"></line>
-                  </svg>
+                  <i class="bi bi-calendar3"></i>
                 </div>
                 <div class="delivery-option-text">
                   <strong>Schedule for Later</strong>
                   <span>Pick a specific date and delivery window</span>
                 </div>
                 <div class="delivery-check">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-                    <polyline points="20 6 9 17 4 12"></polyline>
-                  </svg>
+                  <i class="bi bi-check-lg"></i>
                 </div>
               </div>
             </div>
@@ -172,12 +160,7 @@
             @if (deliveryType() === 'scheduled') {
               <div class="schedule-panel" [class.schedule-complete]="isScheduleComplete">
                 <div class="schedule-panel-label">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-                    <line x1="16" y1="2" x2="16" y2="6"></line>
-                    <line x1="8" y1="2" x2="8" y2="6"></line>
-                    <line x1="3" y1="10" x2="21" y2="10"></line>
-                  </svg>
+                  <i class="bi bi-calendar3"></i>
                   Select your preferred delivery window
                 </div>
                 <div class="form-row">
@@ -226,11 +209,7 @@
                                (change)="isRecurring.set($any($event.target).checked)">
                         <span class="recurring-custom-check">
                           @if (isRecurring()) {
-                            <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24"
-                                 fill="none" stroke="white" stroke-width="3.5"
-                                 stroke-linecap="round" stroke-linejoin="round">
-                              <polyline points="20 6 9 17 4 12"></polyline>
-                            </svg>
+                            <i class="bi bi-check-lg"></i>
                           }
                         </span>
                       </div>
@@ -358,11 +337,7 @@
 
             @if (paymentMethod() === 'cod') {
               <div class="cod-notice">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <circle cx="12" cy="12" r="10"></circle>
-                  <line x1="12" y1="8" x2="12" y2="12"></line>
-                  <line x1="12" y1="16" x2="12.01" y2="16"></line>
-                </svg>
+                <i class="bi bi-info-circle"></i>
                 Please keep exact change ready — ₹{{ getTotal().toFixed(2) }}
               </div>
             }
@@ -424,15 +399,15 @@
 
           <div class="trust-row">
             <span class="trust-item">
-              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+              <i class="bi bi-lock"></i>
               SSL Secured
             </span>
             <span class="trust-item">
-              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              <i class="bi bi-check-lg"></i>
               Free Returns
             </span>
             <span class="trust-item">
-              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+              <i class="bi bi-shield-lock"></i>
               Buyer Protected
             </span>
           </div>
@@ -571,7 +546,7 @@
           </div>
 
           <div class="secure-checkout">
-            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+            <i class="bi bi-lock"></i>
             <span>Secure & Encrypted Checkout</span>
           </div>
         </aside>
@@ -580,9 +555,7 @@
     } @else {
       <div class="order-success">
         <div class="success-icon">
-          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="20 6 9 17 4 12"></polyline>
-          </svg>
+          <i class="bi bi-check-lg"></i>
         </div>
         <h1>Order Placed!</h1>
         <p class="order-number">Order <strong>#{{ orderNumber() }}</strong></p>
