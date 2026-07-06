@@ -1575,16 +1575,33 @@ def require_admin(token: str):
         raise HTTPException(status_code=403, detail="Admin access required")
     return email
 
+IST = timezone(timedelta(hours=5, minutes=30))
+
+def _ist_dt(ts):
+    """Parse a stored (UTC) timestamp and convert to IST; None if unparseable."""
+    try:
+        dt = datetime.fromisoformat((ts or "").replace("Z", "+00:00"))
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        return dt.astimezone(IST)
+    except Exception:
+        return None
+
+def _ist_day(ts):
+    d = _ist_dt(ts)
+    return d.strftime("%Y-%m-%d") if d else ""
+
 @app.get("/api/admin/stats")
 def admin_stats(token: str):
     require_admin(token)
-    all_orders = supabase.table("orders").select("id, status, total, created_at").execute().data
-    today = datetime.utcnow().strftime("%Y-%m-%d")
+    all_orders = supabase.table("orders").select("id, status, total, created_at").execute().data or []
+    today = datetime.now(IST).strftime("%Y-%m-%d")
+    def valid(o): return o.get("status") != "cancelled"
     total_orders = len(all_orders)
-    today_orders = sum(1 for o in all_orders if o.get("created_at", "").startswith(today))
+    today_orders = sum(1 for o in all_orders if _ist_day(o.get("created_at")) == today)
     pending_count = sum(1 for o in all_orders if o.get("status") in ("confirmed", "preparing"))
-    revenue_total = sum(o.get("total", 0) for o in all_orders if o.get("status") != "cancelled")
-    revenue_today = sum(o.get("total", 0) for o in all_orders if o.get("created_at", "").startswith(today) and o.get("status") != "cancelled")
+    revenue_total = sum(o.get("total", 0) for o in all_orders if valid(o))
+    revenue_today = sum(o.get("total", 0) for o in all_orders if valid(o) and _ist_day(o.get("created_at")) == today)
     return {
         "total_orders": total_orders,
         "today_orders": today_orders,
@@ -1657,23 +1674,28 @@ def admin_delete_customer(email: str, token: str):
 def admin_analytics(token: str):
     require_admin(token)
     all_orders = supabase.table("orders").select("id, total, status, created_at").order("created_at", desc=True).execute().data or []
-    now = datetime.now(timezone.utc)
-    # Revenue last 30 days by day
+    cancelled_ids = {o["id"] for o in all_orders if o.get("status") == "cancelled"}
+    now_ist = datetime.now(IST)
+
+    # Revenue last 30 days by IST day (excluding cancelled)
     revenue_by_day: dict = {}
     for i in range(30):
-        day = (now - timedelta(days=29 - i)).strftime("%Y-%m-%d")
+        day = (now_ist - timedelta(days=29 - i)).strftime("%Y-%m-%d")
         revenue_by_day[day] = 0.0
     for o in all_orders:
         if o.get("status") == "cancelled":
             continue
-        day = (o.get("created_at") or "")[:10]
+        day = _ist_day(o.get("created_at"))
         if day in revenue_by_day:
             revenue_by_day[day] += o.get("total", 0)
     revenue_chart = [{"date": d, "revenue": round(v, 2)} for d, v in revenue_by_day.items()]
-    # Top products
-    all_items = supabase.table("order_items").select("product_id, name, quantity, price").execute().data or []
+
+    # Top products (excluding items from cancelled orders)
+    all_items = supabase.table("order_items").select("order_id, product_id, name, quantity, price").execute().data or []
     product_totals: dict = {}
     for item in all_items:
+        if item.get("order_id") in cancelled_ids:
+            continue
         pid = item["product_id"]
         if pid not in product_totals:
             product_totals[pid] = {"name": item["name"], "qty": 0, "revenue": 0.0}
@@ -1682,17 +1704,15 @@ def admin_analytics(token: str):
     top_products = sorted(product_totals.values(), key=lambda x: x["revenue"], reverse=True)[:10]
     for p in top_products:
         p["revenue"] = round(p["revenue"], 2)
-    # Peak hours (IST offset +5:30)
+
+    # Peak hours by IST hour (excluding cancelled)
     hour_counts = [0] * 24
     for o in all_orders:
-        ts = o.get("created_at")
-        if ts:
-            try:
-                dt = datetime.fromisoformat(ts.replace("Z", "+00:00"))
-                ist_hour = (dt.hour + 5) % 24  # rough IST
-                hour_counts[ist_hour] += 1
-            except Exception:
-                pass
+        if o.get("status") == "cancelled":
+            continue
+        d = _ist_dt(o.get("created_at"))
+        if d:
+            hour_counts[d.hour] += 1
     peak_hours = [{"hour": i, "count": hour_counts[i]} for i in range(24)]
     return {"revenue_chart": revenue_chart, "top_products": top_products, "peak_hours": peak_hours}
 
@@ -1911,6 +1931,48 @@ def submit_contact(req: ContactRequest):
     }).execute()
     return {"message": "Message received successfully"}
 
+# ── Loyalty: earn on delivery, refund on cancel ─────────────────────────────────
+
+def award_delivery_points(order: dict):
+    """Credit purchase points once an order is delivered (idempotent)."""
+    email = order.get("customer_email")
+    oid = order.get("id")
+    if not email or not oid:
+        return
+    already = supabase.table("loyalty_transactions").select("id").eq("order_id", oid).eq("type", "earned_purchase").execute().data
+    if already:
+        return
+    pts = int(order.get("total", 0) or 0)
+    if pts > 0:
+        award_points(email, pts, "earned_purchase", f"Points earned for delivered order {oid}", oid)
+    # First delivered order → referral bonus for the referrer
+    try:
+        acct = supabase.table("loyalty_accounts").select("referred_by_code").eq("user_email", email).execute()
+        code = acct.data[0].get("referred_by_code") if acct.data else None
+        if code:
+            prior = supabase.table("loyalty_transactions").select("id").eq("user_email", email).eq("type", "earned_purchase").execute()
+            if len(prior.data or []) == 1:
+                ref = supabase.table("loyalty_accounts").select("user_email").eq("referral_code", code).execute()
+                if ref.data:
+                    award_points(ref.data[0]["user_email"], 150, "earned_referral_purchase",
+                                 f"Referral first-purchase bonus — {email}'s first delivered order")
+    except Exception:
+        pass
+
+def refund_redeemed_points(order: dict):
+    """Give back points that were redeemed on an order when it's cancelled (idempotent)."""
+    email = order.get("customer_email")
+    oid = order.get("id")
+    if not email or not oid:
+        return
+    already = supabase.table("loyalty_transactions").select("id").eq("order_id", oid).eq("type", "refund_redeemed").execute().data
+    if already:
+        return
+    txns = supabase.table("loyalty_transactions").select("points").eq("order_id", oid).eq("type", "redeemed").execute().data or []
+    redeemed = sum(-int(t.get("points", 0) or 0) for t in txns)  # stored negative
+    if redeemed > 0:
+        award_points(email, redeemed, "refund_redeemed", f"Redeemed points refunded — order {oid} cancelled", oid)
+
 # ── Loyalty Routes ─────────────────────────────────────────────────────────────
 
 @app.get("/api/loyalty")
@@ -1920,7 +1982,14 @@ def get_loyalty(email: str):
         raise HTTPException(status_code=404, detail="No loyalty account found")
     acct = acct_result.data[0]
     txn_result = supabase.table("loyalty_transactions").select("*").eq("user_email", email).order("created_at", desc=True).limit(20).execute()
-    return {**acct, "transactions": txn_result.data}
+    # Points on the way — will credit once these orders are delivered
+    pending_points = 0
+    try:
+        orders = supabase.table("orders").select("total, status").eq("customer_email", email).execute().data or []
+        pending_points = sum(int(o.get("total", 0) or 0) for o in orders if o.get("status") not in ("delivered", "cancelled"))
+    except Exception:
+        pending_points = 0
+    return {**acct, "transactions": txn_result.data, "pending_points": pending_points}
 
 # ── Promo Routes ───────────────────────────────────────────────────────────────
 
@@ -2154,6 +2223,7 @@ def cancel_order(order_id: str):
     if order["status"] != "confirmed":
         raise HTTPException(status_code=400, detail="This order is already being prepared. Please contact us to cancel.")
     supabase.table("orders").update({"status": "cancelled"}).eq("id", order_id).execute()
+    refund_redeemed_points(order)
     send_notifications(order_id, "cancelled", order.get("customer_phone") or "")
     send_order_cancellation_email(order)
     return {"status": "cancelled"}
@@ -2168,6 +2238,11 @@ def update_order_status(order_id: str, req: StatusUpdateRequest):
     if req.status not in allowed:
         raise HTTPException(status_code=400, detail=f"Cannot transition from '{order['status']}' to '{req.status}'")
     supabase.table("orders").update({"status": req.status}).eq("id", order_id).execute()
+    # Points: earn on delivery, refund redeemed on cancellation
+    if req.status == "delivered":
+        award_delivery_points(order)
+    elif req.status == "cancelled":
+        refund_redeemed_points(order)
     send_notifications(order_id, req.status, order.get("customer_phone") or "")
     if req.status in ORDER_STATUS_NOTICE:
         title, phrase = ORDER_STATUS_NOTICE[req.status]
@@ -2334,36 +2409,20 @@ def create_order(req: OrderRequest):
             for item in req.items
         ]).execute()
 
-    points_earned = 0
+    points_pending = 0
     new_balance = 0
 
     if customer_email:
-        # Deduct redeemed points if any
+        # Deduct redeemed points now (they're used for the checkout discount)
         points_redeemed = req.points_redeemed or 0
         if points_redeemed > 0:
             acct = supabase.table("loyalty_accounts").select("points_balance").eq("user_email", customer_email).execute()
             if acct.data and acct.data[0]["points_balance"] >= points_redeemed:
                 award_points(customer_email, -points_redeemed, "redeemed", f"Points redeemed at checkout for order {order_id}", order_id)
 
-        # Earn points: 1 pt per ₹1 of final total
-        points_earned = int(req.total)
-        award_points(customer_email, points_earned, "earned_purchase", f"Points earned for order {order_id}", order_id)
+        # Points are EARNED only on delivery — report what's pending, don't credit yet.
+        points_pending = int(req.total)
 
-        # Check first-purchase referral bonus (150 pts to referrer)
-        try:
-            acct_row = supabase.table("loyalty_accounts").select("referred_by_code").eq("user_email", customer_email).execute()
-            if acct_row.data and acct_row.data[0].get("referred_by_code"):
-                referred_by_code = acct_row.data[0]["referred_by_code"]
-                prior_purchases = supabase.table("loyalty_transactions").select("id").eq("user_email", customer_email).eq("type", "earned_purchase").execute()
-                if len(prior_purchases.data) == 1:  # This is their first purchase
-                    referrer_acct = supabase.table("loyalty_accounts").select("user_email").eq("referral_code", referred_by_code).execute()
-                    if referrer_acct.data:
-                        referrer_email = referrer_acct.data[0]["user_email"]
-                        award_points(referrer_email, 150, "earned_referral_purchase", f"Referral first-purchase bonus — {customer_email} made their first order")
-        except Exception:
-            pass
-
-        # Get updated balance
         try:
             updated = supabase.table("loyalty_accounts").select("points_balance").eq("user_email", customer_email).execute()
             if updated.data:
@@ -2393,7 +2452,7 @@ def create_order(req: OrderRequest):
     ]
     send_order_confirmation_email(order_record, items_list)
 
-    return {"orderId": order_id, "status": "confirmed", "points_earned": points_earned, "new_balance": new_balance}
+    return {"orderId": order_id, "status": "confirmed", "points_pending": points_pending, "new_balance": new_balance}
 
 # ── Subscription helpers ────────────────────────────────────────────────────────
 
