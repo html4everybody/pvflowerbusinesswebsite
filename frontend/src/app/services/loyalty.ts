@@ -24,6 +24,7 @@ export interface LoyaltyTransaction {
 
 export interface LoyaltyData extends LoyaltyAccount {
   transactions: LoyaltyTransaction[];
+  pending_points?: number;
 }
 
 @Injectable({ providedIn: 'root' })

@@ -33,6 +33,9 @@
           <span class="mc-label">Points Balance</span>
           <span class="mc-points">{{ balance | number }}</span>
           <span class="mc-worth">worth ₹{{ (balance / 10) | number:'1.0-0' }} off your next order</span>
+          @if (pending > 0) {
+            <span class="mc-pending">🚚 {{ pending | number }} pts on the way — credited once delivered</span>
+          }
         </div>
         <div class="mc-bottom">
           <div class="mc-member">
@@ -134,7 +137,7 @@
           <div class="earn-card">
             <span class="earn-icon">🛍️</span>
             <h3>Shop &amp; Earn</h3>
-            <p>1 point for every <strong>₹1</strong> spent on any order.</p>
+            <p>1 point for every <strong>₹1</strong> spent — credited when your order is <strong>delivered</strong>.</p>
           </div>
           <div class="earn-card">
             <span class="earn-icon">👥</span>

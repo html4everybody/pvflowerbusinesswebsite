@@ -375,11 +375,11 @@ export class Checkout {
       token: this.authService.getToken() || undefined,
     };
 
-    this.http.post<{ orderId: string; status: string; points_earned?: number; new_balance?: number }>(`${environment.apiUrl}/api/orders`, payload).subscribe({
+    this.http.post<{ orderId: string; status: string; points_pending?: number; new_balance?: number }>(`${environment.apiUrl}/api/orders`, payload).subscribe({
       next: (res) => {
         this.loading.set(false);
         this.orderNumber.set(res.orderId);
-        this.pointsEarned.set(res.points_earned ?? 0);
+        this.pointsEarned.set(res.points_pending ?? 0);
         this.newLoyaltyBalance.set(res.new_balance ?? 0);
         this.orderPlaced.set(true);
         this.cartService.clearCart();

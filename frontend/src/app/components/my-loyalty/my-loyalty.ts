@@ -52,6 +52,7 @@ export class MyLoyalty implements OnInit {
 
   get earned(): number { return this.account()?.points_earned_total ?? 0; }
   get balance(): number { return this.account()?.points_balance ?? 0; }
+  get pending(): number { return this.account()?.pending_points ?? 0; }
 
   get tierIndex(): number {
     let idx = 0;
@@ -105,6 +106,7 @@ export class MyLoyalty implements OnInit {
       case 'earned_referral_purchase': return '🎁';
       case 'earned_welcome': return '🎉';
       case 'redeemed': return '💸';
+      case 'refund_redeemed': return '↩️';
       default: return '⭐';
     }
   }
