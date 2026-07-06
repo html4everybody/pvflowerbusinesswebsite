@@ -581,3 +581,8 @@
 
   svg { flex-shrink: 0; margin-top: 1px; }
 }
+
+// ── Bootstrap-icon sizing + spinner ─────────────────────────────────────────
+.spin-icon.bi { display: inline-block; animation: vpSpinSlow 0.8s linear infinite; }
+.loading-state .spin-icon.bi { font-size: 32px; }
+.hero-tag .bi { margin-right: 2px; }

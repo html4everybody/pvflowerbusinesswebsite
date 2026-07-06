@@ -513,3 +513,10 @@
   }
   .notice-msg { margin: 0; font-size: 0.88rem; color: var(--text-muted); line-height: 1.55; }
 }
+
+// ── Bootstrap-icon sizing ───────────────────────────────────────────────────
+.list-icon .bi { font-size: 22px; }
+.list-chevron.bi { font-size: 18px; }
+.chevron.bi { font-size: 14px; }
+.account-search .bi, .search-wrap .bi { font-size: 15px; }
+.toggle-eye .bi, .pw-eye .bi { font-size: 15px; }

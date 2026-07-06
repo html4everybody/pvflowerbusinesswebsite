@@ -14,26 +14,26 @@
 
           <a class="list-row" routerLink="/account/profile">
             <span class="list-icon">
-              <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              <i class="bi bi-person"></i>
             </span>
             <span class="list-title">Personal Info</span>
-            <svg class="list-chevron" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+            <i class="bi bi-chevron-right list-chevron"></i>
           </a>
 
           <a class="list-row" routerLink="/account/password">
             <span class="list-icon">
-              <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+              <i class="bi bi-lock"></i>
             </span>
             <span class="list-title">Update Password</span>
-            <svg class="list-chevron" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+            <i class="bi bi-chevron-right list-chevron"></i>
           </a>
 
           <a class="list-row" routerLink="/account/email">
             <span class="list-icon">
-              <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+              <i class="bi bi-envelope"></i>
             </span>
             <span class="list-title">Update Email</span>
-            <svg class="list-chevron" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+            <i class="bi bi-chevron-right list-chevron"></i>
           </a>
 
           <div style="display:none">
@@ -44,9 +44,9 @@
               <input [type]="showCurrentPw() ? 'text' : 'password'" [(ngModel)]="pwForm.current" name="currentPw" placeholder="Enter current password">
               <button type="button" class="eye-btn" (click)="showCurrentPw.set(!showCurrentPw())">
                 @if (showCurrentPw()) {
-                  <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                  <i class="bi bi-eye-slash"></i>
                 } @else {
-                  <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                  <i class="bi bi-eye"></i>
                 }
               </button>
             </div>
@@ -58,9 +58,9 @@
               <input [type]="showNewPw() ? 'text' : 'password'" [(ngModel)]="pwForm.newPw" name="newPw" placeholder="Enter new password">
               <button type="button" class="eye-btn" (click)="showNewPw.set(!showNewPw())">
                 @if (showNewPw()) {
-                  <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                  <i class="bi bi-eye-slash"></i>
                 } @else {
-                  <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                  <i class="bi bi-eye"></i>
                 }
               </button>
             </div>
@@ -81,9 +81,9 @@
               <input [type]="showConfirmPw() ? 'text' : 'password'" [(ngModel)]="pwForm.confirm" name="confirmPw" placeholder="Confirm new password">
               <button type="button" class="eye-btn" (click)="showConfirmPw.set(!showConfirmPw())">
                 @if (showConfirmPw()) {
-                  <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                  <i class="bi bi-eye-slash"></i>
                 } @else {
-                  <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                  <i class="bi bi-eye"></i>
                 }
               </button>
             </div>
@@ -106,7 +106,7 @@
 
         <div class="orders-toolbar">
           <div class="orders-search-wrap">
-            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <i class="bi bi-search"></i>
             <input type="text" placeholder="Search by order ID..." [value]="orderSearch()" (input)="orderSearch.set($any($event.target).value)">
             @if (orderSearch()) {
               <button class="orders-search-clear" (click)="orderSearch.set('')">×</button>
@@ -146,7 +146,7 @@
                     <span class="order-status" [class.cancelled]="order.status === 'cancelled'" [class.delivered]="order.status === 'delivered'">
                       {{ STATUS_LABELS[order.status] || order.status }}
                     </span>
-                    <svg class="chevron" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+                    <i class="bi bi-chevron-right chevron"></i>
                   </div>
                 </div>
                 @if (order.items && order.items.length > 0) {
