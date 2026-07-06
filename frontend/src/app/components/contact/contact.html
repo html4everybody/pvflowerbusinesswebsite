@@ -13,22 +13,22 @@
     <!-- Info Cards -->
     <div class="contact-info">
       <div class="info-card">
-        <div class="icon-wrap">📍</div>
+        <div class="icon-wrap"><i class="bi bi-geo-alt"></i></div>
         <h3>Visit Us</h3>
         <p>123 Flower Street<br>Garden City, CA 90210</p>
       </div>
       <div class="info-card">
-        <div class="icon-wrap">📞</div>
+        <div class="icon-wrap"><i class="bi bi-telephone"></i></div>
         <h3>Call Us</h3>
         <p>(555) 123-4567<br>Mon – Sat: 9am – 6pm</p>
       </div>
       <div class="info-card">
-        <div class="icon-wrap">✉️</div>
+        <div class="icon-wrap"><i class="bi bi-envelope"></i></div>
         <h3>Email Us</h3>
         <p>hello&#64;bloomandblossom.com</p>
       </div>
       <div class="info-card">
-        <div class="icon-wrap">💬</div>
+        <div class="icon-wrap"><i class="bi bi-chat-dots"></i></div>
         <h3>Follow Us</h3>
         <div class="social-links">
           <a href="#">Facebook</a>
@@ -86,17 +86,14 @@
 
             <button type="submit" class="btn-submit" [disabled]="loading()">
               @if (!loading()) {
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                  <line x1="22" y1="2" x2="11" y2="13"></line>
-                  <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-                </svg>
+                <i class="bi bi-send"></i>
               }
               {{ loading() ? 'Sending...' : 'Send Message' }}
             </button>
           </form>
         } @else {
           <div class="success-message">
-            <div class="success-icon">✓</div>
+            <div class="success-icon"><i class="bi bi-check-lg"></i></div>
             <h2>Message Sent!</h2>
             <p>Thank you for contacting us. We'll get back to you within 24 hours.</p>
             <div class="success-actions">
