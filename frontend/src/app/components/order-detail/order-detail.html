@@ -398,14 +398,21 @@
         </div>
 
         <!-- Cancel Order (bottom right) -->
-        @if (o.status !== 'cancelled' && o.status !== 'delivered') {
+        @if (!isAdmin && o.status !== 'cancelled' && o.status !== 'delivered') {
           <div class="actions-section">
-            @if (cancelError()) {
-              <p class="cancel-error">{{ cancelError() }}</p>
+            @if (canCustomerCancel) {
+              @if (cancelError()) {
+                <p class="cancel-error">{{ cancelError() }}</p>
+              }
+              <button class="btn-cancel" (click)="cancelOrder()" [disabled]="cancelling()">
+                {{ cancelling() ? 'Cancelling...' : 'Cancel Order' }}
+              </button>
+            } @else {
+              <p class="cancel-locked-note">
+                🔒 This order is already being prepared, so it can no longer be cancelled here.
+                Need to change or cancel it? <a routerLink="/contact">Reach out to our team</a> and we'll help.
+              </p>
             }
-            <button class="btn-cancel" (click)="cancelOrder()" [disabled]="cancelling()">
-              {{ cancelling() ? 'Cancelling...' : 'Cancel Order' }}
-            </button>
           </div>
         }
 

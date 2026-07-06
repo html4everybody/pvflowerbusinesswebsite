@@ -8,7 +8,7 @@ import { ToastService } from '../../services/toast';
 import { ConfirmService } from '../../services/confirm';
 import { environment } from '../../../environments/environment';
 
-export type AdminSection = 'overview' | 'orders' | 'products' | 'inventory' | 'customers' | 'analytics' | 'zones' | 'deals' | 'bundles' | 'plans' | 'subscriptions';
+export type AdminSection = 'overview' | 'orders' | 'products' | 'inventory' | 'customers' | 'analytics' | 'zones' | 'deals' | 'bundles' | 'plans' | 'subscriptions' | 'studio';
 
 @Component({
   selector: 'app-admin',
@@ -220,6 +220,7 @@ export class Admin implements OnInit {
     if (section === 'bundles') this.loadBundles();
     if (section === 'plans' && !this.subPlans().length) this.loadPlans();
     if (section === 'subscriptions' && !this.subscriptions().length) this.loadSubscriptions();
+    if (section === 'studio' && !this.studioBookings().length) this.loadStudio();
   }
 
   get token(): string { return this.authService.getToken(); }
@@ -235,6 +236,7 @@ export class Admin implements OnInit {
     if (section === 'bundles') this.loadBundles();
     if (section === 'plans' && !this.subPlans().length) this.loadPlans();
     if (section === 'subscriptions' && !this.subscriptions().length) this.loadSubscriptions();
+    if (section === 'studio' && !this.studioBookings().length) this.loadStudio();
   }
 
   // ── Stats & Orders ────────────────────────────────────────────────────────
@@ -366,6 +368,55 @@ export class Admin implements OnInit {
   setSubView(v: 'list' | 'plans'): void {
     this.subView.set(v);
     if (v === 'plans' && !this.subPlans().length) this.loadPlans();
+  }
+
+  // ── Petal Studio bookings ─────────────────────────────────────────────────
+  studioBookings = signal<any[]>([]);
+  loadingStudio = signal(true);
+  studioFilter = signal<'upcoming' | 'past' | 'all'>('upcoming');
+  readonly studioTabs: { key: 'upcoming' | 'past' | 'all'; label: string }[] = [
+    { key: 'upcoming', label: 'Upcoming' },
+    { key: 'past', label: 'Past' },
+    { key: 'all', label: 'All' },
+  ];
+
+  loadStudio(): void {
+    this.loadingStudio.set(true);
+    this.http.get<any[]>(`${environment.apiUrl}/api/admin/corporate-orders?token=${this.token}`).subscribe({
+      next: (data) => { this.studioBookings.set(data || []); this.loadingStudio.set(false); },
+      error: () => this.loadingStudio.set(false)
+    });
+  }
+
+  isStudioUpcoming(b: any): boolean {
+    return b.status !== 'cancelled' && (b.delivery_date || '') >= this.todayStr;
+  }
+  studioCount(key: string): number {
+    const list = this.studioBookings();
+    if (key === 'all') return list.length;
+    if (key === 'upcoming') return list.filter(b => this.isStudioUpcoming(b)).length;
+    return list.filter(b => !this.isStudioUpcoming(b)).length;
+  }
+  filteredStudio = computed(() => {
+    const f = this.studioFilter();
+    const list = this.studioBookings();
+    if (f === 'all') return list;
+    if (f === 'upcoming') return list.filter(b => this.isStudioUpcoming(b));
+    return list.filter(b => !this.isStudioUpcoming(b));
+  });
+
+  async deleteStudioBooking(b: any): Promise<void> {
+    const ok = await this.confirmService.ask({
+      title: 'Delete booking?',
+      message: `${b.contact_name || b.contact_email}'s ${b.event_type || 'event'} booking (${b.id}) will be permanently removed.`,
+      confirmText: 'Delete',
+      danger: true,
+    });
+    if (!ok) return;
+    this.http.delete(`${environment.apiUrl}/api/admin/corporate-orders/${b.id}?token=${this.token}`).subscribe({
+      next: () => { this.studioBookings.update(list => list.filter(x => x.id !== b.id)); this.toastService.show('Booking deleted'); },
+      error: (err) => this.toastService.show(err.error?.detail || 'Failed to delete', 'error')
+    });
   }
 
   subCount(status: string): number {

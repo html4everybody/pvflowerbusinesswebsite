@@ -87,16 +87,18 @@ export class OrderDetail implements OnInit {
     return this.STATUS_ORDER.indexOf(status as any);
   }
 
+  /** Customers can only cancel before we start packing (status still "confirmed"). */
+  get canCustomerCancel(): boolean {
+    const s = this.order()?.status ?? '';
+    return s === 'confirmed';
+  }
+
   cancelOrder(): void {
     const o = this.order();
     if (!o) return;
     this.cancelError.set('');
-    if (o.status === 'out_for_delivery') {
-      this.cancelError.set('Cannot cancel — order is already out for delivery.');
-      return;
-    }
-    if (o.status === 'delivered') {
-      this.cancelError.set('Cannot cancel — order has already been delivered.');
+    if (!this.canCustomerCancel) {
+      this.cancelError.set('This order is already being prepared. Please contact our team to cancel.');
       return;
     }
     this.cancelling.set(true);

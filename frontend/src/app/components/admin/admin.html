@@ -70,6 +70,12 @@
         </svg>
         Subscriptions
       </button>
+      <button class="nav-item" [class.active]="activeSection() === 'studio'" (click)="navigateTo('studio')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2l2.4 7.4H22l-6 4.6 2.3 7.4-6.3-4.6L5.7 21.4 8 14 2 9.4h7.6z"/>
+        </svg>
+        Petal Studio
+      </button>
     </nav>
     <div class="sidebar-footer">
       <a routerLink="/" class="back-link">
@@ -1092,6 +1098,91 @@
               </table>
             </div>
           }
+        }
+      </div>
+    }
+
+    <!-- ── Petal Studio bookings ──────────────────────────────────────────── -->
+    @if (activeSection() === 'studio') {
+      <div class="section-wrap">
+        <div class="section-header">
+          <h1>Petal Studio</h1>
+          <button class="btn-refresh" (click)="loadStudio()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+            Refresh
+          </button>
+        </div>
+
+        <div class="admin-tabs">
+          @for (t of studioTabs; track t.key) {
+            <button class="admin-tab" [class.active]="studioFilter() === t.key" (click)="studioFilter.set(t.key)">
+              {{ t.label }} <span class="tab-count">{{ studioCount(t.key) }}</span>
+            </button>
+          }
+        </div>
+
+        @if (loadingStudio()) {
+          <div class="loading-state"><div class="spinner"></div><p>Loading bookings...</p></div>
+        } @else if (filteredStudio().length === 0) {
+          <div class="empty-state"><p>No bookings in this view.</p></div>
+        } @else {
+          <div class="sub-fulfil-list">
+            @for (b of filteredStudio(); track b.id) {
+              <div class="sub-fulfil-card" [class.due-today]="isStudioUpcoming(b) && (b.delivery_date || '').slice(0,10) === todayStr">
+                <div class="sfc-head">
+                  <div class="sfc-cust">
+                    <span class="sfc-name">{{ b.event_type || 'Event' }}</span>
+                    <span class="sfc-id mono">{{ b.id }}</span>
+                  </div>
+                  <div class="sfc-head-right">
+                    @if (isStudioUpcoming(b) && (b.delivery_date || '').slice(0,10) === todayStr) { <span class="today-pill">🎉 Today</span> }
+                    <span class="category-pill">₹{{ b.final_amount }}</span>
+                    <span class="status-badge"
+                          [class.status-active]="b.status !== 'cancelled'"
+                          [class.status-cancelled]="b.status === 'cancelled'">
+                      {{ b.status | titlecase }}
+                    </span>
+                  </div>
+                </div>
+
+                <div class="sfc-grid">
+                  <div class="sfc-block">
+                    <span class="sfc-label">Event date</span>
+                    <span class="sfc-val">📅 {{ b.delivery_date || 'Not set' }}</span>
+                    @if (b.theme) { <span class="sfc-sub">🎨 {{ b.theme }}</span> }
+                  </div>
+                  <div class="sfc-block">
+                    <span class="sfc-label">Booked by</span>
+                    <span class="sfc-val">{{ b.contact_name || '—' }}</span>
+                    @if (b.company_name) { <span class="sfc-sub">🏢 {{ b.company_name }}</span> }
+                    <span class="sfc-sub">✉️ {{ b.contact_email }}</span>
+                  </div>
+                </div>
+
+                <div class="sfc-what">
+                  <span class="sfc-label">What to deliver</span>
+                  @if (b.items?.length) {
+                    <ul class="sfc-items">
+                      @for (it of b.items; track it.product_id) {
+                        <li>
+                          <span class="sfc-item-name">{{ it.product_name }}</span>
+                          <span class="sfc-item-meta">qty {{ it.quantity }} · ₹{{ it.unit_price }}</span>
+                        </li>
+                      }
+                    </ul>
+                  } @else {
+                    <p class="sfc-florist">{{ b.product_name }} — {{ b.quantity }} units</p>
+                  }
+                </div>
+
+                <div class="sfc-note">📍 {{ b.delivery_address }}</div>
+
+                <div class="sfc-actions">
+                  <button class="btn-delete-small" (click)="deleteStudioBooking(b)">Delete</button>
+                </div>
+              </div>
+            }
+          </div>
         }
       </div>
     }
