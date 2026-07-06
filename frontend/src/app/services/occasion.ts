@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, of, tap } from 'rxjs';
 import { environment } from '../../environments/environment';
 
 export interface StoreOccasion {
@@ -23,8 +23,15 @@ export interface StoreOccasion {
 export class OccasionService {
   private http = inject(HttpClient);
   private base = environment.apiUrl;
+  private cache: StoreOccasion[] | null = null;
 
+  /** Cached after the first fetch (home preloads it), so occasion clicks are instant. */
   getAll(): Observable<StoreOccasion[]> {
-    return this.http.get<StoreOccasion[]>(`${this.base}/api/store-occasions`);
+    if (this.cache) return of(this.cache);
+    return this.http.get<StoreOccasion[]>(`${this.base}/api/store-occasions`).pipe(
+      tap(d => this.cache = d)
+    );
   }
+
+  clearCache(): void { this.cache = null; }
 }

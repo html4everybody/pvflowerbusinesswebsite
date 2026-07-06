@@ -33,6 +33,7 @@ export class OccasionPage implements OnInit {
   config: OccasionConfig | null = null;
   products: Product[] = [];
   isIndex = false;
+  loading = true;
   cartQuantities: { [id: number]: number } = {};
 
   constructor(
@@ -60,13 +61,14 @@ export class OccasionPage implements OnInit {
 
   ngOnInit(): void {
     this.occasionService.getAll().subscribe({
-      next: list => { this.allOccasions = list.map(o => this.mapOcc(o)); this.handleRoute(); },
-      error: () => this.handleRoute(),
+      next: list => { this.allOccasions = list.map(o => this.mapOcc(o)); this.loading = false; this.handleRoute(); },
+      error: () => { this.loading = false; this.handleRoute(); },
     });
-    this.route.params.subscribe(() => this.handleRoute());
+    this.route.params.subscribe(() => { if (!this.loading) this.handleRoute(); });
   }
 
   private handleRoute(): void {
+    window.scrollTo({ top: 0 });
     const slug = this.route.snapshot.params['slug'];
     if (!slug) { this.isIndex = true; this.config = null; return; }
     this.config = this.allOccasions.find(o => o.slug === slug) ?? null;

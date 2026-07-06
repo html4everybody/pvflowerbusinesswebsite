@@ -573,3 +573,60 @@
     }
   }
 }
+
+// ── Loading state ────────────────────────────────────────────────────────────
+.occasion-loading {
+  min-height: 70vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.1rem;
+  background: var(--bg);
+  color: var(--text-muted);
+
+  .occ-spinner {
+    width: 44px;
+    height: 44px;
+    border: 3px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: occ-spin 0.7s linear infinite;
+  }
+  p { font-size: 0.95rem; }
+}
+@keyframes occ-spin { to { transform: rotate(360deg); } }
+
+// ── Per-occasion accent theming (via --occ-accent set on the page) ───────────
+.occasion-page {
+  --occ-accent: var(--accent);
+
+  .story-label { color: var(--occ-accent); }
+  .story-quote { border-left-color: var(--occ-accent); }
+  .story-quote .quote-mark { color: var(--occ-accent); }
+
+  .occ-section-header h2 {
+    display: inline-block;
+    &::after {
+      content: '';
+      display: block;
+      width: 56px;
+      height: 3px;
+      margin: 0.7rem auto 0;
+      border-radius: 3px;
+      background: var(--occ-accent);
+    }
+  }
+
+  .product-card {
+    .price { color: var(--occ-accent); }
+    .btn-add-front { background: var(--occ-accent); border-color: var(--occ-accent); }
+    .qty-btn { color: var(--occ-accent); }
+    .wishlist-btn.active { color: var(--occ-accent); }
+  }
+
+  .btn-browse-all { background: var(--occ-accent); border-color: var(--occ-accent); }
+}
+
+// Themed CTA on index / other-occasion cards
+.index-card .index-card-cta { color: #fff; }

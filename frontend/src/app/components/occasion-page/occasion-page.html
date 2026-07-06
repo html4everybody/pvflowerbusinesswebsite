@@ -1,12 +1,30 @@
+<!-- ── Loading ──────────────────────────────────────────────────────────────── -->
+@if (loading) {
+  <main class="occasion-loading">
+    <div class="occ-spinner"></div>
+    <p>Curating the collection…</p>
+  </main>
+}
+
 <!-- ── Index: All Occasions ─────────────────────────────────────────────────── -->
-@if (isIndex) {
+@if (!loading && isIndex) {
   <main class="occasion-index">
+    <section class="index-hero">
+      <div class="container">
+        <div class="index-hero-content">
+          <span class="index-tag">✨ Shop by Occasion</span>
+          <h1>Flowers for Every Moment</h1>
+          <p>Curated collections crafted for life's most meaningful moments. Choose an occasion to explore.</p>
+        </div>
+      </div>
+    </section>
     <section class="index-grid-section">
       <div class="container">
         <div class="index-cards">
           @for (occ of allOccasions; track occ.slug) {
             <a [routerLink]="['/occasions', occ.slug]" class="index-card"
-               [style.--hero]="'url(' + occ.heroImage + ')'">
+               [style.--occ-accent]="occ.accentColor"
+               [style.background-image]="'url(' + occ.heroImage + ')'">
               <div class="index-card-overlay" [style.background]="occ.gradient"></div>
               <div class="index-card-content">
                 <span class="index-card-emoji">{{ occ.emoji }}</span>
@@ -23,8 +41,8 @@
 }
 
 <!-- ── Individual Occasion Landing Page ─────────────────────────────────────── -->
-@if (!isIndex && config) {
-  <main class="occasion-page">
+@if (!loading && !isIndex && config) {
+  <main class="occasion-page" [style.--occ-accent]="config.accentColor">
 
     <!-- Hero -->
     <section class="occ-hero" [style.background-image]="'url(' + config.heroImage + ')'">
