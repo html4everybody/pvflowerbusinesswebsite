@@ -410,27 +410,39 @@ export class Admin implements OnInit {
 
   async deleteStudioBooking(b: any): Promise<void> {
     const res = await this.confirmService.askReason({
-      title: 'Delete booking?',
-      message: `${b.contact_name || b.contact_email}'s ${b.event_type || 'event'} booking (${b.id}) will be removed. The customer will be notified.`,
+      title: 'Cancel booking?',
+      message: `${b.contact_name || b.contact_email}'s ${b.event_type || 'event'} booking (${b.id}) will be cancelled. The customer keeps a record with your message.`,
       promptLabel: 'Reason for the customer (optional)',
       promptPlaceholder: 'e.g. Date unavailable — please rebook',
-      confirmText: 'Delete',
+      confirmText: 'Cancel booking',
       danger: true,
     });
     if (!res.ok) return;
     const rp = res.reason ? `&reason=${encodeURIComponent(res.reason)}` : '';
     this.http.delete(`${environment.apiUrl}/api/admin/corporate-orders/${b.id}?token=${this.token}${rp}`).subscribe({
-      next: () => { this.studioBookings.update(list => list.filter(x => x.id !== b.id)); this.toastService.show('Booking deleted'); },
-      error: (err) => this.toastService.show(err.error?.detail || 'Failed to delete', 'error')
+      next: () => { this.studioBookings.update(list => list.map(x => x.id === b.id ? { ...x, status: 'cancelled', admin_message: res.reason } : x)); this.toastService.show('Booking cancelled'); },
+      error: (err) => this.toastService.show(err.error?.detail || 'Failed to cancel', 'error')
     });
   }
 
   readonly STUDIO_STATUSES = ['pending', 'confirmed', 'preparing', 'completed', 'cancelled'];
-  setStudioStatus(b: any, status: string): void {
+  async setStudioStatus(b: any, status: string, sel?: HTMLSelectElement): Promise<void> {
     if (!status || status === b.status) return;
-    this.http.patch(`${environment.apiUrl}/api/admin/corporate-orders/${b.id}/status?token=${this.token}`, { status }).subscribe({
-      next: () => { this.studioBookings.update(list => list.map(x => x.id === b.id ? { ...x, status } : x)); this.toastService.show('Status updated'); },
-      error: (err) => this.toastService.show(err.error?.detail || 'Failed to update status', 'error')
+    let admin_message = '';
+    if (status === 'cancelled') {
+      const res = await this.confirmService.askReason({
+        title: 'Cancel booking?',
+        message: `${b.event_type || 'Event'} booking ${b.id} will be marked cancelled. The customer is notified.`,
+        promptLabel: 'Reason for the customer (optional)',
+        promptPlaceholder: 'e.g. Date no longer available — please rebook',
+        confirmText: 'Mark cancelled', danger: true,
+      });
+      if (!res.ok) { if (sel) sel.value = b.status; return; }
+      admin_message = res.reason;
+    }
+    this.http.patch(`${environment.apiUrl}/api/admin/corporate-orders/${b.id}/status?token=${this.token}`, { status, admin_message }).subscribe({
+      next: () => { this.studioBookings.update(list => list.map(x => x.id === b.id ? { ...x, status, admin_message: status === 'cancelled' ? admin_message : x.admin_message } : x)); this.toastService.show('Status updated'); },
+      error: (err) => { if (sel) sel.value = b.status; this.toastService.show(err.error?.detail || 'Failed to update status', 'error'); }
     });
   }
 
@@ -494,26 +506,38 @@ export class Admin implements OnInit {
 
   async deleteSub(sub: any): Promise<void> {
     const res = await this.confirmService.askReason({
-      title: 'Delete subscription?',
-      message: `${sub.customer_name || sub.customer_email}'s ${sub.plan} subscription will be removed. The customer will be notified.`,
+      title: 'Cancel subscription?',
+      message: `${sub.customer_name || sub.customer_email}'s ${sub.plan} subscription will be cancelled. The customer keeps a record with your message.`,
       promptLabel: 'Reason for the customer (optional)',
       promptPlaceholder: 'e.g. Paused indefinitely at your request',
-      confirmText: 'Delete',
+      confirmText: 'Cancel subscription',
       danger: true,
     });
     if (!res.ok) return;
     const rp = res.reason ? `&reason=${encodeURIComponent(res.reason)}` : '';
     this.http.delete(`${environment.apiUrl}/api/admin/subscriptions/${sub.id}?token=${this.token}${rp}`).subscribe({
-      next: () => { this.subscriptions.update(list => list.filter(s => s.id !== sub.id)); this.toastService.show('Subscription deleted'); },
-      error: (err) => this.toastService.show(err.error?.detail || 'Failed to delete', 'error')
+      next: () => { this.subscriptions.update(list => list.map(s => s.id === sub.id ? { ...s, status: 'cancelled', admin_message: res.reason } : s)); this.toastService.show('Subscription cancelled'); },
+      error: (err) => this.toastService.show(err.error?.detail || 'Failed to cancel', 'error')
     });
   }
 
-  setSubStatus(sub: any, status: string): void {
+  async setSubStatus(sub: any, status: string, sel?: HTMLSelectElement): Promise<void> {
     if (!status || status === sub.status) return;
-    this.http.put(`${environment.apiUrl}/api/admin/subscriptions/${sub.id}?token=${this.token}`, { status }).subscribe({
+    let admin_message = '';
+    if (status === 'cancelled') {
+      const res = await this.confirmService.askReason({
+        title: 'Cancel subscription?',
+        message: `${sub.customer_name || sub.customer_email}'s subscription will be cancelled. The customer is notified.`,
+        promptLabel: 'Reason for the customer (optional)',
+        promptPlaceholder: 'e.g. Paused indefinitely at your request',
+        confirmText: 'Mark cancelled', danger: true,
+      });
+      if (!res.ok) { if (sel) sel.value = sub.status; return; }
+      admin_message = res.reason;
+    }
+    this.http.put(`${environment.apiUrl}/api/admin/subscriptions/${sub.id}?token=${this.token}`, { status, admin_message: admin_message || undefined }).subscribe({
       next: (updated: any) => { this.subscriptions.update(list => list.map(s => s.id === sub.id ? updated : s)); this.toastService.show('Status updated'); },
-      error: (err) => this.toastService.show(err.error?.detail || 'Failed to update status', 'error')
+      error: (err) => { if (sel) sel.value = sub.status; this.toastService.show(err.error?.detail || 'Failed to update status', 'error'); }
     });
   }
 

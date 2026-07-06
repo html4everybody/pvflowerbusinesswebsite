@@ -193,6 +193,9 @@
                   <span class="info-val">₹{{ order.final_amount.toFixed(2) }}</span>
                 </div>
               </div>
+              @if (order.admin_message) {
+                <div class="cancel-message">💬 <strong>Message from our team:</strong> {{ order.admin_message }}</div>
+              }
             </div>
           }
         </div>

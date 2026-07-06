@@ -34,6 +34,7 @@ export interface CorporateOrder {
   recurring_frequency?: string;
   next_delivery?: string;
   status: 'pending' | 'confirmed' | 'cancelled';
+  admin_message?: string;
   created_at: string;
 }
 

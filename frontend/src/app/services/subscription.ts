@@ -15,6 +15,7 @@ export interface Subscription {
   next_delivery: string;
   address: string;
   skipped_count: number;
+  admin_message?: string;
   created_at: string;
 }
 

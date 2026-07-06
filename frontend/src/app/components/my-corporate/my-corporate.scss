@@ -384,3 +384,16 @@
 }
 .account-body { flex: 1; min-width: 0; }
 .my-corp-page.account-body { min-height: auto; }
+
+// ── Admin message on a cancelled item ────────────────────────────────────────
+.cancel-message {
+  margin-top: 0.85rem;
+  padding: 0.7rem 0.9rem;
+  background: rgba(220,38,38,0.06);
+  border: 1px solid rgba(220,38,38,0.2);
+  border-radius: 10px;
+  font-size: 0.85rem;
+  color: var(--text);
+  line-height: 1.5;
+  strong { color: #dc2626; }
+}

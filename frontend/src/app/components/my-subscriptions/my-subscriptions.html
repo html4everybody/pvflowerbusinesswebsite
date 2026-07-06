@@ -153,6 +153,9 @@
                   <span class="info-val">{{ planFreq(sub.plan) }}</span>
                 </div>
               </div>
+              @if (sub.admin_message) {
+                <div class="cancel-message">💬 <strong>Message from our team:</strong> {{ sub.admin_message }}</div>
+              }
               <div class="sub-actions">
                 <a routerLink="/subscribe" class="btn-resume">Start New Subscription</a>
               </div>

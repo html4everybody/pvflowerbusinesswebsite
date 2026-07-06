@@ -1010,12 +1010,12 @@
                 <div class="sfc-actions">
                   <label class="status-changer">
                     Status
-                    <select class="status-select" [value]="sub.status" (change)="setSubStatus(sub, $any($event.target).value)">
+                    <select class="status-select" [value]="sub.status" (change)="setSubStatus(sub, $any($event.target).value, $any($event.target))">
                       @for (s of SUB_STATUSES; track s) { <option [value]="s">{{ s | titlecase }}</option> }
                     </select>
                   </label>
                   <button class="btn-edit-small" (click)="openSubForm(sub)">Edit</button>
-                  <button class="btn-delete-small" (click)="deleteSub(sub)">Delete</button>
+                  <button class="btn-delete-small" (click)="deleteSub(sub)">Cancel</button>
                 </div>
               </div>
             }
@@ -1186,11 +1186,11 @@
                 <div class="sfc-actions">
                   <label class="status-changer">
                     Status
-                    <select class="status-select" [value]="b.status" (change)="setStudioStatus(b, $any($event.target).value)">
+                    <select class="status-select" [value]="b.status" (change)="setStudioStatus(b, $any($event.target).value, $any($event.target))">
                       @for (s of STUDIO_STATUSES; track s) { <option [value]="s">{{ s | titlecase }}</option> }
                     </select>
                   </label>
-                  <button class="btn-delete-small" (click)="deleteStudioBooking(b)">Delete</button>
+                  <button class="btn-delete-small" (click)="deleteStudioBooking(b)">Cancel</button>
                 </div>
               </div>
             }
