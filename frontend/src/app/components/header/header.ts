@@ -158,9 +158,24 @@ export class Header {
   goToHomeSection(sectionId: string): void {
     this.navStackOpen = false;
     this.menuOpen = false;
-    // Navigate home with the target section; the Home component owns those
-    // sections and scrolls to them once they've rendered (deterministic).
-    this.router.navigate(['/'], { queryParams: { scrollTo: sectionId } });
+    // If we're already on the home page, scroll directly (avoids a router
+    // round-trip that desyncs and makes repeat/alternate clicks flaky).
+    // Otherwise navigate home with ?scrollTo= and let Home scroll on render.
+    const onHome = this.router.url.split('?')[0].split('#')[0] === '/';
+    if (onHome) {
+      this.scrollToId(sectionId);
+    } else {
+      this.router.navigate(['/'], { queryParams: { scrollTo: sectionId } });
+    }
+  }
+
+  private scrollToId(id: string, attempts = 0): void {
+    const el = document.getElementById(id);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } else if (attempts < 30) {
+      setTimeout(() => this.scrollToId(id, attempts + 1), 100);
+    }
   }
 
   toggleMenu(): void {
