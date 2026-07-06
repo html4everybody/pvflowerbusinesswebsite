@@ -1,4 +1,4 @@
-import { Component, ElementRef, HostListener, ViewChild, signal } from '@angular/core';
+import { Component, ElementRef, HostListener, OnInit, ViewChild, signal } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { CartService } from '../../services/cart';
 import { SearchService } from '../../services/search';
@@ -6,6 +6,7 @@ import { AuthService } from '../../services/auth';
 import { ThemeService } from '../../services/theme';
 import { ProductService } from '../../services/product';
 import { WishlistService } from '../../services/wishlist';
+import { NoticeService } from '../../services/notice';
 import { Product } from '../../models/product.model';
 
 @Component({
@@ -14,11 +15,12 @@ import { Product } from '../../models/product.model';
   templateUrl: './header.html',
   styleUrl: './header.scss'
 })
-export class Header {
+export class Header implements OnInit {
   menuOpen = false;
   searchOpen = false;
   userMenuOpen = false;
   navStackOpen = false;
+  notifOpen = false;
   isScrolled = false;
   showSuggestions = false;
 
@@ -90,8 +92,13 @@ export class Header {
       this.userMenuOpen = false;
       this.navStackOpen = false;
       this.menuOpen = false;
+      this.closeNotif();
       return;
     }
+
+    // Close the notifications dropdown unless the click was inside it
+    const notif = headerEl.querySelector('.notif-wrapper');
+    if (!notif?.contains(target)) this.closeNotif();
 
     // Inside header — close menu unless click was inside nav or on hamburger
     const nav = headerEl.querySelector('.nav');
@@ -119,10 +126,29 @@ export class Header {
     public authService: AuthService,
     public themeService: ThemeService,
     public wishlistService: WishlistService,
+    public noticeService: NoticeService,
     private productService: ProductService,
     private el: ElementRef,
     private router: Router
   ) {}
+
+  ngOnInit(): void {
+    if (this.authService.user()?.email) this.noticeService.load();
+  }
+
+  toggleNotif(): void {
+    if (this.notifOpen) { this.closeNotif(); return; }
+    this.notifOpen = true;
+    this.userMenuOpen = false;
+    this.navStackOpen = false;
+    this.noticeService.load();
+  }
+
+  closeNotif(): void {
+    if (!this.notifOpen) return;
+    this.notifOpen = false;
+    this.noticeService.markAllRead();   // seen → clear the badge
+  }
 
   get suggestions(): Product[] {
     return this.searchService.getSuggestions(this.productService.getProducts());
