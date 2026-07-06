@@ -81,6 +81,29 @@ ALTER TABLE corporate_orders ADD COLUMN IF NOT EXISTS items         JSONB NOT NU
 ALTER TABLE corporate_orders ADD COLUMN IF NOT EXISTS admin_message TEXT;
 ALTER TABLE subscriptions    ADD COLUMN IF NOT EXISTS admin_message TEXT;
 
+-- Occasion reminders: recurrence frequency (yearly default) + weekday for weekly/biweekly
+ALTER TABLE occasion_reminders ADD COLUMN IF NOT EXISTS frequency TEXT NOT NULL DEFAULT 'yearly';
+ALTER TABLE occasion_reminders ADD COLUMN IF NOT EXISTS weekday   INTEGER;
+
+-- 0d. Occasions (storefront festivals — admin-managed, explicit product lists).
+--     Auto-seeded by the backend on first run.
+CREATE TABLE IF NOT EXISTS occasions (
+    id           TEXT PRIMARY KEY,
+    slug         TEXT UNIQUE NOT NULL,
+    title        TEXT NOT NULL,
+    tagline      TEXT DEFAULT '',
+    story        TEXT DEFAULT '',
+    quote        TEXT DEFAULT '',
+    emoji        TEXT DEFAULT '🎉',
+    hero_image   TEXT DEFAULT '',
+    gradient     TEXT DEFAULT '',
+    accent_color TEXT DEFAULT '#c84b7a',
+    product_ids  JSONB NOT NULL DEFAULT '[]',
+    active       BOOLEAN NOT NULL DEFAULT TRUE,
+    sort_order   INTEGER NOT NULL DEFAULT 100,
+    created_at   TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
 -- 0. Products (admin-managed catalog). Rows are auto-seeded by the backend on
 --    first run from the built-in list, so no INSERTs are needed here.
 CREATE TABLE IF NOT EXISTS products (

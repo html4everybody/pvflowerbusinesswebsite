@@ -731,11 +731,152 @@ def seed_defaults():
     except Exception as e:
         print(f"[Seed] Error seeding defaults (tables may not exist yet — run supabase_migration.sql): {e}", flush=True)
 
+# ── Occasions (storefront festivals — admin-managed, explicit products) ──────────
+_SEED_OCCASIONS = [
+    {"slug": "birthday", "title": "Birthday Celebrations", "tagline": "Make their day unforgettable",
+     "story": "Birthdays are milestones worth celebrating with the most vibrant blooms you can find. Whether they turn 7 or 70, a curated flower arrangement makes every birthday feel truly special.",
+     "quote": '"A bouquet of flowers is the one gift that never goes out of style."', "emoji": "🎂",
+     "hero_image": "https://images.unsplash.com/photo-1487530811176-3780de880c2d?w=1400&q=85",
+     "gradient": "linear-gradient(135deg, rgba(232,67,147,0.82) 0%, rgba(255,170,80,0.72) 100%)",
+     "accent_color": "#e84393", "sort_order": 1,
+     "keywords": ["birthday", "celebrat", "festiv", "carnival", "congratulat", "colorful", "vibrant"]},
+    {"slug": "wedding", "title": "Wedding Flowers", "tagline": "For the love story of a lifetime",
+     "story": "Every wedding deserves flowers as beautiful as the vows exchanged. From bridal bouquets to sweeping table centrepieces, our wedding collection transforms any venue into a floral fairytale.",
+     "quote": '"Where flowers bloom, so does hope — and love."', "emoji": "💍",
+     "hero_image": "https://images.unsplash.com/photo-1559563362-c667ba5f5480?w=1400&q=85",
+     "gradient": "linear-gradient(135deg, rgba(255,240,215,0.88) 0%, rgba(220,170,130,0.80) 100%)",
+     "accent_color": "#b8713a", "sort_order": 2,
+     "keywords": ["wedding", "bridal", "bridesmaid", "bride", "groom", "corsage", "boutonniere", "centrepiece", "centerpiece"]},
+    {"slug": "sympathy", "title": "Sympathy & Comfort", "tagline": "When words fall short, flowers speak",
+     "story": "In moments of grief and loss, flowers offer something words cannot — a gentle, living reminder that love endures. Our sympathy arrangements are thoughtfully chosen to honour a life.",
+     "quote": '"Grief is love with nowhere to go. Let flowers carry it gently forward."', "emoji": "🕊️",
+     "hero_image": "https://images.unsplash.com/photo-1490750967868-88aa4486c946?w=1400&q=85",
+     "gradient": "linear-gradient(135deg, rgba(210,228,255,0.90) 0%, rgba(170,200,245,0.82) 100%)",
+     "accent_color": "#3a6fba", "sort_order": 3,
+     "keywords": ["sympathy", "white", "pure", "serene", "peace", "lily", "serenity", "get well", "recovery"]},
+    {"slug": "romance", "title": "Romance & Love", "tagline": "Say it with flowers, say it from the heart",
+     "story": "Love is in the details — and nothing expresses it more beautifully than hand-picked roses and blooms chosen just for them.",
+     "quote": '"Love is a flower. You\'ve got to let it grow." — John Lennon', "emoji": "❤️",
+     "hero_image": "https://images.unsplash.com/photo-1518882605630-8eb920bc4c49?w=1400&q=85",
+     "gradient": "linear-gradient(135deg, rgba(153,27,27,0.85) 0%, rgba(220,38,38,0.70) 100%)",
+     "accent_color": "#2563eb", "sort_order": 4,
+     "keywords": ["romance", "romantic", "love", "valentine", "rose", "passion", "peony", "heart"]},
+    {"slug": "corporate", "title": "Corporate Gifting", "tagline": "Elevate every professional relationship",
+     "story": "First impressions matter — and lasting ones matter even more. Impress clients, reward your team, or elevate your workspace with premium floral arrangements.",
+     "quote": '"The best investment is one that makes people feel genuinely valued."', "emoji": "🏢",
+     "hero_image": "https://images.unsplash.com/photo-1561181286-d3fee7d55364?w=1400&q=85",
+     "gradient": "linear-gradient(135deg, rgba(20,40,70,0.90) 0%, rgba(50,90,160,0.82) 100%)",
+     "accent_color": "#2c4a7c", "sort_order": 5,
+     "keywords": ["luxury", "premium", "grand", "deluxe", "elegant", "exotic", "centerpiece", "bonsai", "orchid"],
+     "use_price_filter": True, "min_price": 55},
+]
+
+def _compute_occasion_products(occ: dict) -> list:
+    ids, kws = [], [k.lower() for k in occ.get("keywords", [])]
+    for p in _SEED_PRODUCTS:
+        text = (p["name"] + " " + p["description"]).lower()
+        if any(k in text for k in kws):
+            ids.append(p["id"])
+    if occ.get("use_price_filter") and occ.get("min_price"):
+        for p in _SEED_PRODUCTS:
+            if p["id"] not in ids and p["price"] >= occ["min_price"]:
+                ids.append(p["id"])
+    return ids[:12]
+
+def seed_occasions():
+    try:
+        existing = supabase.table("occasions").select("slug").limit(1).execute()
+        if not existing.data:
+            supabase.table("occasions").insert([{
+                "id": "OCC" + str(uuid.uuid4())[:8].upper(),
+                "slug": o["slug"], "title": o["title"], "tagline": o["tagline"], "story": o["story"],
+                "quote": o["quote"], "emoji": o["emoji"], "hero_image": o["hero_image"],
+                "gradient": o["gradient"], "accent_color": o["accent_color"],
+                "product_ids": _compute_occasion_products(o), "active": True, "sort_order": o["sort_order"],
+            } for o in _SEED_OCCASIONS]).execute()
+            print("[Seed] Inserted default occasions", flush=True)
+    except Exception as e:
+        print(f"[Seed] Occasions seeding skipped (run supabase_migration.sql): {e}", flush=True)
+
+class OccasionAdmin(BaseModel):
+    slug: Optional[str] = None
+    title: str
+    tagline: Optional[str] = ""
+    story: Optional[str] = ""
+    quote: Optional[str] = ""
+    emoji: Optional[str] = "🎉"
+    hero_image: Optional[str] = ""
+    gradient: Optional[str] = ""
+    accent_color: Optional[str] = "#c84b7a"
+    product_ids: list[int] = []
+    active: bool = True
+    sort_order: Optional[int] = 100
+
+@app.get("/api/store-occasions")
+def get_store_occasions():
+    try:
+        return supabase.table("occasions").select("*").eq("active", True).order("sort_order").execute().data or []
+    except Exception:
+        return []
+
+@app.get("/api/store-occasions/{slug}")
+def get_store_occasion(slug: str):
+    rows = supabase.table("occasions").select("*").eq("slug", slug).execute().data or []
+    if not rows:
+        raise HTTPException(status_code=404, detail="Occasion not found")
+    return rows[0]
+
+@app.get("/api/admin/occasions")
+def admin_list_occasions(token: str):
+    require_admin(token)
+    return supabase.table("occasions").select("*").order("sort_order").execute().data or []
+
+@app.post("/api/admin/occasions")
+def admin_create_occasion(req: OccasionAdmin, token: str):
+    require_admin(token)
+    slug = (req.slug or req.title).lower().strip().replace(" ", "-")
+    existing = {r["slug"] for r in (supabase.table("occasions").select("slug").execute().data or [])}
+    base, i = slug, 1
+    while slug in existing:
+        slug = f"{base}-{i}"; i += 1
+    row = {
+        "id": "OCC" + str(uuid.uuid4())[:8].upper(), "slug": slug, "title": req.title,
+        "tagline": req.tagline, "story": req.story, "quote": req.quote, "emoji": req.emoji,
+        "hero_image": req.hero_image, "gradient": req.gradient, "accent_color": req.accent_color,
+        "product_ids": req.product_ids, "active": req.active, "sort_order": req.sort_order or 100,
+    }
+    return supabase.table("occasions").insert(row).execute().data[0]
+
+@app.put("/api/admin/occasions/{occ_id}")
+def admin_update_occasion(occ_id: str, req: OccasionAdmin, token: str):
+    require_admin(token)
+    data = {
+        "title": req.title, "tagline": req.tagline, "story": req.story, "quote": req.quote,
+        "emoji": req.emoji, "hero_image": req.hero_image, "gradient": req.gradient,
+        "accent_color": req.accent_color, "product_ids": req.product_ids,
+        "active": req.active, "sort_order": req.sort_order or 100,
+    }
+    if req.slug:
+        data["slug"] = req.slug.lower().strip().replace(" ", "-")
+    result = supabase.table("occasions").update(data).eq("id", occ_id).execute()
+    if not result.data:
+        raise HTTPException(status_code=404, detail="Occasion not found")
+    return result.data[0]
+
+@app.delete("/api/admin/occasions/{occ_id}")
+def admin_delete_occasion(occ_id: str, token: str):
+    require_admin(token)
+    result = supabase.table("occasions").delete().eq("id", occ_id).execute()
+    if not result.data:
+        raise HTTPException(status_code=404, detail="Occasion not found")
+    return {"status": "ok"}
+
 seed_defaults()
 seed_products()
 load_products()
 seed_subscription_plans()
 load_subscription_plans()
+seed_occasions()
 
 # ── Order Status ───────────────────────────────────────────────────────────────
 STATUS_MESSAGES = {
@@ -2064,6 +2205,12 @@ BOOKING_STATUS_NOTICE = {
 @app.get("/api/notices")
 def get_notices(email: str):
     try:
+        # Retention: drop notices older than 3 months, then return the rest (newest first).
+        cutoff = (datetime.utcnow() - timedelta(days=90)).isoformat()
+        try:
+            supabase.table("user_notices").delete().eq("customer_email", email).lt("created_at", cutoff).execute()
+        except Exception:
+            pass
         result = supabase.table("user_notices").select("*").eq("customer_email", email).order("created_at", desc=True).execute()
         return result.data or []
     except Exception:
@@ -2422,6 +2569,21 @@ def send_reminders(days: str = "3,1"):
                      .eq("order_id", oid).eq("reminder_type", reminder_type)
                      .execute().data or [])}
 
+                # In-app notification for the upcoming delivery
+                if "app" not in already:
+                    timing = "tomorrow" if n == 1 else f"in {n} days"
+                    verb = "recurring delivery is" if is_recurrence else "delivery is"
+                    create_user_notice(
+                        order.get("customer_email"),
+                        f"🚚 Delivery {timing}",
+                        f"Your order {oid} {verb} scheduled for {timing} ({target_date}).",
+                        "order", oid,
+                    )
+                    supabase.table("reminder_logs").insert({
+                        "order_id": oid, "reminder_type": reminder_type, "channel": "app"
+                    }).execute()
+                    total_sent += 1
+
                 if "email" not in already:
                     if send_email_reminder(order, n, is_recurrence):
                         supabase.table("reminder_logs").insert({
@@ -2456,16 +2618,20 @@ class OccasionCreate(BaseModel):
     user_email: str
     title: str
     occasion_type: str = "custom"
-    month: int
-    day: int
+    frequency: str = "yearly"          # yearly | monthly | weekly | biweekly
+    month: int = 1
+    day: int = 1
+    weekday: Optional[int] = None       # 0=Sun .. 6=Sat (for weekly/biweekly)
     linked_order_id: Optional[str] = None
     notes: Optional[str] = None
 
 class OccasionUpdate(BaseModel):
     title: Optional[str] = None
     occasion_type: Optional[str] = None
+    frequency: Optional[str] = None
     month: Optional[int] = None
     day: Optional[int] = None
+    weekday: Optional[int] = None
     linked_order_id: Optional[str] = None
     notes: Optional[str] = None
 
@@ -2573,23 +2739,72 @@ def send_occasion_reminder_email(occasion: dict, days_before: int) -> bool:
 # The enhanced version is handled by appending occasion logic inside the existing endpoint.
 # We expose a dedicated endpoint so it can also be called standalone.
 
+def _days_in_month(year: int, month: int) -> int:
+    if month == 12:
+        return 31
+    return (datetime(year, month + 1, 1) - timedelta(days=1)).day
+
+def occasion_due(occ: dict, target) -> bool:
+    """Is `occ` scheduled to occur on `target` (a date), given its frequency?"""
+    freq = occ.get("frequency") or "yearly"
+    if freq == "yearly":
+        return occ.get("month") == target.month and occ.get("day") == target.day
+    if freq == "monthly":
+        d = min(occ.get("day") or 1, _days_in_month(target.year, target.month))
+        return target.day == d
+    if freq in ("weekly", "biweekly"):
+        js_wd = (target.weekday() + 1) % 7          # Python Mon=0..Sun=6 → JS Sun=0..Sat=6
+        if occ.get("weekday") != js_wd:
+            return False
+        if freq == "weekly":
+            return True
+        # biweekly: every other week, phased from the created date
+        try:
+            anchor = datetime.fromisoformat(occ["created_at"][:10]).date()
+            return ((target - anchor).days // 7) % 2 == 0
+        except Exception:
+            return True
+    return False
+
 @app.post("/api/occasions/send-reminders")
 def send_occasion_reminders(days: str = "3,1"):
-    today        = datetime.utcnow().date()
-    day_offsets  = [int(d.strip()) for d in days.split(",") if d.strip().isdigit()]
-    total_sent   = 0
+    today      = datetime.utcnow().date()
+    total_sent = 0
+    occasions  = supabase.table("occasion_reminders").select("*").execute().data or []
 
-    for n in day_offsets:
-        target = today + timedelta(days=n)
-        occasions = supabase.table("occasion_reminders") \
-            .select("*").eq("month", target.month).eq("day", target.day).execute().data or []
-
-        for occ in occasions:
-            log_key = f"OCC-{occ['id']}"
+    for occ in occasions:
+        freq = occ.get("frequency") or "yearly"
+        # Weekly/biweekly fire once (1 day before); dated occasions get 3- and 1-day nudges.
+        offsets = [1] if freq in ("weekly", "biweekly") else [int(d.strip()) for d in days.split(",") if d.strip().isdigit()]
+        for n in offsets:
+            target = today + timedelta(days=n)
+            if not occasion_due(occ, target):
+                continue
+            # Include the target date so recurring reminders aren't deduped across cycles.
+            log_key = f"OCC-{occ['id']}-{target.isoformat()}"
             already = {r["channel"] for r in (
                 supabase.table("reminder_logs").select("channel")
                 .eq("order_id", log_key).eq("reminder_type", f"{n}_day")
                 .execute().data or [])}
+            timing = "tomorrow" if n == 1 else f"in {n} days"
+
+            # In-app notification (shows in My Account → Notifications)
+            if "app" not in already:
+                create_user_notice(
+                    occ.get("user_email"),
+                    f"🔔 {occ.get('title')} is {timing}",
+                    f"{occ.get('title')} is coming up {timing} — a lovely moment to send flowers 🌸.",
+                    "reminder", occ["id"],
+                )
+                try:
+                    supabase.table("reminder_logs").insert({
+                        "order_id": log_key, "reminder_type": f"{n}_day", "channel": "app"
+                    }).execute()
+                except Exception:
+                    pass
+                total_sent += 1
+
+            # Email reminder
             if "email" not in already:
                 if send_occasion_reminder_email(occ, n):
                     try:
@@ -2598,7 +2813,6 @@ def send_occasion_reminders(days: str = "3,1"):
                         }).execute()
                     except Exception:
                         pass
-                    total_sent += 1
 
     return {"status": "ok", "occasion_reminders_sent": total_sent}
 
