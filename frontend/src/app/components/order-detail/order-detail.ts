@@ -19,7 +19,7 @@ export class OrderDetail implements OnInit {
     out_for_delivery: 'Out for Delivery', delivered: 'Delivered', cancelled: 'Cancelled'
   };
   readonly STATUS_ICONS: Record<string, string> = {
-    confirmed: '✅', preparing: '👨‍🍳', out_for_delivery: '🚚', delivered: '📦', cancelled: '❌'
+    confirmed: 'bi-check-circle', preparing: 'bi-basket', out_for_delivery: 'bi-truck', delivered: 'bi-box-seam', cancelled: 'bi-x-circle'
   };
   readonly PIPELINE_STATUSES = ['confirmed', 'preparing', 'out_for_delivery', 'delivered'] as const;
   readonly NEXT_STATUSES: Record<string, string[]> = {
