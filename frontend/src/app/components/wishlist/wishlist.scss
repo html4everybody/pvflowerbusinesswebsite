@@ -480,3 +480,10 @@
     }
   }
 }
+
+// ── Bootstrap-icon sizing ───────────────────────────────────────────────────
+.back-link .bi { font-size: 16px; }
+.shared-banner .bi { font-size: 18px; }
+.btn-add-all .bi, .btn-share .bi, .btn-cart .bi, .btn-save .bi, .btn-remove .bi { font-size: 14px; }
+.empty-wishlist .empty-icon { font-size: 64px; }
+.cart-toast .toast-icon .bi, .share-toast .bi { font-size: 15px; }
