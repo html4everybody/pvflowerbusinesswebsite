@@ -33,6 +33,19 @@ ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS daily_total      NUMERIC;
 ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS grand_total      NUMERIC;
 ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS discount_percent NUMERIC;
 
+-- 0c. User notices — messages the customer sees in their account (e.g. an
+--     order/booking/subscription removed by admin, with an optional reason).
+CREATE TABLE IF NOT EXISTS user_notices (
+    id             TEXT PRIMARY KEY,
+    customer_email TEXT NOT NULL,
+    title          TEXT NOT NULL DEFAULT '',
+    message        TEXT NOT NULL DEFAULT '',
+    ref_type       TEXT,
+    ref_id         TEXT,
+    read           BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at     TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
 -- 0b. Petal Studio (event florals & bulk décor) — bookings table.
 CREATE TABLE IF NOT EXISTS corporate_orders (
     id                  TEXT PRIMARY KEY,

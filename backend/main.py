@@ -2003,13 +2003,58 @@ def update_order_status(order_id: str, req: StatusUpdateRequest):
     send_notifications(order_id, req.status, order.get("customer_phone") or "")
     return {"status": req.status}
 
+# ── User notices (messages the customer sees in their account) ──────────────────
+
+def create_user_notice(email: Optional[str], title: str, message: str, ref_type: str, ref_id: str):
+    if not email:
+        return
+    try:
+        supabase.table("user_notices").insert({
+            "id": "NTC" + str(uuid.uuid4())[:8].upper(),
+            "customer_email": email,
+            "title": title,
+            "message": message or "",
+            "ref_type": ref_type,
+            "ref_id": ref_id,
+            "read": False,
+        }).execute()
+    except Exception:
+        pass
+
+@app.get("/api/notices")
+def get_notices(email: str):
+    try:
+        result = supabase.table("user_notices").select("*").eq("customer_email", email).order("created_at", desc=True).execute()
+        return result.data or []
+    except Exception:
+        return []
+
+@app.patch("/api/notices/read")
+def mark_notices_read(email: str):
+    try:
+        supabase.table("user_notices").update({"read": True}).eq("customer_email", email).eq("read", False).execute()
+    except Exception:
+        pass
+    return {"status": "ok"}
+
+@app.delete("/api/notices/{notice_id}")
+def delete_notice(notice_id: str, email: str):
+    supabase.table("user_notices").delete().eq("id", notice_id).eq("customer_email", email).execute()
+    return {"status": "ok"}
+
 @app.delete("/api/admin/orders/{order_id}")
-def admin_delete_order(order_id: str, token: str):
+def admin_delete_order(order_id: str, token: str, reason: Optional[str] = None):
     require_admin(token)
+    existing = supabase.table("orders").select("customer_email").eq("id", order_id).execute().data
+    email = existing[0]["customer_email"] if existing else None
     supabase.table("order_items").delete().eq("order_id", order_id).execute()
     result = supabase.table("orders").delete().eq("id", order_id).execute()
     if not result.data:
         raise HTTPException(status_code=404, detail="Order not found")
+    msg = f"Your order {order_id} was cancelled and removed by our team."
+    if reason:
+        msg += f" Reason: {reason}"
+    create_user_notice(email, "Order removed", msg, "order", order_id)
     return {"status": "ok"}
 
 @app.post("/api/orders")
@@ -2214,11 +2259,17 @@ def admin_update_subscription(sub_id: str, req: AdminSubscriptionUpdate, token: 
     return result.data[0]
 
 @app.delete("/api/admin/subscriptions/{sub_id}")
-def admin_delete_subscription(sub_id: str, token: str):
+def admin_delete_subscription(sub_id: str, token: str, reason: Optional[str] = None):
     require_admin(token)
+    existing = supabase.table("subscriptions").select("customer_email").eq("id", sub_id).execute().data
+    email = existing[0]["customer_email"] if existing else None
     result = supabase.table("subscriptions").delete().eq("id", sub_id).execute()
     if not result.data:
         raise HTTPException(status_code=404, detail="Subscription not found")
+    msg = f"Your Bloom Plan subscription {sub_id} was removed by our team."
+    if reason:
+        msg += f" Reason: {reason}"
+    create_user_notice(email, "Subscription removed", msg, "subscription", sub_id)
     return {"status": "ok"}
 
 @app.post("/api/subscriptions")
@@ -2559,12 +2610,32 @@ def admin_list_corporate_orders(token: str):
     return result.data or []
 
 @app.delete("/api/admin/corporate-orders/{order_id}")
-def admin_delete_corporate_order(order_id: str, token: str):
+def admin_delete_corporate_order(order_id: str, token: str, reason: Optional[str] = None):
     require_admin(token)
+    existing = supabase.table("corporate_orders").select("contact_email").eq("id", order_id).execute().data
+    email = existing[0]["contact_email"] if existing else None
     result = supabase.table("corporate_orders").delete().eq("id", order_id).execute()
     if not result.data:
         raise HTTPException(status_code=404, detail="Booking not found")
+    msg = f"Your Petal Studio booking {order_id} was removed by our team."
+    if reason:
+        msg += f" Reason: {reason}"
+    create_user_notice(email, "Booking removed", msg, "booking", order_id)
     return {"status": "ok"}
+
+class CorporateStatusUpdate(BaseModel):
+    status: str
+
+@app.patch("/api/admin/corporate-orders/{order_id}/status")
+def admin_update_corporate_status(order_id: str, req: CorporateStatusUpdate, token: str):
+    require_admin(token)
+    valid = {"pending", "confirmed", "preparing", "completed", "cancelled"}
+    if req.status not in valid:
+        raise HTTPException(status_code=400, detail="Invalid status")
+    result = supabase.table("corporate_orders").update({"status": req.status}).eq("id", order_id).execute()
+    if not result.data:
+        raise HTTPException(status_code=404, detail="Booking not found")
+    return {"status": req.status}
 
 @app.post("/api/corporate-orders")
 def create_corporate_order(req: CorporateOrderRequest):
