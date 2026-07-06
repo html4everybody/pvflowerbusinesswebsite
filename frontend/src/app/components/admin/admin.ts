@@ -375,6 +375,23 @@ export class Admin implements OnInit {
     if (v === 'plans' && !this.subPlans().length) this.loadPlans();
   }
 
+  // ── Image upload (file → Supabase storage → URL) ──────────────────────────
+  uploadingImage = signal(false);
+  private uploadImage(event: Event, apply: (url: string) => void): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+    this.uploadingImage.set(true);
+    const form = new FormData();
+    form.append('file', file);
+    this.http.post<{ url: string }>(`${environment.apiUrl}/api/admin/upload?token=${this.token}`, form).subscribe({
+      next: (res) => { apply(res.url); this.uploadingImage.set(false); this.toastService.show('Image uploaded'); input.value = ''; },
+      error: (err) => { this.uploadingImage.set(false); this.toastService.show(err.error?.detail || 'Upload failed', 'error'); input.value = ''; }
+    });
+  }
+  uploadProductImage(event: Event): void { this.uploadImage(event, url => this.productForm.image = url); }
+  uploadOccImage(event: Event): void { this.uploadImage(event, url => this.occForm.hero_image = url); }
+
   // ── Occasions (storefront festivals) ──────────────────────────────────────
   occasions = signal<any[]>([]);
   loadingOccasions = signal(true);

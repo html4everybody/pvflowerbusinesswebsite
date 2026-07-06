@@ -1197,3 +1197,33 @@
     .occ-pick-price { font-size: 0.82rem; font-weight: 700; color: var(--accent); min-width: 52px; text-align: right; }
   }
 }
+
+// ── Image upload (URL + file) ────────────────────────────────────────────────
+.img-upload-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+  flex-wrap: wrap;
+}
+.btn-upload {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.5rem 0.9rem;
+  border: 1.5px dashed var(--border);
+  border-radius: 8px;
+  background: var(--bg-raised);
+  color: var(--text);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+  &:hover { border-color: var(--accent); color: var(--accent); }
+}
+.img-upload-preview {
+  width: 56px; height: 56px;
+  border-radius: 8px;
+  object-fit: cover;
+  border: 1px solid var(--border);
+}

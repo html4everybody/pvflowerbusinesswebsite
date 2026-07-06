@@ -8,3 +8,5 @@ resend
 email-validator
 httpx
 apscheduler
+
+python-multipart

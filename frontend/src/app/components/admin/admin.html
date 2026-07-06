@@ -339,12 +339,19 @@
                     </select>
                   </label>
                 </div>
-                <label class="form-label">Image URL
-                  <input type="text" class="form-input" [(ngModel)]="productForm.image" placeholder="https://...">
+                <label class="form-label">Image
+                  <input type="text" class="form-input" [(ngModel)]="productForm.image" placeholder="Paste an image URL, or upload below">
                 </label>
-                @if (productForm.image) {
-                  <img [src]="productForm.image" alt="Preview" class="product-thumb" style="width:64px;height:64px;margin-top:4px;">
-                }
+                <div class="img-upload-row">
+                  <label class="btn-upload">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                    {{ uploadingImage() ? 'Uploading…' : 'Upload from computer' }}
+                    <input type="file" accept="image/*" hidden [disabled]="uploadingImage()" (change)="uploadProductImage($event)">
+                  </label>
+                  @if (productForm.image) {
+                    <img [src]="productForm.image" alt="Preview" class="img-upload-preview">
+                  }
+                </div>
                 <label class="toggle-label">
                   <input type="checkbox" [(ngModel)]="productForm.inStock">
                   In stock
@@ -1266,9 +1273,19 @@
                 <label class="form-label">Tagline
                   <input type="text" class="form-input" [(ngModel)]="occForm.tagline" placeholder="Short line shown on the card">
                 </label>
-                <label class="form-label">Hero image URL
-                  <input type="text" class="form-input" [(ngModel)]="occForm.hero_image" placeholder="https://...">
+                <label class="form-label">Occasion image
+                  <input type="text" class="form-input" [(ngModel)]="occForm.hero_image" placeholder="Paste an image URL, or upload below">
                 </label>
+                <div class="img-upload-row">
+                  <label class="btn-upload">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                    {{ uploadingImage() ? 'Uploading…' : 'Upload from computer' }}
+                    <input type="file" accept="image/*" hidden [disabled]="uploadingImage()" (change)="uploadOccImage($event)">
+                  </label>
+                  @if (occForm.hero_image) {
+                    <img [src]="occForm.hero_image" alt="Preview" class="img-upload-preview">
+                  }
+                </div>
                 <label class="form-label">Story
                   <textarea class="form-input" rows="3" [(ngModel)]="occForm.story" placeholder="Description shown on the occasion page"></textarea>
                 </label>

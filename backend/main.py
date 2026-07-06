@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, File, UploadFile
 
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, EmailStr
@@ -50,10 +50,9 @@ app.add_middleware(
 )
 
 # ── Supabase client ────────────────────────────────────────────────────────────
-supabase: Client = create_client(
-    os.getenv("SUPABASE_URL"),
-    os.getenv("SUPABASE_KEY")
-)
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY")
+supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 # ── Email config (Resend API) ──────────────────────────────────────────────────
 RESEND_API_KEY = os.getenv("RESEND_API_KEY", "")
@@ -877,6 +876,30 @@ def admin_delete_occasion(occ_id: str, token: str):
     if not result.data:
         raise HTTPException(status_code=404, detail="Occasion not found")
     return {"status": "ok"}
+
+# ── Image upload (admin) — stores in the public "Products" storage bucket ────────
+@app.post("/api/admin/upload")
+async def admin_upload_image(token: str, file: UploadFile = File(...)):
+    require_admin(token)
+    contents = await file.read()
+    if len(contents) > 8 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="Image too large (max 8 MB).")
+    ext = os.path.splitext(file.filename or "")[1].lower()
+    if ext not in (".png", ".jpg", ".jpeg", ".webp", ".gif", ".avif"):
+        ext = ".png"
+    path = f"uploads/{uuid.uuid4().hex}{ext}"
+    content_type = file.content_type or "image/png"
+    try:
+        up = _httpx.post(
+            f"{SUPABASE_URL}/storage/v1/object/Products/{path}",
+            headers={"apikey": SUPABASE_KEY, "Authorization": f"Bearer {SUPABASE_KEY}", "Content-Type": content_type},
+            content=contents, timeout=30,
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Upload failed: {e}")
+    if up.status_code not in (200, 201):
+        raise HTTPException(status_code=500, detail=f"Upload failed ({up.status_code}): {up.text[:200]}")
+    return {"url": f"{SUPABASE_URL}/storage/v1/object/public/Products/{path}"}
 
 # Seeding disabled — the database is the source of truth. We only load caches.
 load_products()
