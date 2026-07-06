@@ -13,12 +13,23 @@ export interface OccasionReminder {
   user_email: string;
   title: string;
   occasion_type: string;
+  frequency: 'yearly' | 'monthly' | 'weekly' | 'biweekly';
   month: number;
   day: number;
+  weekday?: number;       // 0=Sun .. 6=Sat
   linked_order_id?: string;
   notes?: string;
   created_at: string;
 }
+
+const FREQUENCIES = [
+  { value: 'yearly',   label: 'Yearly',       hint: 'Once a year' },
+  { value: 'monthly',  label: 'Monthly',      hint: 'Every month' },
+  { value: 'weekly',   label: 'Weekly',       hint: 'Every week' },
+  { value: 'biweekly', label: 'Every 2 weeks', hint: 'Fortnightly' },
+];
+
+const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
 const OCCASION_TYPES = [
   { value: 'birthday',    label: 'Birthday',     emoji: '🎂' },
@@ -53,19 +64,20 @@ export class Reminders implements OnInit {
 
   formData = {
     title: '', occasion_type: 'birthday',
-    month: 1, day: 1,
+    frequency: 'yearly' as OccasionReminder['frequency'],
+    month: 1, day: 1, weekday: 1,
     linked_order_id: '', notes: ''
   };
 
   readonly occasionTypes = OCCASION_TYPES;
+  readonly frequencies = FREQUENCIES;
+  readonly weekdays = WEEKDAYS;
   readonly months = MONTHS;
   readonly days   = Array.from({ length: 31 }, (_, i) => i + 1);
 
   // Sorted by days-until (soonest first)
   sortedOccasions = computed(() =>
-    [...this.occasions()].sort((a, b) =>
-      this.getDaysUntil(a.month, a.day) - this.getDaysUntil(b.month, b.day)
-    )
+    [...this.occasions()].sort((a, b) => this.getDaysUntilOcc(a) - this.getDaysUntilOcc(b))
   );
 
   constructor(
@@ -115,6 +127,53 @@ export class Reminders implements OnInit {
     return Math.ceil((next.getTime() - today.getTime()) / 86400000);
   }
 
+  /** Days until the next occurrence, for any frequency. */
+  getDaysUntilOcc(occ: OccasionReminder): number {
+    const freq = occ.frequency || 'yearly';
+    if (freq === 'yearly') return this.getDaysUntil(occ.month, occ.day);
+
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+
+    if (freq === 'monthly') {
+      const clamp = (y: number, m: number) => Math.min(occ.day, new Date(y, m + 1, 0).getDate());
+      let y = today.getFullYear(), m = today.getMonth();
+      let next = new Date(y, m, clamp(y, m));
+      if (next <= today) { m++; if (m > 11) { m = 0; y++; } next = new Date(y, m, clamp(y, m)); }
+      return Math.round((next.getTime() - today.getTime()) / 86400000);
+    }
+
+    // weekly / biweekly
+    const wd = occ.weekday ?? 0;
+    let delta = (wd - today.getDay() + 7) % 7;
+    if (freq === 'biweekly' && occ.created_at) {
+      const next = new Date(today); next.setDate(today.getDate() + delta);
+      const anchor = new Date(occ.created_at); anchor.setHours(0, 0, 0, 0);
+      const weeks = Math.floor((next.getTime() - anchor.getTime()) / (7 * 86400000));
+      if (((weeks % 2) + 2) % 2 !== 0) delta += 7;
+    }
+    return delta;
+  }
+
+  private ordinal(n: number): string {
+    const s = ['th', 'st', 'nd', 'rd'], v = n % 100;
+    return n + (s[(v - 20) % 10] || s[v] || s[0]);
+  }
+
+  /** "Every year · Jan 5" / "Monthly · 15th" / "Weekly · Monday" / "Every 2 weeks · Monday" */
+  getScheduleLabel(occ: OccasionReminder): string {
+    const freq = occ.frequency || 'yearly';
+    if (freq === 'monthly')  return `Monthly · ${this.ordinal(occ.day)}`;
+    if (freq === 'weekly')   return `Weekly · ${WEEKDAYS[occ.weekday ?? 0]}`;
+    if (freq === 'biweekly') return `Every 2 weeks · ${WEEKDAYS[occ.weekday ?? 0]}`;
+    return `Yearly · ${this.getMonthName(occ.month)} ${occ.day}`;
+  }
+
+  reminderLeadLabel(occ: OccasionReminder): string {
+    return (occ.frequency === 'weekly' || occ.frequency === 'biweekly')
+      ? 'Email reminder 1 day before'
+      : 'Email reminder 3 days before';
+  }
+
   getUrgency(days: number): 'today' | 'urgent' | 'soon' | 'upcoming' {
     if (days === 0) return 'today';
     if (days <= 3)  return 'urgent';
@@ -150,7 +209,7 @@ export class Reminders implements OnInit {
   // ── Form ────────────────────────────────────────────────────────────────────
   openAdd(): void {
     this.editingId.set(null);
-    this.formData = { title: '', occasion_type: 'birthday', month: 1, day: 1, linked_order_id: '', notes: '' };
+    this.formData = { title: '', occasion_type: 'birthday', frequency: 'yearly', month: 1, day: 1, weekday: 1, linked_order_id: '', notes: '' };
     this.showForm.set(true);
   }
 
@@ -159,8 +218,10 @@ export class Reminders implements OnInit {
     this.formData = {
       title: occ.title,
       occasion_type: occ.occasion_type,
+      frequency: occ.frequency || 'yearly',
       month: occ.month,
       day: occ.day,
+      weekday: occ.weekday ?? 1,
       linked_order_id: occ.linked_order_id ?? '',
       notes: occ.notes ?? ''
     };
@@ -176,12 +237,15 @@ export class Reminders implements OnInit {
     if (!this.formData.title.trim()) return;
     this.saving.set(true);
     const email = this.authService.user().email;
+    const f = this.formData.frequency;
     const body = {
       user_email: email,
       title: this.formData.title.trim(),
       occasion_type: this.formData.occasion_type,
+      frequency: f,
       month: this.formData.month,
       day: this.formData.day,
+      weekday: (f === 'weekly' || f === 'biweekly') ? this.formData.weekday : null,
       linked_order_id: this.formData.linked_order_id || null,
       notes: this.formData.notes || null
     };
