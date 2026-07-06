@@ -75,9 +75,11 @@ CREATE TABLE IF NOT EXISTS corporate_orders (
 );
 
 -- If corporate_orders already exists from an earlier run, add the new columns:
-ALTER TABLE corporate_orders ADD COLUMN IF NOT EXISTS event_type TEXT;
-ALTER TABLE corporate_orders ADD COLUMN IF NOT EXISTS theme      TEXT;
-ALTER TABLE corporate_orders ADD COLUMN IF NOT EXISTS items      JSONB NOT NULL DEFAULT '[]';
+ALTER TABLE corporate_orders ADD COLUMN IF NOT EXISTS event_type    TEXT;
+ALTER TABLE corporate_orders ADD COLUMN IF NOT EXISTS theme         TEXT;
+ALTER TABLE corporate_orders ADD COLUMN IF NOT EXISTS items         JSONB NOT NULL DEFAULT '[]';
+ALTER TABLE corporate_orders ADD COLUMN IF NOT EXISTS admin_message TEXT;
+ALTER TABLE subscriptions    ADD COLUMN IF NOT EXISTS admin_message TEXT;
 
 -- 0. Products (admin-managed catalog). Rows are auto-seeded by the backend on
 --    first run from the built-in list, so no INSERTs are needed here.
