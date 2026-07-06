@@ -1,6 +1,6 @@
-import { Component, signal, computed } from '@angular/core';
+import { Component, signal, computed, ViewChild } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
-import { FormsModule } from '@angular/forms';
+import { FormsModule, NgForm } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { CartService } from '../../services/cart';
 import { AuthService } from '../../services/auth';
@@ -325,7 +325,18 @@ export class Checkout {
     }
   }
 
+  @ViewChild('checkoutForm') checkoutForm?: NgForm;
+
   placeOrder(): void {
+    // If required fields are missing, highlight them instead of silently doing nothing.
+    if (this.checkoutForm && this.checkoutForm.invalid) {
+      Object.values(this.checkoutForm.controls).forEach(c => c.markAsTouched());
+      this.errorMessage.set('Please complete all required fields highlighted above (including payment details).');
+      const firstInvalid = document.querySelector('.checkout-form .ng-invalid') as HTMLElement | null;
+      firstInvalid?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+
     this.loading.set(true);
     this.errorMessage.set('');
 

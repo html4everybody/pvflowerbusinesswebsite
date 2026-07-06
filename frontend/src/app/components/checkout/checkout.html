@@ -410,7 +410,7 @@
             <div class="error-msg">{{ errorMessage() }}</div>
           }
 
-          <button type="submit" class="btn-place-order" [disabled]="loading() || checkoutForm.invalid">
+          <button type="submit" class="btn-place-order" [disabled]="loading()">
             @if (loading()) {
               <span>Placing Order...</span>
             } @else {
