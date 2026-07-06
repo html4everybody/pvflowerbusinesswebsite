@@ -1,6 +1,5 @@
 import { Component, OnInit, computed, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
-import { UpperCasePipe } from '@angular/common';
 import { AuthService } from '../../services/auth';
 import { CorporateService, CreateCorporateOrderRequest } from '../../services/corporate';
 import { ToastService } from '../../services/toast';
@@ -10,7 +9,7 @@ import { FormsModule } from '@angular/forms';
 
 @Component({
   selector: 'app-corporate-order',
-  imports: [RouterLink, FormsModule, UpperCasePipe],
+  imports: [RouterLink, FormsModule],
   templateUrl: './corporate-order.html',
   styleUrl: './corporate-order.scss'
 })
@@ -23,68 +22,85 @@ export class CorporateOrder implements OnInit {
   createdFinalAmount = signal(0);
   createdNextDelivery = signal('');
 
-  // Step 1 — Company Details
+  // Step 1 — Event & Contact
+  eventType = signal('');
   companyName = signal('');
   contactName = signal('');
   contactEmail = signal('');
-  department = signal('');
+  contactPhone = signal('');
+  venueName = signal('');
+  readonly eventTypes = ['Wedding', 'Function / Party', 'Hotel', 'Mall', 'House Party', 'Corporate', 'Other'];
 
-  // Step 2 — Order Details
-  selectedProductId = signal<number | null>(null);
-  quantity = signal(10);
+  // Step 2 — Items & delivery (one-off event booking)
+  selectedItems = signal<{ product: Product; quantity: number }[]>([]);
   deliveryAddress = signal('');
   deliveryDate = signal('');
-  isRecurring = signal(false);
-  recurringDay = signal('monday');
-  recurringFrequency = signal<'weekly' | 'biweekly' | 'monthly'>('weekly');
 
-  // Step 3 — Branding
+  // Step 3 — Theme & Personalisation
+  theme = signal('');
   brandingLogoUrl = signal('');
   brandingMessage = signal('');
   logoPreviewError = signal(false);
-
-  readonly weekdays = ['monday','tuesday','wednesday','thursday','friday','saturday','sunday'];
-  readonly frequencies: { id: 'weekly'|'biweekly'|'monthly'; label: string }[] = [
-    { id: 'weekly', label: 'Weekly' },
-    { id: 'biweekly', label: 'Bi-Weekly' },
-    { id: 'monthly', label: 'Monthly' },
-  ];
+  readonly themeOptions = ['Classic White', 'Romantic Pink', 'Royal Red', 'Rustic', 'Tropical', 'Pastel', 'Vibrant Mix'];
 
   allProducts: Product[] = [];
 
-  get selectedProduct(): Product | null {
-    if (!this.selectedProductId()) return null;
-    return this.allProducts.find(p => p.id === this.selectedProductId()) ?? null;
-  }
+  readonly MIN_UNITS = 5;
+  readonly MAX_UNITS = 500;
+
+  totalQuantity = computed(() => this.selectedItems().reduce((s, it) => s + it.quantity, 0));
 
   discountPct = computed(() => {
-    const q = this.quantity();
+    const q = this.totalQuantity();
     if (q >= 50) return 15;
     if (q >= 25) return 10;
     if (q >= 10) return 5;
     return 0;
   });
 
-  unitPrice = computed(() => this.selectedProduct?.price ?? 0);
-
-  subtotal = computed(() => this.unitPrice() * this.quantity());
+  subtotal = computed(() => this.selectedItems().reduce((s, it) => s + it.product.price * it.quantity, 0));
 
   savings = computed(() => Math.round(this.subtotal() * this.discountPct()) / 100);
 
   total = computed(() => +(this.subtotal() - this.savings()).toFixed(2));
 
+  isSelected(id: number): boolean { return this.selectedItems().some(it => it.product.id === id); }
+
+  toggleProduct(product: Product): void {
+    this.selectedItems.update(list =>
+      list.some(it => it.product.id === product.id)
+        ? list.filter(it => it.product.id !== product.id)
+        : [...list, { product, quantity: 10 }]);
+  }
+
+  removeItem(id: number): void {
+    this.selectedItems.update(list => list.filter(it => it.product.id !== id));
+  }
+
+  itemQty(id: number): number { return this.selectedItems().find(it => it.product.id === id)?.quantity ?? 0; }
+
+  setItemQty(id: number, val: number): void {
+    const q = Math.max(1, Math.min(this.MAX_UNITS, Math.round(val || 0)));
+    this.selectedItems.update(list => list.map(it => it.product.id === id ? { ...it, quantity: q } : it));
+  }
+
+  adjustItemQty(id: number, delta: number): void { this.setItemQty(id, this.itemQty(id) + delta); }
+
   get isStep1Valid(): boolean {
-    return this.companyName().trim().length >= 2 &&
+    return this.eventType().trim().length > 0 &&
       this.contactName().trim().length >= 2 &&
       this.contactEmail().trim().includes('@');
   }
 
+  selectEventType(t: string): void { this.eventType.set(t); }
+  selectTheme(t: string): void { this.theme.set(this.theme() === t ? '' : t); }
+
   get isStep2Valid(): boolean {
-    if (!this.selectedProductId()) return false;
-    if (this.quantity() < 5) return false;
+    if (this.selectedItems().length === 0) return false;
+    if (this.totalQuantity() < this.MIN_UNITS) return false;
+    if (this.totalQuantity() > this.MAX_UNITS) return false;
     if (!this.deliveryAddress().trim()) return false;
-    if (!this.isRecurring() && !this.deliveryDate()) return false;
-    if (this.isRecurring() && (!this.recurringDay() || !this.recurringFrequency())) return false;
+    if (!this.deliveryDate()) return false;
     return true;
   }
 
@@ -93,7 +109,65 @@ export class CorporateOrder implements OnInit {
   get minDate(): string {
     const d = new Date();
     d.setDate(d.getDate() + 1);
-    return d.toISOString().split('T')[0];
+    return this.ymd(d);
+  }
+
+  // ── Custom event-date calendar ─────────────────────────────────────────────
+  calendarOpen = signal(false);
+  viewMonth = signal(new Date());
+  readonly weekdayLabels = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
+
+  private ymd(d: Date): string {
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  }
+
+  get monthLabel(): string {
+    return this.viewMonth().toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
+  }
+
+  get selectedDateLabel(): string {
+    return this.deliveryDate() ? this.formatDate(this.deliveryDate()) : 'Select event date';
+  }
+
+  get canGoPrev(): boolean {
+    const v = this.viewMonth(); const now = new Date();
+    return v.getFullYear() > now.getFullYear() ||
+      (v.getFullYear() === now.getFullYear() && v.getMonth() > now.getMonth());
+  }
+
+  get calendarCells(): { date: string; day: number; inMonth: boolean; disabled: boolean; today: boolean; selected: boolean }[] {
+    const view = this.viewMonth();
+    const year = view.getFullYear(), month = view.getMonth();
+    const startOffset = new Date(year, month, 1).getDay();
+    const gridStart = new Date(year, month, 1 - startOffset);
+    const todayStr = this.ymd(new Date());
+    const minStr = this.minDate;
+    const cells = [];
+    for (let i = 0; i < 42; i++) {
+      const d = new Date(gridStart.getFullYear(), gridStart.getMonth(), gridStart.getDate() + i);
+      const ds = this.ymd(d);
+      cells.push({
+        date: ds, day: d.getDate(),
+        inMonth: d.getMonth() === month,
+        disabled: ds < minStr,
+        today: ds === todayStr,
+        selected: ds === this.deliveryDate(),
+      });
+    }
+    return cells;
+  }
+
+  toggleCalendar(): void {
+    const open = !this.calendarOpen();
+    this.calendarOpen.set(open);
+    if (open) this.viewMonth.set(this.deliveryDate() ? new Date(this.deliveryDate()) : new Date());
+  }
+  prevMonth(): void { const v = this.viewMonth(); this.viewMonth.set(new Date(v.getFullYear(), v.getMonth() - 1, 1)); }
+  nextMonth(): void { const v = this.viewMonth(); this.viewMonth.set(new Date(v.getFullYear(), v.getMonth() + 1, 1)); }
+  pickDate(cell: { date: string; disabled: boolean }): void {
+    if (cell.disabled) return;
+    this.deliveryDate.set(cell.date);
+    this.calendarOpen.set(false);
   }
 
   constructor(
@@ -127,43 +201,30 @@ export class CorporateOrder implements OnInit {
     if (n < this.step()) this.step.set(n as 1 | 2 | 3 | 4);
   }
 
-  selectProduct(id: number): void {
-    this.selectedProductId.set(id);
-  }
-
-  adjustQty(delta: number): void {
-    const next = Math.max(5, Math.min(500, this.quantity() + delta));
-    this.quantity.set(next);
-  }
-
-  onQtyInput(val: string): void {
-    const n = parseInt(val, 10);
-    if (!isNaN(n)) this.quantity.set(Math.max(5, Math.min(500, n)));
-  }
-
   onLogoLoad(): void { this.logoPreviewError.set(false); }
   onLogoError(): void { this.logoPreviewError.set(true); }
 
   submit(): void {
-    if (!this.isStep2Valid || !this.selectedProduct) return;
+    if (!this.isStep2Valid) return;
     this.submitting.set(true);
     this.error.set('');
 
     const req: CreateCorporateOrderRequest = {
-      company_name: this.companyName().trim(),
+      company_name: this.companyName().trim() || undefined,
+      event_type: this.eventType() || undefined,
+      theme: this.theme() || undefined,
       contact_name: this.contactName().trim(),
       contact_email: this.contactEmail().trim(),
-      product_id: this.selectedProductId()!,
-      product_name: this.selectedProduct.name,
-      unit_price: this.unitPrice(),
-      quantity: this.quantity(),
+      items: this.selectedItems().map(it => ({
+        product_id: it.product.id,
+        product_name: it.product.name,
+        unit_price: it.product.price,
+        quantity: it.quantity,
+      })),
       branding_logo_url: this.brandingLogoUrl().trim() || undefined,
       branding_message: this.brandingMessage().trim() || undefined,
       delivery_address: this.deliveryAddress().trim(),
-      delivery_date: !this.isRecurring() ? this.deliveryDate() : undefined,
-      is_recurring: this.isRecurring(),
-      recurring_day: this.isRecurring() ? this.recurringDay() : undefined,
-      recurring_frequency: this.isRecurring() ? this.recurringFrequency() : undefined,
+      delivery_date: this.deliveryDate(),
     };
 
     this.corporateService.create(req).subscribe({
@@ -173,7 +234,7 @@ export class CorporateOrder implements OnInit {
         this.createdNextDelivery.set(res.next_delivery ?? '');
         this.submitting.set(false);
         this.submitted.set(true);
-        this.toastService.show('Corporate order placed!');
+        this.toastService.show('Petal Studio booking placed!');
       },
       error: () => {
         this.submitting.set(false);

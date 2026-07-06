@@ -42,8 +42,13 @@ export const routes: Routes = [
   { path: 'builder', component: BouquetBuilder },
   { path: 'occasions', component: OccasionPage },
   { path: 'occasions/:slug', component: OccasionPage },
-  { path: 'corporate', component: CorporatePortal },
+  { path: 'petal-studio', component: CorporatePortal },
   { path: 'track', component: TrackOrder },
+
+  // ── Legacy redirects (Corporate Suite → Petal Studio) ──────────────────────
+  { path: 'corporate', redirectTo: 'petal-studio', pathMatch: 'full' },
+  { path: 'corporate-order', redirectTo: 'petal-studio/book', pathMatch: 'full' },
+  { path: 'my-corporate', redirectTo: 'my-studio', pathMatch: 'full' },
 
   // ── Login-required routes ──────────────────────────────────────────────────
   { path: 'cart', component: Cart, canActivate: [authGuard] },
@@ -57,8 +62,8 @@ export const routes: Routes = [
   { path: 'orders/:id', component: OrderDetail, canActivate: [authGuard] },
   { path: 'subscribe', component: Subscription, canActivate: [authGuard] },
   { path: 'my-subscriptions', component: MySubscriptions, canActivate: [authGuard] },
-  { path: 'corporate-order', component: CorporateOrder, canActivate: [authGuard] },
-  { path: 'my-corporate', component: MyCorporate, canActivate: [authGuard] },
+  { path: 'petal-studio/book', component: CorporateOrder, canActivate: [authGuard] },
+  { path: 'my-studio', component: MyCorporate, canActivate: [authGuard] },
   { path: 'my-loyalty', component: MyLoyalty, canActivate: [authGuard] },
   { path: 'reminders', component: Reminders, canActivate: [authGuard] },
   { path: 'admin', component: Admin, canActivate: [authGuard] },

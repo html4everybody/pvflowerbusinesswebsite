@@ -3,9 +3,9 @@
   <!-- Hero -->
   <section class="corp-order-hero">
     <div class="container">
-      <span class="corp-tag">🏢 Corporate Gifting</span>
-      <h1>Place a Corporate Order</h1>
-      <p>Bulk floral gifting with custom branding and flexible delivery scheduling.</p>
+      <span class="corp-tag">🎉 Petal Studio</span>
+      <h1>Plan Your Event Florals &amp; Décor</h1>
+      <p>Bulk and bespoke flowers for weddings, functions, hotels, malls, house parties &amp; corporate events — themed your way, delivered on schedule.</p>
     </div>
   </section>
 
@@ -31,9 +31,9 @@
                 }
               </div>
               <span class="step-label">
-                @if (s === 1) { Company }
+                @if (s === 1) { Event }
                 @if (s === 2) { Order }
-                @if (s === 3) { Branding }
+                @if (s === 3) { Theme }
                 @if (s === 4) { Confirm }
               </span>
             </div>
@@ -48,26 +48,41 @@
       @if (step() === 1 && !submitted()) {
         <div class="wizard-step">
           <div class="step-header">
-            <h2>Company Details</h2>
-            <p>Tell us about your organisation and who we should contact.</p>
+            <h2>Event &amp; Contact</h2>
+            <p>What are we creating for, and who should we reach? Individuals and businesses both welcome.</p>
           </div>
 
-          <div class="form-grid">
-            <div class="form-field full">
-              <label>Company Name <span class="req">*</span></label>
-              <input type="text" placeholder="Acme Corp" [value]="companyName()" (input)="companyName.set($any($event).target.value)">
+          <div class="picker-section">
+            <h3 class="picker-title">Type of Event <span class="req">*</span></h3>
+            <div class="event-type-grid">
+              @for (t of eventTypes; track t) {
+                <button class="event-type-pill" [class.selected]="eventType() === t" (click)="selectEventType(t)">
+                  {{ t }}
+                </button>
+              }
             </div>
+          </div>
+
+          <div class="form-grid" style="margin-top:1.5rem">
             <div class="form-field">
-              <label>Contact Name <span class="req">*</span></label>
+              <label>Your Name <span class="req">*</span></label>
               <input type="text" placeholder="Jane Doe" [value]="contactName()" (input)="contactName.set($any($event).target.value)">
             </div>
             <div class="form-field">
               <label>Contact Email <span class="req">*</span></label>
-              <input type="email" placeholder="jane@acme.com" [value]="contactEmail()" (input)="contactEmail.set($any($event).target.value)">
+              <input type="email" placeholder="jane@example.com" [value]="contactEmail()" (input)="contactEmail.set($any($event).target.value)">
+            </div>
+            <div class="form-field">
+              <label>Phone <span class="opt">(optional)</span></label>
+              <input type="tel" placeholder="+91 98765 43210" [value]="contactPhone()" (input)="contactPhone.set($any($event).target.value)">
+            </div>
+            <div class="form-field">
+              <label>Company / Organisation <span class="opt">(optional)</span></label>
+              <input type="text" placeholder="Acme Corp / Grand Hotel" [value]="companyName()" (input)="companyName.set($any($event).target.value)">
             </div>
             <div class="form-field full">
-              <label>Department / Team <span class="opt">(optional)</span></label>
-              <input type="text" placeholder="HR Department" [value]="department()" (input)="department.set($any($event).target.value)">
+              <label>Event / Venue Name <span class="opt">(optional)</span></label>
+              <input type="text" placeholder="e.g. Sharma Wedding · Taj Ballroom · City Mall Atrium" [value]="venueName()" (input)="venueName.set($any($event).target.value)">
             </div>
           </div>
 
@@ -80,113 +95,130 @@
         </div>
       }
 
-      <!-- ── Step 2: Order Details ───────────────────────────────────────── -->
+      <!-- ── Step 2: Items & delivery ────────────────────────────────────── -->
       @if (step() === 2 && !submitted()) {
         <div class="wizard-step">
           <div class="step-header">
-            <h2>Order Details</h2>
-            <p>Choose a product, quantity, and delivery preferences.</p>
+            <h2>Build Your Order</h2>
+            <p>Tap to add flowers &amp; décor — add as many as you like, then set the quantity for each.</p>
           </div>
 
-          <!-- Product picker -->
+          <!-- Product picker (multi-select) -->
           <div class="picker-section">
-            <h3 class="picker-title">Select a Product <span class="req">*</span></h3>
+            <h3 class="picker-title">Add Products <span class="req">*</span></h3>
             <div class="picker-grid">
               @for (product of allProducts; track product.id) {
-                <button class="picker-card" [class.selected]="selectedProductId() === product.id"
-                        (click)="selectProduct(product.id)">
+                <button class="picker-card" [class.selected]="isSelected(product.id)"
+                        (click)="toggleProduct(product)">
                   <img [src]="product.image" [alt]="product.name">
                   <div class="picker-card-info">
                     <span class="picker-name">{{ product.name }}</span>
                     <span class="picker-price">₹{{ product.price.toFixed(2) }}</span>
                     <span class="picker-cat">{{ product.category }}</span>
                   </div>
-                  @if (selectedProductId() === product.id) {
-                    <div class="picker-check">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5">
-                        <polyline points="20 6 9 17 4 12"></polyline>
-                      </svg>
-                    </div>
-                  }
+                  <div class="picker-check">
+                    @if (isSelected(product.id)) {
+                      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                    } @else { + }
+                  </div>
                 </button>
               }
             </div>
           </div>
 
-          <!-- Quantity -->
-          <div class="qty-section">
-            <h3>Quantity <span class="req">*</span> <span class="qty-note">(min 5, max 500)</span></h3>
-            <div class="qty-control-wrap">
-              <button class="qty-btn" (click)="adjustQty(-5)" [disabled]="quantity() <= 5">−5</button>
-              <button class="qty-btn" (click)="adjustQty(-1)" [disabled]="quantity() <= 5">−</button>
-              <input class="qty-input" type="number" min="5" max="500" [value]="quantity()" (input)="onQtyInput($any($event).target.value)">
-              <button class="qty-btn" (click)="adjustQty(1)">+</button>
-              <button class="qty-btn" (click)="adjustQty(5)">+5</button>
-            </div>
-            @if (discountPct() > 0) {
-              <div class="discount-badge">
-                🎉 {{ discountPct() }}% bulk discount applied
-                @if (selectedProductId()) {
-                  — save ₹{{ savings().toFixed(2) }}
+          <!-- Selected items with per-item quantity -->
+          <div class="selection-panel">
+            <h3 class="picker-title">Your Selection
+              <span class="sel-count">{{ selectedItems().length }} item{{ selectedItems().length === 1 ? '' : 's' }}</span>
+            </h3>
+
+            @if (selectedItems().length === 0) {
+              <div class="sel-empty">No products yet — tap items above to add them to your event order.</div>
+            } @else {
+              <div class="sel-list">
+                @for (it of selectedItems(); track it.product.id) {
+                  <div class="sel-row">
+                    <div class="sel-info">
+                      <span class="sel-name">{{ it.product.name }}</span>
+                      <span class="sel-unit">₹{{ it.product.price.toFixed(2) }} each · {{ it.product.category }}</span>
+                    </div>
+                    <div class="sel-qty">
+                      <button class="qty-btn" (click)="adjustItemQty(it.product.id, -5)">−5</button>
+                      <button class="qty-btn" (click)="adjustItemQty(it.product.id, -1)">−</button>
+                      <input class="qty-input" type="number" min="1" max="500" [value]="it.quantity"
+                             (input)="setItemQty(it.product.id, +$any($event).target.value)">
+                      <button class="qty-btn" (click)="adjustItemQty(it.product.id, 1)">+</button>
+                      <button class="qty-btn" (click)="adjustItemQty(it.product.id, 5)">+5</button>
+                    </div>
+                    <span class="sel-line">₹{{ (it.product.price * it.quantity).toFixed(2) }}</span>
+                    <button class="sel-remove" title="Remove" (click)="removeItem(it.product.id)">✕</button>
+                  </div>
+                }
+              </div>
+
+              <div class="sel-summary">
+                <div class="sel-sum-row"><span>Total units</span><span>{{ totalQuantity() }}</span></div>
+                <div class="sel-sum-row"><span>Subtotal</span><span>₹{{ subtotal().toFixed(2) }}</span></div>
+                @if (discountPct() > 0) {
+                  <div class="sel-sum-row discount">
+                    <span>🎉 Bulk discount ({{ discountPct() }}%)</span><span>− ₹{{ savings().toFixed(2) }}</span>
+                  </div>
+                }
+                <div class="sel-sum-row total"><span>Estimated total</span><span>₹{{ total().toFixed(2) }}</span></div>
+                @if (totalQuantity() < MIN_UNITS) {
+                  <p class="sel-hint">Add at least {{ MIN_UNITS }} units in total to book (bulk discounts start at 10).</p>
                 }
               </div>
             }
           </div>
 
-          <!-- Delivery Address -->
-          <div class="form-field full" style="margin-top:1.5rem">
-            <label>Delivery Address <span class="req">*</span></label>
-            <textarea rows="3" placeholder="Building, Street, City, PIN Code" [value]="deliveryAddress()" (input)="deliveryAddress.set($any($event).target.value)"></textarea>
-          </div>
-
-          <!-- Recurring toggle -->
-          <div class="recurring-toggle">
-            <label class="toggle-row">
-              <span class="toggle-label">Make this a recurring delivery</span>
-              <button class="toggle-btn" [class.on]="isRecurring()" (click)="isRecurring.set(!isRecurring())">
-                <span class="toggle-knob"></span>
-              </button>
-            </label>
-          </div>
-
-          @if (!isRecurring()) {
-            <div class="form-field" style="margin-top:1rem">
-              <label>Delivery Date <span class="req">*</span></label>
-              <input type="date" [min]="minDate" [value]="deliveryDate()" (input)="deliveryDate.set($any($event).target.value)">
+          <!-- Delivery -->
+          <div class="form-grid" style="margin-top:1.5rem">
+            <div class="form-field full">
+              <label>Delivery / Venue Address <span class="req">*</span></label>
+              <textarea rows="3" placeholder="Building, Street, City, PIN Code" [value]="deliveryAddress()" (input)="deliveryAddress.set($any($event).target.value)"></textarea>
             </div>
-          }
+            <div class="form-field">
+              <label>Event Date <span class="req">*</span></label>
+              <div class="date-picker">
+                <button type="button" class="date-trigger" [class.filled]="deliveryDate()" (click)="toggleCalendar()">
+                  <svg class="dt-cal" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                  <span class="dt-label">{{ selectedDateLabel }}</span>
+                  <svg class="dt-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                </button>
 
-          @if (isRecurring()) {
-            <div class="recurring-options">
-              <div class="recurring-row">
-                <h4>Day of Week</h4>
-                <div class="day-pills">
-                  @for (day of weekdays; track day) {
-                    <button class="day-pill" [class.active]="recurringDay() === day"
-                            (click)="recurringDay.set(day)">
-                      {{ day.slice(0,3) | uppercase }}
-                    </button>
-                  }
-                </div>
-              </div>
-              <div class="recurring-row">
-                <h4>Frequency</h4>
-                <div class="freq-pills">
-                  @for (freq of frequencies; track freq.id) {
-                    <button class="freq-pill" [class.active]="recurringFrequency() === freq.id"
-                            (click)="recurringFrequency.set(freq.id)">
-                      {{ freq.label }}
-                    </button>
-                  }
-                </div>
+                @if (calendarOpen()) {
+                  <div class="cal-backdrop" (click)="calendarOpen.set(false)"></div>
+                  <div class="calendar-pop">
+                    <div class="cal-head">
+                      <button type="button" class="cal-nav" [disabled]="!canGoPrev" (click)="prevMonth()">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+                      </button>
+                      <span class="cal-month">{{ monthLabel }}</span>
+                      <button type="button" class="cal-nav" (click)="nextMonth()">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+                      </button>
+                    </div>
+                    <div class="cal-weekdays">
+                      @for (w of weekdayLabels; track w) { <span>{{ w }}</span> }
+                    </div>
+                    <div class="cal-grid">
+                      @for (c of calendarCells; track c.date) {
+                        <button type="button" class="cal-day"
+                                [class.out]="!c.inMonth" [class.today]="c.today" [class.selected]="c.selected"
+                                [disabled]="c.disabled" (click)="pickDate(c)">{{ c.day }}</button>
+                      }
+                    </div>
+                  </div>
+                }
               </div>
             </div>
-          }
+          </div>
 
           <div class="step-actions">
             <button class="btn-back" (click)="prevStep()">← Back</button>
             <button class="btn-next" [disabled]="!isStep2Valid" (click)="nextStep()">
-              Continue to Branding →
+              Continue to Theme →
             </button>
           </div>
         </div>
@@ -196,14 +228,25 @@
       @if (step() === 3 && !submitted()) {
         <div class="wizard-step">
           <div class="step-header">
-            <h2>Custom Branding</h2>
-            <p>Add your company logo and a personal message card. Both are optional.</p>
+            <h2>Theme &amp; Personalisation</h2>
+            <p>Pick a colour theme, add a message card, and (for branded events) a logo. All optional.</p>
           </div>
 
-          <div class="branding-layout">
+          <div class="picker-section">
+            <h3 class="picker-title">Colour Theme <span class="opt">(optional)</span></h3>
+            <div class="event-type-grid">
+              @for (t of themeOptions; track t) {
+                <button class="event-type-pill" [class.selected]="theme() === t" (click)="selectTheme(t)">
+                  {{ t }}
+                </button>
+              }
+            </div>
+          </div>
+
+          <div class="branding-layout" style="margin-top:1.5rem">
             <div class="branding-form">
               <div class="form-field full">
-                <label>Company Logo URL <span class="opt">(optional)</span></label>
+                <label>Logo URL <span class="opt">(optional — for branded events)</span></label>
                 <input type="url" placeholder="https://yourcompany.com/logo.png"
                        [value]="brandingLogoUrl()"
                        (input)="brandingLogoUrl.set($any($event).target.value); logoPreviewError.set(false)">
@@ -262,32 +305,37 @@
             <div class="review-card">
               <h3 class="review-card-title">Order Summary</h3>
 
-              @if (selectedProduct) {
-                <div class="review-product">
-                  <img [src]="selectedProduct.image" [alt]="selectedProduct.name" class="review-product-img">
-                  <div class="review-product-info">
-                    <span class="review-product-name">{{ selectedProduct.name }}</span>
-                    <span class="review-product-cat">{{ selectedProduct.category }}</span>
+              <div class="review-items">
+                @for (it of selectedItems(); track it.product.id) {
+                  <div class="review-item">
+                    <img [src]="it.product.image" [alt]="it.product.name" class="review-item-img">
+                    <div class="review-item-info">
+                      <span class="review-item-name">{{ it.product.name }}</span>
+                      <span class="review-item-meta">{{ it.quantity }} × ₹{{ it.product.price.toFixed(2) }}</span>
+                    </div>
+                    <span class="review-item-line">₹{{ (it.product.price * it.quantity).toFixed(2) }}</span>
                   </div>
-                </div>
-              }
+                }
+              </div>
 
               <div class="review-rows">
                 <div class="review-row">
-                  <span>Company</span>
-                  <span>{{ companyName() }}</span>
+                  <span>Event</span>
+                  <span>{{ eventType() }}</span>
                 </div>
+                @if (companyName()) {
+                  <div class="review-row">
+                    <span>Company</span>
+                    <span>{{ companyName() }}</span>
+                  </div>
+                }
                 <div class="review-row">
                   <span>Contact</span>
                   <span>{{ contactName() }} · {{ contactEmail() }}</span>
                 </div>
                 <div class="review-row">
-                  <span>Quantity</span>
-                  <span>{{ quantity() }} units</span>
-                </div>
-                <div class="review-row">
-                  <span>Unit Price</span>
-                  <span>₹{{ unitPrice().toFixed(2) }}</span>
+                  <span>Total Units</span>
+                  <span>{{ totalQuantity() }}</span>
                 </div>
                 <div class="review-row">
                   <span>Subtotal</span>
@@ -307,26 +355,22 @@
 
               <div class="review-delivery">
                 <div class="review-row">
-                  <span>Address</span>
+                  <span>Venue / Address</span>
                   <span>{{ deliveryAddress() }}</span>
                 </div>
-                @if (!isRecurring()) {
-                  <div class="review-row">
-                    <span>Delivery Date</span>
-                    <span>{{ formatDate(deliveryDate()) }}</span>
-                  </div>
-                } @else {
-                  <div class="review-row">
-                    <span>Recurring</span>
-                    <span>{{ capitalize(recurringFrequency()) }} on {{ capitalize(recurringDay()) }}s</span>
-                  </div>
-                }
+                <div class="review-row">
+                  <span>Event Date</span>
+                  <span>{{ formatDate(deliveryDate()) }}</span>
+                </div>
               </div>
             </div>
 
-            <!-- Branding preview -->
+            <!-- Theme & branding preview -->
             <div class="review-card">
-              <h3 class="review-card-title">Branding</h3>
+              <h3 class="review-card-title">Theme &amp; Branding</h3>
+              @if (theme()) {
+                <div class="review-row"><span>Colour Theme</span><span>{{ theme() }}</span></div>
+              }
               @if (brandingLogoUrl() && !logoPreviewError()) {
                 <div class="review-branding-logo-wrap">
                   <img [src]="brandingLogoUrl()" alt="Logo" class="review-branding-logo">
@@ -359,8 +403,8 @@
       @if (submitted()) {
         <div class="success-state">
           <div class="success-icon">✅</div>
-          <h2>Order Placed!</h2>
-          <p>Your corporate order has been received and is being processed.</p>
+          <h2>Booking Placed!</h2>
+          <p>Your Petal Studio booking has been received. Our events team will reach out to finalise the details.</p>
 
           <div class="success-details">
             <div class="success-row">
@@ -380,8 +424,8 @@
           </div>
 
           <div class="success-actions">
-            <a routerLink="/my-corporate" class="btn-next">Manage My Orders →</a>
-            <a routerLink="/corporate" class="btn-back">Back to Corporate Portal</a>
+            <a routerLink="/my-studio" class="btn-next">Manage My Bookings →</a>
+            <a routerLink="/petal-studio" class="btn-back">Back to Petal Studio</a>
           </div>
         </div>
       }

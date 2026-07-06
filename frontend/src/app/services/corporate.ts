@@ -3,11 +3,21 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 
+export interface CorporateItem {
+  product_id: number;
+  product_name: string;
+  unit_price: number;
+  quantity: number;
+}
+
 export interface CorporateOrder {
   id: string;
-  company_name: string;
+  company_name?: string;
+  event_type?: string;
+  theme?: string;
   contact_name: string;
   contact_email: string;
+  items?: CorporateItem[];
   product_id: number;
   product_name: string;
   quantity: number;
@@ -28,20 +38,16 @@ export interface CorporateOrder {
 }
 
 export interface CreateCorporateOrderRequest {
-  company_name: string;
+  company_name?: string;
+  event_type?: string;
+  theme?: string;
   contact_name: string;
   contact_email: string;
-  product_id: number;
-  product_name: string;
-  unit_price: number;
-  quantity: number;
+  items: CorporateItem[];
   branding_logo_url?: string;
   branding_message?: string;
   delivery_address: string;
   delivery_date?: string;
-  is_recurring: boolean;
-  recurring_day?: string;
-  recurring_frequency?: string;
 }
 
 @Injectable({ providedIn: 'root' })
