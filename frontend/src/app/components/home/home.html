@@ -44,33 +44,6 @@
     </div>
   </section>
 
-  <!-- ── Occasions Section ─────────────────────────────────────────────────── -->
-  <section class="occasions-section" id="occasions">
-    <div class="container">
-      <div class="section-header" appFadeIn>
-        <span class="section-tag"><i class="bi bi-stars"></i> Shop by Occasion</span>
-        <h2>Every Moment Deserves Flowers</h2>
-        <p>Curated collections crafted for life's most meaningful moments</p>
-      </div>
-      <div class="occasion-cards">
-        @for (occ of occasions(); track occ.slug; let i = $index) {
-          <a [routerLink]="['/occasions', occ.slug]" class="index-card" appFadeIn [fadeDelay]="i * 80"
-             [style.--occ-accent]="occ.accent_color"
-             [style.--hero]="'url(' + occ.hero_image + ')'"
-             [style.background-image]="'url(' + occ.hero_image + ')'">
-            <div class="index-card-overlay" [style.background]="occ.gradient"></div>
-            <div class="index-card-content">
-              <span class="index-card-emoji">{{ occ.emoji }}</span>
-              <h3>{{ occ.title }}</h3>
-              <p>{{ occ.tagline }}</p>
-              <span class="index-card-cta">Explore Collection →</span>
-            </div>
-          </a>
-        }
-      </div>
-    </div>
-  </section>
-
   <!-- ── Collection Section ─────────────────────────────────────────────────── -->
   <section class="all-products" id="collection">
     <div class="container">

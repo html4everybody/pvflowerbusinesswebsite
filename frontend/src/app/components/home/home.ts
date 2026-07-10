@@ -9,7 +9,6 @@ import { WishlistService } from '../../services/wishlist';
 import { PromoService, OffersData, BundleDeal, SeasonalOffer } from '../../services/promo';
 import { AuthService } from '../../services/auth';
 import { SubscriptionService } from '../../services/subscription';
-import { OccasionService, StoreOccasion } from '../../services/occasion';
 import { Product } from '../../models/product.model';
 import { FadeInDirective } from '../../directives/fade-in';
 
@@ -49,20 +48,17 @@ export class Home implements OnInit, AfterViewInit {
     private promoService: PromoService,
     private authService: AuthService,
     private subscriptionService: SubscriptionService,
-    private occasionService: OccasionService,
     private router: Router,
     private route: ActivatedRoute,
     private location: Location
   ) {}
 
   subDeliveryToday = signal(false);
-  occasions = signal<StoreOccasion[]>([]);
 
   ngOnInit(): void {
     this.products = this.productService.getProducts();
     this.categories = this.productService.getCategories();
     this.promoService.getOffers(this.authService.user()?.email).subscribe({ next: d => this.offers.set(d), error: () => {} });
-    this.occasionService.getAll().subscribe({ next: d => this.occasions.set(d), error: () => {} });
 
     // Heads-up if the logged-in user has a Bloom Plan delivery due today
     const user = this.authService.user();
