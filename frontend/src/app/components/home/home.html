@@ -56,6 +56,7 @@
         @for (occ of occasions(); track occ.slug; let i = $index) {
           <a [routerLink]="['/occasions', occ.slug]" class="index-card" appFadeIn [fadeDelay]="i * 80"
              [style.--occ-accent]="occ.accent_color"
+             [style.--hero]="'url(' + occ.hero_image + ')'"
              [style.background-image]="'url(' + occ.hero_image + ')'">
             <div class="index-card-overlay" [style.background]="occ.gradient"></div>
             <div class="index-card-content">
