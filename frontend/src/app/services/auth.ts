@@ -20,9 +20,11 @@ export class AuthService {
     const token = this.getToken();
     if (!token) return;
     this.http.get<any>(`${this.apiUrl}/api/auth/me?token=${token}`).subscribe({
-      error: () => {
-        this.clearSession();
-        this.router.navigate(['/signin']);
+      error: (err) => {
+        if (err.status === 401) {
+          this.clearSession();
+          this.router.navigate(['/signin']);
+        }
       }
     });
   }
