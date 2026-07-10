@@ -84,11 +84,11 @@
   .index-card-overlay {
     position: absolute;
     inset: 0;
-    opacity: 0.82;
+    opacity: 0.6;
     transition: opacity 0.3s ease;
   }
 
-  &:hover .index-card-overlay { opacity: 0.92; }
+  &:hover .index-card-overlay { opacity: 0.72; }
 
   .index-card-content {
     position: relative;
