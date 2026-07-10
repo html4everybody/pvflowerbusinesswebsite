@@ -287,22 +287,22 @@
       }
     }
 
-    .occasion-cards {
+    .index-cards {
       display: grid;
       grid-template-columns: repeat(5, 1fr);
-      gap: 1rem;
+      gap: 1.25rem;
 
       @media (max-width: 1024px) { grid-template-columns: repeat(3, 1fr); }
-      @media (max-width: 640px)  { grid-template-columns: repeat(2, 1fr); gap: 0.75rem; }
+      @media (max-width: 600px)  { grid-template-columns: repeat(2, 1fr); }
     }
 
-    .occ-index-card {
+    .index-card {
       position: relative;
       height: 280px;
       border-radius: var(--radius-md);
       overflow: hidden;
       text-decoration: none;
-      background: var(--occ-accent, #888) center/cover no-repeat;
+      background: var(--hero) center/cover no-repeat;
       display: flex;
       flex-direction: column;
       transition: transform 0.3s ease, box-shadow 0.3s ease;
@@ -310,31 +310,31 @@
       &:hover {
         transform: translateY(-4px);
         box-shadow: var(--shadow-lg);
-        .occ-index-cta { opacity: 1; transform: translateX(0); }
-        .occ-index-overlay { opacity: 0.72; }
+        .index-card-cta { opacity: 1; transform: translateX(0); }
       }
 
-      .occ-index-overlay {
+      .index-card-overlay {
         position: absolute;
         inset: 0;
         opacity: 0.6;
         transition: opacity 0.3s ease;
       }
 
-      .occ-index-content {
+      &:hover .index-card-overlay { opacity: 0.72; }
+
+      .index-card-content {
         position: relative;
         z-index: 1;
         margin-top: auto;
         padding: 1.75rem 1.5rem;
         color: white;
 
-        .occ-index-emoji { font-size: 2rem; display: block; margin-bottom: 0.5rem; }
+        .index-card-emoji { font-size: 2rem; display: block; margin-bottom: 0.5rem; }
 
-        h3 {
+        h2 {
           font-size: 1.45rem;
           margin: 0 0 0.3rem;
           line-height: 1.2;
-          font-family: 'Playfair Display', Georgia, serif;
         }
 
         p {
@@ -343,13 +343,13 @@
           margin: 0 0 0.75rem;
         }
 
-        .occ-index-cta {
+        .index-card-cta {
           font-size: 0.82rem;
           font-weight: 600;
-          display: inline-block;
           opacity: 0;
           transform: translateX(-6px);
           transition: all 0.25s ease;
+          display: inline-block;
           background: rgba(255,255,255,0.2);
           border: 1px solid rgba(255,255,255,0.35);
           border-radius: var(--radius-full);
