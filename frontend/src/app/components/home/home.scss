@@ -296,64 +296,64 @@
       @media (max-width: 640px)  { grid-template-columns: repeat(2, 1fr); gap: 0.75rem; }
     }
 
-    .occ-card {
+    .occ-index-card {
       position: relative;
       height: 280px;
       border-radius: var(--radius-md);
       overflow: hidden;
       text-decoration: none;
-      background-size: cover;
-      background-position: center;
-      background-repeat: no-repeat;
+      background: var(--occ-accent, #888) center/cover no-repeat;
       display: flex;
       flex-direction: column;
       transition: transform 0.3s ease, box-shadow 0.3s ease;
 
       &:hover {
-        transform: translateY(-5px);
+        transform: translateY(-4px);
         box-shadow: var(--shadow-lg);
-        .occ-cta-label { opacity: 1; transform: translateX(0); }
+        .occ-index-cta { opacity: 1; transform: translateX(0); }
+        .occ-index-overlay { opacity: 0.72; }
       }
 
-      .occ-img-overlay {
+      .occ-index-overlay {
         position: absolute;
         inset: 0;
         opacity: 0.6;
         transition: opacity 0.3s ease;
       }
 
-      .occ-card-content {
+      .occ-index-content {
         position: relative;
         z-index: 1;
         margin-top: auto;
-        padding: 1.4rem 1.2rem;
+        padding: 1.75rem 1.5rem;
         color: white;
 
-        .occ-emoji { font-size: 1.9rem; display: block; margin-bottom: 0.4rem; }
+        .occ-index-emoji { font-size: 2rem; display: block; margin-bottom: 0.5rem; }
 
         h3 {
-          font-size: 1.2rem;
-          margin: 0 0 0.25rem;
+          font-size: 1.45rem;
+          margin: 0 0 0.3rem;
+          line-height: 1.2;
           font-family: 'Playfair Display', Georgia, serif;
         }
 
         p {
-          font-size: 0.78rem;
+          font-size: 0.85rem;
           opacity: 0.88;
-          margin: 0 0 0.65rem;
+          margin: 0 0 0.75rem;
         }
 
-        .occ-cta-label {
-          font-size: 0.75rem;
+        .occ-index-cta {
+          font-size: 0.82rem;
           font-weight: 600;
           display: inline-block;
           opacity: 0;
           transform: translateX(-6px);
           transition: all 0.25s ease;
           background: rgba(255,255,255,0.2);
-          border: 1px solid rgba(255,255,255,0.4);
+          border: 1px solid rgba(255,255,255,0.35);
           border-radius: var(--radius-full);
-          padding: 0.25rem 0.7rem;
+          padding: 0.35rem 0.9rem;
         }
       }
     }
