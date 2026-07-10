@@ -316,11 +316,11 @@
       .index-card-overlay {
         position: absolute;
         inset: 0;
-        opacity: 0.6;
+        opacity: 0.82;
         transition: opacity 0.3s ease;
       }
 
-      &:hover .index-card-overlay { opacity: 0.72; }
+      &:hover .index-card-overlay { opacity: 0.92; }
 
       .index-card-content {
         position: relative;
