@@ -289,16 +289,15 @@
 
     .occasion-cards {
       display: grid;
-      grid-template-columns: repeat(5, 1fr);
-      gap: 1rem;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1.25rem;
 
-      @media (max-width: 1024px) { grid-template-columns: repeat(3, 1fr); }
-      @media (max-width: 640px)  { grid-template-columns: repeat(2, 1fr); gap: 0.75rem; }
+      @media (max-width: 600px) { grid-template-columns: 1fr; }
     }
 
     .occ-card {
       position: relative;
-      height: 280px;
+      height: 320px;
       border-radius: var(--radius-md);
       overflow: hidden;
       text-decoration: none;
@@ -309,65 +308,52 @@
       transition: transform 0.3s ease, box-shadow 0.3s ease;
 
       &:hover {
-        transform: translateY(-5px);
+        transform: translateY(-4px);
         box-shadow: var(--shadow-lg);
         .occ-cta-label { opacity: 1; transform: translateX(0); }
-        .occ-img-overlay { opacity: 1; }
       }
 
       .occ-img-overlay {
         position: absolute;
         inset: 0;
         transition: opacity 0.3s ease;
-        opacity: 0.82;
       }
 
       .occ-card-content {
         position: relative;
         z-index: 1;
         margin-top: auto;
-        padding: 1.4rem 1.2rem;
+        padding: 1.75rem 1.5rem;
         color: white;
 
-        .occ-emoji { font-size: 1.9rem; display: block; margin-bottom: 0.4rem; }
+        .occ-emoji { font-size: 2rem; display: block; margin-bottom: 0.5rem; }
 
         h3 {
-          font-size: 1.2rem;
-          margin: 0 0 0.25rem;
+          font-size: 1.45rem;
+          margin: 0 0 0.3rem;
+          line-height: 1.2;
           font-family: 'Playfair Display', Georgia, serif;
         }
 
         p {
-          font-size: 0.78rem;
+          font-size: 0.85rem;
           opacity: 0.88;
-          margin: 0 0 0.65rem;
+          margin: 0 0 0.75rem;
         }
 
         .occ-cta-label {
-          font-size: 0.75rem;
+          font-size: 0.82rem;
           font-weight: 600;
           display: inline-block;
           opacity: 0;
           transform: translateX(-6px);
           transition: all 0.25s ease;
           background: rgba(255,255,255,0.2);
-          border: 1px solid rgba(255,255,255,0.4);
+          border: 1px solid rgba(255,255,255,0.35);
           border-radius: var(--radius-full);
-          padding: 0.25rem 0.7rem;
+          padding: 0.35rem 0.9rem;
         }
       }
-
-      // Per-occasion background images
-      &.occ-birthday  { background-image: url('https://images.unsplash.com/photo-1487530811176-3780de880c2d?w=600&q=80');
-                        .occ-img-overlay { background: linear-gradient(160deg, rgba(37,99,235,0.75) 0%, rgba(255,170,80,0.65) 100%); } }
-      &.occ-wedding   { background-image: url('https://images.unsplash.com/photo-1559563362-c667ba5f5480?w=600&q=80');
-                        .occ-img-overlay { background: linear-gradient(160deg, rgba(200,150,100,0.75) 0%, rgba(255,220,190,0.60) 100%); } }
-      &.occ-sympathy  { background-image: url('https://images.unsplash.com/photo-1490750967868-88aa4486c946?w=600&q=80');
-                        .occ-img-overlay { background: linear-gradient(160deg, rgba(50,100,180,0.75) 0%, rgba(180,210,255,0.60) 100%); } }
-      &.occ-romance   { background-image: url('https://images.unsplash.com/photo-1518882605630-8eb920bc4c49?w=600&q=80');
-                        .occ-img-overlay { background: linear-gradient(160deg, rgba(153,27,27,0.80) 0%, rgba(220,38,38,0.60) 100%); } }
-      &.occ-corporate { background-image: url('https://images.unsplash.com/photo-1561181286-d3fee7d55364?w=600&q=80');
-                        .occ-img-overlay { background: linear-gradient(160deg, rgba(20,40,70,0.85) 0%, rgba(50,90,160,0.70) 100%); } }
     }
   }
 
