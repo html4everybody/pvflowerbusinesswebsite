@@ -54,14 +54,15 @@
       </div>
       <div class="occasion-cards">
         @for (occ of occasions(); track occ.slug; let i = $index) {
-          <a [routerLink]="['/occasions', occ.slug]" class="occ-card" appFadeIn [fadeDelay]="i * 80"
-             [style.background-image]="occ.hero_image ? 'url(' + occ.hero_image + ')' : null">
-            <div class="occ-img-overlay" [style.background]="occ.gradient || null"></div>
-            <div class="occ-card-content">
-              <span class="occ-emoji">{{ occ.emoji }}</span>
+          <a [routerLink]="['/occasions', occ.slug]" class="occ-index-card" appFadeIn [fadeDelay]="i * 80"
+             [style.--occ-accent]="occ.accent_color"
+             [style.background-image]="'url(' + occ.hero_image + ')'">
+            <div class="occ-index-overlay" [style.background]="occ.gradient"></div>
+            <div class="occ-index-content">
+              <span class="occ-index-emoji">{{ occ.emoji }}</span>
               <h3>{{ occ.title }}</h3>
               <p>{{ occ.tagline }}</p>
-              <span class="occ-cta-label">Explore Collection →</span>
+              <span class="occ-index-cta">Explore Collection →</span>
             </div>
           </a>
         }
