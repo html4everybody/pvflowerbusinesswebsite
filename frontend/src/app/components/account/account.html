@@ -127,6 +127,10 @@
             <div class="spinner"></div>
             <p>Loading orders...</p>
           </div>
+        } @else if (ordersError()) {
+          <div class="orders-empty">
+            <p>Failed to load orders. Please <button class="orders-retry-btn" (click)="retryOrders()">try again</button>.</p>
+          </div>
         } @else if (visibleOrders().length === 0) {
           <div class="orders-empty">
             <p>{{ orderSearch() || orderStatus() !== 'all' ? 'No orders match your search.' : 'No orders yet.' }}</p>

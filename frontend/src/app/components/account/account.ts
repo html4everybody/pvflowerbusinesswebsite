@@ -40,6 +40,7 @@ export class Account implements OnInit {
 
   orders        = signal<any[]>([]);
   ordersLoading = signal(false);
+  ordersError   = signal(false);
   orderSearch   = signal('');
   orderStatus   = signal('all');
 
@@ -108,7 +109,7 @@ export class Account implements OnInit {
     const params = `email=${encodeURIComponent(user.email)}${token ? `&token=${token}` : ''}`;
     this.http.get<any[]>(`${environment.apiUrl}/api/orders?${params}`).subscribe({
       next: (data) => { this.orders.set(data); this.ordersLoading.set(false); },
-      error: () => this.ordersLoading.set(false)
+      error: () => { this.ordersLoading.set(false); this.ordersError.set(true); }
     });
   }
 
@@ -163,6 +164,19 @@ export class Account implements OnInit {
         this.pwSaving.set(false);
         this.pwError.set(err.error?.detail || 'Failed to change password.');
       }
+    });
+  }
+
+  retryOrders(): void {
+    const user = this.authService.user();
+    if (!user) return;
+    this.ordersError.set(false);
+    this.ordersLoading.set(true);
+    const token = this.authService.getToken();
+    const params = `email=${encodeURIComponent(user.email)}${token ? `&token=${token}` : ''}`;
+    this.http.get<any[]>(`${environment.apiUrl}/api/orders?${params}`).subscribe({
+      next: (data) => { this.orders.set(data); this.ordersLoading.set(false); },
+      error: () => { this.ordersLoading.set(false); this.ordersError.set(true); }
     });
   }
 
