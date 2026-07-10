@@ -52,6 +52,21 @@
         <h2>Every Moment Deserves Flowers</h2>
         <p>Curated collections crafted for life's most meaningful moments</p>
       </div>
+      <div class="index-cards">
+        @for (occ of occasions(); track occ.slug) {
+          <a [routerLink]="['/occasions', occ.slug]" class="index-card"
+             [style.--occ-accent]="occ.accent_color"
+             [style.background-image]="'url(' + occ.hero_image + ')'">
+            <div class="index-card-overlay" [style.background]="occ.gradient"></div>
+            <div class="index-card-content">
+              <span class="index-card-emoji">{{ occ.emoji }}</span>
+              <h2>{{ occ.title }}</h2>
+              <p>{{ occ.tagline }}</p>
+              <span class="index-card-cta">Explore Collection →</span>
+            </div>
+          </a>
+        }
+      </div>
     </div>
   </section>
 
