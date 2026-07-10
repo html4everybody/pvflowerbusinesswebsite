@@ -289,26 +289,28 @@
 
     .occasion-cards {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-      gap: 1.25rem;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 1rem;
 
-      @media (max-width: 600px) { grid-template-columns: 1fr; }
+      @media (max-width: 1024px) { grid-template-columns: repeat(3, 1fr); }
+      @media (max-width: 640px)  { grid-template-columns: repeat(2, 1fr); gap: 0.75rem; }
     }
 
     .occ-card {
       position: relative;
-      height: 320px;
+      height: 280px;
       border-radius: var(--radius-md);
       overflow: hidden;
       text-decoration: none;
       background-size: cover;
       background-position: center;
+      background-repeat: no-repeat;
       display: flex;
       flex-direction: column;
       transition: transform 0.3s ease, box-shadow 0.3s ease;
 
       &:hover {
-        transform: translateY(-4px);
+        transform: translateY(-5px);
         box-shadow: var(--shadow-lg);
         .occ-cta-label { opacity: 1; transform: translateX(0); }
       }
@@ -323,35 +325,34 @@
         position: relative;
         z-index: 1;
         margin-top: auto;
-        padding: 1.75rem 1.5rem;
+        padding: 1.4rem 1.2rem;
         color: white;
 
-        .occ-emoji { font-size: 2rem; display: block; margin-bottom: 0.5rem; }
+        .occ-emoji { font-size: 1.9rem; display: block; margin-bottom: 0.4rem; }
 
         h3 {
-          font-size: 1.45rem;
-          margin: 0 0 0.3rem;
-          line-height: 1.2;
+          font-size: 1.2rem;
+          margin: 0 0 0.25rem;
           font-family: 'Playfair Display', Georgia, serif;
         }
 
         p {
-          font-size: 0.85rem;
+          font-size: 0.78rem;
           opacity: 0.88;
-          margin: 0 0 0.75rem;
+          margin: 0 0 0.65rem;
         }
 
         .occ-cta-label {
-          font-size: 0.82rem;
+          font-size: 0.75rem;
           font-weight: 600;
           display: inline-block;
           opacity: 0;
           transform: translateX(-6px);
           transition: all 0.25s ease;
           background: rgba(255,255,255,0.2);
-          border: 1px solid rgba(255,255,255,0.35);
+          border: 1px solid rgba(255,255,255,0.4);
           border-radius: var(--radius-full);
-          padding: 0.35rem 0.9rem;
+          padding: 0.25rem 0.7rem;
         }
       }
     }
