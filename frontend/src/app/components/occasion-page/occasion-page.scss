@@ -57,15 +57,16 @@
 
 .index-cards {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: repeat(5, 1fr);
   gap: 1.25rem;
 
-  @media (max-width: 600px) { grid-template-columns: 1fr; }
+  @media (max-width: 1024px) { grid-template-columns: repeat(3, 1fr); }
+  @media (max-width: 600px)  { grid-template-columns: repeat(2, 1fr); }
 }
 
 .index-card {
   position: relative;
-  height: 320px;
+  height: 280px;
   border-radius: var(--radius-md);
   overflow: hidden;
   text-decoration: none;
