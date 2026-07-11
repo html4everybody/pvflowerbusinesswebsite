@@ -67,8 +67,12 @@
     height: auto;
     min-height: unset;
     position: static;
-    padding: 0.75rem 1rem;
+    overflow-x: auto;
+    overflow-y: visible;
+    padding: 0.75rem 0 0.75rem 1rem;
     border-bottom: 1px solid var(--border);
+    scrollbar-width: none;
+    &::-webkit-scrollbar { display: none; }
   }
 
   .sidebar-back { display: none; }
@@ -76,10 +80,10 @@
   .sidebar-nav {
     flex-direction: row;
     flex-wrap: nowrap;
-    gap: 0.5rem;
-    overflow-x: auto;
-    scrollbar-width: none;
-    &::-webkit-scrollbar { display: none; }
+    gap: 0.25rem;
+    width: max-content;
+    min-width: 100%;
+    padding-right: 1rem;
   }
 
   .sidebar-item {
@@ -89,7 +93,7 @@
     padding: 0.45rem 0.75rem;
     white-space: nowrap;
 
-    svg { display: none; }
+    i.bi, svg { display: none; }
 
     &.active {
       font-weight: 600;
