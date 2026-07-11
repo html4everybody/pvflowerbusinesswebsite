@@ -7,6 +7,7 @@ import { ThemeService } from '../../services/theme';
 import { ProductService } from '../../services/product';
 import { WishlistService } from '../../services/wishlist';
 import { NoticeService } from '../../services/notice';
+import { ToastService } from '../../services/toast';
 import { Product } from '../../models/product.model';
 
 @Component({
@@ -128,6 +129,7 @@ export class Header implements OnInit {
     public wishlistService: WishlistService,
     public noticeService: NoticeService,
     private productService: ProductService,
+    private toastService: ToastService,
     private el: ElementRef,
     private router: Router
   ) {}
@@ -195,12 +197,19 @@ export class Header implements OnInit {
     }
   }
 
+  private readonly SECTION_LABELS: Record<string, string> = {
+    'offers-section':  'No live deals available right now.',
+    'bundles-section': 'No bundle offers available right now.'
+  };
+
   private scrollToId(id: string, attempts = 0): void {
     const el = document.getElementById(id);
     if (el) {
       el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    } else if (attempts < 30) {
+    } else if (attempts < 15) {
       setTimeout(() => this.scrollToId(id, attempts + 1), 100);
+    } else {
+      this.toastService.show(this.SECTION_LABELS[id] ?? 'Section not available right now.');
     }
   }
 
