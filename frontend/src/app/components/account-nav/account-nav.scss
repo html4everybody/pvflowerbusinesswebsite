@@ -1,3 +1,9 @@
+:host {
+  display: block;
+  width: 100%;
+  min-width: 0;
+}
+
 .account-sidebar {
   width: 260px;
   flex-shrink: 0;
