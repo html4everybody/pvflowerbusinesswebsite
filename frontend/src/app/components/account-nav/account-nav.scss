@@ -61,6 +61,9 @@
   }
 }
 
+// desktop: wrapper is invisible to layout
+.nav-scroll-wrap { display: contents; }
+
 @media (max-width: 640px) {
   .account-sidebar {
     width: 100%;
@@ -69,28 +72,33 @@
     position: static;
     padding: 0;
     border-bottom: 1px solid var(--border);
-    overflow: unset;
+    overflow: visible;
   }
 
   .sidebar-back { display: none; }
+
+  .nav-scroll-wrap {
+    display: block;
+    width: 100%;
+    overflow-x: scroll;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    &::-webkit-scrollbar { display: none; }
+  }
 
   .sidebar-nav {
     display: flex;
     flex-direction: row;
     flex-wrap: nowrap;
-    overflow-x: scroll;
-    overflow-y: hidden;
-    -webkit-overflow-scrolling: touch;
+    width: max-content;
+    min-width: 100%;
     gap: 0.5rem;
     padding: 0.75rem 1rem;
-    scrollbar-width: none;
-    &::-webkit-scrollbar { display: none; }
   }
 
   .sidebar-item {
     flex-shrink: 0;
-    flex-grow: 0;
-    flex-basis: auto;
     width: auto;
     font-size: 0.83rem;
     padding: 0.45rem 0.75rem;
