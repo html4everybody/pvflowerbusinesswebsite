@@ -135,18 +135,22 @@ export class CorporateOrder implements OnInit {
     this.allProducts = this.productService.getProducts().filter(p => p.inStock);
   }
 
+  private scrollToTop(): void {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
   nextStep(): void {
     const cur = this.step();
-    if (cur < 4) this.step.set((cur + 1) as 1 | 2 | 3 | 4);
+    if (cur < 4) { this.step.set((cur + 1) as 1 | 2 | 3 | 4); this.scrollToTop(); }
   }
 
   prevStep(): void {
     const cur = this.step();
-    if (cur > 1) this.step.set((cur - 1) as 1 | 2 | 3 | 4);
+    if (cur > 1) { this.step.set((cur - 1) as 1 | 2 | 3 | 4); this.scrollToTop(); }
   }
 
   goToStep(n: number): void {
-    if (n < this.step()) this.step.set(n as 1 | 2 | 3 | 4);
+    if (n < this.step()) { this.step.set(n as 1 | 2 | 3 | 4); this.scrollToTop(); }
   }
 
   onLogoLoad(): void { this.logoPreviewError.set(false); }

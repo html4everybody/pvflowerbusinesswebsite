@@ -209,6 +209,10 @@ export class Subscription implements OnInit {
     });
   }
 
+  private scrollToTop(): void {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
   nextStep(): void {
     if (!this.authService.isLoggedIn()) {
       this.toastService.show('Please sign in to continue', 'error');
@@ -216,16 +220,16 @@ export class Subscription implements OnInit {
       return;
     }
     const cur = this.step();
-    if (cur < 4) this.step.set((cur + 1) as 1 | 2 | 3 | 4);
+    if (cur < 4) { this.step.set((cur + 1) as 1 | 2 | 3 | 4); this.scrollToTop(); }
   }
 
   prevStep(): void {
     const cur = this.step();
-    if (cur > 1) this.step.set((cur - 1) as 1 | 2 | 3 | 4);
+    if (cur > 1) { this.step.set((cur - 1) as 1 | 2 | 3 | 4); this.scrollToTop(); }
   }
 
   goToStep(n: number): void {
-    if (n < this.step()) this.step.set(n as 1 | 2 | 3 | 4);
+    if (n < this.step()) { this.step.set(n as 1 | 2 | 3 | 4); this.scrollToTop(); }
   }
 
   selectDuration(id: 'weekly' | 'biweekly' | 'monthly'): void {
