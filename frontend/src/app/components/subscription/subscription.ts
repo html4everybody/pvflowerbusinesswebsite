@@ -210,6 +210,10 @@ export class Subscription implements OnInit {
   }
 
   nextStep(): void {
+    if (!this.authService.isLoggedIn()) {
+      this.router.navigate(['/signin'], { queryParams: { returnUrl: '/subscribe' } });
+      return;
+    }
     const cur = this.step();
     if (cur < 4) this.step.set((cur + 1) as 1 | 2 | 3 | 4);
   }
