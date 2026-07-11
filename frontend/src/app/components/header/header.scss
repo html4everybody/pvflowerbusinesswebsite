@@ -276,7 +276,7 @@
       }
     }
 
-    .nav-signin, .nav-user-greeting, .nav-orders-link, .nav-extra-link,
+    .nav-signin, .nav-user-greeting, .nav-orders-link, .nav-notif-link, .nav-extra-link,
     .nav-logout-btn, .nav-wishlist-link, .nav-theme-btn,
     .nav-builder, .nav-occasions,
     .nav-hub-divider, .nav-extra-btn, .nav-close { display: none; }
@@ -1115,6 +1115,7 @@
 
     .signin-link    { display: none; }
     .user-menu-wrapper { display: none; }
+    .notif-wrapper  { display: none; }
     .hamburger      { display: flex; }
 
     .nav {
@@ -1198,6 +1199,37 @@
         background: none;
         letter-spacing: -0.01em;
         &:hover, &.active { color: var(--accent); background: none; border-left: none; }
+      }
+
+      .nav-notif-link {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        font-size: 1rem;
+        font-weight: 700;
+        font-family: 'Fraunces', Georgia, serif;
+        color: var(--text);
+        padding: 1rem 0;
+        border-bottom: 1px solid var(--border);
+        border-left: none;
+        background: none;
+        letter-spacing: -0.01em;
+        &:hover { color: var(--accent); background: none; border-left: none; }
+
+        .nav-notif-count {
+          background: var(--accent);
+          color: #fff;
+          font-size: 0.68rem;
+          font-weight: 800;
+          min-width: 18px;
+          height: 18px;
+          padding: 0 4px;
+          border-radius: 999px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-family: 'Inter', sans-serif;
+        }
       }
 
       .nav-logout-btn {

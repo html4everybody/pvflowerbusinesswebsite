@@ -113,6 +113,12 @@
             <a routerLink="/merchant" routerLinkActive="active" class="nav-admin-link" (click)="closeMenu()">Merchant Dashboard</a>
           }
           <a routerLink="/account" routerLinkActive="active" class="nav-orders-link" (click)="closeMenu()">My Account</a>
+          <a routerLink="/account" [queryParams]="{ tab: 'notifications' }" class="nav-notif-link" (click)="closeMenu()">
+            Notifications
+            @if (noticeService.unread() > 0) {
+              <span class="nav-notif-count">{{ noticeService.unread() > 9 ? '9+' : noticeService.unread() }}</span>
+            }
+          </a>
         }
 
         <a routerLink="/wishlist" routerLinkActive="active" class="nav-wishlist-link" (click)="closeMenu()">
