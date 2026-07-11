@@ -198,7 +198,7 @@
 
         <div class="search-bar">
           <div class="search-input-wrap">
-            <i class="bi bi-search"></i>
+            <i class="bi bi-search search-icon"></i>
             <input type="text" class="search-input" placeholder="Search by order ID, name or email..."
               [value]="searchQuery()" (input)="searchQuery.set($any($event.target).value)">
             @if (searchQuery()) {
