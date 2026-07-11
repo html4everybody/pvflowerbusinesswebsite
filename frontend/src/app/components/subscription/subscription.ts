@@ -211,6 +211,7 @@ export class Subscription implements OnInit {
 
   nextStep(): void {
     if (!this.authService.isLoggedIn()) {
+      this.toastService.show('Please sign in to continue', 'error');
       this.router.navigate(['/signin'], { queryParams: { returnUrl: '/subscribe' } });
       return;
     }
