@@ -18,6 +18,7 @@ declare const FB: any;
 })
 export class Signin implements AfterViewInit, OnDestroy {
   isSignUp        = signal(false);
+  mode            = signal<'customer' | 'merchant'>('customer');   // login as customer vs merchant
   errorMessage    = signal('');
   successMessage  = signal('');
   loading         = signal(false);
@@ -184,15 +185,35 @@ export class Signin implements AfterViewInit, OnDestroy {
     });
   }
 
+  setMode(m: 'customer' | 'merchant'): void {
+    this.mode.set(m);
+    this.isSignUp.set(false);
+    this.errorMessage.set('');
+    this.successMessage.set('');
+    this.showResendLink.set(false);
+  }
+
   onLogin(): void {
     this.errorMessage.set('');
     this.successMessage.set('');
     this.loading.set(true);
+    const merchantMode = this.mode() === 'merchant';
 
     this.authService.login(this.loginData.email, this.loginData.password, this.rememberMe).subscribe({
       next: () => {
         this.loading.set(false);
         const user = this.authService.user();
+        if (merchantMode) {
+          // Merchant login must land on the merchant dashboard; reject non-merchants.
+          if (this.authService.isMerchant()) {
+            this.toastService.show(`Welcome back, ${user.firstName}!`);
+            this.router.navigateByUrl('/merchant');
+          } else {
+            this.authService.logout();
+            this.errorMessage.set('This is not a merchant account. Ask the VivaPetals admin to set up your shop.');
+          }
+          return;
+        }
         this.toastService.show(`Hi ${user.firstName}, signed in successfully!`);
         this.router.navigateByUrl(this.returnUrl());
       },
@@ -200,7 +221,7 @@ export class Signin implements AfterViewInit, OnDestroy {
         this.loading.set(false);
         const msg = err.error?.detail || 'Invalid email or password';
         this.errorMessage.set(msg);
-        this.showResendLink.set(err.status === 403);
+        this.showResendLink.set(err.status === 403 && !merchantMode);
       }
     });
   }

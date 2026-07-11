@@ -619,11 +619,22 @@ _SEED_PRODUCTS = [
 PRODUCTS = list(_SEED_PRODUCTS)
 
 def _row_to_product(r: dict) -> dict:
+    base = float(r.get("price", 0))                     # admin-set selling price
+    disc = float(r.get("discount_percent", 0) or 0)     # admin-set discount
+    merch = float(r.get("merchant_price", 0) or 0)      # what the merchant earns
+    final = round(base * (1 - disc / 100), 2) if disc > 0 else base
     return {
         "id": r["id"],
         "name": r.get("name", ""),
         "description": r.get("description", ""),
-        "price": float(r.get("price", 0)),
+        "price": base,                       # selling price (admin-set)
+        "merchant_price": merch,             # merchant's take per unit
+        "discount_percent": disc,            # admin-set discount
+        "final_price": final,                # effective price customers pay
+        "profit": round(final - merch, 2),   # platform margin per unit
+        "status": r.get("status", "approved"),          # pending | approved | rejected
+        "reject_reason": r.get("reject_reason"),
+        "merchant_id": r.get("merchant_id"),
         "image": r.get("image", ""),
         "category": r.get("category", ""),
         "inStock": r.get("in_stock", True),
@@ -901,9 +912,68 @@ async def admin_upload_image(token: str, file: UploadFile = File(...)):
         raise HTTPException(status_code=500, detail=f"Upload failed ({up.status_code}): {up.text[:200]}")
     return {"url": f"{SUPABASE_URL}/storage/v1/object/public/Products/{path}"}
 
+def seed_dummy_merchants():
+    """Create two demo merchant logins + sample approved products (idempotent).
+    Logins: merchant1@vivapetals.com / merchant2@vivapetals.com — pw: Merchant@123."""
+    demo_img = "https://images.unsplash.com/photo-1490750967868-88aa4486c946?w=600"
+    demos = [
+        {"id": "00000000-0000-0000-0000-000000000101", "email": "merchant1@vivapetals.com",
+         "shop": "Rose & Bloom Studio", "slug": "rose-bloom", "phone": "+91 90000 00001",
+         "products": [("Velvet Red Roses", "A dozen deep-red roses, hand-tied", 400, "Bouquets"),
+                      ("Blush Peony Bunch", "Soft pink peonies for a gentle gift", 550, "Bouquets")]},
+        {"id": "00000000-0000-0000-0000-000000000102", "email": "merchant2@vivapetals.com",
+         "shop": "Petal Cart", "slug": "petal-cart", "phone": "+91 90000 00002",
+         "products": [("Sunny Marigold Garland", "Fresh marigold garland for festivities", 150, "Garlands"),
+                      ("Mixed Daisy Jar", "Cheerful daisies in a rustic jar", 300, "Flowers")]},
+    ]
+    for d in demos:
+        try:
+            u = supabase.table("users").select("id").eq("email", d["email"]).execute().data
+            if u:
+                user_id = u[0]["id"]
+            else:
+                ins = supabase.table("users").insert({
+                    "email": d["email"], "password": hash_password("Merchant@123"),
+                    "first_name": d["shop"], "last_name": "", "is_verified": True,
+                    "role": "merchant", "auth_provider": "email",
+                }).execute()
+                user_id = ins.data[0]["id"] if ins.data else None
+
+            if not supabase.table("merchants").select("id").eq("id", d["id"]).execute().data:
+                supabase.table("merchants").insert({
+                    "id": d["id"], "user_id": user_id, "shop_name": d["shop"], "slug": d["slug"],
+                    "phone": d["phone"], "email": d["email"], "status": "approved", "commission_rate": 0,
+                }).execute()
+            else:
+                supabase.table("merchants").update({"user_id": user_id}).eq("id", d["id"]).execute()
+
+            existing = {p["name"] for p in (supabase.table("products").select("name").eq("merchant_id", d["id"]).execute().data or [])}
+            last = supabase.table("products").select("id").order("id", desc=True).limit(1).execute().data
+            next_id = (last[0]["id"] + 1) if last else 1
+            new_rows = []
+            for (name, desc, mprice, cat) in d["products"]:
+                if name in existing:
+                    continue
+                new_rows.append({
+                    "id": next_id, "name": name, "description": desc,
+                    "price": round(mprice * 1.25),   # admin markup 25% → selling price
+                    "merchant_price": mprice, "discount_percent": 0,
+                    "image": demo_img, "category": cat, "in_stock": True,
+                    "merchant_id": d["id"], "status": "approved",
+                })
+                next_id += 1
+            if new_rows:
+                supabase.table("products").insert(new_rows).execute()
+        except Exception as e:
+            print(f"[Seed] {d['shop']} skipped (run merchant_v2_migration.sql?): {e}", flush=True)
+    print("[Seed] Dummy merchants ready (merchant1/merchant2@vivapetals.com / Merchant@123)", flush=True)
+
+
 # Seeding disabled — the database is the source of truth. We only load caches.
 load_products()
 load_subscription_plans()
+seed_dummy_merchants()
+load_products()
 
 # ── Order Status ───────────────────────────────────────────────────────────────
 STATUS_MESSAGES = {
@@ -992,6 +1062,7 @@ class ProductUpdate(BaseModel):
     name: Optional[str] = None
     description: Optional[str] = None
     price: Optional[float] = None
+    discount_percent: Optional[float] = None
     image: Optional[str] = None
     category: Optional[str] = None
     inStock: Optional[bool] = None
@@ -1030,34 +1101,55 @@ class SubscriptionRequest(BaseModel):
 
 # ── Products Routes ────────────────────────────────────────────────────────────
 
+def _is_live(p: dict) -> bool:
+    """Public storefront only shows admin-approved products."""
+    return p.get("status", "approved") == "approved"
+
 @app.get("/api/products")
 def get_products(category: Optional[str] = None):
+    live = [p for p in PRODUCTS if _is_live(p)]
     if category:
-        return [p for p in PRODUCTS if p["category"] == category]
-    return PRODUCTS
+        return [p for p in live if p["category"] == category]
+    return live
 
 @app.get("/api/products/categories")
 def get_categories():
-    return sorted(list(set(p["category"] for p in PRODUCTS)))
+    return sorted(list(set(p["category"] for p in PRODUCTS if _is_live(p))))
 
 @app.get("/api/products/{product_id}")
 def get_product(product_id: int):
-    product = next((p for p in PRODUCTS if p["id"] == product_id), None)
+    product = next((p for p in PRODUCTS if p["id"] == product_id and _is_live(p)), None)
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
     return product
 
 # ── Admin: Products CRUD (Supabase) ──────────────────────────────────────────────
 
+@app.get("/api/admin/products")
+def admin_list_products(token: str):
+    """All products (every status) with shop names — for admin management/approvals."""
+    require_admin(token)
+    merchants = supabase.table("merchants").select("id, shop_name").execute().data or []
+    shop_by_id = {m["id"]: m["shop_name"] for m in merchants}
+    out = []
+    for p in PRODUCTS:
+        row = dict(p)
+        row["shop_name"] = shop_by_id.get(p.get("merchant_id"), "VivaPetals")
+        row["is_house"] = p.get("merchant_id") == HOUSE_MERCHANT_ID
+        out.append(row)
+    return out
+
 @app.post("/api/admin/products")
 def create_product(req: ProductCreate, token: str):
     require_admin(token)
     rows = supabase.table("products").select("id").order("id", desc=True).limit(1).execute().data
     next_id = (rows[0]["id"] + 1) if rows else 1
+    # House-store products are live immediately with no markup (merchant_price = price).
     supabase.table("products").insert({
         "id": next_id, "name": req.name, "description": req.description,
-        "price": float(req.price), "image": req.image, "category": req.category,
-        "in_stock": req.inStock,
+        "price": float(req.price), "merchant_price": float(req.price),
+        "image": req.image, "category": req.category, "in_stock": req.inStock,
+        "merchant_id": HOUSE_MERCHANT_ID, "status": "approved",
     }).execute()
     load_products()
     return next(p for p in PRODUCTS if p["id"] == next_id)
@@ -1065,13 +1157,20 @@ def create_product(req: ProductCreate, token: str):
 @app.put("/api/admin/products/{product_id}")
 def update_product(product_id: int, req: ProductUpdate, token: str):
     require_admin(token)
+    # Admin controls the selling price + discount (their markup lives here).
     col_map = {"name": "name", "description": "description", "price": "price",
-               "image": "image", "category": "category", "inStock": "in_stock"}
+               "discount_percent": "discount_percent", "image": "image",
+               "category": "category", "inStock": "in_stock"}
     data = {}
     for field, col in col_map.items():
         val = getattr(req, field)
         if val is not None:
-            data[col] = float(val) if field == "price" else val
+            if field == "price":
+                data[col] = float(val)
+            elif field == "discount_percent":
+                data[col] = max(0.0, min(100.0, float(val)))
+            else:
+                data[col] = val
     if not data:
         raise HTTPException(status_code=400, detail="No fields to update")
     result = supabase.table("products").update(data).eq("id", product_id).execute()
@@ -1079,6 +1178,41 @@ def update_product(product_id: int, req: ProductUpdate, token: str):
         raise HTTPException(status_code=404, detail="Product not found")
     load_products()
     return next(p for p in PRODUCTS if p["id"] == product_id)
+
+
+class ProductApproveRequest(BaseModel):
+    token: str
+    price: float                       # admin-set selling price
+    discount_percent: float = 0
+
+
+class ProductRejectRequest(BaseModel):
+    token: str
+    reason: str = ""
+
+
+@app.patch("/api/admin/products/{product_id}/approve")
+def approve_product(product_id: int, req: ProductApproveRequest):
+    require_admin(req.token)
+    supabase.table("products").update({
+        "price": float(req.price),
+        "discount_percent": max(0.0, min(100.0, float(req.discount_percent or 0))),
+        "status": "approved",
+        "reject_reason": None,
+    }).eq("id", product_id).execute()
+    load_products()
+    return next((p for p in PRODUCTS if p["id"] == product_id), {"status": "approved"})
+
+
+@app.patch("/api/admin/products/{product_id}/reject")
+def reject_product(product_id: int, req: ProductRejectRequest):
+    require_admin(req.token)
+    supabase.table("products").update({
+        "status": "rejected",
+        "reject_reason": req.reason or "Not accepted at this time.",
+    }).eq("id", product_id).execute()
+    load_products()
+    return {"status": "rejected"}
 
 @app.delete("/api/admin/products/{product_id}")
 def delete_product(product_id: int, token: str):
@@ -1293,16 +1427,10 @@ def get_me(token: str):
     email = resolve_token(token)
     if not email:
         raise HTTPException(status_code=401, detail="Unauthorized")
-    result = supabase.table("users").select("first_name,last_name,email,auth_provider").eq("email", email).execute()
+    result = supabase.table("users").select("*").eq("email", email).execute()
     if not result.data:
         raise HTTPException(status_code=404, detail="User not found")
-    user = result.data[0]
-    return {
-        "email": user["email"],
-        "firstName": user["first_name"],
-        "lastName": user["last_name"],
-        "auth_provider": user.get("auth_provider", "email")
-    }
+    return auth_user_payload(result.data[0])
 
 @app.put("/api/auth/profile")
 def update_profile(req: UpdateProfileRequest):
@@ -1455,17 +1583,7 @@ def login(req: LoginRequest):
 
     token = create_token(req.email)
 
-    return {
-        "token": token,
-        "user": {
-            "id": user["id"],
-            "firstName": user["first_name"],
-            "lastName": user["last_name"],
-            "email": user["email"],
-            "is_admin": user.get("is_admin", False),
-            "auth_provider": user.get("auth_provider", "email")
-        }
-    }
+    return {"token": token, "user": auth_user_payload(user)}
 
 # ── Social Auth ────────────────────────────────────────────────────────────────
 
@@ -1553,15 +1671,443 @@ def social_auth(req: SocialAuthRequest):
 
     return {
         "token": token,
-        "user": {
-            "id":            user["id"],
-            "firstName":     user["first_name"],
-            "lastName":      user["last_name"],
-            "email":         user["email"],
-            "is_admin":      user.get("is_admin", False),
-            "auth_provider": user.get("auth_provider", req.provider)
-        }
+        "user": auth_user_payload(user),
     }
+
+
+# ── Merchant helpers & routes ────────────────────────────────────────────────
+
+HOUSE_MERCHANT_ID = "00000000-0000-0000-0000-000000000001"
+
+def get_user_by_email(email: str):
+    r = supabase.table("users").select("*").eq("email", email).execute()
+    return r.data[0] if r.data else None
+
+def get_merchant_for_user(user_id):
+    if not user_id:
+        return None
+    r = supabase.table("merchants").select("*").eq("user_id", user_id).limit(1).execute()
+    return r.data[0] if r.data else None
+
+def merchant_public(m):
+    """Trimmed merchant object safe to embed in auth responses."""
+    if not m:
+        return None
+    return {
+        "id": m["id"],
+        "shop_name": m.get("shop_name", ""),
+        "slug": m.get("slug"),
+        "status": m.get("status", "pending"),
+        "commission_rate": m.get("commission_rate", 15),
+    }
+
+def auth_user_payload(user):
+    """Standard user object returned by login / social / me — now role-aware."""
+    merchant = get_merchant_for_user(user["id"])
+    return {
+        "id": user["id"],
+        "firstName": user["first_name"],
+        "lastName": user["last_name"],
+        "email": user["email"],
+        "is_admin": user.get("is_admin", False),
+        "role": user.get("role", "customer"),
+        "merchant": merchant_public(merchant),
+        "auth_provider": user.get("auth_provider", "email"),
+    }
+
+def slugify(text: str) -> str:
+    s = "".join(c if c.isalnum() else "-" for c in (text or "").lower())
+    return "-".join(filter(None, s.split("-"))) or "shop"
+
+def require_merchant(token: str):
+    """Return the caller's APPROVED merchant record, or raise 401/403."""
+    email = resolve_token(token)
+    if not email:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    user = get_user_by_email(email)
+    if not user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    m = get_merchant_for_user(user["id"])
+    if not m:
+        raise HTTPException(status_code=403, detail="Merchant access required")
+    if m.get("status") != "approved":
+        raise HTTPException(status_code=403, detail=f"Merchant account is {m.get('status', 'pending')}")
+    return m
+
+
+class MerchantApplyRequest(BaseModel):
+    token: str
+    shop_name: str
+    description: Optional[str] = ""
+    phone: Optional[str] = ""
+
+
+@app.post("/api/merchant/apply")
+def merchant_apply(req: MerchantApplyRequest):
+    email = resolve_token(req.token)
+    if not email:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    user = get_user_by_email(email)
+    if not user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    if get_merchant_for_user(user["id"]):
+        existing = get_merchant_for_user(user["id"])
+        raise HTTPException(status_code=400, detail=f"You already have a shop application ({existing.get('status')}).")
+
+    shop_name = (req.shop_name or "").strip()
+    if not shop_name:
+        raise HTTPException(status_code=400, detail="Shop name is required")
+
+    base = slugify(shop_name)
+    slug, i = base, 1
+    while supabase.table("merchants").select("id").eq("slug", slug).execute().data:
+        i += 1
+        slug = f"{base}-{i}"
+
+    supabase.table("merchants").insert({
+        "user_id": user["id"],
+        "shop_name": shop_name,
+        "slug": slug,
+        "description": req.description or "",
+        "phone": req.phone or "",
+        "email": email,
+        "status": "pending",
+        "commission_rate": 15,
+    }).execute()
+    return {"status": "pending", "message": "Application submitted! An admin will review your shop shortly."}
+
+
+@app.get("/api/merchant/me")
+def merchant_me(token: str):
+    email = resolve_token(token)
+    if not email:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    user = get_user_by_email(email)
+    m = get_merchant_for_user(user["id"]) if user else None
+    if not m:
+        return {"merchant": None}
+    return {"merchant": {
+        "id": m["id"], "shop_name": m.get("shop_name", ""), "slug": m.get("slug"),
+        "description": m.get("description", ""), "phone": m.get("phone", ""),
+        "logo": m.get("logo", ""), "status": m.get("status", "pending"),
+        "commission_rate": m.get("commission_rate", 15),
+    }}
+
+
+# ── Merchant: shop profile ───────────────────────────────────────────────────
+
+class MerchantShopUpdate(BaseModel):
+    token: str
+    shop_name: Optional[str] = None
+    description: Optional[str] = None
+    phone: Optional[str] = None
+    logo: Optional[str] = None
+
+
+@app.put("/api/merchant/shop")
+def merchant_update_shop(req: MerchantShopUpdate):
+    m = require_merchant(req.token)
+    data = {}
+    for field in ("shop_name", "description", "phone", "logo"):
+        val = getattr(req, field)
+        if val is not None:
+            data[field] = val
+    if not data:
+        raise HTTPException(status_code=400, detail="No fields to update")
+    supabase.table("merchants").update(data).eq("id", m["id"]).execute()
+    return {"status": "ok", **data}
+
+
+# ── Merchant: products (scoped to the caller's shop) ─────────────────────────
+
+class MerchantProductCreate(BaseModel):
+    token: str
+    name: str
+    description: str = ""
+    merchant_price: float            # what the merchant wants to earn per unit
+    image: str = ""
+    category: str
+    inStock: bool = True
+
+
+class MerchantProductUpdate(BaseModel):
+    token: str
+    name: Optional[str] = None
+    description: Optional[str] = None
+    merchant_price: Optional[float] = None
+    image: Optional[str] = None
+    category: Optional[str] = None
+    inStock: Optional[bool] = None
+
+
+def _merchant_owns_product(product_id: int, merchant_id):
+    r = supabase.table("products").select("*").eq("id", product_id).execute().data
+    return r[0] if (r and r[0].get("merchant_id") == merchant_id) else None
+
+
+@app.get("/api/merchant/products")
+def merchant_list_products(token: str):
+    m = require_merchant(token)
+    # Merchant view: hide the admin's selling price / profit — show only their price.
+    out = []
+    for p in PRODUCTS:
+        if p.get("merchant_id") != m["id"]:
+            continue
+        out.append({
+            "id": p["id"], "name": p["name"], "description": p["description"],
+            "merchant_price": p["merchant_price"], "image": p["image"],
+            "category": p["category"], "inStock": p["inStock"],
+            "status": p["status"], "reject_reason": p.get("reject_reason"),
+        })
+    return out
+
+
+@app.post("/api/merchant/products")
+def merchant_create_product(req: MerchantProductCreate):
+    m = require_merchant(req.token)
+    rows = supabase.table("products").select("id").order("id", desc=True).limit(1).execute().data
+    next_id = (rows[0]["id"] + 1) if rows else 1
+    mp = max(0.0, float(req.merchant_price))
+    # New products start PENDING; selling price seeded to merchant price until admin sets it.
+    supabase.table("products").insert({
+        "id": next_id, "name": req.name, "description": req.description,
+        "price": mp, "merchant_price": mp, "discount_percent": 0,
+        "image": req.image, "category": req.category, "in_stock": req.inStock,
+        "merchant_id": m["id"], "status": "pending",
+    }).execute()
+    load_products()
+    return {"status": "pending", "id": next_id}
+
+
+@app.put("/api/merchant/products/{product_id}")
+def merchant_update_product(product_id: int, req: MerchantProductUpdate):
+    m = require_merchant(req.token)
+    existing = _merchant_owns_product(product_id, m["id"])
+    if not existing:
+        raise HTTPException(status_code=403, detail="Not your product")
+    col_map = {"name": "name", "description": "description",
+               "merchant_price": "merchant_price", "image": "image",
+               "category": "category", "inStock": "in_stock"}
+    data = {}
+    for field, col in col_map.items():
+        val = getattr(req, field)
+        if val is not None:
+            data[col] = float(val) if field == "merchant_price" else val
+    if not data:
+        raise HTTPException(status_code=400, detail="No fields to update")
+    # Changing the merchant price on a live product sends it back for re-approval,
+    # so the storefront never shows a product the admin hasn't re-priced.
+    if "merchant_price" in data and float(data["merchant_price"]) != float(existing.get("merchant_price", 0)) \
+            and existing.get("status") == "approved":
+        data["status"] = "pending"
+    supabase.table("products").update(data).eq("id", product_id).execute()
+    load_products()
+    return {"status": data.get("status", existing.get("status")), "id": product_id}
+
+
+@app.delete("/api/merchant/products/{product_id}")
+def merchant_delete_product(product_id: int, token: str):
+    m = require_merchant(token)
+    if not _merchant_owns_product(product_id, m["id"]):
+        raise HTTPException(status_code=403, detail="Not your product")
+    supabase.table("products").delete().eq("id", product_id).execute()
+    supabase.table("product_stock").delete().eq("product_id", product_id).execute()
+    load_products()
+    return {"status": "ok"}
+
+
+# ── Merchant: orders (their fulfillment parts) + stats ───────────────────────
+
+MERCHANT_STATUS_FLOW = {
+    "confirmed": ["preparing", "out_for_delivery", "delivered"],
+    "preparing": ["out_for_delivery", "delivered"],
+    "out_for_delivery": ["delivered"],
+    "delivered": [], "cancelled": [],
+}
+
+
+@app.get("/api/merchant/orders")
+def merchant_orders(token: str):
+    m = require_merchant(token)
+    parts = (supabase.table("order_merchant_parts").select("*")
+             .eq("merchant_id", m["id"]).order("created_at", desc=True).execute().data or [])
+    if not parts:
+        return []
+    order_ids = list({p["order_id"] for p in parts})
+    orders = supabase.table("orders").select("*").in_("id", order_ids).execute().data or []
+    orders_by_id = {o["id"]: o for o in orders}
+    items = (supabase.table("order_items").select("*")
+             .in_("order_id", order_ids).eq("merchant_id", m["id"]).execute().data or [])
+    items_by_order = {}
+    for it in items:
+        items_by_order.setdefault(it["order_id"], []).append(it)
+
+    out = []
+    for p in parts:
+        o = orders_by_id.get(p["order_id"], {})
+        out.append({
+            "order_id": p["order_id"],
+            "status": p.get("status", "confirmed"),
+            "payout": p.get("payout", 0),               # merchant's earnings only
+            "delivery_date": p.get("delivery_date"),
+            "created_at": p.get("created_at"),
+            "customer_name": o.get("customer_name", ""),
+            "customer_phone": o.get("customer_phone", ""),
+            "customer_address": o.get("customer_address", ""),
+            "delivery_type": o.get("delivery_type"),
+            "items": [{"name": it.get("name"), "quantity": it.get("quantity")}
+                      for it in items_by_order.get(p["order_id"], [])],
+            "next_statuses": MERCHANT_STATUS_FLOW.get(p.get("status", "confirmed"), []),
+        })
+    return out
+
+
+class MerchantOrderStatusUpdate(BaseModel):
+    token: str
+    status: str
+    delivery_date: Optional[str] = None
+
+
+@app.patch("/api/merchant/orders/{order_id}/status")
+def merchant_update_order_status(order_id: str, req: MerchantOrderStatusUpdate):
+    m = require_merchant(req.token)
+    if req.status not in ("confirmed", "preparing", "out_for_delivery", "delivered", "cancelled"):
+        raise HTTPException(status_code=400, detail="Invalid status")
+    data = {"status": req.status, "updated_at": datetime.now(timezone.utc).isoformat()}
+    if req.delivery_date is not None:
+        data["delivery_date"] = req.delivery_date
+    r = (supabase.table("order_merchant_parts").update(data)
+         .eq("order_id", order_id).eq("merchant_id", m["id"]).execute())
+    if not r.data:
+        raise HTTPException(status_code=404, detail="Order part not found")
+    return {"status": req.status}
+
+
+@app.get("/api/merchant/stats")
+def merchant_stats(token: str):
+    m = require_merchant(token)
+    parts = supabase.table("order_merchant_parts").select("*").eq("merchant_id", m["id"]).execute().data or []
+    active = [p for p in parts if p.get("status") != "cancelled"]
+    my_products = [p for p in PRODUCTS if p.get("merchant_id") == m["id"]]
+    live_count = sum(1 for p in my_products if p.get("status") == "approved")
+    pending_products = sum(1 for p in my_products if p.get("status") == "pending")
+    status_counts = Counter(p.get("status", "confirmed") for p in parts)
+    return {
+        "shop_name": m.get("shop_name", ""),
+        "product_count": len(my_products),
+        "live_products": live_count,
+        "pending_products": pending_products,
+        "order_count": len(parts),
+        "pending_count": status_counts.get("confirmed", 0) + status_counts.get("preparing", 0),
+        "earnings": round(sum(float(p.get("payout", 0) or 0) for p in active), 2),
+        "status_counts": dict(status_counts),
+    }
+
+
+# ── Admin: merchant management ───────────────────────────────────────────────
+
+class MerchantStatusRequest(BaseModel):
+    token: str
+    status: str            # pending | approved | suspended
+
+
+class MerchantCommissionRequest(BaseModel):
+    token: str
+    commission_rate: float
+
+
+@app.get("/api/admin/merchants")
+def admin_list_merchants(token: str):
+    require_admin(token)
+    merchants = supabase.table("merchants").select("*").order("created_at", desc=True).execute().data or []
+    # Attach a product count per merchant (cheap, marketplace is small).
+    prods = supabase.table("products").select("merchant_id").execute().data or []
+    counts = Counter(p.get("merchant_id") for p in prods)
+    for m in merchants:
+        m["product_count"] = counts.get(m["id"], 0)
+    return merchants
+
+
+def _sync_user_role(user_id, status):
+    """Keep users.role in step with merchant status (never demote an admin)."""
+    if not user_id:
+        return
+    u = supabase.table("users").select("is_admin").eq("id", user_id).execute().data
+    if u and u[0].get("is_admin"):
+        return
+    supabase.table("users").update({"role": "merchant" if status == "approved" else "customer"}).eq("id", user_id).execute()
+
+
+@app.patch("/api/admin/merchants/{merchant_id}/status")
+def admin_set_merchant_status(merchant_id: str, req: MerchantStatusRequest):
+    require_admin(req.token)
+    if req.status not in ("pending", "approved", "suspended"):
+        raise HTTPException(status_code=400, detail="Invalid status")
+    r = supabase.table("merchants").update({"status": req.status}).eq("id", merchant_id).execute()
+    if not r.data:
+        raise HTTPException(status_code=404, detail="Merchant not found")
+    _sync_user_role(r.data[0].get("user_id"), req.status)
+    return {"status": req.status}
+
+
+@app.patch("/api/admin/merchants/{merchant_id}/commission")
+def admin_set_merchant_commission(merchant_id: str, req: MerchantCommissionRequest):
+    require_admin(req.token)
+    rate = max(0.0, min(100.0, float(req.commission_rate)))
+    r = supabase.table("merchants").update({"commission_rate": rate}).eq("id", merchant_id).execute()
+    if not r.data:
+        raise HTTPException(status_code=404, detail="Merchant not found")
+    return {"commission_rate": rate}
+
+
+class AdminCreateMerchantRequest(BaseModel):
+    token: str
+    email: EmailStr
+    password: str
+    shop_name: str
+    contact_name: Optional[str] = ""
+    phone: Optional[str] = ""
+
+
+@app.post("/api/admin/merchants/create")
+def admin_create_merchant(req: AdminCreateMerchantRequest):
+    """Admin provisions a merchant: a verified login + an approved shop."""
+    require_admin(req.token)
+    email = req.email.lower().strip()
+    if len(req.password) < 6:
+        raise HTTPException(status_code=400, detail="Password must be at least 6 characters.")
+    if not req.shop_name.strip():
+        raise HTTPException(status_code=400, detail="Shop name is required.")
+    if supabase.table("users").select("id").eq("email", email).execute().data:
+        raise HTTPException(status_code=400, detail="A user with this email already exists.")
+
+    ins = supabase.table("users").insert({
+        "email": email,
+        "password": hash_password(req.password),
+        "first_name": (req.contact_name or req.shop_name).strip(),
+        "last_name": "",
+        "is_verified": True,
+        "role": "merchant",
+        "auth_provider": "email",
+    }).execute()
+    user_id = ins.data[0]["id"] if ins.data else None
+
+    base = slugify(req.shop_name)
+    slug, i = base, 1
+    while supabase.table("merchants").select("id").eq("slug", slug).execute().data:
+        i += 1
+        slug = f"{base}-{i}"
+    m = supabase.table("merchants").insert({
+        "user_id": user_id,
+        "shop_name": req.shop_name.strip(),
+        "slug": slug,
+        "phone": req.phone or "",
+        "email": email,
+        "status": "approved",
+        "commission_rate": 0,
+    }).execute()
+    return {"status": "ok", "email": email, "shop_name": req.shop_name.strip(),
+            "merchant": m.data[0] if m.data else None}
 
 
 # ── Admin Routes ───────────────────────────────────────────────────────────────
@@ -2398,16 +2944,48 @@ def create_order(req: OrderRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
     if req.items:
+        # Each product's owning merchant + the price that merchant earns per unit.
+        product_meta = {p["id"]: (p.get("merchant_id") or HOUSE_MERCHANT_ID, float(p.get("merchant_price", 0) or 0))
+                        for p in PRODUCTS}
         supabase.table("order_items").insert([
             {
                 "order_id": order_id,
                 "product_id": item.productId,
                 "name": item.name,
                 "price": item.price,
-                "quantity": item.quantity
+                "quantity": item.quantity,
+                "merchant_id": product_meta.get(item.productId, (HOUSE_MERCHANT_ID, 0))[0],
             }
             for item in req.items
         ]).execute()
+
+        # Split into one fulfillment part per merchant. payout = merchant's price ×
+        # qty; profit (stored in `commission`) = what the customer paid − payout.
+        delivery_day = (req.delivery_datetime or "")[:10] or None
+        agg = {}
+        for item in req.items:
+            mid, mprice = product_meta.get(item.productId, (HOUSE_MERCHANT_ID, float(item.price)))
+            a = agg.setdefault(mid, {"subtotal": 0.0, "payout": 0.0})
+            a["subtotal"] += float(item.price) * int(item.quantity)
+            a["payout"] += mprice * int(item.quantity)
+        if agg:
+            parts = []
+            for mid, a in agg.items():
+                subtotal = round(a["subtotal"], 2)
+                payout = round(a["payout"], 2)
+                parts.append({
+                    "order_id": order_id,
+                    "merchant_id": mid,
+                    "subtotal": subtotal,
+                    "commission": round(subtotal - payout, 2),   # platform profit
+                    "payout": payout,                            # merchant earnings
+                    "status": "confirmed",
+                    "delivery_date": delivery_day,
+                })
+            try:
+                supabase.table("order_merchant_parts").insert(parts).execute()
+            except Exception as e:
+                print(f"[Order] merchant parts insert error: {e}", flush=True)
 
     points_pending = 0
     new_balance = 0

@@ -5,10 +5,12 @@ import { HttpClient } from '@angular/common/http';
 import { AuthService } from '../../services/auth';
 import { ToastService } from '../../services/toast';
 import { environment } from '../../../environments/environment';
+import { FormsModule } from '@angular/forms';
+import { DatePicker } from '../date-picker/date-picker';
 
 @Component({
   selector: 'app-order-detail',
-  imports: [RouterLink],
+  imports: [RouterLink, FormsModule, DatePicker],
   templateUrl: './order-detail.html',
   styleUrl: './order-detail.scss'
 })

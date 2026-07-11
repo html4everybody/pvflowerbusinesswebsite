@@ -21,7 +21,7 @@
 
       @if (referralCode()) {
         <div class="vp-referral-banner">
-          <span>🎁</span>
+          <span><i class="bi bi-gift"></i></span>
           <span>You've been invited! Sign up and get <strong>100 bonus loyalty points</strong> — worth ₹10 off your first order.</span>
         </div>
       }
@@ -38,10 +38,21 @@
           <!-- ── Sign In ── -->
           <form #loginForm="ngForm" (ngSubmit)="onLogin()" class="vp-anim">
 
+            <div class="vp-loginmode">
+              <button type="button" [class.active]="mode() === 'customer'" (click)="setMode('customer')"><i class="bi bi-person"></i> Customer</button>
+              <button type="button" [class.active]="mode() === 'merchant'" (click)="setMode('merchant')"><i class="bi bi-shop"></i> Merchant</button>
+            </div>
+
             <div class="vp-heading">
-              <p class="vp-label">WELCOME BACK</p>
-              <h1>It's good to see you</h1>
-              <p class="vp-subtitle">Sign in to track orders, save your favourite bouquets, and never miss a bloom.</p>
+              @if (mode() === 'merchant') {
+                <p class="vp-label">MERCHANT PORTAL</p>
+                <h1>Sign in to your shop</h1>
+                <p class="vp-subtitle">Manage your products and orders. Seller accounts are created by the VivaPetals admin.</p>
+              } @else {
+                <p class="vp-label">WELCOME BACK</p>
+                <h1>It's good to see you</h1>
+                <p class="vp-subtitle">Sign in to track orders, save your favourite bouquets, and never miss a bloom.</p>
+              }
             </div>
 
             @if (successMessage()) {
@@ -110,10 +121,11 @@
                 <i class="bi bi-arrow-repeat spin-icon"></i>
                 Signing in...
               } @else {
-                Sign in &nbsp;→
+                Sign in &nbsp;<i class="bi bi-arrow-right"></i>
               }
             </button>
 
+            @if (mode() === 'customer') {
             <div class="vp-divider"><span>or continue with</span></div>
 
             <div class="vp-social-row">
@@ -136,6 +148,9 @@
             </div>
 
             <p class="vp-switch">New to VivaPetals? <button type="button" (click)="toggleMode()">Create an account</button></p>
+            } @else {
+            <p class="vp-switch vp-merchant-note"><i class="bi bi-info-circle"></i> Don't have a shop yet? Contact the VivaPetals admin to get set up.</p>
+            }
 
           </form>
 
@@ -230,7 +245,7 @@
                 <i class="bi bi-arrow-repeat spin-icon"></i>
                 Creating account...
               } @else {
-                Create Account &nbsp;→
+                Create Account &nbsp;<i class="bi bi-arrow-right"></i>
               }
             </button>
 

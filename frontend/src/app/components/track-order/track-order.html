@@ -3,7 +3,7 @@
 
     <!-- Header -->
     <div class="track-hero">
-      <span class="track-hero-icon">🌸</span>
+      <span class="track-hero-icon"><i class="bi bi-flower1"></i></span>
       <h1>Track Your Order</h1>
       <p>Enter your order ID from the confirmation email to see the latest status.</p>
     </div>
@@ -44,7 +44,7 @@
 
         <!-- Status Banner -->
         <div class="status-banner" [class]="o.status">
-          <span class="status-icon">{{ STATUS_ICONS[o.status] }}</span>
+          <span class="status-icon"><i class="bi" [class]="STATUS_ICONS[o.status]"></i></span>
           <div class="status-text">
             <span class="status-label">{{ STATUS_LABELS[o.status] }}</span>
             <span class="status-desc">{{ STATUS_DESC[o.status] }}</span>

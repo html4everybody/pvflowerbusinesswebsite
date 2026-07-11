@@ -1,0 +1,210 @@
+<div class="merch-shell">
+  <!-- Sidebar -->
+  <aside class="merch-sidebar">
+    <div class="merch-brand">
+      <i class="bi bi-shop"></i>
+      <span>{{ stats()?.shop_name || auth.merchant()?.shop_name || 'My Shop' }}</span>
+    </div>
+    <nav class="merch-nav">
+      <button class="nav-item" [class.active]="activeSection() === 'overview'" (click)="go('overview')">
+        <i class="bi bi-speedometer2"></i> Overview
+      </button>
+      <button class="nav-item" [class.active]="activeSection() === 'products'" (click)="go('products')">
+        <i class="bi bi-box-seam"></i> My Products
+      </button>
+      <button class="nav-item" [class.active]="activeSection() === 'orders'" (click)="go('orders')">
+        <i class="bi bi-bag-check"></i> Orders
+      </button>
+      <button class="nav-item" [class.active]="activeSection() === 'settings'" (click)="go('settings')">
+        <i class="bi bi-gear"></i> Shop Settings
+      </button>
+    </nav>
+    <div class="merch-foot">
+      <a routerLink="/" class="nav-item"><i class="bi bi-house"></i> Back to store</a>
+    </div>
+  </aside>
+
+  <main class="merch-main">
+
+    <!-- ── Overview ─────────────────────────────────────────────────────── -->
+    @if (activeSection() === 'overview') {
+      <div class="sec">
+        <div class="sec-head"><h1>Overview</h1></div>
+        @if (stats(); as s) {
+          <div class="stat-grid">
+            <div class="stat-tile"><span class="st-icon green"><i class="bi bi-cash-coin"></i></span><div><span class="st-val">₹{{ s.earnings | number:'1.0-0' }}</span><span class="st-label">Your earnings</span></div></div>
+            <div class="stat-tile"><span class="st-icon violet"><i class="bi bi-bag-check"></i></span><div><span class="st-val">{{ s.order_count }}</span><span class="st-label">Orders</span></div></div>
+            <div class="stat-tile"><span class="st-icon amber"><i class="bi bi-hourglass-split"></i></span><div><span class="st-val">{{ s.pending_count }}</span><span class="st-label">To fulfil</span></div></div>
+            <div class="stat-tile"><span class="st-icon blue"><i class="bi bi-box-seam"></i></span><div><span class="st-val">{{ s.product_count }}</span><span class="st-label">Products</span></div></div>
+            <div class="stat-tile"><span class="st-icon green"><i class="bi bi-check-circle"></i></span><div><span class="st-val">{{ s.live_products }}</span><span class="st-label">Live</span></div></div>
+            <div class="stat-tile"><span class="st-icon amber"><i class="bi bi-hourglass-split"></i></span><div><span class="st-val">{{ s.pending_products }}</span><span class="st-label">Awaiting approval</span></div></div>
+          </div>
+          <div class="quick-row">
+            <button class="btn-primary" (click)="go('products'); newProduct()"><i class="bi bi-plus-lg"></i> Add product</button>
+            <button class="btn-secondary" (click)="go('orders')"><i class="bi bi-bag-check"></i> View orders</button>
+          </div>
+        } @else {
+          <div class="loading"><i class="bi bi-arrow-repeat vp-spin"></i> Loading…</div>
+        }
+      </div>
+    }
+
+    <!-- ── Products ─────────────────────────────────────────────────────── -->
+    @if (activeSection() === 'products') {
+      <div class="sec">
+        <div class="sec-head">
+          <h1>My Products</h1>
+          <button class="btn-primary" (click)="newProduct()"><i class="bi bi-plus-lg"></i> Add product</button>
+        </div>
+
+        @if (loadingProducts()) {
+          <div class="loading"><i class="bi bi-arrow-repeat vp-spin"></i> Loading…</div>
+        } @else if (!products().length) {
+          <div class="empty"><i class="bi bi-box-seam"></i><p>No products yet. Add your first bouquet!</p></div>
+        } @else {
+          <div class="prod-grid">
+            @for (p of products(); track p.id) {
+              <div class="prod-card">
+                <div class="pc-img" [style.background-image]="'url(' + p.image + ')'">
+                  <span class="pc-status" [class]="STATUS_INFO[p.status]?.cls">{{ STATUS_INFO[p.status]?.label || p.status }}</span>
+                  @if (!p.inStock) { <span class="pc-oos">Out of stock</span> }
+                </div>
+                <div class="pc-body">
+                  <span class="pc-name">{{ p.name }}</span>
+                  <span class="pc-cat">{{ p.category }}</span>
+                  <div class="pc-price">
+                    <span class="pc-final">₹{{ p.merchant_price }}</span>
+                    <span class="pc-yours">your price</span>
+                  </div>
+                  @if (p.status === 'rejected' && p.reject_reason) {
+                    <p class="pc-reject"><i class="bi bi-exclamation-circle"></i> {{ p.reject_reason }}</p>
+                  }
+                  @if (p.status === 'pending') {
+                    <p class="pc-note"><i class="bi bi-hourglass-split"></i> Awaiting admin approval &amp; pricing</p>
+                  }
+                  <div class="pc-actions">
+                    <button class="btn-ghost" (click)="editProduct(p)"><i class="bi bi-pencil"></i> Edit</button>
+                    <button class="btn-ghost danger" (click)="deleteProduct(p)"><i class="bi bi-trash3"></i></button>
+                  </div>
+                </div>
+              </div>
+            }
+          </div>
+        }
+      </div>
+    }
+
+    <!-- ── Orders ───────────────────────────────────────────────────────── -->
+    @if (activeSection() === 'orders') {
+      <div class="sec">
+        <div class="sec-head"><h1>Orders</h1><span class="sec-meta">{{ orders().length }} total</span></div>
+
+        @if (loadingOrders()) {
+          <div class="loading"><i class="bi bi-arrow-repeat vp-spin"></i> Loading…</div>
+        } @else if (!orders().length) {
+          <div class="empty"><i class="bi bi-bag"></i><p>No orders yet.</p></div>
+        } @else {
+          <div class="order-list">
+            @for (o of orders(); track o.order_id) {
+              <div class="order-card">
+                <div class="oc-top">
+                  <div class="oc-id">
+                    <span class="oc-num">#{{ o.order_id }}</span>
+                    <span class="oc-badge" [class]="o.status">{{ STATUS_LABELS[o.status] || o.status }}</span>
+                  </div>
+                  <div class="oc-payout">₹{{ o.payout | number:'1.0-0' }} <span>payout</span></div>
+                </div>
+
+                <div class="oc-items">
+                  @for (it of o.items; track it.name) {
+                    <span class="oc-item">{{ it.quantity }}× {{ it.name }}</span>
+                  }
+                </div>
+
+                <div class="oc-cust">
+                  <span><i class="bi bi-person"></i> {{ o.customer_name || '—' }}</span>
+                  @if (o.customer_phone) { <span><i class="bi bi-telephone"></i> {{ o.customer_phone }}</span> }
+                  @if (o.customer_address) { <span><i class="bi bi-geo-alt"></i> {{ o.customer_address }}</span> }
+                </div>
+
+                <div class="oc-controls">
+                  <label class="oc-date">
+                    <i class="bi bi-truck"></i> Delivery
+                    <app-date-picker [ngModel]="o.delivery_date" (ngModelChange)="setDeliveryDate(o, $event)"
+                                     [ngModelOptions]="{standalone: true}" placeholder="Set date"></app-date-picker>
+                  </label>
+                  @if (o.next_statuses?.length) {
+                    <div class="oc-status-actions">
+                      @for (ns of o.next_statuses; track ns) {
+                        <button class="btn-status" [disabled]="updatingOrder() === o.order_id" (click)="setOrderStatus(o, ns)">
+                          Mark {{ STATUS_LABELS[ns] || ns }}
+                        </button>
+                      }
+                    </div>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+        }
+      </div>
+    }
+
+    <!-- ── Settings ─────────────────────────────────────────────────────── -->
+    @if (activeSection() === 'settings') {
+      <div class="sec">
+        <div class="sec-head"><h1>Shop Settings</h1></div>
+        <form class="shop-form" (ngSubmit)="saveShop()">
+          <div class="field">
+            <label>Shop name <span class="req">*</span></label>
+            <input type="text" [(ngModel)]="shop.shop_name" name="shop_name" maxlength="60" required>
+          </div>
+          <div class="field">
+            <label>Description</label>
+            <textarea [(ngModel)]="shop.description" name="description" rows="3" maxlength="300"></textarea>
+          </div>
+          <div class="field">
+            <label>Contact phone</label>
+            <input type="tel" [(ngModel)]="shop.phone" name="phone" maxlength="20">
+          </div>
+          <div class="field">
+            <label>Logo URL</label>
+            <input type="url" [(ngModel)]="shop.logo" name="logo" placeholder="https://…">
+          </div>
+          <button type="submit" class="btn-primary" [disabled]="savingShop()">
+            @if (savingShop()) { <i class="bi bi-arrow-repeat vp-spin"></i> Saving… }
+            @else { <i class="bi bi-check-lg"></i> Save changes }
+          </button>
+        </form>
+      </div>
+    }
+
+  </main>
+
+  <!-- Product editor modal -->
+  @if (showProductForm()) {
+    <div class="modal-backdrop" (click)="closeProductForm()"></div>
+    <div class="modal">
+      <div class="modal-head">
+        <h2>{{ editingProduct() ? 'Edit product' : 'Add product' }}</h2>
+        <button class="modal-x" (click)="closeProductForm()"><i class="bi bi-x-lg"></i></button>
+      </div>
+      <div class="modal-body">
+        <div class="field"><label>Name <span class="req">*</span></label><input type="text" [(ngModel)]="productForm.name" maxlength="80"></div>
+        <div class="field"><label>Category <span class="req">*</span></label><input type="text" [(ngModel)]="productForm.category" placeholder="e.g. Bouquets" maxlength="40"></div>
+        <div class="field"><label>Description</label><textarea [(ngModel)]="productForm.description" rows="2" maxlength="300"></textarea></div>
+        <div class="field">
+          <label>Your price (₹) <span class="req">*</span></label>
+          <input type="number" min="0" [(ngModel)]="productForm.merchant_price">
+          <span class="field-hint"><i class="bi bi-info-circle"></i> What you earn per unit. The admin sets the final selling price and approves it before it goes live.</span>
+        </div>
+        <div class="field"><label>Image URL</label><input type="url" [(ngModel)]="productForm.image" placeholder="https://…"></div>
+        <label class="check"><input type="checkbox" [(ngModel)]="productForm.inStock"> In stock</label>
+      </div>
+      <div class="modal-foot">
+        <button class="btn-secondary" (click)="closeProductForm()">Cancel</button>
+        <button class="btn-primary" (click)="saveProduct()"><i class="bi bi-check-lg"></i> {{ editingProduct() ? 'Save' : 'Add product' }}</button>
+      </div>
+    </div>
+  }
+</div>

@@ -71,7 +71,7 @@
 
           <div class="step-actions">
             <button class="btn-next" [disabled]="!isStep1Valid" (click)="nextStep()">
-              Continue — Select Products →
+              Continue — Select Products <i class="bi bi-arrow-right"></i>
             </button>
           </div>
         </div>
@@ -88,13 +88,13 @@
           <!-- Style Toggle -->
           <div class="style-cards">
             <div class="style-card" [class.selected]="selectedStyle() === 'florist'" (click)="selectStyle('florist')">
-              <span class="style-icon">🌿</span>
+              <span class="style-icon"><i class="bi bi-tree"></i></span>
               <h3>Florist's Choice</h3>
               <p>Our florists handpick the freshest blooms every morning based on season, availability, and occasion — always beautiful, always a surprise.</p>
               <ul class="style-perks">
-                <li>✓ Curated daily by expert florists</li>
-                <li>✓ Freshest seasonal varieties</li>
-                <li>✓ Perfect for homes, temples & offices</li>
+                <li><i class="bi bi-check-lg"></i> Curated daily by expert florists</li>
+                <li><i class="bi bi-check-lg"></i> Freshest seasonal varieties</li>
+                <li><i class="bi bi-check-lg"></i> Perfect for homes, temples & offices</li>
               </ul>
               <div class="plan-radio" [class.checked]="selectedStyle() === 'florist'">
                 <div class="radio-inner"></div>
@@ -102,13 +102,13 @@
             </div>
 
             <div class="style-card" [class.selected]="selectedStyle() === 'custom'" (click)="selectStyle('custom')">
-              <span class="style-icon">🛒</span>
+              <span class="style-icon"><i class="bi bi-cart"></i></span>
               <h3>I'll Choose</h3>
               <p>Select exactly what you want — pick flowers by weight, bouquets by size, garlands by quantity. You decide what arrives at your door each day.</p>
               <ul class="style-perks">
-                <li>✓ Full control over your daily delivery</li>
-                <li>✓ Mix flowers, bouquets, garlands & more</li>
-                <li>✓ Perfect for restaurants, events & malls</li>
+                <li><i class="bi bi-check-lg"></i> Full control over your daily delivery</li>
+                <li><i class="bi bi-check-lg"></i> Mix flowers, bouquets, garlands & more</li>
+                <li><i class="bi bi-check-lg"></i> Perfect for restaurants, events & malls</li>
               </ul>
               <div class="plan-radio" [class.checked]="selectedStyle() === 'custom'">
                 <div class="radio-inner"></div>
@@ -238,7 +238,7 @@
                         <div class="config-cost">₹{{ getItemDailyCost(sel) }}/day</div>
                       </div>
 
-                      <button class="config-remove" (click)="$event.stopPropagation(); toggleProduct(sel.product)" title="Remove">✕</button>
+                      <button class="config-remove" (click)="$event.stopPropagation(); toggleProduct(sel.product)" title="Remove"><i class="bi bi-x-lg"></i></button>
                     </div>
                   }
                 </div>
@@ -272,9 +272,9 @@
           }
 
           <div class="step-actions">
-            <button class="btn-back" (click)="prevStep()">← Back</button>
+            <button class="btn-back" (click)="prevStep()"><i class="bi bi-arrow-left"></i> Back</button>
             <button class="btn-next" [disabled]="!isStep2Valid" (click)="nextStep()">
-              Continue — Your Details →
+              Continue — Your Details <i class="bi bi-arrow-right"></i>
             </button>
           </div>
         </div>
@@ -334,9 +334,9 @@
           }
 
           <div class="step-actions">
-            <button class="btn-back" (click)="prevStep()">← Back</button>
+            <button class="btn-back" (click)="prevStep()"><i class="bi bi-arrow-left"></i> Back</button>
             <button class="btn-next" [disabled]="!isStep3Valid" (click)="nextStep()">
-              Review Order →
+              Review Order <i class="bi bi-arrow-right"></i>
             </button>
           </div>
         </div>
@@ -433,7 +433,7 @@
             }
 
             <div class="step-actions">
-              <button class="btn-back" (click)="prevStep()">← Back</button>
+              <button class="btn-back" (click)="prevStep()"><i class="bi bi-arrow-left"></i> Back</button>
               <button class="btn-confirm" [disabled]="submitting()" (click)="submit()">
                 @if (submitting()) { Confirming... } @else { Confirm & Start Daily Delivery }
               </button>
@@ -443,7 +443,7 @@
         } @else {
           <!-- Success -->
           <div class="success-state">
-            <div class="success-icon">🎉</div>
+            <div class="success-icon"><i class="bi bi-balloon-fill"></i></div>
             <h2>You're all set!</h2>
             <p>Your {{ selectedDurationOption?.label?.toLowerCase() }} flower delivery has been confirmed. Your first delivery arrives on:</p>
             <div class="success-date">{{ formatDate(nextDelivery()) }}</div>

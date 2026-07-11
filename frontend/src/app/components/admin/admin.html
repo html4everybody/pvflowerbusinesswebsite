@@ -3,7 +3,7 @@
   <!-- ── Sidebar ───────────────────────────────────────────────────────────── -->
   <aside class="admin-sidebar">
     <div class="sidebar-brand">
-      <span class="brand-icon">🌸</span>
+      <span class="brand-icon"><i class="bi bi-flower1"></i></span>
       <span class="brand-name">Admin</span>
     </div>
     <nav class="sidebar-nav">
@@ -39,6 +39,10 @@
           <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
         </svg>
         Customers
+      </button>
+      <button class="nav-item" [class.active]="activeSection() === 'merchants'" (click)="navigateTo('merchants')">
+        <i class="bi bi-shop" style="font-size:16px"></i>
+        Merchants
       </button>
       <button class="nav-item" [class.active]="activeSection() === 'analytics'" (click)="navigateTo('analytics')">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -151,22 +155,22 @@
           <h2>Quick Actions</h2>
           <div class="quick-grid">
             <button class="quick-card" (click)="navigateTo('orders')">
-              <span class="quick-icon">📦</span>
+              <span class="quick-icon"><i class="bi bi-box-seam"></i></span>
               <span class="quick-label">Manage Orders</span>
               @if ((tabCount()['confirmed'] || 0) + (tabCount()['preparing'] || 0) > 0) {
                 <span class="quick-badge">{{ (tabCount()['confirmed'] || 0) + (tabCount()['preparing'] || 0) }} pending</span>
               }
             </button>
             <button class="quick-card" (click)="navigateTo('inventory')">
-              <span class="quick-icon">📊</span>
+              <span class="quick-icon"><i class="bi bi-bar-chart"></i></span>
               <span class="quick-label">Check Inventory</span>
             </button>
             <button class="quick-card" (click)="navigateTo('analytics')">
-              <span class="quick-icon">📈</span>
+              <span class="quick-icon"><i class="bi bi-graph-up-arrow"></i></span>
               <span class="quick-label">View Analytics</span>
             </button>
             <button class="quick-card" (click)="navigateTo('customers')">
-              <span class="quick-icon">👥</span>
+              <span class="quick-icon"><i class="bi bi-people"></i></span>
               <span class="quick-label">View Customers</span>
             </button>
           </div>
@@ -175,6 +179,106 @@
     }
 
     <!-- ── Orders ────────────────────────────────────────────────────────── -->
+    <!-- ── Merchants (marketplace sellers) ───────────────────────────────── -->
+    @if (activeSection() === 'merchants') {
+      <div class="section-wrap">
+        <div class="section-header">
+          <h1>Merchants</h1>
+          <div class="section-header-actions">
+            <span class="section-meta">{{ merchants().length }} shops</span>
+            <button class="btn-primary" (click)="openMerchantForm()"><i class="bi bi-plus-lg"></i> Create Merchant</button>
+          </div>
+        </div>
+
+        @if (showMerchantForm()) {
+          <div class="modal-overlay" (click)="closeMerchantForm()">
+            <div class="modal-box" (click)="$event.stopPropagation()">
+              <div class="modal-header">
+                <h2>Create Merchant</h2>
+                <button class="modal-close" (click)="closeMerchantForm()"><i class="bi bi-x-lg"></i></button>
+              </div>
+              <div class="modal-body">
+                <p class="modal-hint">Create a seller login and share these credentials with the merchant. They sign in via the <strong>Merchant</strong> tab.</p>
+                <label class="form-label">Shop name
+                  <input type="text" class="form-input" [(ngModel)]="merchantForm.shop_name" placeholder="e.g. Rose &amp; Bloom Studio">
+                </label>
+                <label class="form-label">Contact name
+                  <input type="text" class="form-input" [(ngModel)]="merchantForm.contact_name" placeholder="Owner name (optional)">
+                </label>
+                <div class="form-row">
+                  <label class="form-label">Login email
+                    <input type="email" class="form-input" [(ngModel)]="merchantForm.email" placeholder="seller@example.com">
+                  </label>
+                  <label class="form-label">Password
+                    <input type="text" class="form-input" [(ngModel)]="merchantForm.password" placeholder="Min 6 characters">
+                  </label>
+                </div>
+                <label class="form-label">Phone
+                  <input type="tel" class="form-input" [(ngModel)]="merchantForm.phone" placeholder="Optional">
+                </label>
+              </div>
+              <div class="modal-footer">
+                <button class="btn-cancel" (click)="closeMerchantForm()">Cancel</button>
+                <button class="btn-primary" [disabled]="creatingMerchant()" (click)="createMerchant()">
+                  @if (creatingMerchant()) { Creating… } @else { Create merchant }
+                </button>
+              </div>
+            </div>
+          </div>
+        }
+
+        @if (loadingMerchants()) {
+          <div class="loading-state"><div class="spinner"></div><p>Loading merchants...</p></div>
+        } @else if (merchants().length === 0) {
+          <div class="empty-state"><p>No merchant applications yet.</p></div>
+        } @else {
+          <div class="merchant-list">
+            @for (m of merchants(); track m.id) {
+              <div class="merchant-card">
+                <div class="mc-main">
+                  <div class="mc-logo"><i class="bi bi-shop"></i></div>
+                  <div class="mc-info">
+                    <span class="mc-name">
+                      {{ m.shop_name }}
+                      <span class="mc-badge" [class]="m.status">{{ m.status }}</span>
+                    </span>
+                    <span class="mc-sub"><i class="bi bi-envelope"></i> {{ m.email || '—' }}</span>
+                    @if (m.phone) { <span class="mc-sub"><i class="bi bi-telephone"></i> {{ m.phone }}</span> }
+                    <span class="mc-sub"><i class="bi bi-box-seam"></i> {{ m.product_count }} products</span>
+                    @if (m.description) { <p class="mc-desc">{{ m.description }}</p> }
+                  </div>
+                </div>
+                <div class="mc-actions">
+                  <label class="mc-comm">
+                    Commission
+                    <span class="mc-comm-input">
+                      <input type="number" min="0" max="100" [(ngModel)]="m.commission_rate"
+                             (change)="saveMerchantCommission(m, m.commission_rate)">%
+                    </span>
+                  </label>
+                  @if (m.status !== 'approved') {
+                    <button class="btn-approve" [disabled]="updatingMerchant() === m.id" (click)="setMerchantStatus(m, 'approved')">
+                      <i class="bi bi-check-lg"></i> Approve
+                    </button>
+                  }
+                  @if (m.status === 'approved') {
+                    <button class="btn-suspend" [disabled]="updatingMerchant() === m.id" (click)="setMerchantStatus(m, 'suspended')">
+                      <i class="bi bi-pause-circle"></i> Suspend
+                    </button>
+                  }
+                  @if (m.status === 'suspended') {
+                    <button class="btn-reset" [disabled]="updatingMerchant() === m.id" (click)="setMerchantStatus(m, 'pending')">
+                      <i class="bi bi-arrow-counterclockwise"></i> Reset
+                    </button>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+        }
+      </div>
+    }
+
     @if (activeSection() === 'orders') {
       <div class="section-wrap">
         <div class="section-header">
@@ -211,8 +315,8 @@
             }
             <div class="date-filter">
               <i class="bi bi-calendar3"></i>
-              <input type="date" class="date-input" [value]="selectedDate()" (change)="selectedDate.set($any($event.target).value)">
-              @if (selectedDate()) { <button class="date-clear" (click)="clearDate()">✕</button> }
+              <app-date-picker class="date-input" [ngModel]="selectedDate()" (ngModelChange)="selectedDate.set($event)" placeholder="Filter by date"></app-date-picker>
+              @if (selectedDate()) { <button class="date-clear" (click)="clearDate()"><i class="bi bi-x-lg"></i></button> }
             </div>
           </div>
         </div>
@@ -264,6 +368,29 @@
           </div>
         </div>
 
+        <!-- Approval queue: merchant submissions awaiting a selling price -->
+        @if (pendingProducts().length) {
+          <div class="approvals">
+            <div class="approvals-head"><i class="bi bi-hourglass-split"></i> {{ pendingProducts().length }} product(s) awaiting your approval</div>
+            @for (p of pendingProducts(); track p.id) {
+              <div class="approval-row">
+                <img [src]="p.image" [alt]="p.name" class="ap-thumb" loading="lazy">
+                <div class="ap-info">
+                  <span class="ap-name">{{ p.name }}</span>
+                  <span class="ap-shop"><i class="bi bi-shop"></i> {{ p.shop_name }} · wants ₹{{ p.merchant_price }}</span>
+                </div>
+                <label class="ap-field">Sell at ₹ <input type="number" min="0" [(ngModel)]="p.price"></label>
+                <label class="ap-field">Disc % <input type="number" min="0" max="100" [(ngModel)]="p.discount_percent"></label>
+                <span class="ap-profit">Profit ₹{{ ((p.price || 0) * (1 - (p.discount_percent || 0) / 100) - p.merchant_price).toFixed(0) }}</span>
+                <div class="ap-actions">
+                  <button class="btn-approve" (click)="approveProduct(p)"><i class="bi bi-check-lg"></i> Approve</button>
+                  <button class="btn-suspend" (click)="rejectProduct(p)"><i class="bi bi-x-lg"></i> Reject</button>
+                </div>
+              </div>
+            }
+          </div>
+        }
+
         <div class="search-bar-simple">
           <i class="bi bi-search"></i>
           <input type="text" placeholder="Search products..." [value]="productSearch()" (input)="productSearch.set($any($event.target).value)">
@@ -276,29 +403,27 @@
             <table class="data-table">
               <thead>
                 <tr>
-                  <th>ID</th>
                   <th>Product</th>
-                  <th>Category</th>
-                  <th>Price</th>
-                  <th>Rating</th>
+                  <th>Shop</th>
+                  <th>Merchant ₹</th>
+                  <th>Sell ₹</th>
+                  <th>Status</th>
                   <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
                 @for (p of filteredProducts(); track p.id) {
                   <tr>
-                    <td class="mono">{{ p.id }}</td>
                     <td>
                       <div class="product-cell">
                         <img [src]="p.image" [alt]="p.name" class="product-thumb" loading="lazy">
                         <span class="product-name">{{ p.name }}</span>
                       </div>
                     </td>
-                    <td><span class="category-pill">{{ p.category }}</span></td>
-                    <td class="mono">₹{{ p.price?.toFixed(2) }}</td>
-                    <td>
-                      <span class="rating-cell">⭐ {{ p.rating?.toFixed(1) }}</span>
-                    </td>
+                    <td>{{ p.shop_name }}</td>
+                    <td class="mono">₹{{ p.merchant_price?.toFixed(0) }}</td>
+                    <td class="mono">₹{{ p.price?.toFixed(0) }}@if (p.discount_percent > 0) { <span class="disc-tag">-{{ p.discount_percent }}%</span> }</td>
+                    <td><span class="mc-badge" [class]="p.status">{{ p.status }}</span></td>
                     <td>
                       <div class="stock-btns">
                         <button class="btn-edit-small" (click)="openProductForm(p)">Edit</button>
@@ -318,7 +443,7 @@
             <div class="modal-box" (click)="$event.stopPropagation()">
               <div class="modal-header">
                 <h2>{{ editingProduct() ? 'Edit Product' : 'Add Product' }}</h2>
-                <button class="modal-close" (click)="closeProductForm()">✕</button>
+                <button class="modal-close" (click)="closeProductForm()"><i class="bi bi-x-lg"></i></button>
               </div>
               <div class="modal-body">
                 <label class="form-label">Name
@@ -328,17 +453,20 @@
                   <input type="text" class="form-input" [(ngModel)]="productForm.description" placeholder="Short description">
                 </label>
                 <div class="form-row">
-                  <label class="form-label">Price (₹)
+                  <label class="form-label">Selling price (₹)
                     <input type="number" class="form-input" [(ngModel)]="productForm.price" min="0" step="0.01">
                   </label>
-                  <label class="form-label">Category
-                    <select class="form-input" [(ngModel)]="productForm.category">
-                      @for (c of productCategories(); track c) {
-                        <option [value]="c">{{ c }}</option>
-                      }
-                    </select>
+                  <label class="form-label">Discount %
+                    <input type="number" class="form-input" [(ngModel)]="productForm.discount_percent" min="0" max="100">
                   </label>
                 </div>
+                <label class="form-label">Category
+                  <select class="form-input" [(ngModel)]="productForm.category">
+                    @for (c of productCategories(); track c) {
+                      <option [value]="c">{{ c }}</option>
+                    }
+                  </select>
+                </label>
                 <label class="form-label">Image
                   <input type="text" class="form-input" [(ngModel)]="productForm.image" placeholder="Paste an image URL, or upload below">
                 </label>
@@ -665,7 +793,7 @@
           <div class="modal-box" (click)="$event.stopPropagation()">
             <div class="modal-header">
               <h2>{{ editingPromo() ? 'Edit Promo Code' : 'Add Promo Code' }}</h2>
-              <button class="modal-close" (click)="closePromoForm()">✕</button>
+              <button class="modal-close" (click)="closePromoForm()"><i class="bi bi-x-lg"></i></button>
             </div>
             <div class="modal-body">
               <label class="form-label">Code
@@ -717,7 +845,7 @@
           <div class="modal-box" (click)="$event.stopPropagation()">
             <div class="modal-header">
               <h2>{{ editingOffer() ? 'Edit Offer' : 'Add Seasonal Offer' }}</h2>
-              <button class="modal-close" (click)="closeOfferForm()">✕</button>
+              <button class="modal-close" (click)="closeOfferForm()"><i class="bi bi-x-lg"></i></button>
             </div>
             <div class="modal-body">
               <div class="form-row">
@@ -801,7 +929,7 @@
           <div class="modal-box" (click)="$event.stopPropagation()">
             <div class="modal-header">
               <h2>{{ editingBundle() ? 'Edit Bundle' : 'Add Bundle Deal' }}</h2>
-              <button class="modal-close" (click)="closeBundleForm()">✕</button>
+              <button class="modal-close" (click)="closeBundleForm()"><i class="bi bi-x-lg"></i></button>
             </div>
             <div class="modal-body">
               <div class="form-row">
@@ -892,7 +1020,7 @@
           <div class="modal-box" (click)="$event.stopPropagation()">
             <div class="modal-header">
               <h2>{{ editingZone() ? 'Edit Zone' : 'Add Delivery Zone' }}</h2>
-              <button class="modal-close" (click)="closeZoneForm()">✕</button>
+              <button class="modal-close" (click)="closeZoneForm()"><i class="bi bi-x-lg"></i></button>
             </div>
             <div class="modal-body">
               <label class="form-label">Zone Name
@@ -948,7 +1076,7 @@
 
         @if (!loadingSubscriptions() && subCount('today') > 0) {
           <button class="today-banner" (click)="subStatusFilter.set('today')">
-            🚚 {{ subCount('today') }} deliver{{ subCount('today') === 1 ? 'y is' : 'ies are' }} due today — click to view
+            <i class="bi bi-truck"></i> {{ subCount('today') }} deliver{{ subCount('today') === 1 ? 'y is' : 'ies are' }} due today — click to view
           </button>
         }
 
@@ -976,7 +1104,7 @@
                     <span class="sfc-id mono">{{ sub.id }}</span>
                   </div>
                   <div class="sfc-head-right">
-                    @if (isDueToday(sub)) { <span class="today-pill">🚚 Deliver today</span> }
+                    @if (isDueToday(sub)) { <span class="today-pill"><i class="bi bi-truck"></i> Deliver today</span> }
                     <span class="category-pill">{{ sub.plan | titlecase }}</span>
                     <span class="status-badge" [class.status-active]="sub.status === 'active'"
                           [class.status-paused]="sub.status === 'paused'"
@@ -989,14 +1117,14 @@
                 <div class="sfc-grid">
                   <div class="sfc-block">
                     <span class="sfc-label">When to deliver</span>
-                    <span class="sfc-val">📅 {{ sub.next_delivery || 'Not scheduled' }}{{ isDueToday(sub) ? ' — Today' : '' }}</span>
+                    <span class="sfc-val"><i class="bi bi-calendar3"></i> {{ sub.next_delivery || 'Not scheduled' }}{{ isDueToday(sub) ? ' — Today' : '' }}</span>
                     <span class="sfc-sub">{{ planFreqText(sub.plan) }}</span>
                   </div>
                   <div class="sfc-block">
                     <span class="sfc-label">Deliver to</span>
                     <span class="sfc-val">{{ sub.address || '—' }}</span>
-                    @if (sub.customer_phone) { <span class="sfc-sub">📞 {{ sub.customer_phone }}</span> }
-                    <span class="sfc-sub">✉️ {{ sub.customer_email }}</span>
+                    @if (sub.customer_phone) { <span class="sfc-sub"><i class="bi bi-telephone"></i> {{ sub.customer_phone }}</span> }
+                    <span class="sfc-sub"><i class="bi bi-envelope"></i> {{ sub.customer_email }}</span>
                   </div>
                 </div>
 
@@ -1012,12 +1140,12 @@
                       }
                     </ul>
                   } @else {
-                    <p class="sfc-florist">🌸 Florist's choice — curate a fresh seasonal arrangement each delivery.</p>
+                    <p class="sfc-florist"><i class="bi bi-flower1"></i> Florist's choice — curate a fresh seasonal arrangement each delivery.</p>
                   }
                 </div>
 
                 @if (sub.instructions) {
-                  <div class="sfc-note">📝 {{ sub.instructions }}</div>
+                  <div class="sfc-note"><i class="bi bi-card-text"></i> {{ sub.instructions }}</div>
                 }
 
                 <div class="sfc-actions">
@@ -1041,7 +1169,7 @@
             <div class="modal-box" (click)="$event.stopPropagation()">
               <div class="modal-header">
                 <h2>Edit Subscription</h2>
-                <button class="modal-close" (click)="closeSubForm()">✕</button>
+                <button class="modal-close" (click)="closeSubForm()"><i class="bi bi-x-lg"></i></button>
               </div>
               <div class="modal-body">
                 <div class="form-row">
@@ -1057,7 +1185,7 @@
                   </label>
                 </div>
                 <label class="form-label">Next delivery date
-                  <input type="date" class="form-input" [(ngModel)]="subForm.next_delivery">
+                  <app-date-picker [(ngModel)]="subForm.next_delivery" placeholder="Select next delivery date"></app-date-picker>
                 </label>
                 <label class="form-label">Delivery address
                   <input type="text" class="form-input" [(ngModel)]="subForm.address">
@@ -1154,7 +1282,7 @@
                     <span class="sfc-id mono">{{ b.id }}</span>
                   </div>
                   <div class="sfc-head-right">
-                    @if (isStudioUpcoming(b) && (b.delivery_date || '').slice(0,10) === todayStr) { <span class="today-pill">🎉 Today</span> }
+                    @if (isStudioUpcoming(b) && (b.delivery_date || '').slice(0,10) === todayStr) { <span class="today-pill"><i class="bi bi-balloon-fill"></i> Today</span> }
                     <span class="category-pill">₹{{ b.final_amount }}</span>
                     <span class="status-badge"
                           [class.status-active]="b.status !== 'cancelled'"
@@ -1167,14 +1295,14 @@
                 <div class="sfc-grid">
                   <div class="sfc-block">
                     <span class="sfc-label">Event date</span>
-                    <span class="sfc-val">📅 {{ b.delivery_date || 'Not set' }}</span>
-                    @if (b.theme) { <span class="sfc-sub">🎨 {{ b.theme }}</span> }
+                    <span class="sfc-val"><i class="bi bi-calendar3"></i> {{ b.delivery_date || 'Not set' }}</span>
+                    @if (b.theme) { <span class="sfc-sub"><i class="bi bi-palette"></i> {{ b.theme }}</span> }
                   </div>
                   <div class="sfc-block">
                     <span class="sfc-label">Booked by</span>
                     <span class="sfc-val">{{ b.contact_name || '—' }}</span>
-                    @if (b.company_name) { <span class="sfc-sub">🏢 {{ b.company_name }}</span> }
-                    <span class="sfc-sub">✉️ {{ b.contact_email }}</span>
+                    @if (b.company_name) { <span class="sfc-sub"><i class="bi bi-building"></i> {{ b.company_name }}</span> }
+                    <span class="sfc-sub"><i class="bi bi-envelope"></i> {{ b.contact_email }}</span>
                   </div>
                 </div>
 
@@ -1194,7 +1322,7 @@
                   }
                 </div>
 
-                <div class="sfc-note">📍 {{ b.delivery_address }}</div>
+                <div class="sfc-note"><i class="bi bi-geo-alt"></i> {{ b.delivery_address }}</div>
 
                 <div class="sfc-actions">
                   <label class="status-changer">
@@ -1259,7 +1387,7 @@
             <div class="modal-box occ-modal" (click)="$event.stopPropagation()">
               <div class="modal-header">
                 <h2>{{ editingOcc() ? 'Edit Occasion' : 'New Occasion' }}</h2>
-                <button class="modal-close" (click)="closeOccForm()">✕</button>
+                <button class="modal-close" (click)="closeOccForm()"><i class="bi bi-x-lg"></i></button>
               </div>
               <div class="modal-body">
                 <div class="form-row">

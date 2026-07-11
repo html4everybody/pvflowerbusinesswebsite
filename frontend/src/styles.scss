@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Poppins:wght@300;400;500;600;700&display=swap');
+// Fonts (Fraunces + Inter) are loaded in index.html <head> for faster first paint.
 
 // ── CSS Variables ────────────────────────────────────────────────────────────
 :root {
@@ -151,10 +151,11 @@ html {
 }
 
 body {
-  font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   background: var(--bg);
   color: var(--text);
   line-height: 1.6;
+  font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';  // Inter's refined glyphs
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   transition: background 0.3s ease, color 0.3s ease;
@@ -162,7 +163,9 @@ body {
 }
 
 h1, h2, h3 {
-  font-family: 'Playfair Display', Georgia, serif;
+  font-family: 'Fraunces', Georgia, 'Times New Roman', serif;
+  font-optical-sizing: auto;   // Fraunces scales its optical size to the rendered size
+  font-weight: 600;
 }
 
 h1 { letter-spacing: -0.03em; line-height: 1.1; }
@@ -378,31 +381,94 @@ html {
   animation: 320ms ease fadeSlideIn;
 }
 
-// ── Global Utility ───────────────────────────────────────────────────────────
-.btn-primary {
+// ── Premium Button System ────────────────────────────────────────────────────
+// Shared base for every button variant: consistent sizing, spring press, icon gap.
+%vp-btn-base {
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
-  background: linear-gradient(135deg, var(--accent-mid) 0%, var(--accent) 50%, var(--accent-dark) 100%);
-  color: white;
-  padding: 0.75rem 1.5rem;
-  border: none;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.8rem 1.6rem;
   border-radius: var(--radius-full);
+  font-family: inherit;
   font-size: 0.9rem;
   font-weight: 600;
-  cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
-  box-shadow: 0 4px 18px rgba(37, 99, 235, 0.38), inset 0 1px 0 rgba(255,255,255,0.18);
   letter-spacing: 0.01em;
+  line-height: 1;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: transform 0.22s cubic-bezier(0.22, 1, 0.36, 1),
+              box-shadow 0.22s ease, background 0.22s ease,
+              border-color 0.22s ease, filter 0.22s ease, color 0.22s ease;
 
-  &:hover {
+  &:disabled { opacity: 0.55; cursor: not-allowed; transform: none !important; }
+  .bi { font-size: 1.05em; }
+}
+
+.btn-primary {
+  @extend %vp-btn-base;
+  background: linear-gradient(135deg, var(--accent-mid) 0%, var(--accent) 50%, var(--accent-dark) 100%);
+  color: #fff;
+  box-shadow: 0 4px 18px rgba(37, 99, 235, 0.38), inset 0 1px 0 rgba(255, 255, 255, 0.22);
+
+  &:hover:not(:disabled) {
     transform: translateY(-2px);
-    box-shadow: 0 10px 28px rgba(37, 99, 235, 0.50), inset 0 1px 0 rgba(255,255,255,0.18);
+    box-shadow: 0 12px 30px rgba(37, 99, 235, 0.50), inset 0 1px 0 rgba(255, 255, 255, 0.22);
     filter: brightness(1.06);
   }
-
-  &:active { transform: translateY(0); }
+  &:active:not(:disabled) { transform: translateY(0) scale(0.98); }
 }
+
+// Secondary — quiet surface button with a hairline border.
+.btn-secondary {
+  @extend %vp-btn-base;
+  background: var(--surface);
+  color: var(--text);
+  border-color: var(--border);
+  box-shadow: var(--shadow-sm);
+
+  &:hover:not(:disabled) {
+    transform: translateY(-2px);
+    border-color: var(--border-focus);
+    box-shadow: var(--shadow-md);
+    color: var(--accent);
+  }
+  &:active:not(:disabled) { transform: translateY(0) scale(0.98); }
+}
+
+// Ghost — transparent, accent-tinted on hover.
+.btn-ghost {
+  @extend %vp-btn-base;
+  background: transparent;
+  color: var(--accent);
+
+  &:hover:not(:disabled) { background: var(--accent-light); }
+  &:active:not(:disabled) { transform: scale(0.98); }
+}
+
+// Icon-only — circular action button (header/card affordances).
+.btn-icon {
+  @extend %vp-btn-base;
+  padding: 0;
+  width: 2.6rem;
+  height: 2.6rem;
+  border-radius: var(--radius-full);
+  background: var(--surface);
+  color: var(--text-muted);
+  border-color: var(--border);
+  box-shadow: var(--shadow-sm);
+
+  .bi { font-size: 1.15rem; }
+  &:hover:not(:disabled) {
+    color: var(--accent);
+    border-color: var(--border-focus);
+    box-shadow: var(--shadow-md);
+    transform: translateY(-1px);
+  }
+  &:active:not(:disabled) { transform: scale(0.94); }
+}
+
+.btn-block { width: 100%; }
 
 // ══ Global motion layer ═════════════════════════════════════════════════════
 // Smooth page-to-page transition (the routed component is the sibling after
@@ -422,8 +488,19 @@ a, button {
               border-color 0.18s ease, box-shadow 0.2s ease, opacity 0.18s ease;
 }
 
-// Bootstrap Icons: crisp inline alignment
-.bi { display: inline-block; line-height: 1; vertical-align: -0.125em; }
+// Bootstrap Icons: crisp inline alignment + size utilities.
+// Icons inherit currentColor by default, so they always match their text/context.
+.bi {
+  display: inline-block;
+  line-height: 1;
+  vertical-align: -0.125em;
+  flex-shrink: 0;
+}
+.bi-sm { font-size: 0.85em; }
+.bi-lg { font-size: 1.35em; }
+.bi-xl { font-size: 1.75em; }
+.bi-2x { font-size: 2.25rem; }
+.bi-3x { font-size: 3rem; }
 
 // Reusable premium keyframes + helpers
 @keyframes vpPop   { 0% { transform: scale(0.75); opacity: 0; } 60% { transform: scale(1.08); } 100% { transform: scale(1); opacity: 1; } }

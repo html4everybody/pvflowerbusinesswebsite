@@ -16,7 +16,7 @@
     <!-- Delivery today banner -->
     @if (!loading() && hasDeliveryToday) {
       <div class="today-delivery-banner">
-        <span class="tdb-emoji">🌸</span>
+        <span class="tdb-emoji"><i class="bi bi-flower1"></i></span>
         <span>A Bloom Plan delivery is arriving <strong>today</strong> — please make sure someone's available to receive it.</span>
       </div>
     }
@@ -32,7 +32,7 @@
     <!-- No subscriptions -->
     @if (!loading() && subscriptions().length === 0) {
       <div class="empty-state">
-        <span class="empty-icon">🌾</span>
+        <span class="empty-icon"><i class="bi bi-flower3"></i></span>
         <h2>No subscriptions yet</h2>
         <p>Start a flower subscription and enjoy fresh blooms delivered regularly.</p>
         <a routerLink="/subscribe" class="btn-start">Start a Subscription</a>
@@ -51,7 +51,7 @@
             <div class="sub-card" [class.arriving-today]="isArrivingToday(sub)">
               <div class="sub-card-top">
                 <div class="sub-badges">
-                  @if (isArrivingToday(sub)) { <span class="badge badge-today">🚚 Arriving today</span> }
+                  @if (isArrivingToday(sub)) { <span class="badge badge-today"><i class="bi bi-truck"></i> Arriving today</span> }
                   <span class="badge badge-active">Active</span>
                   <span class="badge badge-plan">{{ planLabel(sub.plan) }}</span>
                 </div>
@@ -154,7 +154,7 @@
                 </div>
               </div>
               @if (sub.admin_message) {
-                <div class="cancel-message">💬 <strong>Message from our team:</strong> {{ sub.admin_message }}</div>
+                <div class="cancel-message"><i class="bi bi-chat-dots"></i> <strong>Message from our team:</strong> {{ sub.admin_message }}</div>
               }
               <div class="sub-actions">
                 <a routerLink="/subscribe" class="btn-resume">Start New Subscription</a>
@@ -168,7 +168,7 @@
     <!-- Contact for changes (subscriptions are managed by our team) -->
     @if (!loading() && subscriptions().length > 0) {
       <div class="sub-contact-note">
-        <span class="scn-icon">💬</span>
+        <span class="scn-icon"><i class="bi bi-chat-dots"></i></span>
         <div class="scn-body">
           <strong>Need to pause, change, or cancel a subscription?</strong>
           <p>Our florists manage all subscription changes personally to keep your deliveries perfect.

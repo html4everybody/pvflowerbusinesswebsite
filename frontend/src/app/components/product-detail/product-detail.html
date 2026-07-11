@@ -25,7 +25,7 @@
                  class="main-image"
                  [class.zoomed]="zoomActive()"
                  [style.transform-origin]="zoomOrigin()">
-            <div class="zoom-hint">🔍 Click to expand</div>
+            <div class="zoom-hint"><i class="bi bi-search"></i> Click to expand</div>
           </div>
         </div>
 
@@ -34,7 +34,14 @@
           <span class="category-badge">{{ product.category }}</span>
           <h1>{{ product.name }}</h1>
 
-          <p class="price">₹{{ product.price.toFixed(2) }}</p>
+          @if (product.discount_percent) {
+            <p class="price">₹{{ (product.final_price ?? product.price).toFixed(2) }}
+              <span class="price-base">₹{{ product.price.toFixed(2) }}</span>
+              <span class="price-off">-{{ product.discount_percent }}%</span>
+            </p>
+          } @else {
+            <p class="price">₹{{ product.price.toFixed(2) }}</p>
+          }
 
           <div class="add-to-cart-section">
             <div class="quantity-selector">
@@ -94,7 +101,7 @@
   @if (lightboxOpen()) {
     <div class="lightbox-overlay" (click)="closeLightbox()">
       <div class="lightbox-inner" (click)="$event.stopPropagation()">
-        <button class="lb-close" (click)="closeLightbox()">✕</button>
+        <button class="lb-close" (click)="closeLightbox()"><i class="bi bi-x-lg"></i></button>
         <button class="lb-prev" (click)="prevImage()">&#8249;</button>
         <img [src]="gallery[activeImageIdx()]" [alt]="product?.name">
         <button class="lb-next" (click)="nextImage()">&#8250;</button>

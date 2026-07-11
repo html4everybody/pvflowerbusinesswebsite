@@ -1,6 +1,6 @@
 import { Injectable, signal, computed, effect } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Product, CartItem } from '../models/product.model';
+import { Product, CartItem, sellPrice } from '../models/product.model';
 import { AuthService } from './auth';
 import { environment } from '../../environments/environment';
 
@@ -18,7 +18,7 @@ export class CartService {
   );
 
   cartTotal = computed(() =>
-    this.cartItems().reduce((total, item) => total + (item.product.price * item.quantity), 0)
+    this.cartItems().reduce((total, item) => total + (sellPrice(item.product) * item.quantity), 0)
   );
 
   constructor(

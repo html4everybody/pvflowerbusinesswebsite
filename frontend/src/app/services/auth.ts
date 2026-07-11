@@ -25,6 +25,16 @@ export class AuthService {
     const token = this.getToken();
     if (!token) return;
     this.http.get<any>(`${this.apiUrl}/api/auth/me?token=${token}`).subscribe({
+      next: (me) => {
+        // Keep the cached user in sync (e.g. role/merchant approval) without
+        // churning the signal every 10s — only write when something changed.
+        if (me?.email) {
+          const merged = { ...this.user(), ...me };
+          if (JSON.stringify(this.user()) !== JSON.stringify(merged)) {
+            this.updateStoredUser(merged);
+          }
+        }
+      },
       error: (err) => {
         if (err.status === 401) {
           this.clearSession();
@@ -104,6 +114,21 @@ export class AuthService {
 
   isAdmin(): boolean {
     return !!this.user()?.is_admin;
+  }
+
+  /** Current role: 'customer' | 'merchant' | 'admin'. */
+  role(): string {
+    return this.user()?.role || 'customer';
+  }
+
+  /** The signed-in user's shop, if any (null for non-merchants). */
+  merchant(): any {
+    return this.user()?.merchant || null;
+  }
+
+  /** True only for an APPROVED merchant (pending/suspended shops don't count). */
+  isMerchant(): boolean {
+    return this.user()?.merchant?.status === 'approved';
   }
 
   getToken(): string {

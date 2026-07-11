@@ -1,0 +1,62 @@
+<div class="seller-page">
+  <div class="seller-card">
+
+    @if (loading()) {
+      <div class="seller-loading"><i class="bi bi-arrow-repeat vp-spin"></i> Loading…</div>
+    } @else if (status() === 'approved') {
+      <div class="seller-state">
+        <div class="state-icon success"><i class="bi bi-shop"></i></div>
+        <h1>You're a seller 🎉</h1>
+        <p><strong>{{ shopName() }}</strong> is live on VivaPetals. Manage your products and orders from your dashboard.</p>
+        <a routerLink="/merchant" class="btn-primary"><i class="bi bi-speedometer2"></i> Go to Merchant Dashboard</a>
+      </div>
+    } @else if (status() === 'pending') {
+      <div class="seller-state">
+        <div class="state-icon pending"><i class="bi bi-hourglass-split"></i></div>
+        <h1>Application under review</h1>
+        <p>Thanks! <strong>{{ shopName() }}</strong> is pending admin approval. We'll notify you once your shop is approved — usually within a day.</p>
+        <a routerLink="/" class="btn-secondary"><i class="bi bi-house"></i> Back to shopping</a>
+      </div>
+    } @else if (status() === 'suspended') {
+      <div class="seller-state">
+        <div class="state-icon suspended"><i class="bi bi-exclamation-octagon"></i></div>
+        <h1>Shop suspended</h1>
+        <p>Your shop <strong>{{ shopName() }}</strong> is currently suspended. Please contact support for help restoring it.</p>
+        <a routerLink="/contact" class="btn-secondary"><i class="bi bi-envelope"></i> Contact support</a>
+      </div>
+    } @else {
+      <div class="seller-intro">
+        <span class="seller-tag"><i class="bi bi-shop-window"></i> Sell on VivaPetals</span>
+        <h1>Open your flower shop</h1>
+        <p>Join the VivaPetals marketplace. List your bouquets, set your own prices &amp; discounts, and reach customers across the platform — we handle checkout &amp; delivery routing.</p>
+
+        <ul class="seller-perks">
+          <li><i class="bi bi-check-circle-fill"></i> Your own dashboard for products &amp; orders</li>
+          <li><i class="bi bi-check-circle-fill"></i> Set prices and discounts on your products</li>
+          <li><i class="bi bi-check-circle-fill"></i> Orders routed straight to you, with payout tracking</li>
+        </ul>
+      </div>
+
+      <form class="seller-form" (ngSubmit)="submit()">
+        <div class="field">
+          <label>Shop name <span class="req">*</span></label>
+          <input type="text" [(ngModel)]="form.shop_name" name="shop_name" placeholder="e.g. Rose &amp; Bloom Studio" maxlength="60" required>
+        </div>
+        <div class="field">
+          <label>What do you sell? <span class="opt">(optional)</span></label>
+          <textarea [(ngModel)]="form.description" name="description" rows="3" placeholder="Tell customers about your shop…" maxlength="300"></textarea>
+        </div>
+        <div class="field">
+          <label>Contact phone <span class="opt">(optional)</span></label>
+          <input type="tel" [(ngModel)]="form.phone" name="phone" placeholder="For order coordination" maxlength="20">
+        </div>
+        <button type="submit" class="btn-primary btn-block" [disabled]="submitting()">
+          @if (submitting()) { <i class="bi bi-arrow-repeat vp-spin"></i> Submitting… }
+          @else { <i class="bi bi-send"></i> Submit application }
+        </button>
+        <p class="seller-note"><i class="bi bi-info-circle"></i> An admin reviews every application before your shop goes live.</p>
+      </form>
+    }
+
+  </div>
+</div>

@@ -6,10 +6,11 @@ import { ToastService } from '../../services/toast';
 import { ProductService } from '../../services/product';
 import { Product } from '../../models/product.model';
 import { FormsModule } from '@angular/forms';
+import { DatePicker } from '../date-picker/date-picker';
 
 @Component({
   selector: 'app-corporate-order',
-  imports: [RouterLink, FormsModule],
+  imports: [RouterLink, FormsModule, DatePicker],
   templateUrl: './corporate-order.html',
   styleUrl: './corporate-order.scss'
 })
@@ -112,62 +113,9 @@ export class CorporateOrder implements OnInit {
     return this.ymd(d);
   }
 
-  // ── Custom event-date calendar ─────────────────────────────────────────────
-  calendarOpen = signal(false);
-  viewMonth = signal(new Date());
-  readonly weekdayLabels = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
-
+  // Event-date selection is handled by the shared <app-date-picker> component.
   private ymd(d: Date): string {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-  }
-
-  get monthLabel(): string {
-    return this.viewMonth().toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
-  }
-
-  get selectedDateLabel(): string {
-    return this.deliveryDate() ? this.formatDate(this.deliveryDate()) : 'Select event date';
-  }
-
-  get canGoPrev(): boolean {
-    const v = this.viewMonth(); const now = new Date();
-    return v.getFullYear() > now.getFullYear() ||
-      (v.getFullYear() === now.getFullYear() && v.getMonth() > now.getMonth());
-  }
-
-  get calendarCells(): { date: string; day: number; inMonth: boolean; disabled: boolean; today: boolean; selected: boolean }[] {
-    const view = this.viewMonth();
-    const year = view.getFullYear(), month = view.getMonth();
-    const startOffset = new Date(year, month, 1).getDay();
-    const gridStart = new Date(year, month, 1 - startOffset);
-    const todayStr = this.ymd(new Date());
-    const minStr = this.minDate;
-    const cells = [];
-    for (let i = 0; i < 42; i++) {
-      const d = new Date(gridStart.getFullYear(), gridStart.getMonth(), gridStart.getDate() + i);
-      const ds = this.ymd(d);
-      cells.push({
-        date: ds, day: d.getDate(),
-        inMonth: d.getMonth() === month,
-        disabled: ds < minStr,
-        today: ds === todayStr,
-        selected: ds === this.deliveryDate(),
-      });
-    }
-    return cells;
-  }
-
-  toggleCalendar(): void {
-    const open = !this.calendarOpen();
-    this.calendarOpen.set(open);
-    if (open) this.viewMonth.set(this.deliveryDate() ? new Date(this.deliveryDate()) : new Date());
-  }
-  prevMonth(): void { const v = this.viewMonth(); this.viewMonth.set(new Date(v.getFullYear(), v.getMonth() - 1, 1)); }
-  nextMonth(): void { const v = this.viewMonth(); this.viewMonth.set(new Date(v.getFullYear(), v.getMonth() + 1, 1)); }
-  pickDate(cell: { date: string; disabled: boolean }): void {
-    if (cell.disabled) return;
-    this.deliveryDate.set(cell.date);
-    this.calendarOpen.set(false);
   }
 
   constructor(

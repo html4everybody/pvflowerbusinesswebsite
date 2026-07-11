@@ -3,7 +3,7 @@
   <!-- Hero -->
   <section class="corp-order-hero">
     <div class="container">
-      <span class="corp-tag">🎉 Petal Studio</span>
+      <span class="corp-tag"><i class="bi bi-balloon-fill"></i> Petal Studio</span>
       <h1>Plan Your Event Florals &amp; Décor</h1>
       <p>Bulk and bespoke flowers for weddings, functions, hotels, malls, house parties &amp; corporate events — themed your way, delivered on schedule.</p>
     </div>
@@ -87,7 +87,7 @@
           <div class="step-actions">
             <span></span>
             <button class="btn-next" [disabled]="!isStep1Valid" (click)="nextStep()">
-              Continue to Order Details →
+              Continue to Order Details <i class="bi bi-arrow-right"></i>
             </button>
           </div>
         </div>
@@ -149,7 +149,7 @@
                       <button class="qty-btn" (click)="adjustItemQty(it.product.id, 5)">+5</button>
                     </div>
                     <span class="sel-line">₹{{ (it.product.price * it.quantity).toFixed(2) }}</span>
-                    <button class="sel-remove" title="Remove" (click)="removeItem(it.product.id)">✕</button>
+                    <button class="sel-remove" title="Remove" (click)="removeItem(it.product.id)"><i class="bi bi-x-lg"></i></button>
                   </div>
                 }
               </div>
@@ -159,7 +159,7 @@
                 <div class="sel-sum-row"><span>Subtotal</span><span>₹{{ subtotal().toFixed(2) }}</span></div>
                 @if (discountPct() > 0) {
                   <div class="sel-sum-row discount">
-                    <span>🎉 Bulk discount ({{ discountPct() }}%)</span><span>− ₹{{ savings().toFixed(2) }}</span>
+                    <span><i class="bi bi-balloon-fill"></i> Bulk discount ({{ discountPct() }}%)</span><span>− ₹{{ savings().toFixed(2) }}</span>
                   </div>
                 }
                 <div class="sel-sum-row total"><span>Estimated total</span><span>₹{{ total().toFixed(2) }}</span></div>
@@ -178,45 +178,17 @@
             </div>
             <div class="form-field">
               <label>Event Date <span class="req">*</span></label>
-              <div class="date-picker">
-                <button type="button" class="date-trigger" [class.filled]="deliveryDate()" (click)="toggleCalendar()">
-                  <i class="bi bi-calendar3"></i>
-                  <span class="dt-label">{{ selectedDateLabel }}</span>
-                  <svg class="dt-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-                </button>
-
-                @if (calendarOpen()) {
-                  <div class="cal-backdrop" (click)="calendarOpen.set(false)"></div>
-                  <div class="calendar-pop">
-                    <div class="cal-head">
-                      <button type="button" class="cal-nav" [disabled]="!canGoPrev" (click)="prevMonth()">
-                        <i class="bi bi-chevron-left"></i>
-                      </button>
-                      <span class="cal-month">{{ monthLabel }}</span>
-                      <button type="button" class="cal-nav" (click)="nextMonth()">
-                        <i class="bi bi-chevron-right"></i>
-                      </button>
-                    </div>
-                    <div class="cal-weekdays">
-                      @for (w of weekdayLabels; track w) { <span>{{ w }}</span> }
-                    </div>
-                    <div class="cal-grid">
-                      @for (c of calendarCells; track c.date) {
-                        <button type="button" class="cal-day"
-                                [class.out]="!c.inMonth" [class.today]="c.today" [class.selected]="c.selected"
-                                [disabled]="c.disabled" (click)="pickDate(c)">{{ c.day }}</button>
-                      }
-                    </div>
-                  </div>
-                }
-              </div>
+              <app-date-picker
+                [ngModel]="deliveryDate()" (ngModelChange)="deliveryDate.set($event)"
+                [ngModelOptions]="{standalone: true}"
+                [min]="minDate" placeholder="Select event date"></app-date-picker>
             </div>
           </div>
 
           <div class="step-actions">
-            <button class="btn-back" (click)="prevStep()">← Back</button>
+            <button class="btn-back" (click)="prevStep()"><i class="bi bi-arrow-left"></i> Back</button>
             <button class="btn-next" [disabled]="!isStep2Valid" (click)="nextStep()">
-              Continue to Theme →
+              Continue to Theme <i class="bi bi-arrow-right"></i>
             </button>
           </div>
         </div>
@@ -270,7 +242,7 @@
                   <img class="preview-logo" [src]="brandingLogoUrl()" alt="Logo preview"
                        (load)="onLogoLoad()" (error)="onLogoError()">
                 } @else {
-                  <div class="preview-logo-placeholder">🏢<br><small>Logo Preview</small></div>
+                  <div class="preview-logo-placeholder"><i class="bi bi-building"></i><br><small>Logo Preview</small></div>
                 }
                 @if (brandingMessage()) {
                   <div class="preview-message">"{{ brandingMessage() }}"</div>
@@ -282,9 +254,9 @@
           </div>
 
           <div class="step-actions">
-            <button class="btn-back" (click)="prevStep()">← Back</button>
+            <button class="btn-back" (click)="prevStep()"><i class="bi bi-arrow-left"></i> Back</button>
             <button class="btn-next" (click)="nextStep()">
-              Review Order →
+              Review Order <i class="bi bi-arrow-right"></i>
             </button>
           </div>
         </div>
@@ -389,7 +361,7 @@
           }
 
           <div class="step-actions">
-            <button class="btn-back" (click)="prevStep()">← Back</button>
+            <button class="btn-back" (click)="prevStep()"><i class="bi bi-arrow-left"></i> Back</button>
             <button class="btn-confirm" [disabled]="submitting()" (click)="submit()">
               @if (submitting()) { Placing Order... } @else { Confirm Order }
             </button>
@@ -400,7 +372,7 @@
       <!-- ── Success State ────────────────────────────────────────────────── -->
       @if (submitted()) {
         <div class="success-state">
-          <div class="success-icon">✅</div>
+          <div class="success-icon"><i class="bi bi-check-circle-fill"></i></div>
           <h2>Booking Placed!</h2>
           <p>Your Petal Studio booking has been received. Our events team will reach out to finalise the details.</p>
 
@@ -422,7 +394,7 @@
           </div>
 
           <div class="success-actions">
-            <a routerLink="/my-studio" class="btn-next">Manage My Bookings →</a>
+            <a routerLink="/my-studio" class="btn-next">Manage My Bookings <i class="bi bi-arrow-right"></i></a>
             <a routerLink="/petal-studio" class="btn-back">Back to Petal Studio</a>
           </div>
         </div>

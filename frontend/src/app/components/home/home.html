@@ -2,7 +2,7 @@
 
   @if (subDeliveryToday()) {
     <a routerLink="/my-subscriptions" class="bloom-today-banner">
-      🌸 Your Bloom Plan delivery arrives <strong>today</strong>! Tap to view details →
+      <i class="bi bi-flower1"></i> Your Bloom Plan delivery arrives <strong>today</strong>! Tap to view details <i class="bi bi-arrow-right"></i>
     </a>
   }
 
@@ -62,7 +62,7 @@
               <span class="index-card-emoji">{{ occ.emoji }}</span>
               <h2>{{ occ.title }}</h2>
               <p>{{ occ.tagline }}</p>
-              <span class="index-card-cta">Explore Collection →</span>
+              <span class="index-card-cta">Explore Collection <i class="bi bi-arrow-right"></i></span>
             </div>
           </a>
         }
@@ -81,7 +81,7 @@
 
       <!-- Category Filters -->
       <div class="category-filters" appFadeIn [fadeDelay]="100">
-        <button class="filter-pill" [class.active]="selectedCategory === 'All'" (click)="selectCategory('All')">🌸 All</button>
+        <button class="filter-pill" [class.active]="selectedCategory === 'All'" (click)="selectCategory('All')"><i class="bi bi-flower1"></i> All</button>
         @for (cat of categories; track cat) {
           <button class="filter-pill" [class.active]="selectedCategory === cat" (click)="selectCategory(cat)">{{ cat }}</button>
         }
@@ -94,25 +94,25 @@
           <div class="active-chips">
             @if (searchService.query()) {
               <span class="filter-tag">
-                🔍 "{{ searchService.query() }}"
+                <i class="bi bi-search"></i> "{{ searchService.query() }}"
                 <button (click)="searchService.query.set('')">×</button>
               </span>
             }
             @if (searchService.selectedOccasion()) {
               <span class="filter-tag">
-                🎉 {{ searchService.selectedOccasion() }}
+                <i class="bi bi-balloon-fill"></i> {{ searchService.selectedOccasion() }}
                 <button (click)="searchService.selectedOccasion.set('')">×</button>
               </span>
             }
             @if (searchService.selectedColor()) {
               <span class="filter-tag">
-                🎨 {{ searchService.selectedColor() }}
+                <i class="bi bi-palette"></i> {{ searchService.selectedColor() }}
                 <button (click)="searchService.selectedColor.set('')">×</button>
               </span>
             }
             @if (searchService.priceRange() !== 'all') {
               <span class="filter-tag">
-                💰 {{ searchService.priceLabels[searchService.priceRange()] }}
+                <i class="bi bi-cash-coin"></i> {{ searchService.priceLabels[searchService.priceRange()] }}
                 <button (click)="searchService.priceRange.set('all')">×</button>
               </span>
             }
@@ -146,7 +146,12 @@
               <div class="front-info">
                 <h3>{{ product.name }}</h3>
                 <div class="front-info-bottom">
-                  <span class="price">₹{{ product.price | number:'1.0-0' }}</span>
+                  @if (product.discount_percent) {
+                    <span class="price">₹{{ (product.final_price ?? product.price) | number:'1.0-0' }}</span>
+                    <span class="price-base">₹{{ product.price | number:'1.0-0' }}</span>
+                  } @else {
+                    <span class="price">₹{{ product.price | number:'1.0-0' }}</span>
+                  }
                   @if (getQuantity(product.id) === 0) {
                     <button class="btn-add-front" (click)="addToCart(product); $event.stopPropagation()">
                       <i class="bi bi-bag"></i>
@@ -168,7 +173,7 @@
 
       @if (filteredProducts.length === 0) {
         <div class="empty-state" appFadeIn>
-          <span>🌾</span>
+          <span><i class="bi bi-flower3"></i></span>
           <p>No flowers found. Try a different search or category.</p>
         </div>
       }
@@ -195,13 +200,13 @@
               </div>
               <div class="coupon-body">
                 @if (offer.id === bestOfferId) {
-                  <span class="offer-badge best-badge">⭐ Best Deal</span>
+                  <span class="offer-badge best-badge"><i class="bi bi-star-fill"></i> Best Deal</span>
                 } @else {
                   <span class="offer-badge">{{ offer.badge }}</span>
                 }
                 <h3>{{ offer.title }}</h3>
                 <p>{{ offer.subtitle }}</p>
-                <span class="coupon-condition">✓ {{ conditionLabel(offer) }}</span>
+                <span class="coupon-condition"><i class="bi bi-check-lg"></i> {{ conditionLabel(offer) }}</span>
                 <div class="coupon-code-row">
                   <code>{{ offer.code }}</code>
                   <button class="coupon-copy" (click)="copyCode(offer.code)" [class.copied]="copiedCode() === offer.code">
@@ -231,7 +236,7 @@
         <div class="bundles-grid">
           @for (bundle of offers()!.bundle_deals; track bundle.id) {
             <div class="bundle-card" [class.best]="bundle.id === bestBundleId" appFadeIn [fadeDelay]="$index * 100">
-              @if (bundle.id === bestBundleId) { <span class="bundle-best-badge">💎 Best Value</span> }
+              @if (bundle.id === bestBundleId) { <span class="bundle-best-badge"><i class="bi bi-gem"></i> Best Value</span> }
               <div class="bundle-top">
                 <span class="bundle-emoji">{{ bundle.emoji }}</span>
                 <span class="bundle-item-count">{{ bundle.item_count }} items · Save {{ bundle.savings_pct }}%</span>
@@ -261,7 +266,7 @@
                 <span class="bundle-savings">You save ₹{{ bundle.savings_amount | number:'1.0-0' }}</span>
               </div>
               <button class="btn-add-bundle" (click)="addBundleToCart(bundle)">
-                Add all {{ bundle.item_count }} to cart →
+                Add all {{ bundle.item_count }} to cart <i class="bi bi-arrow-right"></i>
               </button>
             </div>
           }

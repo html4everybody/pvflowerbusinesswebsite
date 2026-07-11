@@ -9,10 +9,11 @@ import { LoyaltyService } from '../../services/loyalty';
 import { PromoService, PromoResult, SeasonalOffer } from '../../services/promo';
 import { environment } from '../../../environments/environment';
 import { CommonModule } from '@angular/common';
+import { DatePicker } from '../date-picker/date-picker';
 
 @Component({
   selector: 'app-checkout',
-  imports: [RouterLink, FormsModule, CommonModule],
+  imports: [RouterLink, FormsModule, CommonModule, DatePicker],
   templateUrl: './checkout.html',
   styleUrl: './checkout.scss'
 })
@@ -352,7 +353,7 @@ export class Checkout {
       items: this.cartService.getCartItems().map(item => ({
         productId: item.product.id,
         name: item.product.name,
-        price: item.product.price,
+        price: item.product.final_price ?? item.product.price,
         quantity: item.quantity
       })),
       total: this.getTotal(),

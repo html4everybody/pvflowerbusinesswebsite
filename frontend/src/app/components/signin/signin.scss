@@ -19,7 +19,7 @@ $divider-tx:  #9c968a;
   align-items: center;
   justify-content: center;
   background: #f4f1ea;
-  font-family: 'Hanken Grotesk', -apple-system, sans-serif;
+  font-family: 'Inter', -apple-system, sans-serif;
   padding: 0.85rem 1rem;
   box-sizing: border-box;
 }
@@ -85,7 +85,7 @@ $divider-tx:  #9c968a;
   z-index: 2;
 
   p {
-    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-family: 'Fraunces', Georgia, serif;
     font-size: 1rem;
     font-style: italic;
     color: #2c2820;
@@ -177,7 +177,7 @@ $divider-tx:  #9c968a;
 }
 
 .vp-heading h1 {
-  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-family: 'Fraunces', Georgia, serif;
   font-weight: 600;
   font-size: clamp(1.9rem, 3vw, 2.4rem);
   line-height: 1.08;
@@ -508,7 +508,7 @@ $divider-tx:  #9c968a;
     gap: 0.5rem;
     padding: 0.75rem 1.25rem;
     img { height: 36px; width: 36px; object-fit: contain; }
-    span { font-size: 1rem; font-weight: 600; color: #1d2433; font-family: 'Hanken Grotesk', sans-serif; }
+    span { font-size: 1rem; font-weight: 600; color: #1d2433; font-family: 'Inter', sans-serif; }
   }
 
   .vp-card {
@@ -564,3 +564,41 @@ $divider-tx:  #9c968a;
 }
 
 .vp-mobile-top { display: none; }
+
+// ── Customer / Merchant login toggle ────────────────────────────────────────
+.vp-loginmode {
+  display: flex;
+  gap: 0.4rem;
+  padding: 0.3rem;
+  background: var(--bg-raised, #f1f5f9);
+  border-radius: var(--radius-full, 999px);
+  margin-bottom: 1.4rem;
+
+  button {
+    flex: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.45rem;
+    padding: 0.6rem 1rem;
+    border: none;
+    background: transparent;
+    border-radius: var(--radius-full, 999px);
+    font-family: inherit;
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: var(--text-muted, #64748b);
+    cursor: pointer;
+    transition: background 0.18s ease, color 0.18s ease, box-shadow 0.18s ease;
+
+    &.active {
+      background: var(--surface, #fff);
+      color: var(--accent, #2563eb);
+      box-shadow: 0 2px 8px rgba(15,23,42,0.08);
+    }
+  }
+}
+.vp-merchant-note {
+  display: flex; align-items: center; gap: 0.4rem;
+  justify-content: center; text-align: center;
+}

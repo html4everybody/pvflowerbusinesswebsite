@@ -21,11 +21,11 @@ export class TrackOrder implements OnInit {
   };
 
   readonly STATUS_ICONS: Record<string, string> = {
-    confirmed: '✅',
-    preparing: '🌸',
-    out_for_delivery: '🚚',
-    delivered: '🎉',
-    cancelled: '❌',
+    confirmed: 'bi-check-circle-fill',
+    preparing: 'bi-flower1',
+    out_for_delivery: 'bi-truck',
+    delivered: 'bi-balloon-heart-fill',
+    cancelled: 'bi-x-circle-fill',
   };
 
   readonly STATUS_DESC: Record<string, string> = {

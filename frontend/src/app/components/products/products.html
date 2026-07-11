@@ -49,7 +49,12 @@
             <h3>{{ product.name }}</h3>
             <p class="description">{{ product.description }}</p>
             <div class="product-footer">
-              <span class="price">₹{{ product.price.toFixed(2) }}</span>
+              @if (product.discount_percent) {
+                <span class="price">₹{{ (product.final_price ?? product.price).toFixed(2) }}</span>
+                <span class="price-base">₹{{ product.price.toFixed(2) }}</span>
+              } @else {
+                <span class="price">₹{{ product.price.toFixed(2) }}</span>
+              }
               @if (getQuantity(product.id) === 0) {
                 <button class="btn-add" (click)="addToCart(product)">
                   <i class="bi bi-bag"></i>

@@ -166,10 +166,11 @@
                 <div class="form-row">
                   <div class="form-group">
                     <label for="deliveryDate">Delivery Date <span class="required-star">*</span></label>
-                    <input type="date" id="deliveryDate" #deliveryDateField="ngModel"
+                    <app-date-picker id="deliveryDate" #deliveryDateField="ngModel"
                       [(ngModel)]="formData.deliveryDate" name="deliveryDate"
                       [min]="effectiveMinDate"
-                      [required]="deliveryType() === 'scheduled'">
+                      [required]="deliveryType() === 'scheduled'"
+                      placeholder="Select delivery date"></app-date-picker>
                     @if (deliveryDateField.invalid && deliveryDateField.touched) {
                       <div class="field-error">Please select a delivery date</div>
                     }
@@ -535,7 +536,7 @@
             }
             @if (promoResult()) {
               <div class="summary-row promo-discount-row">
-                <span>🏷️ {{ promoResult()!.code }}</span>
+                <span><i class="bi bi-tag"></i> {{ promoResult()!.code }}</span>
                 <span>− ₹{{ promoDiscountAmount().toFixed(2) }}</span>
               </div>
             }

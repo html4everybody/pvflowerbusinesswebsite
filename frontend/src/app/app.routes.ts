@@ -27,7 +27,10 @@ import { AccountProfile } from './components/account-profile/account-profile';
 import { AccountPassword } from './components/account-password/account-password';
 import { AccountEmail } from './components/account-email/account-email';
 import { ConfirmEmail } from './components/confirm-email/confirm-email';
+import { BecomeSeller } from './components/become-seller/become-seller';
+import { MerchantDashboard } from './components/merchant-dashboard/merchant-dashboard';
 import { authGuard } from './guards/auth-guard';
+import { merchantGuard } from './guards/merchant-guard';
 
 export const routes: Routes = [
   // ── Public routes ──────────────────────────────────────────────────────────
@@ -44,6 +47,7 @@ export const routes: Routes = [
   { path: 'occasions/:slug', component: OccasionPage },
   { path: 'petal-studio', component: CorporatePortal },
   { path: 'track', component: TrackOrder },
+  { path: 'become-seller', component: BecomeSeller, canActivate: [authGuard] },
 
   // ── Legacy redirects (Corporate Suite → Petal Studio) ──────────────────────
   { path: 'corporate', redirectTo: 'petal-studio', pathMatch: 'full' },
@@ -69,6 +73,7 @@ export const routes: Routes = [
   { path: 'my-loyalty', component: MyLoyalty, canActivate: [authGuard] },
   { path: 'reminders', component: Reminders, canActivate: [authGuard] },
   { path: 'admin', component: Admin, canActivate: [authGuard] },
+  { path: 'merchant', component: MerchantDashboard, canActivate: [merchantGuard] },
 
   { path: '**', redirectTo: '' }
 ];

@@ -236,7 +236,7 @@
       }
 
       h3 {
-        font-family: 'Poppins', sans-serif;
+        font-family: 'Inter', sans-serif;
         font-size: 0.88rem;
         font-weight: 600;
         color: var(--text);
@@ -597,7 +597,7 @@
         @media (max-width: 600px) { padding: 0.5rem 0.6rem; gap: 0.25rem; }
 
         h3 {
-          font-family: 'Poppins', sans-serif;
+          font-family: 'Inter', sans-serif;
           font-size: 0.78rem;
           font-weight: 600;
           color: var(--text);
@@ -1628,3 +1628,7 @@ html[data-theme="dark"] {
 .btn-add-front .bi { font-size: 12px; }
 .content-chip .bi { font-size: 11px; }
 .cart-toast .toast-icon .bi { font-size: 16px; }
+
+// Merchant discount — struck-through base price + % off badge
+.price-base { text-decoration: line-through; color: var(--text-subtle); font-size: 0.82em; margin-left: 0.4rem; font-weight: 500; }
+.price-off { display: inline-block; background: var(--accent); color: #fff; font-size: 0.72rem; font-weight: 700; padding: 0.1rem 0.45rem; border-radius: var(--radius-full); margin-left: 0.5rem; vertical-align: middle; }

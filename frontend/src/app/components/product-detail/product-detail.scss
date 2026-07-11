@@ -808,7 +808,7 @@
 
   .write-review-form {
     .wr-title {
-      font-family: 'Playfair Display', Georgia, serif;
+      font-family: 'Fraunces', Georgia, serif;
       font-size: 1.2rem;
       font-weight: 700;
       color: var(--text);
@@ -1092,3 +1092,7 @@
 
 .btn-add-to-cart .bi { font-size: 16px; }
 .btn-wishlist .bi { font-size: 17px; }
+
+// Merchant discount — struck-through base price + % off badge
+.price-base { text-decoration: line-through; color: var(--text-subtle); font-size: 0.82em; margin-left: 0.4rem; font-weight: 500; }
+.price-off { display: inline-block; background: var(--accent); color: #fff; font-size: 0.72rem; font-weight: 700; padding: 0.1rem 0.45rem; border-radius: var(--radius-full); margin-left: 0.5rem; vertical-align: middle; }

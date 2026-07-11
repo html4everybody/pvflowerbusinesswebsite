@@ -109,6 +109,9 @@
           @if (authService.isAdmin()) {
             <a routerLink="/admin" routerLinkActive="active" class="nav-admin-link" (click)="closeMenu()">Admin Dashboard</a>
           }
+          @if (authService.isMerchant()) {
+            <a routerLink="/merchant" routerLinkActive="active" class="nav-admin-link" (click)="closeMenu()">Merchant Dashboard</a>
+          }
           <a routerLink="/account" routerLinkActive="active" class="nav-orders-link" (click)="closeMenu()">My Account</a>
         }
 
@@ -212,7 +215,7 @@
                 }
               </div>
               @if (noticeService.notices().length === 0) {
-                <div class="notif-empty">🔔 You're all caught up.</div>
+                <div class="notif-empty"><i class="bi bi-bell"></i> You're all caught up.</div>
               } @else {
                 <div class="notif-list">
                   @for (n of noticeService.notices().slice(0, 8); track n.id) {
@@ -246,6 +249,12 @@
                 <i class="bi bi-person"></i>
                 My Account
               </a>
+              @if (authService.isMerchant()) {
+                <a routerLink="/merchant" (click)="closeMenu()">
+                  <i class="bi bi-shop"></i>
+                  Merchant Dashboard
+                </a>
+              }
               <button class="logout-btn" (click)="logout()">
                 <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
@@ -314,7 +323,7 @@
         <!-- No results -->
         @if (showSuggestions && suggestions.length === 0) {
           <div class="search-empty">
-            <span class="se-emoji">🔍</span>
+            <span class="se-emoji"><i class="bi bi-search"></i></span>
             <p>No matches for <strong>"{{ searchService.query() }}"</strong></p>
             <span class="se-hint">Try a flower, colour, or occasion — or explore below.</span>
           </div>
@@ -409,7 +418,7 @@
             @if (facetResultCount === 0) {
               No matches — adjust filters
             } @else {
-              Show {{ facetResultCount > 100 ? '100+' : facetResultCount }} result{{ facetResultCount === 1 ? '' : 's' }} →
+              Show {{ facetResultCount > 100 ? '100+' : facetResultCount }} result{{ facetResultCount === 1 ? '' : 's' }} <i class="bi bi-arrow-right"></i>
             }
           </button>
         </div>

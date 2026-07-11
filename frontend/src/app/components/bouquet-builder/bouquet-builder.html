@@ -7,7 +7,7 @@
       Back
     </a>
     <div class="topbar-title">
-      <span class="topbar-icon">🌸</span>
+      <span class="topbar-icon"><i class="bi bi-flower1"></i></span>
       <h1>Bouquet Builder</h1>
     </div>
     <div class="topbar-price">
@@ -70,9 +70,9 @@
         @if (bouquet.design().flowers.length === 0) {
           <!-- Empty state -->
           <div class="canvas-empty">
-            <div class="empty-icon">💐</div>
+            <div class="empty-icon"><i class="bi bi-flower2"></i></div>
             <p>Drag flowers here<br>or click any flower</p>
-            <span class="empty-hint">↑ from the palette on the left</span>
+            <span class="empty-hint"><i class="bi bi-arrow-up"></i> from the palette on the left</span>
           </div>
         } @else {
           <!-- Bouquet visual -->
@@ -138,7 +138,7 @@
       <!-- Arrangement Style -->
       <div class="option-section">
         <h3 class="option-title">
-          <span>✨</span> Arrangement Style
+          <span><i class="bi bi-stars"></i></span> Arrangement Style
         </h3>
         <div class="style-grid">
           @for (style of bouquet.styles; track style.id) {
@@ -157,7 +157,7 @@
       <!-- Wrapping Color -->
       <div class="option-section">
         <h3 class="option-title">
-          <span>🎀</span> Wrapping
+          <span><i class="bi bi-gift-fill"></i></span> Wrapping
           <span class="option-subtitle">{{ bouquet.design().wrappingName }}</span>
         </h3>
         <div class="wrap-swatches">
@@ -178,7 +178,7 @@
 
       <!-- Bouquet Size -->
       <div class="option-section">
-        <h3 class="option-title"><span>📏</span> Size</h3>
+        <h3 class="option-title"><span><i class="bi bi-rulers"></i></span> Size</h3>
         <div class="size-options">
           @for (size of bouquet.sizes; track size.id) {
             <button
@@ -197,7 +197,7 @@
 
       <!-- Price Breakdown -->
       <div class="price-summary">
-        <h3 class="option-title"><span>💰</span> Price Breakdown</h3>
+        <h3 class="option-title"><span><i class="bi bi-cash-coin"></i></span> Price Breakdown</h3>
         @if (bouquet.design().flowers.length === 0) {
           <p class="price-empty">Add flowers to see the breakdown</p>
         } @else {

@@ -35,7 +35,7 @@
             </h2>
             <div class="status-pipeline">
               @for (s of PIPELINE_STATUSES; track s; let i = $index) {
-                @if (i > 0) { <span class="pipeline-arrow">→</span> }
+                @if (i > 0) { <span class="pipeline-arrow"><i class="bi bi-arrow-right"></i></span> }
                 <button class="pipeline-step"
                   [class.done]="statusIndex(o.status) > statusIndex(s)"
                   [class.current]="o.status === s"
@@ -289,7 +289,7 @@
                     <div class="dec-fields">
                       <div class="dec-field">
                         <label>Date</label>
-                        <input type="date" [min]="minDate" [value]="editDelivery().date" (change)="setEditDate($any($event.target).value)">
+                        <app-date-picker [min]="minDate" [ngModel]="editDelivery().date" (ngModelChange)="setEditDate($event)" [ngModelOptions]="{standalone: true}" placeholder="Select date"></app-date-picker>
                       </div>
                       <div class="dec-field">
                         <label>Time Slot</label>
@@ -347,7 +347,7 @@
               </button>
             } @else {
               <p class="cancel-locked-note">
-                🔒 This order is already being prepared, so it can no longer be cancelled here.
+                <i class="bi bi-lock"></i> This order is already being prepared, so it can no longer be cancelled here.
                 Need to change or cancel it? <a routerLink="/contact">Reach out to our team</a> and we'll help.
               </p>
             }

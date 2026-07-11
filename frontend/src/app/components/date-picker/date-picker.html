@@ -1,0 +1,32 @@
+<div class="date-picker">
+  <button type="button" class="date-trigger" [class.filled]="value()" [disabled]="disabled()" (click)="toggle()">
+    <i class="bi bi-calendar3 dt-cal"></i>
+    <span class="dt-label">{{ triggerLabel }}</span>
+    <i class="bi bi-chevron-down dt-chev"></i>
+  </button>
+
+  @if (open()) {
+    <div class="cal-backdrop" (click)="close()"></div>
+    <div class="calendar-pop" role="dialog" aria-label="Choose date">
+      <div class="cal-head">
+        <button type="button" class="cal-nav" [disabled]="!canGoPrev" (click)="prevMonth()" aria-label="Previous month">
+          <i class="bi bi-chevron-left"></i>
+        </button>
+        <span class="cal-month">{{ monthLabel }}</span>
+        <button type="button" class="cal-nav" [disabled]="!canGoNext" (click)="nextMonth()" aria-label="Next month">
+          <i class="bi bi-chevron-right"></i>
+        </button>
+      </div>
+      <div class="cal-weekdays">
+        @for (w of weekdayLabels; track w) { <span>{{ w }}</span> }
+      </div>
+      <div class="cal-grid">
+        @for (c of cells; track c.date) {
+          <button type="button" class="cal-day"
+                  [class.out]="!c.inMonth" [class.today]="c.today" [class.selected]="c.selected"
+                  [disabled]="c.disabled" (click)="pick(c)">{{ c.day }}</button>
+        }
+      </div>
+    </div>
+  }
+</div>

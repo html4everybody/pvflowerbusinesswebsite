@@ -7,12 +7,13 @@ import { AuthService } from '../../services/auth';
 import { ToastService } from '../../services/toast';
 import { ConfirmService } from '../../services/confirm';
 import { environment } from '../../../environments/environment';
+import { DatePicker } from '../date-picker/date-picker';
 
-export type AdminSection = 'overview' | 'orders' | 'products' | 'inventory' | 'customers' | 'analytics' | 'zones' | 'deals' | 'bundles' | 'plans' | 'subscriptions' | 'studio' | 'occasions';
+export type AdminSection = 'overview' | 'orders' | 'products' | 'inventory' | 'customers' | 'analytics' | 'zones' | 'deals' | 'bundles' | 'plans' | 'subscriptions' | 'studio' | 'occasions' | 'merchants';
 
 @Component({
   selector: 'app-admin',
-  imports: [RouterLink, FormsModule, TitleCasePipe],
+  imports: [RouterLink, FormsModule, TitleCasePipe, DatePicker],
   templateUrl: './admin.html',
   styleUrl: './admin.scss'
 })
@@ -101,7 +102,7 @@ export class Admin implements OnInit {
   showProductForm = signal(false);
   editingProduct = signal<any | null>(null);
   savingProduct = signal(false);
-  productForm = { name: '', description: '', price: 0, image: '', category: 'Flowers', inStock: true };
+  productForm: any = { name: '', description: '', price: 0, discount_percent: 0, image: '', category: 'Flowers', inStock: true };
 
   // ── Subscription Plans ───────────────────────────────────────────────────────
   subPlans = signal<any[]>([]);
@@ -148,6 +149,10 @@ export class Admin implements OnInit {
   });
 
   // ── Customers ──────────────────────────────────────────────────────────────
+  merchants = signal<any[]>([]);
+  loadingMerchants = signal(false);
+  updatingMerchant = signal<string | null>(null);
+
   customers = signal<any[]>([]);
   loadingCustomers = signal(true);
   customerSearch = signal('');
@@ -222,6 +227,7 @@ export class Admin implements OnInit {
     if (section === 'subscriptions' && !this.subscriptions().length) this.loadSubscriptions();
     if (section === 'studio' && !this.studioBookings().length) this.loadStudio();
     if (section === 'occasions' && !this.occasions().length) this.loadOccasions();
+    if (section === 'merchants' && !this.merchants().length) this.loadMerchants();
   }
 
   get token(): string { return this.authService.getToken(); }
@@ -239,6 +245,35 @@ export class Admin implements OnInit {
     if (section === 'subscriptions' && !this.subscriptions().length) this.loadSubscriptions();
     if (section === 'studio' && !this.studioBookings().length) this.loadStudio();
     if (section === 'occasions' && !this.occasions().length) this.loadOccasions();
+    if (section === 'merchants' && !this.merchants().length) this.loadMerchants();
+  }
+
+  // ── Merchants (marketplace sellers) ───────────────────────────────────────
+  loadMerchants(): void {
+    this.loadingMerchants.set(true);
+    this.http.get<any[]>(`${environment.apiUrl}/api/admin/merchants?token=${this.token}`).subscribe({
+      next: (data) => { this.merchants.set(data || []); this.loadingMerchants.set(false); },
+      error: () => { this.loadingMerchants.set(false); this.toastService.show('Could not load merchants', 'error'); },
+    });
+  }
+
+  setMerchantStatus(m: any, status: 'approved' | 'suspended' | 'pending'): void {
+    this.updatingMerchant.set(m.id);
+    this.http.patch<{ status: string }>(`${environment.apiUrl}/api/admin/merchants/${m.id}/status`, { token: this.token, status }).subscribe({
+      next: () => {
+        this.merchants.update(list => list.map(x => x.id === m.id ? { ...x, status } : x));
+        this.updatingMerchant.set(null);
+        this.toastService.show(`${m.shop_name} ${status === 'approved' ? 'approved' : status}`, 'success');
+      },
+      error: (err) => { this.updatingMerchant.set(null); this.toastService.show(err?.error?.detail || 'Update failed', 'error'); },
+    });
+  }
+
+  saveMerchantCommission(m: any, rate: number): void {
+    this.http.patch(`${environment.apiUrl}/api/admin/merchants/${m.id}/commission`, { token: this.token, commission_rate: rate }).subscribe({
+      next: () => this.toastService.show(`${m.shop_name} commission set to ${rate}%`, 'success'),
+      error: (err) => this.toastService.show(err?.error?.detail || 'Update failed', 'error'),
+    });
   }
 
   // ── Stats & Orders ────────────────────────────────────────────────────────
@@ -275,18 +310,74 @@ export class Admin implements OnInit {
   // ── Products ──────────────────────────────────────────────────────────────
   loadProducts(): void {
     this.loadingProducts.set(true);
-    this.http.get<any[]>(`${environment.apiUrl}/api/products`).subscribe({
+    // Admin endpoint returns ALL products (every status) with shop names + profit.
+    this.http.get<any[]>(`${environment.apiUrl}/api/admin/products?token=${this.token}`).subscribe({
       next: (data) => { this.products.set(data || []); this.loadingProducts.set(false); },
       error: () => this.loadingProducts.set(false)
     });
   }
 
+  pendingProducts = computed(() => this.products().filter(p => p.status === 'pending'));
+
   openProductForm(product: any = null): void {
     this.editingProduct.set(product);
     this.productForm = product
-      ? { name: product.name, description: product.description || '', price: product.price, image: product.image || '', category: product.category, inStock: product.inStock !== false }
-      : { name: '', description: '', price: 0, image: '', category: this.productCategories()[0] || 'Flowers', inStock: true };
+      ? { name: product.name, description: product.description || '', price: product.price, discount_percent: product.discount_percent || 0, image: product.image || '', category: product.category, inStock: product.inStock !== false }
+      : { name: '', description: '', price: 0, discount_percent: 0, image: '', category: this.productCategories()[0] || 'Flowers', inStock: true };
     this.showProductForm.set(true);
+  }
+
+  // ── Product approvals (merchant submissions) ──────────────────────────────
+  approveProduct(p: any): void {
+    if (p.price == null || Number(p.price) <= 0) { this.toastService.show('Set a selling price first', 'error'); return; }
+    this.http.patch(`${environment.apiUrl}/api/admin/products/${p.id}/approve`,
+      { token: this.token, price: Number(p.price), discount_percent: Number(p.discount_percent) || 0 }).subscribe({
+      next: () => { this.toastService.show(`${p.name} approved & live`); this.loadProducts(); },
+      error: (err) => this.toastService.show(err.error?.detail || 'Approve failed', 'error'),
+    });
+  }
+
+  async rejectProduct(p: any): Promise<void> {
+    const res = await this.confirmService.askReason({
+      title: 'Reject product',
+      message: `Reject "${p.name}"? The merchant will see your reason.`,
+      confirmText: 'Reject', danger: true,
+      promptLabel: 'Reason (optional)', promptPlaceholder: 'e.g. Image quality too low',
+    });
+    if (!res.ok) return;
+    this.http.patch(`${environment.apiUrl}/api/admin/products/${p.id}/reject`,
+      { token: this.token, reason: res.reason }).subscribe({
+      next: () => { this.toastService.show(`${p.name} rejected`); this.loadProducts(); },
+      error: (err) => this.toastService.show(err.error?.detail || 'Reject failed', 'error'),
+    });
+  }
+
+  // ── Create merchant (admin provisions a seller login) ─────────────────────
+  showMerchantForm = signal(false);
+  creatingMerchant = signal(false);
+  merchantForm = { email: '', password: '', shop_name: '', contact_name: '', phone: '' };
+
+  openMerchantForm(): void {
+    this.merchantForm = { email: '', password: '', shop_name: '', contact_name: '', phone: '' };
+    this.showMerchantForm.set(true);
+  }
+  closeMerchantForm(): void { this.showMerchantForm.set(false); }
+
+  createMerchant(): void {
+    const f = this.merchantForm;
+    if (!f.email.trim() || !f.password.trim() || !f.shop_name.trim()) {
+      this.toastService.show('Email, password and shop name are required', 'error'); return;
+    }
+    this.creatingMerchant.set(true);
+    this.http.post(`${environment.apiUrl}/api/admin/merchants/create`, { token: this.token, ...f }).subscribe({
+      next: () => {
+        this.creatingMerchant.set(false);
+        this.closeMerchantForm();
+        this.toastService.show(`Merchant "${f.shop_name}" created`);
+        this.loadMerchants();
+      },
+      error: (err) => { this.creatingMerchant.set(false); this.toastService.show(err.error?.detail || 'Create failed', 'error'); },
+    });
   }
 
   closeProductForm(): void { this.showProductForm.set(false); this.editingProduct.set(null); }

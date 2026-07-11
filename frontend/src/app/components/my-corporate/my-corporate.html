@@ -24,7 +24,7 @@
     <!-- Empty state -->
     @if (!loading() && orders().length === 0) {
       <div class="empty-state">
-        <span class="empty-icon">🎉</span>
+        <span class="empty-icon"><i class="bi bi-balloon-fill"></i></span>
         <h2>No bookings yet</h2>
         <p>Book Petal Studio to flower and decorate your next wedding, party, or event.</p>
         <a routerLink="/petal-studio/book" class="btn-start">Start a Booking</a>
@@ -45,7 +45,7 @@
                 <div class="order-badges">
                   <span class="badge" [class]="'badge-' + order.status">{{ capitalize(order.status) }}</span>
                   @if (order.is_recurring) {
-                    <span class="badge badge-recurring">🔄 Recurring</span>
+                    <span class="badge badge-recurring"><i class="bi bi-arrow-repeat"></i> Recurring</span>
                   }
                 </div>
                 <span class="order-id">#{{ order.id }}</span>
@@ -108,7 +108,7 @@
                   </button>
                 } @else {
                   <p class="cancel-locked-note">
-                    🔒 We've started preparing this booking, so it can no longer be cancelled here.
+                    <i class="bi bi-lock"></i> We've started preparing this booking, so it can no longer be cancelled here.
                     Need help? <a routerLink="/contact">Reach out to our team</a>.
                   </p>
                 }
@@ -194,7 +194,7 @@
                 </div>
               </div>
               @if (order.admin_message) {
-                <div class="cancel-message">💬 <strong>Message from our team:</strong> {{ order.admin_message }}</div>
+                <div class="cancel-message"><i class="bi bi-chat-dots"></i> <strong>Message from our team:</strong> {{ order.admin_message }}</div>
               }
             </div>
           }

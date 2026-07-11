@@ -239,7 +239,7 @@
     }
 
     .logo-text {
-      font-family: 'Playfair Display', Georgia, serif;
+      font-family: 'Fraunces', Georgia, serif;
       font-size: 1.3rem;
       font-weight: 700;
       background: linear-gradient(135deg, var(--text) 20%, var(--accent) 100%);
@@ -1164,7 +1164,7 @@
         font-size: 1rem;
         font-weight: 700;
         color: var(--text);
-        font-family: 'Playfair Display', Georgia, serif;
+        font-family: 'Fraunces', Georgia, serif;
         letter-spacing: -0.01em;
         background: none;
 
@@ -1176,7 +1176,7 @@
         display: flex;
         font-size: 1rem;
         font-weight: 600;
-        font-family: 'Poppins', sans-serif;
+        font-family: 'Inter', sans-serif;
         color: var(--text);
         padding: 1rem 0;
         border-bottom: 1px solid var(--border);
@@ -1190,7 +1190,7 @@
         display: flex;
         font-size: 1rem;
         font-weight: 700;
-        font-family: 'Playfair Display', Georgia, serif;
+        font-family: 'Fraunces', Georgia, serif;
         color: var(--text);
         padding: 1rem 0;
         border-bottom: 1px solid var(--border);
@@ -1213,7 +1213,7 @@
         font-size: 1rem;
         cursor: pointer;
         text-align: left;
-        font-family: 'Poppins', sans-serif;
+        font-family: 'Inter', sans-serif;
         &:hover { background: none; }
       }
 
@@ -1231,7 +1231,7 @@
         color: var(--text);
         font-weight: 700;
         font-size: 1rem;
-        font-family: 'Playfair Display', Georgia, serif;
+        font-family: 'Fraunces', Georgia, serif;
         background: none;
 
         &:hover, &.active { color: var(--accent); background: none; border-left: none; }
@@ -1247,7 +1247,7 @@
           display: flex;
           align-items: center;
           justify-content: center;
-          font-family: 'Poppins', sans-serif;
+          font-family: 'Inter', sans-serif;
         }
       }
 
@@ -1262,7 +1262,7 @@
         letter-spacing: -0.01em;
         border-left: none;
         border-bottom: 1px solid var(--border);
-        font-family: 'Playfair Display', Georgia, serif;
+        font-family: 'Fraunces', Georgia, serif;
         background: none;
         &:hover, &.active { color: var(--accent); background: none; border-left: none; }
       }
@@ -1274,7 +1274,7 @@
         border-left: none;
         border-bottom: 1px solid var(--border);
         text-align: left;
-        font-family: 'Playfair Display', Georgia, serif;
+        font-family: 'Fraunces', Georgia, serif;
         cursor: pointer;
         display: block;
         padding: 1rem 0;
@@ -1300,7 +1300,7 @@
         letter-spacing: -0.01em;
         cursor: pointer;
         text-align: left;
-        font-family: 'Playfair Display', Georgia, serif;
+        font-family: 'Fraunces', Georgia, serif;
         &:hover { color: var(--accent); }
       }
 

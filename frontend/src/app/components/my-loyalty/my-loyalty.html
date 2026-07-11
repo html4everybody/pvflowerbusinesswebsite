@@ -124,7 +124,7 @@
         <div class="referral-link-row">
           <input type="text" readonly [value]="shareUrl" class="referral-input" aria-label="Your referral link">
           <button class="btn-copy" (click)="copyReferralLink()" [class.copied]="copySuccess()">
-            @if (copySuccess()) { ✓ Copied } @else { Copy Link }
+            @if (copySuccess()) { <i class="bi bi-check-lg"></i> Copied } @else { Copy Link }
           </button>
         </div>
         <p class="referral-code-hint">Your code: <strong>{{ account()!.referral_code }}</strong></p>
