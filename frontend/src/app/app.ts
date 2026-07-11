@@ -33,7 +33,7 @@ export class App implements OnInit, OnDestroy {
         // Don't jump to top when navigating to a specific section (Live Deals /
         // Bundle Offers use ?scrollTo=…); the home page handles that scroll.
         if (!event.urlAfterRedirects.includes('scrollTo=')) {
-          window.scrollTo({ top: 0, behavior: 'smooth' });
+          window.scrollTo({ top: 0, behavior: 'instant' });
         }
         this.showFooter.set(!this.NO_FOOTER_ROUTES.some(r => event.urlAfterRedirects.startsWith(r)));
       }

@@ -17,7 +17,7 @@ export class AuthService {
   }
 
   private readonly PROTECTED_PREFIXES = [
-    '/account', '/orders', '/subscribe', '/my-subscriptions',
+    '/account', '/orders', '/my-subscriptions',
     '/my-studio', '/my-loyalty', '/reminders', '/admin', '/petal-studio/book'
   ];
 

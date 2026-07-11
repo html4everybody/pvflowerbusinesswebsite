@@ -54,10 +54,11 @@ export const routes: Routes = [
   { path: 'corporate-order', redirectTo: 'petal-studio/book', pathMatch: 'full' },
   { path: 'my-corporate', redirectTo: 'my-studio', pathMatch: 'full' },
 
-  // ── Guest-accessible routes ────────────────────────────────────────────────
+  // ── Guest-accessible routes (gate on action, not page load) ───────────────
   { path: 'cart', component: Cart },
   { path: 'checkout', component: Checkout },
   { path: 'wishlist', component: Wishlist },
+  { path: 'subscribe', component: Subscription },
 
   // ── Login-required routes ──────────────────────────────────────────────────
   { path: 'account', component: Account, canActivate: [authGuard] },
@@ -66,7 +67,6 @@ export const routes: Routes = [
   { path: 'account/email', component: AccountEmail, canActivate: [authGuard] },
   { path: 'orders', component: Orders, canActivate: [authGuard] },
   { path: 'orders/:id', component: OrderDetail, canActivate: [authGuard] },
-  { path: 'subscribe', component: Subscription, canActivate: [authGuard] },
   { path: 'my-subscriptions', component: MySubscriptions, canActivate: [authGuard] },
   { path: 'petal-studio/book', component: CorporateOrder, canActivate: [authGuard] },
   { path: 'my-studio', component: MyCorporate, canActivate: [authGuard] },
