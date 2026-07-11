@@ -61,9 +61,6 @@
   }
 }
 
-// desktop: wrapper is invisible to layout
-.nav-scroll-wrap { display: contents; }
-
 @media (max-width: 640px) {
   .account-sidebar {
     width: 100%;
@@ -83,6 +80,7 @@
     overflow-x: scroll;
     overflow-y: hidden;
     -webkit-overflow-scrolling: touch;
+    touch-action: pan-x pinch-zoom;
     scrollbar-width: none;
     &::-webkit-scrollbar { display: none; }
   }
