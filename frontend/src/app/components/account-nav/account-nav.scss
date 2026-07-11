@@ -1,6 +1,5 @@
 :host {
   display: block;
-  width: 100%;
   min-width: 0;
 }
 
@@ -68,6 +67,8 @@
 }
 
 @media (max-width: 640px) {
+  :host { width: 100%; }
+
   .account-sidebar {
     width: 100%;
     height: auto;
