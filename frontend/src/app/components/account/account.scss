@@ -481,16 +481,10 @@
   .sidebar-nav {
     flex-direction: row;
     gap: 0.5rem;
-    overflow-x: auto;
-    flex-wrap: nowrap;
-    scrollbar-width: none;
-    &::-webkit-scrollbar { display: none; }
   }
 
   .sidebar-item {
     width: auto;
-    flex-shrink: 0;
-    white-space: nowrap;
     font-size: 0.83rem;
     padding: 0.45rem 0.75rem;
 
