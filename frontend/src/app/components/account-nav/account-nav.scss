@@ -69,25 +69,28 @@
     position: static;
     padding: 0;
     border-bottom: 1px solid var(--border);
-    overflow-x: scroll;
-    overflow-y: hidden;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-    &::-webkit-scrollbar { display: none; }
+    overflow: unset;
   }
 
   .sidebar-back { display: none; }
 
   .sidebar-nav {
-    display: inline-flex;
+    display: flex;
     flex-direction: row;
     flex-wrap: nowrap;
+    overflow-x: scroll;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
     gap: 0.5rem;
     padding: 0.75rem 1rem;
+    scrollbar-width: none;
+    &::-webkit-scrollbar { display: none; }
   }
 
   .sidebar-item {
-    flex: 0 0 auto;
+    flex-shrink: 0;
+    flex-grow: 0;
+    flex-basis: auto;
     width: auto;
     font-size: 0.83rem;
     padding: 0.45rem 0.75rem;
