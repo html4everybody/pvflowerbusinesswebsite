@@ -230,7 +230,7 @@ export class Header implements OnInit {
 
   scrollToTop(): void {
     this.menuOpen = false;
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo({ top: 0, behavior: 'instant' });
   }
 
   toggleSearch(): void {
