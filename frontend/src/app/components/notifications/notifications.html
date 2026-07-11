@@ -1,0 +1,30 @@
+<main class="notifs-page">
+  <div class="notifs-container">
+    <div class="notifs-header">
+      <h1>Notifications</h1>
+    </div>
+
+    @if (noticeService.notices().length === 0) {
+      <div class="notifs-empty">
+        <i class="bi bi-bell"></i>
+        <p>You're all caught up.</p>
+        <span>We'll let you know when something changes with your orders, subscriptions or bookings.</span>
+      </div>
+    } @else {
+      <div class="notifs-list">
+        @for (n of noticeService.notices(); track n.id) {
+          <div class="notif-card" [class.unread]="!n.read">
+            <div class="notif-card-top">
+              <span class="notif-card-title">{{ n.title }}</span>
+              <div class="notif-card-meta">
+                <span class="notif-card-date">{{ formatDate(n.created_at) }}</span>
+                <button class="notif-card-dismiss" title="Dismiss" (click)="noticeService.dismiss(n.id)">×</button>
+              </div>
+            </div>
+            <p class="notif-card-msg">{{ n.message }}</p>
+          </div>
+        }
+      </div>
+    }
+  </div>
+</main>

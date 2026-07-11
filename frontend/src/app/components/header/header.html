@@ -113,7 +113,7 @@
             <a routerLink="/merchant" routerLinkActive="active" class="nav-admin-link" (click)="closeMenu()">Merchant Dashboard</a>
           }
           <a routerLink="/account" routerLinkActive="active" class="nav-orders-link" (click)="closeMenu()">My Account</a>
-          <a routerLink="/account" [queryParams]="{ tab: 'notifications' }" class="nav-notif-link" (click)="closeMenu()">
+          <a routerLink="/notifications" class="nav-notif-link" (click)="closeMenu()">
             Notifications
             @if (noticeService.unread() > 0) {
               <span class="nav-notif-count">{{ noticeService.unread() > 9 ? '9+' : noticeService.unread() }}</span>
@@ -217,7 +217,7 @@
               <div class="notif-head">
                 <span>Notifications</span>
                 @if (noticeService.notices().length > 0) {
-                  <a routerLink="/account" [queryParams]="{ tab: 'notifications' }" (click)="notifOpen = false">See all</a>
+                  <a routerLink="/notifications" (click)="notifOpen = false">See all</a>
                 }
               </div>
               @if (noticeService.notices().length === 0) {
