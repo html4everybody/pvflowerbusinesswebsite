@@ -16,6 +16,11 @@ export class AuthService {
     setInterval(() => this.validateSession(), 10 * 1000);
   }
 
+  private readonly PROTECTED_PREFIXES = [
+    '/account', '/orders', '/subscribe', '/my-subscriptions',
+    '/my-studio', '/my-loyalty', '/reminders', '/admin', '/petal-studio/book'
+  ];
+
   private validateSession(): void {
     const token = this.getToken();
     if (!token) return;
@@ -23,7 +28,13 @@ export class AuthService {
       error: (err) => {
         if (err.status === 401) {
           this.clearSession();
-          this.router.navigate(['/signin']);
+          // Only redirect to sign-in if the user is on a page that requires login.
+          // On public pages (home, shop, etc.) just drop the expired token silently
+          // so the user continues as a guest instead of being kicked to sign-in.
+          const url = this.router.url.split('?')[0];
+          if (this.PROTECTED_PREFIXES.some(p => url.startsWith(p))) {
+            this.router.navigate(['/signin']);
+          }
         }
       }
     });

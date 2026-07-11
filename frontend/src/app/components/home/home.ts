@@ -142,8 +142,7 @@ export class Home implements OnInit, AfterViewInit {
 
   addBundleToCart(bundle: BundleDeal): void {
     for (const product of bundle.products) {
-      // First add redirects to sign-in when logged out; bail out then
-      if (!this.cartService.addToCart(product as unknown as Product, 1)) return;
+      this.cartService.addToCart(product as unknown as Product, 1);
     }
     sessionStorage.setItem('viva_promo', bundle.promo_code);
     this.router.navigate(['/cart']);
@@ -201,14 +200,12 @@ export class Home implements OnInit, AfterViewInit {
   toggleWishlist(product: Product, event: Event): void {
     event.stopPropagation();
     const wasWishlisted = this.wishlistService.has(product.id);
-    // toggle() returns false and redirects to sign-in when logged out
-    if (this.wishlistService.toggle(product)) {
-      this.showToast(product.name, wasWishlisted ? 'wish-removed' : 'wish-added');
-    }
+    this.wishlistService.toggle(product);
+    this.showToast(product.name, wasWishlisted ? 'wish-removed' : 'wish-added');
   }
 
   addToCart(product: Product): void {
-    if (!this.cartService.addToCart(product)) return; // redirected to sign-in
+    this.cartService.addToCart(product);
     this.cartQuantities[product.id] = 1;
     this.feedbackService.addToCartFeedback();
     this.showToast(product.name, 'added');
