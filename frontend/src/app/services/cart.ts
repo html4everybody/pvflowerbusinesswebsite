@@ -1,9 +1,7 @@
 import { Injectable, signal, computed, effect } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Router } from '@angular/router';
 import { Product, CartItem } from '../models/product.model';
 import { AuthService } from './auth';
-import { ToastService } from './toast';
 import { environment } from '../../environments/environment';
 
 @Injectable({
@@ -25,9 +23,7 @@ export class CartService {
 
   constructor(
     private authService: AuthService,
-    private http: HttpClient,
-    private router: Router,
-    private toastService: ToastService
+    private http: HttpClient
   ) {
     // Load cart on startup
     this.fetchCart();
@@ -43,15 +39,36 @@ export class CartService {
   private fetchCart(): void {
     const user = this.authService.user();
     if (user) {
+      const guestItems = this.loadFromLocalStorage();
       this.http.get<CartItem[]>(`${environment.apiUrl}/api/cart?user_id=${user.id}`).subscribe({
-        next: (items) => this.cartItems.set(items),
+        next: (dbItems) => {
+          this.cartItems.set(dbItems);
+          // Merge guest cart into user's DB cart on login
+          if (guestItems.length > 0) {
+            localStorage.removeItem('viva_cart_guest');
+            for (const gItem of guestItems) {
+              const existing = dbItems.find(i => i.product.id === gItem.product.id);
+              const newQty = existing ? existing.quantity + gItem.quantity : gItem.quantity;
+              this.http.post(`${environment.apiUrl}/api/cart/item`, {
+                user_id: user.id,
+                product_id: gItem.product.id,
+                quantity: newQty
+              }).subscribe();
+              this.cartItems.update(current => {
+                const ex = current.find(i => i.product.id === gItem.product.id);
+                if (ex) {
+                  return current.map(i => i.product.id === gItem.product.id ? { ...i, quantity: newQty } : i);
+                }
+                return [...current, gItem];
+              });
+            }
+          }
+        },
         error: () => this.cartItems.set([])
       });
     } else {
-      // Cart requires login — a logged-out user has no cart. Also drop any
-      // legacy guest cart that may linger from before login was required.
-      this.cartItems.set([]);
-      localStorage.removeItem('viva_cart_guest');
+      // Guest: load cart from localStorage
+      this.cartItems.set(this.loadFromLocalStorage());
     }
   }
 
@@ -73,13 +90,6 @@ export class CartService {
   // ── Cart mutations ──────────────────────────────────────────────────────────
 
   addToCart(product: Product, quantity: number = 1): boolean {
-    // Cart is per-user — require login before adding anything.
-    if (!this.authService.isLoggedIn()) {
-      this.toastService.show('Please sign in to add items to your cart', 'error');
-      this.router.navigate(['/signin'], { queryParams: { returnUrl: this.router.url } });
-      return false;
-    }
-
     const currentItems = this.cartItems();
     const existing = currentItems.find(item => item.product.id === product.id);
     const newQuantity = existing ? existing.quantity + quantity : quantity;
