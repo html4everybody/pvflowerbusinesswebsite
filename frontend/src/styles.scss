@@ -146,7 +146,7 @@
 html {
   scroll-behavior: auto;
   overflow-y: auto;
-  overflow-x: hidden;
+  overflow-x: clip;
   scrollbar-gutter: auto;
 }
 
@@ -159,7 +159,7 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   transition: background 0.3s ease, color 0.3s ease;
-  overflow-x: hidden;
+  overflow-x: clip;
 }
 
 h1, h2, h3 {
