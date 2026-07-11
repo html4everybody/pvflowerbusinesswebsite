@@ -210,7 +210,7 @@ export class Subscription implements OnInit {
   }
 
   private scrollToTop(): void {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo({ top: 0, behavior: 'instant' });
   }
 
   nextStep(): void {
