@@ -29,6 +29,7 @@ import { AccountEmail } from './components/account-email/account-email';
 import { ConfirmEmail } from './components/confirm-email/confirm-email';
 import { BecomeSeller } from './components/become-seller/become-seller';
 import { MerchantDashboard } from './components/merchant-dashboard/merchant-dashboard';
+import { Notifications } from './components/notifications/notifications';
 import { authGuard } from './guards/auth-guard';
 import { merchantGuard } from './guards/merchant-guard';
 
@@ -72,6 +73,7 @@ export const routes: Routes = [
   { path: 'my-studio', component: MyCorporate, canActivate: [authGuard] },
   { path: 'my-loyalty', component: MyLoyalty, canActivate: [authGuard] },
   { path: 'reminders', component: Reminders, canActivate: [authGuard] },
+  { path: 'notifications', component: Notifications, canActivate: [authGuard] },
   { path: 'admin', component: Admin, canActivate: [authGuard] },
   { path: 'merchant', component: MerchantDashboard, canActivate: [merchantGuard] },
 
