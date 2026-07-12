@@ -6,6 +6,7 @@ export interface Product {
   discount_percent?: number;     // merchant-set discount %
   final_price?: number;          // effective price customers pay
   merchant_id?: string;
+  catalog_id?: string;           // set when this listing is admin-assigned & shared across merchants
   image: string;
   category: string;
   inStock: boolean;

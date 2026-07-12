@@ -102,7 +102,7 @@ export class Admin implements OnInit {
   showProductForm = signal(false);
   editingProduct = signal<any | null>(null);
   savingProduct = signal(false);
-  productForm: any = { name: '', description: '', price: 0, discount_percent: 0, image: '', category: 'Flowers', inStock: true };
+  productForm: any = { name: '', description: '', price: 0, discount_percent: 0, image: '', category: 'Flowers', inStock: true, merchant_price: 0, merchant_ids: [] as string[] };
 
   // ── Subscription Plans ───────────────────────────────────────────────────────
   subPlans = signal<any[]>([]);
@@ -214,9 +214,13 @@ export class Admin implements OnInit {
     // Plans is now a sub-view of Subscriptions — migrate any restored 'plans' section.
     if ((this.activeSection() as string) === 'plans') { this.activeSection.set('subscriptions'); this.subView.set('plans'); this.loadPlans(); }
     this.loadOrders();
+    // Always fetch products + merchants (not just when their tabs are open) so
+    // the pending-approval badge is accurate from login, and the "assign to
+    // merchants" checklist in the product form always has data ready.
+    this.loadProducts();
+    this.loadMerchants();
     // If restored section needs lazy-loaded data, trigger it
     const section = this.activeSection();
-    if (section === 'products' && !this.products().length) this.loadProducts();
     if (section === 'inventory' && !this.inventory().length) this.loadInventory();
     if (section === 'customers' && !this.customers().length) this.loadCustomers();
     if (section === 'analytics' && !this.analytics()) this.loadAnalytics();
@@ -227,14 +231,15 @@ export class Admin implements OnInit {
     if (section === 'subscriptions' && !this.subscriptions().length) this.loadSubscriptions();
     if (section === 'studio' && !this.studioBookings().length) this.loadStudio();
     if (section === 'occasions' && !this.occasions().length) this.loadOccasions();
-    if (section === 'merchants' && !this.merchants().length) this.loadMerchants();
   }
 
   get token(): string { return this.authService.getToken(); }
 
   navigateTo(section: AdminSection): void {
     this.activeSection.set(section);
-    if (section === 'products' && !this.products().length) this.loadProducts();
+    // Always refetch products on open — merchant submissions can arrive anytime
+    // and the approval queue must never show stale/cached data.
+    if (section === 'products') this.loadProducts();
     if (section === 'inventory' && !this.inventory().length) this.loadInventory();
     if (section === 'customers' && !this.customers().length) this.loadCustomers();
     if (section === 'analytics' && !this.analytics()) this.loadAnalytics();
@@ -245,7 +250,7 @@ export class Admin implements OnInit {
     if (section === 'subscriptions' && !this.subscriptions().length) this.loadSubscriptions();
     if (section === 'studio' && !this.studioBookings().length) this.loadStudio();
     if (section === 'occasions' && !this.occasions().length) this.loadOccasions();
-    if (section === 'merchants' && !this.merchants().length) this.loadMerchants();
+    if (section === 'merchants') this.loadMerchants();
   }
 
   // ── Merchants (marketplace sellers) ───────────────────────────────────────
@@ -274,6 +279,25 @@ export class Admin implements OnInit {
       next: () => this.toastService.show(`${m.shop_name} commission set to ${rate}%`, 'success'),
       error: (err) => this.toastService.show(err?.error?.detail || 'Update failed', 'error'),
     });
+  }
+
+  // Merchant assignment (folded into the Products "Add/Edit" modal below) —
+  // e.g. "Red Roses": one price, assigned to N merchants; each gets their own
+  // stock-tracked row (a "catalog product"). Leave unassigned = plain admin
+  // product, unchanged from before. Distinct from a merchant's own unique
+  // products, which still go through their own submit → approve flow.
+  approvedMerchants = computed(() => this.merchants().filter(m => m.status === 'approved'));
+
+  /** Show the merchant-assignment checklist: when adding new, or editing an existing catalog item. */
+  canAssignMerchants(): boolean {
+    const editing = this.editingProduct();
+    return !editing || !!editing.catalog_id;
+  }
+
+  toggleProductMerchant(merchantId: string, checked: boolean): void {
+    const ids = new Set(this.productForm.merchant_ids);
+    checked ? ids.add(merchantId) : ids.delete(merchantId);
+    this.productForm.merchant_ids = Array.from(ids);
   }
 
   // ── Stats & Orders ────────────────────────────────────────────────────────
@@ -321,9 +345,27 @@ export class Admin implements OnInit {
 
   openProductForm(product: any = null): void {
     this.editingProduct.set(product);
-    this.productForm = product
-      ? { name: product.name, description: product.description || '', price: product.price, discount_percent: product.discount_percent || 0, image: product.image || '', category: product.category, inStock: product.inStock !== false }
-      : { name: '', description: '', price: 0, discount_percent: 0, image: '', category: this.productCategories()[0] || 'Flowers', inStock: true };
+    if (product?.catalog_id) {
+      // Shared catalog listing — prefill its current assignment across all merchants.
+      const siblings = this.products().filter(p => p.catalog_id === product.catalog_id && p.status !== 'rejected');
+      this.productForm = {
+        name: product.name, description: product.description || '', price: product.price,
+        discount_percent: product.discount_percent || 0, image: product.image || '', category: product.category,
+        inStock: product.inStock !== false, merchant_price: product.merchant_price || 0,
+        merchant_ids: siblings.map(p => p.merchant_id),
+      };
+    } else if (product) {
+      this.productForm = {
+        name: product.name, description: product.description || '', price: product.price,
+        discount_percent: product.discount_percent || 0, image: product.image || '', category: product.category,
+        inStock: product.inStock !== false, merchant_price: product.merchant_price || 0, merchant_ids: [],
+      };
+    } else {
+      this.productForm = {
+        name: '', description: '', price: 0, discount_percent: 0, image: '',
+        category: this.productCategories()[0] || 'Flowers', inStock: true, merchant_price: 0, merchant_ids: [],
+      };
+    }
     this.showProductForm.set(true);
   }
 
@@ -355,10 +397,14 @@ export class Admin implements OnInit {
   // ── Create merchant (admin provisions a seller login) ─────────────────────
   showMerchantForm = signal(false);
   creatingMerchant = signal(false);
-  merchantForm = { email: '', password: '', shop_name: '', contact_name: '', phone: '' };
+  merchantForm = this.blankMerchantForm();
+
+  private blankMerchantForm() {
+    return { email: '', password: '', shop_name: '', contact_name: '', phone: '', address: '', city: '', state: '', pincode: '' };
+  }
 
   openMerchantForm(): void {
-    this.merchantForm = { email: '', password: '', shop_name: '', contact_name: '', phone: '' };
+    this.merchantForm = this.blankMerchantForm();
     this.showMerchantForm.set(true);
   }
   closeMerchantForm(): void { this.showMerchantForm.set(false); }
@@ -384,8 +430,30 @@ export class Admin implements OnInit {
 
   saveProduct(): void {
     if (!this.productForm.name.trim() || !this.productForm.category.trim()) return;
-    this.savingProduct.set(true);
     const editing = this.editingProduct();
+    const assigning = this.canAssignMerchants() && this.productForm.merchant_ids.length > 0;
+
+    if (assigning && !this.productForm.merchant_price) {
+      this.toastService.show('Set what each merchant earns (Merchant gets ₹)', 'error');
+      return;
+    }
+
+    this.savingProduct.set(true);
+
+    if (assigning) {
+      // Shared catalog listing — one price, assigned to several merchants.
+      const catalogId = editing?.catalog_id;
+      const url = catalogId
+        ? `${environment.apiUrl}/api/admin/catalog-products/${catalogId}`
+        : `${environment.apiUrl}/api/admin/catalog-products`;
+      const req = catalogId ? this.http.put(url, { token: this.token, ...this.productForm }) : this.http.post(url, { token: this.token, ...this.productForm });
+      req.subscribe({
+        next: () => { this.savingProduct.set(false); this.closeProductForm(); this.loadProducts(); this.toastService.show(catalogId ? 'Catalog product updated' : 'Catalog product created & assigned'); },
+        error: (err) => { this.savingProduct.set(false); this.toastService.show(err.error?.detail || 'Failed to save product', 'error'); },
+      });
+      return;
+    }
+
     const url = editing
       ? `${environment.apiUrl}/api/admin/products/${editing.id}?token=${this.token}`
       : `${environment.apiUrl}/api/admin/products?token=${this.token}`;
@@ -399,6 +467,19 @@ export class Admin implements OnInit {
   }
 
   async deleteProduct(product: any): Promise<void> {
+    if (product.catalog_id) {
+      const ok = await this.confirmService.ask({
+        title: 'Archive catalog product?',
+        message: `"${product.name}" will be pulled from every assigned merchant's shop and the storefront. This can't be undone.`,
+        confirmText: 'Archive', danger: true,
+      });
+      if (!ok) return;
+      this.http.delete(`${environment.apiUrl}/api/admin/catalog-products/${product.catalog_id}?token=${this.token}`).subscribe({
+        next: () => { this.toastService.show('Catalog product archived'); this.loadProducts(); },
+        error: (err) => this.toastService.show(err.error?.detail || 'Failed to archive product', 'error'),
+      });
+      return;
+    }
     const ok = await this.confirmService.ask({
       title: 'Delete product?',
       message: `"${product.name}" will be permanently removed. This can't be undone.`,

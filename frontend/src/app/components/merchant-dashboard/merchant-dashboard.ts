@@ -25,6 +25,9 @@ export class MerchantDashboard implements OnInit {
 
   activeSection = signal<MerchantSection>('overview');
 
+  readonly BASE_CATEGORIES = ['Flowers', 'Bouquets', 'Garlands', 'Gifts', 'Decoration'];
+  categories = signal<string[]>(this.BASE_CATEGORIES);
+
   stats = signal<any>(null);
   products = signal<any[]>([]);
   orders = signal<any[]>([]);
@@ -39,7 +42,7 @@ export class MerchantDashboard implements OnInit {
   productForm: any = this.blankProduct();
 
   // shop settings
-  shop = { shop_name: '', description: '', phone: '', logo: '' };
+  shop = { shop_name: '', description: '', phone: '', logo: '', address: '', city: '', state: '', pincode: '' };
   savingShop = signal(false);
 
   constructor(
@@ -58,6 +61,16 @@ export class MerchantDashboard implements OnInit {
     if (m) this.shop.shop_name = m.shop_name || '';
     this.loadStats();
     this.loadProducts();
+    this.loadCategories();
+  }
+
+  // Storefront categories (live products) merged with a sensible base list,
+  // so the dropdown always has options even before any products exist.
+  loadCategories(): void {
+    this.http.get<string[]>(`${this.api}/api/products/categories`).subscribe({
+      next: (cats) => this.categories.set(Array.from(new Set([...this.BASE_CATEGORIES, ...(cats || [])]))),
+      error: () => {},
+    });
   }
 
   go(section: MerchantSection): void {
@@ -94,7 +107,10 @@ export class MerchantDashboard implements OnInit {
     this.http.get<any>(`${this.api}/api/merchant/me?token=${this.token}`).subscribe({
       next: (res) => {
         const m = res?.merchant;
-        if (m) this.shop = { shop_name: m.shop_name || '', description: m.description || '', phone: m.phone || '', logo: m.logo || '' };
+        if (m) this.shop = {
+          shop_name: m.shop_name || '', description: m.description || '', phone: m.phone || '', logo: m.logo || '',
+          address: m.address || '', city: m.city || '', state: m.state || '', pincode: m.pincode || '',
+        };
       },
     });
   }
@@ -107,7 +123,7 @@ export class MerchantDashboard implements OnInit {
 
   // ── Products ──────────────────────────────────────────────────────────────
   blankProduct(): any {
-    return { name: '', description: '', merchant_price: null, image: '', category: '', inStock: true };
+    return { name: '', description: '', merchant_price: null, image: '', category: this.categories()[0] || '', inStock: true };
   }
 
   newProduct(): void {
@@ -126,6 +142,16 @@ export class MerchantDashboard implements OnInit {
   }
 
   closeProductForm(): void { this.showProductForm.set(false); this.editingProduct.set(null); }
+
+  /** Catalog items (admin-assigned, shared across merchants): stock is the
+   * only thing a merchant may change — price/name/etc are admin-controlled. */
+  toggleStock(p: any): void {
+    const inStock = !p.inStock;
+    this.http.put(`${this.api}/api/merchant/products/${p.id}`, { token: this.token, inStock }).subscribe({
+      next: () => { p.inStock = inStock; this.toast.show(inStock ? `${p.name} marked in stock` : `${p.name} marked out of stock`, 'success'); },
+      error: (err) => this.toast.show(err?.error?.detail || 'Update failed', 'error'),
+    });
+  }
 
   uploadingImage = signal(false);
 

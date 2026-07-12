@@ -635,6 +635,7 @@ def _row_to_product(r: dict) -> dict:
         "status": r.get("status", "approved"),          # pending | approved | rejected
         "reject_reason": r.get("reject_reason"),
         "merchant_id": r.get("merchant_id"),
+        "catalog_id": r.get("catalog_id"),   # set when this row is an admin-assigned shared listing
         "image": r.get("image", ""),
         "category": r.get("category", ""),
         "inStock": r.get("in_stock", True),
@@ -1129,9 +1130,29 @@ def _is_live(p: dict) -> bool:
     """Public storefront only shows admin-approved products."""
     return p.get("status", "approved") == "approved"
 
+def _dedupe_catalog(products: list) -> list:
+    """A catalog product (admin-assigned to several merchants) is the SAME
+    row of `products` repeated once per merchant. Customers should see one
+    card, not N duplicates — collapse them here, preferring a row that's in
+    stock. Which merchant actually fulfills the order is resolved later, at
+    checkout (nearest-merchant routing — not implemented yet)."""
+    representative_idx: dict = {}
+    out = []
+    for p in products:
+        cid = p.get("catalog_id")
+        if not cid:
+            out.append(p)
+            continue
+        if cid not in representative_idx:
+            representative_idx[cid] = len(out)
+            out.append(p)
+        elif p.get("inStock") and not out[representative_idx[cid]].get("inStock"):
+            out[representative_idx[cid]] = p
+    return out
+
 @app.get("/api/products")
 def get_products(category: Optional[str] = None):
-    live = [p for p in PRODUCTS if _is_live(p)]
+    live = _dedupe_catalog([p for p in PRODUCTS if _is_live(p)])
     if category:
         return [p for p in live if p["category"] == category]
     return live
@@ -1247,6 +1268,160 @@ def delete_product(product_id: int, token: str):
     supabase.table("product_stock").delete().eq("product_id", product_id).execute()
     load_products()
     return {"status": "ok"}
+
+
+# ── Admin: catalog products (shared listings across several merchants) ───────
+# Same idea as roses/lilies/sunflowers sold by many florists: admin creates
+# ONE listing with ONE market-wide price, assigns it to N merchants, and each
+# gets their own `products` row (own id, own stock) linked by `catalog_id` —
+# so checkout/order routing/payouts need no special-casing. Which assigned
+# merchant actually fulfills a given order (nearest-by-location) is a later
+# feature; for now the storefront shows one deduped card per catalog item and
+# routes to whichever assigned, in-stock, approved row is picked at checkout.
+
+class CatalogProductCreate(BaseModel):
+    token: str
+    name: str
+    description: str = ""
+    image: str = ""
+    category: str
+    price: float                 # selling price, same for every assigned merchant
+    merchant_price: float        # what EACH assigned merchant earns per unit
+    discount_percent: float = 0
+    merchant_ids: list[str]
+
+
+class CatalogProductUpdate(BaseModel):
+    token: str
+    name: Optional[str] = None
+    description: Optional[str] = None
+    image: Optional[str] = None
+    category: Optional[str] = None
+    price: Optional[float] = None
+    merchant_price: Optional[float] = None
+    discount_percent: Optional[float] = None
+    merchant_ids: Optional[list[str]] = None   # full desired assignment list, if provided
+
+
+@app.get("/api/admin/catalog-products")
+def admin_list_catalog_products(token: str):
+    require_admin(token)
+    catalogs = supabase.table("catalog_products").select("*").order("created_at", desc=True).execute().data or []
+    merchants = supabase.table("merchants").select("id, shop_name, city").execute().data or []
+    shop_by_id = {m["id"]: m for m in merchants}
+    for c in catalogs:
+        rows = [p for p in PRODUCTS if p.get("catalog_id") == c["id"]]
+        c["assignments"] = [{
+            "merchant_id": r.get("merchant_id"),
+            "shop_name": shop_by_id.get(r.get("merchant_id"), {}).get("shop_name", "Unknown"),
+            "city": shop_by_id.get(r.get("merchant_id"), {}).get("city", ""),
+            "product_id": r["id"],
+            "inStock": r.get("inStock", True),
+            "status": r.get("status"),
+        } for r in rows]
+    return catalogs
+
+
+@app.post("/api/admin/catalog-products")
+def admin_create_catalog_product(req: CatalogProductCreate):
+    require_admin(req.token)
+    if not req.name.strip() or not req.category.strip():
+        raise HTTPException(status_code=400, detail="Name and category are required.")
+    if not req.merchant_ids:
+        raise HTTPException(status_code=400, detail="Assign at least one merchant.")
+    price = max(0.0, float(req.price))
+    merchant_price = max(0.0, float(req.merchant_price))
+    discount = max(0.0, min(100.0, float(req.discount_percent or 0)))
+
+    cat = supabase.table("catalog_products").insert({
+        "name": req.name.strip(), "description": req.description, "image": req.image,
+        "category": req.category.strip(), "price": price, "merchant_price": merchant_price,
+        "discount_percent": discount, "status": "active",
+    }).execute()
+    catalog_id = cat.data[0]["id"]
+
+    rows = supabase.table("products").select("id").order("id", desc=True).limit(1).execute().data
+    next_id = (rows[0]["id"] + 1) if rows else 1
+    inserts = []
+    for mid in set(req.merchant_ids):
+        inserts.append({
+            "id": next_id, "name": req.name.strip(), "description": req.description,
+            "price": price, "merchant_price": merchant_price, "discount_percent": discount,
+            "image": req.image, "category": req.category.strip(), "in_stock": True,
+            "merchant_id": mid, "status": "approved", "catalog_id": catalog_id,
+        })
+        next_id += 1
+    supabase.table("products").insert(inserts).execute()
+    load_products()
+    return {"status": "ok", "catalog_id": catalog_id, "assigned": len(inserts)}
+
+
+@app.put("/api/admin/catalog-products/{catalog_id}")
+def admin_update_catalog_product(catalog_id: str, req: CatalogProductUpdate):
+    require_admin(req.token)
+    existing = supabase.table("catalog_products").select("*").eq("id", catalog_id).execute().data
+    if not existing:
+        raise HTTPException(status_code=404, detail="Catalog product not found")
+
+    # Cascade the shared fields to the master row + every linked products row
+    # (catalog_products and products use identical column names for these).
+    shared_fields = ("name", "description", "image", "category", "price", "merchant_price", "discount_percent")
+    numeric_fields = ("price", "merchant_price", "discount_percent")
+    data = {}
+    for field in shared_fields:
+        val = getattr(req, field)
+        if val is not None:
+            data[field] = float(val) if field in numeric_fields else val
+
+    if data:
+        supabase.table("catalog_products").update(data).eq("id", catalog_id).execute()
+        supabase.table("products").update(data).eq("catalog_id", catalog_id).execute()
+
+    if req.merchant_ids is not None:
+        current_rows = supabase.table("products").select("id, merchant_id").eq("catalog_id", catalog_id).execute().data or []
+        current_ids = {r["merchant_id"] for r in current_rows}
+        wanted_ids = set(req.merchant_ids)
+
+        # Unassign: keep the row for order history, just pull it off the storefront.
+        for r in current_rows:
+            if r["merchant_id"] not in wanted_ids:
+                supabase.table("products").update({
+                    "in_stock": False, "status": "rejected",
+                    "reject_reason": "Unassigned from this catalog listing by admin.",
+                }).eq("id", r["id"]).execute()
+
+        # Assign: brand-new merchants get a fresh row with the current master pricing.
+        master = supabase.table("catalog_products").select("*").eq("id", catalog_id).execute().data[0]
+        new_ids = wanted_ids - current_ids
+        if new_ids:
+            rows = supabase.table("products").select("id").order("id", desc=True).limit(1).execute().data
+            next_id = (rows[0]["id"] + 1) if rows else 1
+            inserts = []
+            for mid in new_ids:
+                inserts.append({
+                    "id": next_id, "name": master["name"], "description": master["description"],
+                    "price": master["price"], "merchant_price": master["merchant_price"],
+                    "discount_percent": master["discount_percent"], "image": master["image"],
+                    "category": master["category"], "in_stock": True,
+                    "merchant_id": mid, "status": "approved", "catalog_id": catalog_id,
+                })
+                next_id += 1
+            supabase.table("products").insert(inserts).execute()
+
+    load_products()
+    return {"status": "ok"}
+
+
+@app.delete("/api/admin/catalog-products/{catalog_id}")
+def admin_archive_catalog_product(catalog_id: str, token: str):
+    require_admin(token)
+    supabase.table("catalog_products").update({"status": "archived"}).eq("id", catalog_id).execute()
+    supabase.table("products").update({
+        "in_stock": False, "status": "rejected", "reject_reason": "Catalog listing archived by admin.",
+    }).eq("catalog_id", catalog_id).execute()
+    load_products()
+    return {"status": "archived"}
+
 
 # ── Auth Routes ────────────────────────────────────────────────────────────────
 
@@ -1764,6 +1939,10 @@ class MerchantApplyRequest(BaseModel):
     shop_name: str
     description: Optional[str] = ""
     phone: Optional[str] = ""
+    address: Optional[str] = ""
+    city: Optional[str] = ""
+    state: Optional[str] = ""
+    pincode: Optional[str] = ""
 
 
 @app.post("/api/merchant/apply")
@@ -1794,6 +1973,8 @@ def merchant_apply(req: MerchantApplyRequest):
         "slug": slug,
         "description": req.description or "",
         "phone": req.phone or "",
+        "address": req.address or "", "city": req.city or "",
+        "state": req.state or "", "pincode": req.pincode or "",
         "email": email,
         "status": "pending",
         "commission_rate": 15,
@@ -1815,6 +1996,9 @@ def merchant_me(token: str):
         "description": m.get("description", ""), "phone": m.get("phone", ""),
         "logo": m.get("logo", ""), "status": m.get("status", "pending"),
         "commission_rate": m.get("commission_rate", 15),
+        "address": m.get("address", ""), "city": m.get("city", ""),
+        "state": m.get("state", ""), "pincode": m.get("pincode", ""),
+        "latitude": m.get("latitude"), "longitude": m.get("longitude"),
     }}
 
 
@@ -1826,13 +2010,19 @@ class MerchantShopUpdate(BaseModel):
     description: Optional[str] = None
     phone: Optional[str] = None
     logo: Optional[str] = None
+    address: Optional[str] = None
+    city: Optional[str] = None
+    state: Optional[str] = None
+    pincode: Optional[str] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
 
 
 @app.put("/api/merchant/shop")
 def merchant_update_shop(req: MerchantShopUpdate):
     m = require_merchant(req.token)
     data = {}
-    for field in ("shop_name", "description", "phone", "logo"):
+    for field in ("shop_name", "description", "phone", "logo", "address", "city", "state", "pincode", "latitude", "longitude"):
         val = getattr(req, field)
         if val is not None:
             data[field] = val
@@ -1882,6 +2072,7 @@ def merchant_list_products(token: str):
             "merchant_price": p["merchant_price"], "image": p["image"],
             "category": p["category"], "inStock": p["inStock"],
             "status": p["status"], "reject_reason": p.get("reject_reason"),
+            "catalog_id": p.get("catalog_id"),   # set = admin-assigned shared listing (price locked)
         })
     return out
 
@@ -1909,6 +2100,19 @@ def merchant_update_product(product_id: int, req: MerchantProductUpdate):
     existing = _merchant_owns_product(product_id, m["id"])
     if not existing:
         raise HTTPException(status_code=403, detail="Not your product")
+
+    if existing.get("catalog_id"):
+        # Admin-assigned shared listing — price/name/etc are locked market-wide.
+        # A merchant may only toggle their own stock on it.
+        if req.inStock is None:
+            raise HTTPException(status_code=403, detail="This product is managed by admin — you can only update stock.")
+        for field in ("name", "description", "merchant_price", "image", "category"):
+            if getattr(req, field) is not None:
+                raise HTTPException(status_code=403, detail="This product is managed by admin — you can only update stock.")
+        supabase.table("products").update({"in_stock": req.inStock}).eq("id", product_id).execute()
+        load_products()
+        return {"status": existing.get("status"), "id": product_id}
+
     col_map = {"name": "name", "description": "description",
                "merchant_price": "merchant_price", "image": "image",
                "category": "category", "inStock": "in_stock"}
@@ -1932,8 +2136,11 @@ def merchant_update_product(product_id: int, req: MerchantProductUpdate):
 @app.delete("/api/merchant/products/{product_id}")
 def merchant_delete_product(product_id: int, token: str):
     m = require_merchant(token)
-    if not _merchant_owns_product(product_id, m["id"]):
+    existing = _merchant_owns_product(product_id, m["id"])
+    if not existing:
         raise HTTPException(status_code=403, detail="Not your product")
+    if existing.get("catalog_id"):
+        raise HTTPException(status_code=403, detail="This is an admin catalog listing — contact admin to be removed from it.")
     supabase.table("products").delete().eq("id", product_id).execute()
     supabase.table("product_stock").delete().eq("product_id", product_id).execute()
     load_products()
@@ -2091,6 +2298,12 @@ class AdminCreateMerchantRequest(BaseModel):
     shop_name: str
     contact_name: Optional[str] = ""
     phone: Optional[str] = ""
+    address: Optional[str] = ""
+    city: Optional[str] = ""
+    state: Optional[str] = ""
+    pincode: Optional[str] = ""
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
 
 
 @app.post("/api/admin/merchants/create")
@@ -2126,6 +2339,9 @@ def admin_create_merchant(req: AdminCreateMerchantRequest):
         "shop_name": req.shop_name.strip(),
         "slug": slug,
         "phone": req.phone or "",
+        "address": req.address or "", "city": req.city or "",
+        "state": req.state or "", "pincode": req.pincode or "",
+        "latitude": req.latitude, "longitude": req.longitude,
         "email": email,
         "status": "approved",
         "commission_rate": 0,

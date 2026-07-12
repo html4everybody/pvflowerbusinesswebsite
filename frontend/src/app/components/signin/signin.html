@@ -28,10 +28,12 @@
 
       <div class="vp-form-wrap">
 
-        <div class="vp-logo">
-          <img src="logo.svg" alt="VivaPetals">
-          <span>VivaPetals</span>
-        </div>
+        @if (mode() !== 'merchant') {
+          <div class="vp-logo">
+            <img src="logo.svg" alt="VivaPetals">
+            <span>VivaPetals</span>
+          </div>
+        }
 
         @if (!isSignUp()) {
 

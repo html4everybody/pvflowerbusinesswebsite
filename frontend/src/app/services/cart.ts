@@ -2,6 +2,7 @@ import { Injectable, signal, computed, effect } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Product, CartItem, sellPrice } from '../models/product.model';
 import { AuthService } from './auth';
+import { ToastService } from './toast';
 import { environment } from '../../environments/environment';
 
 @Injectable({
@@ -23,7 +24,8 @@ export class CartService {
 
   constructor(
     private authService: AuthService,
-    private http: HttpClient
+    private http: HttpClient,
+    private toastService: ToastService
   ) {
     // Load cart on startup
     this.fetchCart();
@@ -90,6 +92,11 @@ export class CartService {
   // ── Cart mutations ──────────────────────────────────────────────────────────
 
   addToCart(product: Product, quantity: number = 1): boolean {
+    // Merchant accounts are sellers, not buyers — they can browse but not shop.
+    if (this.authService.isMerchant()) {
+      this.toastService.show('Merchant accounts are for selling, not shopping', 'error');
+      return false;
+    }
     const currentItems = this.cartItems();
     const existing = currentItems.find(item => item.product.id === product.id);
     const newQuantity = existing ? existing.quantity + quantity : quantity;

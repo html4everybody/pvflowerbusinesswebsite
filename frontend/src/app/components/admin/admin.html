@@ -27,6 +27,9 @@
           <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>
         </svg>
         Products
+        @if (pendingProducts().length) {
+          <span class="nav-badge">{{ pendingProducts().length }}</span>
+        }
       </button>
       <button class="nav-item" [class.active]="activeSection() === 'inventory'" (click)="navigateTo('inventory')">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -216,6 +219,21 @@
                 <label class="form-label">Phone
                   <input type="tel" class="form-input" [(ngModel)]="merchantForm.phone" placeholder="Optional">
                 </label>
+                <label class="form-label">Shop address
+                  <input type="text" class="form-input" [(ngModel)]="merchantForm.address" placeholder="Street / area">
+                </label>
+                <div class="form-row">
+                  <label class="form-label">City
+                    <input type="text" class="form-input" [(ngModel)]="merchantForm.city" placeholder="e.g. Hyderabad">
+                  </label>
+                  <label class="form-label">State
+                    <input type="text" class="form-input" [(ngModel)]="merchantForm.state" placeholder="e.g. Telangana">
+                  </label>
+                </div>
+                <label class="form-label">Pincode
+                  <input type="text" class="form-input" [(ngModel)]="merchantForm.pincode" placeholder="Optional" maxlength="10">
+                </label>
+                <p class="modal-hint"><i class="bi bi-geo-alt"></i> Used later to route orders to the merchant closest to each customer.</p>
               </div>
               <div class="modal-footer">
                 <button class="btn-cancel" (click)="closeMerchantForm()">Cancel</button>
@@ -244,6 +262,7 @@
                     </span>
                     <span class="mc-sub"><i class="bi bi-envelope"></i> {{ m.email || '—' }}</span>
                     @if (m.phone) { <span class="mc-sub"><i class="bi bi-telephone"></i> {{ m.phone }}</span> }
+                    @if (m.city) { <span class="mc-sub"><i class="bi bi-geo-alt"></i> {{ m.city }}{{ m.state ? ', ' + m.state : '' }}</span> }
                     <span class="mc-sub"><i class="bi bi-box-seam"></i> {{ m.product_count }} products</span>
                     @if (m.description) { <p class="mc-desc">{{ m.description }}</p> }
                   </div>
@@ -361,6 +380,10 @@
           <h1>Products</h1>
           <div class="section-header-actions">
             <span class="section-meta">{{ products().length }} products</span>
+            <button class="btn-refresh" (click)="loadProducts()" [disabled]="loadingProducts()">
+              <i class="bi bi-arrow-repeat"></i>
+              Refresh
+            </button>
             <button class="btn-primary" (click)="openProductForm()">
               <i class="bi bi-plus-lg"></i>
               Add Product
@@ -417,7 +440,10 @@
                     <td>
                       <div class="product-cell">
                         <img [src]="p.image" [alt]="p.name" class="product-thumb" loading="lazy">
-                        <span class="product-name">{{ p.name }}</span>
+                        <span class="product-name">
+                          {{ p.name }}
+                          @if (p.catalog_id) { <i class="bi bi-collection" title="Shared catalog listing — assigned to multiple merchants"></i> }
+                        </span>
                       </div>
                     </td>
                     <td>{{ p.shop_name }}</td>
@@ -427,7 +453,7 @@
                     <td>
                       <div class="stock-btns">
                         <button class="btn-edit-small" (click)="openProductForm(p)">Edit</button>
-                        <button class="btn-delete-small" (click)="deleteProduct(p)">Delete</button>
+                        <button class="btn-delete-small" (click)="deleteProduct(p)">{{ p.catalog_id ? 'Archive' : 'Delete' }}</button>
                       </div>
                     </td>
                   </tr>
@@ -440,7 +466,7 @@
         <!-- Product Form Modal -->
         @if (showProductForm()) {
           <div class="modal-overlay" (click)="closeProductForm()">
-            <div class="modal-box" (click)="$event.stopPropagation()">
+            <div class="modal-box wide" (click)="$event.stopPropagation()">
               <div class="modal-header">
                 <h2>{{ editingProduct() ? 'Edit Product' : 'Add Product' }}</h2>
                 <button class="modal-close" (click)="closeProductForm()"><i class="bi bi-x-lg"></i></button>
@@ -480,6 +506,39 @@
                     <img [src]="productForm.image" alt="Preview" class="img-upload-preview">
                   }
                 </div>
+
+                @if (canAssignMerchants()) {
+                  <div class="assign-section">
+                    <div class="assign-head">
+                      <i class="bi bi-shop"></i>
+                      <div>
+                        <span class="assign-title">Share with merchants <span class="opt">(optional)</span></span>
+                        <span class="assign-hint">Leave empty for a plain admin product. Pick merchants to create a shared catalog listing — same price everywhere.</span>
+                      </div>
+                    </div>
+
+                    <label class="form-label">Merchant gets (₹) <span class="req">*</span>
+                      <input type="number" class="form-input" [(ngModel)]="productForm.merchant_price" min="0" step="0.01" placeholder="What each assigned merchant earns per unit">
+                    </label>
+
+                    <div class="merchant-checklist">
+                      @for (m of approvedMerchants(); track m.id) {
+                        <label class="merchant-check">
+                          <input type="checkbox" [checked]="productForm.merchant_ids.includes(m.id)"
+                                 (change)="toggleProductMerchant(m.id, $any($event.target).checked)">
+                          <span class="mcx-name">{{ m.shop_name }}</span>
+                          @if (m.city) { <span class="mcx-city">{{ m.city }}</span> }
+                        </label>
+                      }
+                      @if (!approvedMerchants().length) {
+                        <p class="modal-hint">No approved merchants yet — approve one in the Merchants tab first.</p>
+                      }
+                    </div>
+                  </div>
+                } @else if (editingProduct() && !editingProduct().catalog_id) {
+                  <p class="modal-hint"><i class="bi bi-info-circle"></i> This is a plain admin product (not shared). To turn it into a multi-merchant catalog listing, create a new product instead.</p>
+                }
+
                 <label class="toggle-label">
                   <input type="checkbox" [(ngModel)]="productForm.inStock">
                   In stock

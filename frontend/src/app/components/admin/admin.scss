@@ -785,12 +785,18 @@
 .modal-box {
   background: var(--bg-card); border: 1px solid var(--border);
   border-radius: 16px; width: 100%; max-width: 460px;
+  max-height: calc(100vh - 4rem); display: flex; flex-direction: column;
   box-shadow: 0 16px 48px rgba(0,0,0,0.2); overflow: hidden;
+
+  // Forms with more fields (e.g. the product form's merchant-assignment
+  // section) get extra breathing room so nothing wraps awkwardly.
+  &.wide { max-width: 560px; }
 }
 
 .modal-header {
   display: flex; align-items: center; justify-content: space-between;
   padding: 1.1rem 1.4rem; border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
   h2 { font-size: 1rem; font-weight: 800; color: var(--text); margin: 0; }
   .modal-close {
     background: var(--bg-raised); border: none; font-size: 0.88rem;
@@ -800,12 +806,18 @@
   }
 }
 
-.modal-body { padding: 1.1rem 1.4rem; display: flex; flex-direction: column; gap: 0.8rem; }
+.modal-body {
+  padding: 1.1rem 1.4rem; display: flex; flex-direction: column; gap: 0.8rem;
+  overflow-y: auto;
+}
 
 .form-label {
   display: flex; flex-direction: column; gap: 0.32rem;
   font-size: 0.79rem; font-weight: 600; color: var(--text-muted);
 }
+
+.req { color: var(--error); font-weight: 700; }
+.opt { color: var(--text-subtle); font-weight: 400; }
 
 .form-input {
   padding: 0.55rem 0.85rem; border: 1.5px solid var(--border);
@@ -820,6 +832,7 @@
   display: flex; align-items: center; justify-content: flex-end; gap: 0.6rem;
   padding: 0.9rem 1.4rem; border-top: 1px solid var(--border);
   background: var(--bg-raised);
+  flex-shrink: 0;
 }
 
 // ── Responsive ───────────────────────────────────────────────────────────────
@@ -1321,3 +1334,39 @@
 }
 .disc-tag { font-size: 0.68rem; font-weight: 700; color: #fff; background: var(--accent); padding: 0.05rem 0.35rem; border-radius: var(--radius-full); margin-left: 0.35rem; }
 .modal-hint { font-size: 0.84rem; color: var(--text-muted); margin-bottom: 0.5rem; line-height: 1.5; }
+
+// ── Share-with-merchants (Add/Edit Product modal) ───────────────────────────
+.assign-section {
+  display: flex; flex-direction: column; gap: 0.7rem;
+  padding: 0.9rem 1rem;
+  border: 1.5px dashed var(--border); border-radius: var(--radius-md);
+  background: var(--bg-raised);
+}
+.assign-head {
+  display: flex; align-items: flex-start; gap: 0.6rem;
+  > .bi { font-size: 1.1rem; color: var(--accent); margin-top: 0.15rem; flex-shrink: 0; }
+}
+.assign-title { display: block; font-size: 0.86rem; font-weight: 700; color: var(--text); }
+.assign-hint { display: block; font-size: 0.78rem; color: var(--text-muted); line-height: 1.5; margin-top: 0.15rem; }
+
+.merchant-checklist {
+  display: grid; gap: 0.4rem;
+  max-height: 200px; overflow-y: auto;
+  padding: 0.5rem 0.6rem;
+  border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+  background: var(--bg-card);
+}
+.merchant-check {
+  display: flex; align-items: center; gap: 0.55rem;
+  padding: 0.35rem 0.3rem;
+  font-size: 0.86rem; color: var(--text); cursor: pointer; border-radius: 6px;
+  transition: background 0.12s ease;
+  &:hover { background: var(--bg-raised); }
+
+  input[type="checkbox"] { width: 16px; height: 16px; flex-shrink: 0; accent-color: var(--accent); cursor: pointer; }
+  .mcx-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .mcx-city {
+    flex-shrink: 0; font-size: 0.74rem; font-weight: 500; color: var(--text-muted);
+    background: var(--bg-raised); padding: 0.1rem 0.5rem; border-radius: var(--radius-full);
+  }
+}
