@@ -206,11 +206,12 @@
   color: var(--text-muted);
   font-size: 0.84rem;
   font-weight: 600;
-  padding: 0.5rem 1rem;
-  border-radius: 8px;
+  padding: 0.55rem 1.2rem;
+  border-radius: var(--radius-full);
   cursor: pointer;
-  transition: border-color 0.15s, color 0.15s;
+  transition: border-color 0.18s ease, color 0.18s ease, transform 0.1s ease;
   &:hover { border-color: var(--text-muted); color: var(--text); }
+  &:active { transform: scale(0.97); }
 }
 
 // ── Stats Grid ────────────────────────────────────────────────────────────────
@@ -505,6 +506,20 @@
   .order-amount { font-size: 0.85rem; font-weight: 700; color: var(--text); margin-top: 0.05rem; }
 }
 
+// Which shop(s) are fulfilling this order — admin-only visibility (never
+// shown to the customer, who sees one seamless VivaPetals order).
+.order-sellers {
+  display: flex; align-items: center; gap: 0.35rem; flex-wrap: wrap;
+  margin-top: 0.2rem; font-size: 0.72rem; color: var(--text-subtle);
+}
+.seller-chip {
+  font-size: 0.7rem; font-weight: 600; padding: 0.12rem 0.55rem;
+  border-radius: var(--radius-full); background: var(--bg-raised); color: var(--text-muted);
+  &.delivered { background: rgba(5,150,105,0.14); color: var(--success); }
+  &.cancelled { background: rgba(220,38,38,0.14); color: var(--error); }
+  &.out_for_delivery { background: var(--accent-light); color: var(--accent); }
+}
+
 .order-status {
   flex-shrink: 0;
   font-size: 0.71rem;
@@ -568,15 +583,19 @@
 }
 
 .stock-btns, .btn-edit-small, .btn-save-small, .btn-cancel-small, .btn-delete-small {
-  font-size: 0.76rem; font-weight: 600; padding: 0.28rem 0.65rem;
-  border-radius: 6px; cursor: pointer; transition: all 0.15s; border: none;
+  font-size: 0.76rem; font-weight: 600; padding: 0.32rem 0.75rem;
+  border-radius: var(--radius-full); cursor: pointer; border: 1px solid transparent;
+  transition: filter 0.18s ease, background 0.18s ease, border-color 0.18s ease,
+              color 0.18s ease, transform 0.1s ease;
+  &:active:not(:disabled) { transform: scale(0.95); }
+  &:disabled { opacity: 0.55; cursor: not-allowed; }
 }
 
-.stock-btns { display: flex; gap: 0.35rem; }
-.btn-edit-small   { background: var(--bg-raised); border: 1px solid var(--border); color: var(--text-muted); &:hover { color: var(--text); border-color: var(--text-muted); } }
-.btn-save-small   { background: #16a34a; color: #fff; &:hover { opacity: 0.88; } }
-.btn-cancel-small { background: var(--bg-raised); border: 1px solid var(--border); color: var(--text-muted); &:hover { color: var(--text); } }
-.btn-delete-small { background: none; border: 1px solid #fca5a5; color: #dc2626; &:hover { background: #fee2e2; } }
+.stock-btns { display: flex; gap: 0.4rem; }
+.btn-edit-small   { background: var(--bg-card); border-color: var(--border); color: var(--text-muted); &:hover:not(:disabled) { color: var(--accent); border-color: var(--border-focus); } }
+.btn-save-small   { background: var(--success); color: #fff; &:hover:not(:disabled) { filter: brightness(1.08); } }
+.btn-cancel-small { background: var(--bg-card); border-color: var(--border); color: var(--text-muted); &:hover:not(:disabled) { color: var(--text); border-color: var(--text-muted); } }
+.btn-delete-small { background: transparent; border-color: var(--error); color: var(--error); &:hover:not(:disabled) { background: rgba(220,38,38,0.08); } }
 
 // ── Customers ────────────────────────────────────────────────────────────────
 .customers-list { display: flex; flex-direction: column; gap: 0.6rem; }
@@ -950,7 +969,7 @@
 
   .sfc-grid {
     display: grid;
-    grid-template-columns: 1fr 1.4fr;
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
     gap: 1rem;
     padding: 0.9rem 0;
 

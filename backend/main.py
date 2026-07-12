@@ -994,10 +994,75 @@ def seed_dummy_merchants():
     print("[Seed] Dummy merchants ready (merchant1/merchant2@vivapetals.com / Merchant@123)", flush=True)
 
 
+# Defined here (not down near the other merchant helpers) because the
+# Florist's Choice bootstrap right below needs it at MODULE-LOAD time, before
+# the rest of the file (where it's normally referenced) has even executed.
+HOUSE_MERCHANT_ID = "00000000-0000-0000-0000-000000000001"
+
+FLORISTS_CHOICE_NAME = "Florist's Choice (Bloom Plan)"
+FLORISTS_CHOICE_PRODUCT_ID: Optional[int] = None
+
+def _ensure_florists_choice_product() -> Optional[int]:
+    """A 'Florist's Choice' Bloom Plan cycle has no specific product — it's a
+    house-curated arrangement, not any seller's listing. We still need a
+    REAL products.id to attach to the generated order_items row (a made-up
+    id risks a foreign-key error, and an out-of-stock real product would
+    still show up in storefront listings). This creates one house-owned
+    placeholder row, hidden from the storefront the same way a rejected
+    product is (status='rejected' — customers never see it, checkout never
+    references it directly), and reuses it for every cycle thereafter."""
+    global FLORISTS_CHOICE_PRODUCT_ID
+    try:
+        existing = (supabase.table("products").select("id")
+                    .eq("name", FLORISTS_CHOICE_NAME).eq("merchant_id", HOUSE_MERCHANT_ID)
+                    .limit(1).execute().data)
+        if existing:
+            FLORISTS_CHOICE_PRODUCT_ID = existing[0]["id"]
+            return FLORISTS_CHOICE_PRODUCT_ID
+        rows = supabase.table("products").select("id").order("id", desc=True).limit(1).execute().data
+        next_id = (rows[0]["id"] + 1) if rows else 1
+        supabase.table("products").insert({
+            "id": next_id, "name": FLORISTS_CHOICE_NAME,
+            "description": "Internal placeholder for Bloom Plan 'Florist's Choice' deliveries — do not delete.",
+            "price": 0, "merchant_price": 0, "discount_percent": 0,
+            "image": "", "category": "Internal", "in_stock": True,
+            "merchant_id": HOUSE_MERCHANT_ID, "status": "rejected",
+            "reject_reason": "Internal use only — not a real listing.",
+        }).execute()
+        FLORISTS_CHOICE_PRODUCT_ID = next_id
+        return next_id
+    except Exception as e:
+        print(f"[Bloom Plan] could not set up Florist's Choice placeholder: {e}", flush=True)
+        return None
+
+
+# ── Schema safety ─────────────────────────────────────────────────────────────
+# Some features depend on a migration file the admin may not have run yet
+# (e.g. petal_studio_migration.sql adds orders.source /
+# corporate_orders.linked_order_id). Referencing a column that doesn't exist
+# yet fails the ENTIRE query in Postgrest — for something like orders.source
+# that's used on every checkout, that means checkout itself breaks with a
+# 500, not just the new feature. This lets call sites check first and
+# degrade gracefully (skip the field / skip the filter) instead.
+_COLUMN_EXISTS_CACHE: dict = {}
+
+def _has_column(table: str, column: str) -> bool:
+    key = (table, column)
+    if key not in _COLUMN_EXISTS_CACHE:
+        try:
+            supabase.table(table).select(column).limit(1).execute()
+            _COLUMN_EXISTS_CACHE[key] = True
+        except Exception:
+            _COLUMN_EXISTS_CACHE[key] = False
+            print(f"[Schema] {table}.{column} not found — related features will degrade until the migration is run.", flush=True)
+    return _COLUMN_EXISTS_CACHE[key]
+
+
 # Seeding disabled — the database is the source of truth. We only load caches.
 load_products()
 load_subscription_plans()
 seed_dummy_merchants()
+_ensure_florists_choice_product()
 load_products()
 
 # ── Order Status ───────────────────────────────────────────────────────────────
@@ -1891,8 +1956,6 @@ def social_auth(req: SocialAuthRequest):
 
 # ── Merchant helpers & routes ────────────────────────────────────────────────
 
-HOUSE_MERCHANT_ID = "00000000-0000-0000-0000-000000000001"
-
 def get_user_by_email(email: str):
     r = supabase.table("users").select("*").eq("email", email).execute()
     return r.data[0] if r.data else None
@@ -2192,13 +2255,17 @@ def _recompute_order_status_from_parts(order_id: str):
     """Keep the parent `orders.status` in sync after a merchant updates their
     part of an order. Notifies the customer (in-app + SMS/WhatsApp) only if
     the status actually changed, reusing the same pipeline the admin's direct
-    status endpoint uses."""
+    status endpoint uses — including crediting loyalty points on delivery.
+    This matters because in the marketplace, a THIRD-PARTY MERCHANT marking
+    their own part delivered (not admin) is the normal path — without this,
+    points would only ever be credited on the rare order an admin happens to
+    set 'delivered' directly."""
     parts = supabase.table("order_merchant_parts").select("status").eq("order_id", order_id).execute().data or []
     if not parts:
         return
     new_status = _compute_order_status([p["status"] for p in parts])
 
-    order = supabase.table("orders").select("status, customer_email, customer_phone").eq("id", order_id).execute().data
+    order = supabase.table("orders").select("*").eq("id", order_id).execute().data
     if not order:
         return
     old_status = order[0].get("status")
@@ -2206,10 +2273,44 @@ def _recompute_order_status_from_parts(order_id: str):
         return  # no-op, or a cancelled order stays cancelled regardless of part churn
 
     supabase.table("orders").update({"status": new_status}).eq("id", order_id).execute()
+    if new_status == "delivered":
+        award_delivery_points(order[0])
+    elif new_status == "cancelled":
+        refund_redeemed_points(order[0])
     send_notifications(order_id, new_status, order[0].get("customer_phone") or "")
     if new_status in ORDER_STATUS_NOTICE:
         title, phrase = ORDER_STATUS_NOTICE[new_status]
         create_user_notice(order[0].get("customer_email"), title, f"Your order #{order_id} {phrase}.", "order", order_id)
+
+    if order[0].get("source") == "corporate":
+        _sync_corporate_booking_status(order_id, new_status)
+
+
+# Retail/merchant fulfillment statuses don't share a vocabulary with a Petal
+# Studio booking's own lifecycle (pending → confirmed → preparing →
+# completed → cancelled, admin-managed) — map one onto the other so "My
+# Studio" actually reflects real merchant progress instead of freezing at
+# 'confirmed' forever once merchants start fulfilling the linked order.
+_CORPORATE_STATUS_FROM_ORDER = {
+    "confirmed": "confirmed", "preparing": "preparing",
+    "out_for_delivery": "preparing", "delivered": "completed", "cancelled": "cancelled",
+}
+
+
+def _sync_corporate_booking_status(linked_order_id: str, order_status: str):
+    if not _has_column("corporate_orders", "linked_order_id"):
+        return
+    mapped = _CORPORATE_STATUS_FROM_ORDER.get(order_status)
+    if not mapped:
+        return
+    booking = supabase.table("corporate_orders").select("id, status, contact_email").eq("linked_order_id", linked_order_id).execute().data
+    if not booking or booking[0].get("status") in ("cancelled", "completed") or booking[0].get("status") == mapped:
+        return  # no matching booking, already terminal, or no change
+    supabase.table("corporate_orders").update({"status": mapped}).eq("id", booking[0]["id"]).execute()
+    if mapped in BOOKING_STATUS_NOTICE:
+        title, phrase = BOOKING_STATUS_NOTICE[mapped]
+        create_user_notice(booking[0].get("contact_email"), title,
+                            f"Your Petal Studio booking #{booking[0]['id']} {phrase}.", "booking", booking[0]["id"])
 
 
 def _merchant_email(merchant_id) -> Optional[str]:
@@ -2615,8 +2716,25 @@ def admin_orders(token: str, status: str = None):
         product = next((p for p in PRODUCTS if p["id"] == item["product_id"]), None)
         item["image"] = product["image"] if product else ""
         items_by_order.setdefault(item["order_id"], []).append(item)
+
+    # Which merchant(s) are actually fulfilling each order — admin needs to
+    # see this even though customers never do (see _resolve_order_merchants).
+    parts = supabase.table("order_merchant_parts").select("*").in_("order_id", order_ids).execute().data or []
+    merchant_rows = supabase.table("merchants").select("id, shop_name").execute().data or []
+    shop_by_id = {m["id"]: m["shop_name"] for m in merchant_rows}
+    parts_by_order: dict = {}
+    for p in parts:
+        parts_by_order.setdefault(p["order_id"], []).append({
+            "merchant_id": p["merchant_id"],
+            "shop_name": "VivaPetals (in-house)" if p["merchant_id"] == HOUSE_MERCHANT_ID else shop_by_id.get(p["merchant_id"], "Unknown seller"),
+            "status": p.get("status"),
+            "payout_status": p.get("payout_status", "unpaid"),
+            "payout": p.get("payout", 0),
+        })
+
     for order in orders:
         order["items"] = items_by_order.get(order["id"], [])
+        order["merchants"] = parts_by_order.get(order["id"], [])
     return orders
 
 @app.get("/api/admin/customers")
@@ -3124,6 +3242,15 @@ def clear_cart(user_id: str):
 
 @app.get("/api/orders")
 def get_user_orders(email: str, token: str = None):
+    # Corporate (Petal Studio) bookings are deliberately excluded here — the
+    # customer already sees full booking context (theme, branding, status)
+    # in My Studio; surfacing the bare linked order too would look like an
+    # unexplained duplicate. Bloom Plan orders DO belong here — My
+    # Subscriptions only shows the subscription itself, not per-delivery
+    # tracking, so this is the only place a customer can track one delivery.
+    #
+    exclude_corporate = _has_column("orders", "source")
+
     # Prefer user_id lookup (survives email changes); fall back to email for old orders
     if token:
         token_email = resolve_token(token)
@@ -3131,7 +3258,10 @@ def get_user_orders(email: str, token: str = None):
             u = supabase.table("users").select("id").eq("email", token_email).execute()
             if u.data:
                 uid = u.data[0]["id"]
-                orders_result = supabase.table("orders").select("*").eq("user_id", uid).order("created_at", desc=True).execute()
+                query = supabase.table("orders").select("*").eq("user_id", uid)
+                if exclude_corporate:
+                    query = query.neq("source", "corporate")
+                orders_result = query.order("created_at", desc=True).execute()
                 if orders_result.data:
                     orders = orders_result.data
                     order_ids = [o["id"] for o in orders]
@@ -3145,7 +3275,10 @@ def get_user_orders(email: str, token: str = None):
                         o["items"] = items_by_order.get(o["id"], [])
                         o["notifications"] = []
                     return orders
-    orders_result = supabase.table("orders").select("*").eq("customer_email", email).order("created_at", desc=True).execute()
+    query = supabase.table("orders").select("*").eq("customer_email", email)
+    if exclude_corporate:
+        query = query.neq("source", "corporate")
+    orders_result = query.order("created_at", desc=True).execute()
     orders = orders_result.data
     if not orders:
         return []
@@ -3202,6 +3335,35 @@ def update_delivery(order_id: str, req: UpdateDeliveryRequest):
     }).eq("id", order_id).execute()
     return {"status": "updated"}
 
+def _cascade_status_to_parts(order_id: str, status: str):
+    """Admin's (or the customer's cancel button's) direct control over the
+    TOP-level order previously never touched order_merchant_parts at all —
+    a cancelled order's merchant parts stayed 'confirmed' forever (so a
+    merchant might still think they need to prepare it, and could even end
+    up marked deliverable/payable for something that was cancelled), and an
+    admin marking an order 'delivered' directly never made the merchant's
+    part payable either. Fix: cancellation is an order-wide kill switch and
+    applies to every not-yet-terminal part (with a heads-up to any affected
+    third-party merchant); forward-progress statuses only apply to the
+    house merchant's own part, since third-party merchants report their own
+    prep progress via their own dashboard (merchant_update_order_status)."""
+    if status not in ("preparing", "out_for_delivery", "delivered", "cancelled"):
+        return
+    parts = supabase.table("order_merchant_parts").select("id, merchant_id, status").eq("order_id", order_id).execute().data or []
+    for p in parts:
+        if p.get("status") in ("cancelled", "delivered"):
+            continue  # terminal — never overwrite history
+        if status != "cancelled" and p.get("merchant_id") != HOUSE_MERCHANT_ID:
+            continue  # third-party progress is self-reported, not admin-forced
+        supabase.table("order_merchant_parts").update({"status": status}).eq("id", p["id"]).execute()
+        if status == "cancelled" and p.get("merchant_id") != HOUSE_MERCHANT_ID:
+            create_user_notice(
+                _merchant_email(p["merchant_id"]), "Order cancelled",
+                f"Order #{order_id} was cancelled — no need to prepare it.",
+                "merchant_order", order_id,
+            )
+
+
 @app.patch("/api/orders/{order_id}/cancel")
 def cancel_order(order_id: str):
     result = supabase.table("orders").select("*").eq("id", order_id).execute()
@@ -3212,6 +3374,7 @@ def cancel_order(order_id: str):
     if order["status"] != "confirmed":
         raise HTTPException(status_code=400, detail="This order is already being prepared. Please contact us to cancel.")
     supabase.table("orders").update({"status": "cancelled"}).eq("id", order_id).execute()
+    _cascade_status_to_parts(order_id, "cancelled")
     refund_redeemed_points(order)
     send_notifications(order_id, "cancelled", order.get("customer_phone") or "")
     send_order_cancellation_email(order)
@@ -3227,6 +3390,7 @@ def update_order_status(order_id: str, req: StatusUpdateRequest):
     if req.status not in allowed:
         raise HTTPException(status_code=400, detail=f"Cannot transition from '{order['status']}' to '{req.status}'")
     supabase.table("orders").update({"status": req.status}).eq("id", order_id).execute()
+    _cascade_status_to_parts(order_id, req.status)
     # Points: earn on delivery, refund redeemed on cancellation
     if req.status == "delivered":
         award_delivery_points(order)
@@ -3410,6 +3574,82 @@ def _resolve_order_merchants(items: list) -> dict:
     return resolved
 
 
+def _place_order_items(order_id: str, items: list, delivery_datetime: Optional[str], source: str = "retail") -> None:
+    """Shared by retail checkout and Petal Studio bookings: resolve each line
+    to the merchant who should fulfill it, insert order_items, split into
+    order_merchant_parts, and notify the assigned merchant(s). For a
+    'corporate' booking that ends up split across more than one merchant,
+    also flags admins — large event orders benefit from single-seller
+    coordination more than an everyday retail basket does."""
+    if not items:
+        return
+    product_meta = _resolve_order_merchants(items)
+    supabase.table("order_items").insert([
+        {
+            "order_id": order_id,
+            "product_id": item.productId,
+            "name": item.name,
+            "price": item.price,
+            "quantity": item.quantity,
+            "merchant_id": product_meta.get(item.productId, (HOUSE_MERCHANT_ID, 0))[0],
+        }
+        for item in items
+    ]).execute()
+
+    delivery_day = (delivery_datetime or "")[:10] or None
+    agg = {}
+    for item in items:
+        mid, mprice = product_meta.get(item.productId, (HOUSE_MERCHANT_ID, float(item.price)))
+        a = agg.setdefault(mid, {"subtotal": 0.0, "payout": 0.0, "qty": 0})
+        a["subtotal"] += float(item.price) * int(item.quantity)
+        a["payout"] += mprice * int(item.quantity)
+        a["qty"] += int(item.quantity)
+    if not agg:
+        return
+
+    parts = []
+    for mid, a in agg.items():
+        subtotal = round(a["subtotal"], 2)
+        payout = round(a["payout"], 2)
+        parts.append({
+            "order_id": order_id,
+            "merchant_id": mid,
+            "subtotal": subtotal,
+            "commission": round(subtotal - payout, 2),   # platform profit
+            "payout": payout,                            # merchant earnings
+            "status": "confirmed",
+            "delivery_date": delivery_day,
+        })
+    SOURCE_LABELS = {
+        "corporate":    {"noun": "Booking",       "notice_title": "🎉 New Petal Studio booking"},
+        "subscription": {"noun": "Bloom Plan order", "notice_title": "🌸 New Bloom Plan delivery"},
+        "retail":       {"noun": "Order",         "notice_title": "🌸 New order"},
+    }
+    label = SOURCE_LABELS.get(source, SOURCE_LABELS["retail"])
+    try:
+        supabase.table("order_merchant_parts").insert(parts).execute()
+        # Tell each assigned merchant they have something new to pack
+        # (the house merchant IS the admin, so skip — they already see
+        # every order in their own dashboard).
+        for mid, a in agg.items():
+            if mid == HOUSE_MERCHANT_ID:
+                continue
+            create_user_notice(
+                _merchant_email(mid), label["notice_title"],
+                f"{label['noun']} #{order_id} — {a['qty']} item(s) to prepare. You'll earn ₹{round(a['payout'], 2)}.",
+                "merchant_order", order_id,
+            )
+        distinct_sellers = [mid for mid in agg if mid != HOUSE_MERCHANT_ID]
+        if source == "corporate" and len(distinct_sellers) > 1:
+            _notify_all_admins(
+                "⚠️ Event booking spans multiple sellers",
+                f"Booking #{order_id} needs {len(distinct_sellers)} different merchants to fulfill — you may want to coordinate delivery timing manually.",
+                "corporate_multi_merchant", order_id,
+            )
+    except Exception as e:
+        print(f"[Order] merchant parts insert error: {e}", flush=True)
+
+
 @app.post("/api/orders")
 def create_order(req: OrderRequest):
     order_id = "FLR" + str(uuid.uuid4())[:8].upper()
@@ -3433,90 +3673,36 @@ def create_order(req: OrderRequest):
             if u.data:
                 user_id = u.data[0]["id"]
 
+    order_row = {
+        "id": order_id,
+        "user_id": user_id,
+        "customer_email": customer_email,
+        "customer_name": req.customer.get("name", ""),
+        "customer_phone": req.customer.get("phone", ""),
+        "customer_address": ", ".join(filter(None, [
+            req.customer.get("address", ""),
+            req.customer.get("city", ""),
+            req.customer.get("state", ""),
+            req.customer.get("zip", ""),
+        ])),
+        "total": req.total,
+        "status": "confirmed",
+        "delivery_type": req.delivery_type,
+        "delivery_datetime": req.delivery_datetime,
+        "is_recurring": req.is_recurring,
+        "recurrence_type": req.recurrence_type,
+        "next_recurrence_date": next_recurrence_date,
+        "payment_method": req.payment_method,
+    }
+    if _has_column("orders", "source"):
+        order_row["source"] = "retail"
     try:
-        supabase.table("orders").insert({
-            "id": order_id,
-            "user_id": user_id,
-            "customer_email": customer_email,
-            "customer_name": req.customer.get("name", ""),
-            "customer_phone": req.customer.get("phone", ""),
-            "customer_address": ", ".join(filter(None, [
-                req.customer.get("address", ""),
-                req.customer.get("city", ""),
-                req.customer.get("state", ""),
-                req.customer.get("zip", ""),
-            ])),
-            "total": req.total,
-            "status": "confirmed",
-            "delivery_type": req.delivery_type,
-            "delivery_datetime": req.delivery_datetime,
-            "is_recurring": req.is_recurring,
-            "recurrence_type": req.recurrence_type,
-            "next_recurrence_date": next_recurrence_date,
-            "payment_method": req.payment_method,
-        }).execute()
+        supabase.table("orders").insert(order_row).execute()
     except Exception as e:
         print(f"Order insert error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-    if req.items:
-        # Resolve each line to the merchant who should fulfill it — unique
-        # products pin the order to their owner; shared catalog items then
-        # consolidate onto that same merchant wherever possible (see
-        # _resolve_order_merchants) instead of splitting needlessly.
-        product_meta = _resolve_order_merchants(req.items)
-        supabase.table("order_items").insert([
-            {
-                "order_id": order_id,
-                "product_id": item.productId,
-                "name": item.name,
-                "price": item.price,
-                "quantity": item.quantity,
-                "merchant_id": product_meta.get(item.productId, (HOUSE_MERCHANT_ID, 0))[0],
-            }
-            for item in req.items
-        ]).execute()
-
-        # Split into one fulfillment part per merchant. payout = merchant's price ×
-        # qty; profit (stored in `commission`) = what the customer paid − payout.
-        delivery_day = (req.delivery_datetime or "")[:10] or None
-        agg = {}
-        for item in req.items:
-            mid, mprice = product_meta.get(item.productId, (HOUSE_MERCHANT_ID, float(item.price)))
-            a = agg.setdefault(mid, {"subtotal": 0.0, "payout": 0.0, "qty": 0})
-            a["subtotal"] += float(item.price) * int(item.quantity)
-            a["payout"] += mprice * int(item.quantity)
-            a["qty"] += int(item.quantity)
-        if agg:
-            parts = []
-            for mid, a in agg.items():
-                subtotal = round(a["subtotal"], 2)
-                payout = round(a["payout"], 2)
-                parts.append({
-                    "order_id": order_id,
-                    "merchant_id": mid,
-                    "subtotal": subtotal,
-                    "commission": round(subtotal - payout, 2),   # platform profit
-                    "payout": payout,                            # merchant earnings
-                    "status": "confirmed",
-                    "delivery_date": delivery_day,
-                })
-            try:
-                supabase.table("order_merchant_parts").insert(parts).execute()
-                # Tell each assigned merchant they have something new to pack
-                # (the house merchant IS the admin, so skip — they already see
-                # every order in their own dashboard).
-                for mid, a in agg.items():
-                    if mid == HOUSE_MERCHANT_ID:
-                        continue
-                    email = _merchant_email(mid)
-                    create_user_notice(
-                        email, "🌸 New order",
-                        f"Order #{order_id} — {a['qty']} item(s) to prepare. You'll earn ₹{round(a['payout'], 2)}.",
-                        "merchant_order", order_id,
-                    )
-            except Exception as e:
-                print(f"[Order] merchant parts insert error: {e}", flush=True)
+    _place_order_items(order_id, req.items, req.delivery_datetime, source="retail")
 
     points_pending = 0
     new_balance = 0
@@ -3577,6 +3763,121 @@ def advance_delivery_date(plan: str, current: str) -> str:
         base = datetime.utcnow()
     return (base + timedelta(days=days)).strftime("%Y-%m-%d")
 
+
+# ── Bloom Plan: turn a due delivery cycle into a REAL, merchant-routed order ──
+# Previously a subscription never created any order at all — only reminder
+# messages went out, so no merchant ever saw a Bloom Plan delivery to
+# prepare. This runs daily (see _run_daily_reminders), ~1 day ahead of each
+# active subscription's `next_delivery` so the merchant has prep lead time.
+
+def _generate_subscription_orders(force: bool = False) -> dict:
+    """force=True ignores the due-date check and processes every active
+    subscription regardless of next_delivery — for deliberately testing that
+    a subscription routes to the right merchant, without waiting for its
+    actual delivery date. NOTE: this still advances next_delivery on success,
+    same as the real daily run, so it does shift that subscription's future
+    schedule — only use it knowingly (e.g. via the admin "force" toggle)."""
+    today = datetime.now(IST).date()
+    due_by = (today + timedelta(days=1)).strftime("%Y-%m-%d")  # tomorrow, or overdue
+    query = supabase.table("subscriptions").select("*").eq("status", "active")
+    if not force:
+        query = query.lte("next_delivery", due_by)
+    subs = query.execute().data or []
+    summary = {"checked": len(subs), "generated": 0, "flagged": 0, "errors": 0}
+    for sub in subs:
+        try:
+            outcome = _generate_one_subscription_order(sub)
+            if outcome in summary:
+                summary[outcome] += 1
+        except Exception as e:
+            summary["errors"] += 1
+            print(f"[Bloom Plan] order generation failed for {sub.get('id')}: {e}", flush=True)
+    return summary
+
+
+def _generate_one_subscription_order(sub: dict) -> str:
+    """Returns 'generated', 'flagged' (needs admin attention), or 'errors'."""
+    sub_id = sub["id"]
+    delivery_date = sub.get("next_delivery")
+    items_raw = sub.get("items") or []
+
+    if not items_raw:
+        # Florist's Choice — always the house's own curated arrangement, not
+        # any specific seller's product (see _ensure_florists_choice_product).
+        if not FLORISTS_CHOICE_PRODUCT_ID:
+            print(f"[Bloom Plan] no Florist's Choice placeholder product — skipping {sub_id}", flush=True)
+            return "errors"
+        order_items = [OrderItem(
+            productId=FLORISTS_CHOICE_PRODUCT_ID, name="Florist's Choice (Bloom Plan)",
+            price=float(sub.get("daily_total") or 0), quantity=1,
+        )]
+    else:
+        # Don't silently substitute if a pick is no longer sellable — flag
+        # admin + let the customer know there's a hiccup, then retry next run.
+        products_by_id = {p["id"]: p for p in PRODUCTS}
+        unavailable = [it.get("product_name") or f"#{it.get('product_id')}" for it in items_raw
+                       if not (products_by_id.get(it.get("product_id"))
+                               and products_by_id[it["product_id"]].get("status") == "approved"
+                               and products_by_id[it["product_id"]].get("inStock"))]
+        if unavailable:
+            _notify_all_admins(
+                "⚠️ Bloom Plan needs attention",
+                f"Subscription #{sub_id} — can't fulfil {', '.join(unavailable)} for the {delivery_date} delivery. Please review and update the customer's picks.",
+                "subscription_issue", sub_id,
+            )
+            create_user_notice(
+                sub.get("customer_email"), "A quick update on your Bloom Plan",
+                "We're sorting out your next delivery and will confirm shortly — sorry for the wait!",
+                "subscription", sub_id,
+            )
+            return "flagged"  # next_delivery NOT advanced — retried automatically tomorrow
+
+        order_items = [
+            OrderItem(
+                productId=it["product_id"], name=it.get("product_name") or "Item",
+                price=float(it.get("daily_cost") or 0), quantity=int(it.get("quantity") or 1),
+            )
+            for it in items_raw
+        ]
+
+    order_id = "FLR" + str(uuid.uuid4())[:8].upper()
+    total = float(sub.get("daily_total") or sum(oi.price * oi.quantity for oi in order_items))
+    order_row = {
+        "id": order_id,
+        "customer_email": sub.get("customer_email"),
+        "customer_name": sub.get("customer_name", ""),
+        "customer_phone": sub.get("customer_phone", ""),
+        "customer_address": sub.get("address", ""),
+        "total": total,
+        "status": "confirmed",
+        "delivery_type": "scheduled",
+        "delivery_datetime": delivery_date,
+        "is_recurring": True,
+        "recurrence_type": sub.get("plan"),
+        "payment_method": "subscription",
+    }
+    if _has_column("orders", "source"):
+        order_row["source"] = "subscription"
+    try:
+        supabase.table("orders").insert(order_row).execute()
+    except Exception as e:
+        print(f"[Bloom Plan] order insert failed for {sub_id}: {e}", flush=True)
+        return "errors"
+
+    _place_order_items(order_id, order_items, delivery_date, source="subscription")
+
+    # Only advance to the next cycle once this one is safely generated.
+    new_next = advance_delivery_date(sub.get("plan"), delivery_date)
+    supabase.table("subscriptions").update({"next_delivery": new_next}).eq("id", sub_id).execute()
+    # No separate "delivery confirmed" notice here on purpose — this order
+    # now exists with delivery_datetime = tomorrow, so the SAME daily run's
+    # send_reminders() pass (see _run_daily_reminders) will pick it up and
+    # send the customer the normal "delivery tomorrow" SMS/WhatsApp/in-app
+    # reminder through the existing, already-tested pipeline — avoids
+    # double-notifying for the same delivery.
+    return "generated"
+
+
 # ── Subscription Plans (DB-backed config) ────────────────────────────────────────
 
 class SubscriptionPlanUpdate(BaseModel):
@@ -3621,7 +3922,32 @@ def get_subscriptions(email: str):
 def admin_list_subscriptions(token: str):
     require_admin(token)
     result = supabase.table("subscriptions").select("*").order("created_at", desc=True).execute()
-    return result.data or []
+    subs = result.data or []
+    if not subs:
+        return []
+
+    # Which shop(s) will actually fulfil each subscription — computable up
+    # front from the picked products' fixed ownership, even before the first
+    # delivery cycle has ever been generated (see _generate_one_subscription_order).
+    products_by_id = {p["id"]: p for p in PRODUCTS}
+    merchant_rows = supabase.table("merchants").select("id, shop_name").execute().data or []
+    shop_by_id = {m["id"]: m["shop_name"] for m in merchant_rows}
+
+    for sub in subs:
+        items = sub.get("items") or []
+        if not items:
+            sub["merchant_names"] = ["VivaPetals (Florist's Choice)"]
+            continue
+        seen, names = set(), []
+        for it in items:
+            p = products_by_id.get(it.get("product_id"))
+            mid = (p.get("merchant_id") if p else None) or HOUSE_MERCHANT_ID
+            if mid in seen:
+                continue
+            seen.add(mid)
+            names.append("VivaPetals (in-house)" if mid == HOUSE_MERCHANT_ID else shop_by_id.get(mid, "Unknown seller"))
+        sub["merchant_names"] = names or ["VivaPetals (in-house)"]
+    return subs
 
 class AdminSubscriptionUpdate(BaseModel):
     status: Optional[str] = None
@@ -3729,6 +4055,19 @@ def cancel_subscription(sub_id: str):
         raise HTTPException(status_code=404, detail="Subscription not found")
     supabase.table("subscriptions").update({"status": "cancelled"}).eq("id", sub_id).execute()
     return {"status": "cancelled"}
+
+
+@app.post("/api/admin/subscriptions/generate")
+def admin_generate_subscription_orders(token: str, force: bool = False):
+    """Manually run the Bloom Plan → real-order generation pass instead of
+    waiting for the 8am cron. By default only processes subscriptions
+    actually due tomorrow (or overdue) — same as the real cron. force=True
+    processes EVERY active subscription regardless of its delivery date, for
+    deliberately testing merchant routing; it still advances next_delivery
+    on success, so it does shift that subscription's future schedule."""
+    require_admin(token)
+    return _generate_subscription_orders(force=force)
+
 
 # ── Reminders Route ─────────────────────────────────────────────────────────────
 
@@ -4076,10 +4415,15 @@ def admin_list_corporate_orders(token: str):
 @app.delete("/api/admin/corporate-orders/{order_id}")
 def admin_delete_corporate_order(order_id: str, token: str, reason: Optional[str] = None):
     require_admin(token)
-    existing = supabase.table("corporate_orders").select("contact_email, items").eq("id", order_id).execute().data
+    select_cols = "contact_email, linked_order_id" if _has_column("corporate_orders", "linked_order_id") else "contact_email"
+    existing = supabase.table("corporate_orders").select(select_cols).eq("id", order_id).execute().data
     if not existing:
         raise HTTPException(status_code=404, detail="Booking not found")
     email = existing[0].get("contact_email")
+    linked_id = existing[0].get("linked_order_id")
+    if linked_id:
+        supabase.table("orders").update({"status": "cancelled"}).eq("id", linked_id).execute()
+        _cascade_status_to_parts(linked_id, "cancelled")
     # Soft-cancel: keep the record (marked cancelled) so the customer still
     # sees it in My Studio with the admin's message.
     supabase.table("corporate_orders").update({"status": "cancelled", "admin_message": reason}).eq("id", order_id).execute()
@@ -4093,20 +4437,89 @@ class CorporateStatusUpdate(BaseModel):
     status: str
     admin_message: Optional[str] = None
 
+
+def _create_linked_corporate_order(booking: dict) -> Optional[str]:
+    """Build a real orders/order_items/order_merchant_parts trail for a
+    just-confirmed Petal Studio booking, so the assigned merchant(s) see it
+    in their own dashboard exactly like any other order — previously a
+    corporate booking never routed to merchants at all, confirmed or not.
+    The booking's bulk discount is applied proportionally to each line so
+    order-item subtotals sum to what the customer is actually charged;
+    merchant payout stays flat (their own price × qty), so the discount
+    comes out of the platform's margin, not the merchant's earnings."""
+    items = booking.get("items") or []
+    total_amount = float(booking.get("total_amount", 0) or 0)
+    final_amount = float(booking.get("final_amount", 0) or 0)
+    ratio = (final_amount / total_amount) if total_amount else 1.0
+
+    order_items = [
+        OrderItem(
+            productId=it.get("product_id"), name=it.get("product_name") or "Item",
+            price=round(float(it.get("unit_price", 0) or 0) * ratio, 2),
+            quantity=int(it.get("quantity", 0) or 0),
+        )
+        for it in items if it.get("product_id") is not None and int(it.get("quantity", 0) or 0) > 0
+    ]
+    if not order_items:
+        return None
+
+    order_id = "FLR" + str(uuid.uuid4())[:8].upper()
+    order_row = {
+        "id": order_id,
+        "customer_email": booking.get("contact_email"),
+        "customer_name": booking.get("contact_name", ""),
+        "customer_phone": "",
+        "customer_address": booking.get("delivery_address", ""),
+        "total": final_amount,
+        "status": "confirmed",
+        "delivery_type": "scheduled",
+        "delivery_datetime": booking.get("delivery_date"),
+        "is_recurring": False,
+        "payment_method": "corporate_invoice",
+    }
+    if _has_column("orders", "source"):
+        order_row["source"] = "corporate"
+    try:
+        supabase.table("orders").insert(order_row).execute()
+    except Exception as e:
+        print(f"[Corporate] linked order creation failed: {e}", flush=True)
+        return None
+
+    _place_order_items(order_id, order_items, booking.get("delivery_date"), source="corporate")
+    return order_id
+
+
 @app.patch("/api/admin/corporate-orders/{order_id}/status")
 def admin_update_corporate_status(order_id: str, req: CorporateStatusUpdate, token: str):
     require_admin(token)
     valid = {"pending", "confirmed", "preparing", "completed", "cancelled"}
     if req.status not in valid:
         raise HTTPException(status_code=400, detail="Invalid status")
-    existing = supabase.table("corporate_orders").select("contact_email, items").eq("id", order_id).execute().data
+    existing = supabase.table("corporate_orders").select("*").eq("id", order_id).execute().data
     if not existing:
         raise HTTPException(status_code=404, detail="Booking not found")
-    email = existing[0].get("contact_email")
+    booking = existing[0]
+    email = booking.get("contact_email")
 
     update_fields = {"status": req.status}
     if req.status == "cancelled" and req.admin_message:
         update_fields["admin_message"] = req.admin_message
+
+    has_linking = _has_column("corporate_orders", "linked_order_id")
+    # First confirmation routes the booking to its merchant(s) for real. Only
+    # attempted once the migration's actually been run — without the column
+    # to persist linked_order_id, we can't tell "already linked" from "not
+    # yet", and would risk creating a duplicate linked order (and duplicate
+    # merchant notifications) on every re-save.
+    if has_linking and req.status == "confirmed" and not booking.get("linked_order_id"):
+        linked_id = _create_linked_corporate_order(booking)
+        if linked_id:
+            update_fields["linked_order_id"] = linked_id
+
+    if has_linking and req.status == "cancelled" and booking.get("linked_order_id"):
+        supabase.table("orders").update({"status": "cancelled"}).eq("id", booking["linked_order_id"]).execute()
+        _cascade_status_to_parts(booking["linked_order_id"], "cancelled")
+
     supabase.table("corporate_orders").update(update_fields).eq("id", order_id).execute()
 
     if req.status in BOOKING_STATUS_NOTICE:
@@ -4401,6 +4814,14 @@ def _run_daily_reminders():
         send_occasion_reminders()
     except Exception as e:
         print(f"[scheduler] occasion reminders error: {e}")
+    try:
+        # Must run BEFORE send_reminders() below — a Bloom Plan cycle
+        # generated here (delivery tomorrow) needs to already exist in
+        # `orders` so the SAME run's reminder scan picks it up and texts
+        # the customer, instead of waiting an extra day.
+        _generate_subscription_orders()
+    except Exception as e:
+        print(f"[scheduler] Bloom Plan generation error: {e}")
     try:
         send_reminders()
     except Exception as e:

@@ -524,6 +524,14 @@
                   <span class="order-date">{{ formatDate(order.created_at) }} · {{ formatTime(order.created_at) }}</span>
                   <span class="order-customer">{{ order.customer_name }} · {{ order.customer_email }}</span>
                   <span class="order-amount">₹{{ order.total?.toFixed(2) }} · {{ itemCount(order) }} item{{ itemCount(order) !== 1 ? 's' : '' }}</span>
+                  @if (order.merchants?.length) {
+                    <div class="order-sellers">
+                      <i class="bi bi-shop"></i>
+                      @for (m of order.merchants; track m.merchant_id) {
+                        <span class="seller-chip" [class]="m.status">{{ m.shop_name }}</span>
+                      }
+                    </div>
+                  }
                 </div>
                 <span class="order-status" [class]="order.status">{{ STATUS_LABELS[order.status] || order.status }}</span>
                 <button class="order-delete" title="Delete order" aria-label="Delete order"
@@ -1282,10 +1290,19 @@
         <div class="section-header">
           <h1>Subscriptions</h1>
           @if (subView() === 'list') {
-            <button class="btn-refresh" (click)="loadSubscriptions()">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
-              Refresh
-            </button>
+            <div class="section-header-actions">
+              <button class="btn-primary" [disabled]="generatingSubscriptionOrders()" (click)="generateSubscriptionOrdersNow()" title="Normally runs automatically at 8am daily — use this to check a delivery routes correctly right now">
+                @if (generatingSubscriptionOrders()) { <i class="bi bi-arrow-repeat vp-spin"></i> Generating… }
+                @else { <i class="bi bi-truck"></i> Generate due deliveries now }
+              </button>
+              <button class="btn-ghost" [disabled]="generatingSubscriptionOrders()" (click)="forceGenerateSubscriptionOrdersNow()" title="Ignores delivery dates — generates every active subscription now, for testing. Shifts their real schedule forward.">
+                <i class="bi bi-lightning-charge"></i> Force (test)
+              </button>
+              <button class="btn-refresh" (click)="loadSubscriptions()">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+                Refresh
+              </button>
+            </div>
           }
         </div>
 
@@ -1348,6 +1365,15 @@
                     <span class="sfc-val">{{ sub.address || '—' }}</span>
                     @if (sub.customer_phone) { <span class="sfc-sub"><i class="bi bi-telephone"></i> {{ sub.customer_phone }}</span> }
                     <span class="sfc-sub"><i class="bi bi-envelope"></i> {{ sub.customer_email }}</span>
+                  </div>
+                  <div class="sfc-block">
+                    <span class="sfc-label">Fulfilled by</span>
+                    <div class="order-sellers">
+                      <i class="bi bi-shop"></i>
+                      @for (name of sub.merchant_names; track name) {
+                        <span class="seller-chip">{{ name }}</span>
+                      }
+                    </div>
                   </div>
                 </div>
 
