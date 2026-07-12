@@ -499,8 +499,7 @@
               <span class="match-hint">{{ visibleOrders().length }} of {{ orders().length }}</span>
             }
             <div class="date-filter">
-              <i class="bi bi-calendar3"></i>
-              <app-date-picker class="date-input" [ngModel]="selectedDate()" (ngModelChange)="selectedDate.set($event)" placeholder="Filter by date"></app-date-picker>
+              <app-date-picker [ngModel]="selectedDate()" (ngModelChange)="selectedDate.set($event)" placeholder="Filter by date"></app-date-picker>
               @if (selectedDate()) { <button class="date-clear" (click)="clearDate()"><i class="bi bi-x-lg"></i></button> }
             </div>
           </div>
