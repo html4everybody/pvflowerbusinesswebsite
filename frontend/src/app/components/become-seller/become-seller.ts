@@ -5,12 +5,13 @@ import { HttpClient } from '@angular/common/http';
 import { AuthService } from '../../services/auth';
 import { ToastService } from '../../services/toast';
 import { environment } from '../../../environments/environment';
+import { LocationPicker, PickedLocation } from '../location-picker/location-picker';
 
 type ShopStatus = 'none' | 'pending' | 'approved' | 'suspended';
 
 @Component({
   selector: 'app-become-seller',
-  imports: [RouterLink, FormsModule],
+  imports: [RouterLink, FormsModule, LocationPicker],
   templateUrl: './become-seller.html',
   styleUrl: './become-seller.scss',
 })
@@ -20,7 +21,20 @@ export class BecomeSeller implements OnInit {
   status = signal<ShopStatus>('none');
   shopName = signal('');
 
-  form = { shop_name: '', description: '', phone: '' };
+  form = {
+    shop_name: '', description: '', phone: '',
+    address: '', city: '', state: '', pincode: '',
+    latitude: null as number | null, longitude: null as number | null,
+  };
+
+  onLocationPicked(loc: PickedLocation): void {
+    this.form.latitude = loc.latitude;
+    this.form.longitude = loc.longitude;
+    if (loc.address) this.form.address = loc.address;
+    if (loc.city) this.form.city = loc.city;
+    if (loc.state) this.form.state = loc.state;
+    if (loc.pincode) this.form.pincode = loc.pincode;
+  }
 
   constructor(
     private http: HttpClient,

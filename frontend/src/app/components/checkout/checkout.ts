@@ -11,10 +11,12 @@ import { PromoService, PromoResult, SeasonalOffer } from '../../services/promo';
 import { environment } from '../../../environments/environment';
 import { CommonModule } from '@angular/common';
 import { DatePicker } from '../date-picker/date-picker';
+import { LocationPicker, PickedLocation } from '../location-picker/location-picker';
+import { GeocodeService } from '../../services/geocode';
 
 @Component({
   selector: 'app-checkout',
-  imports: [RouterLink, FormsModule, CommonModule, DatePicker],
+  imports: [RouterLink, FormsModule, CommonModule, DatePicker, LocationPicker],
   templateUrl: './checkout.html',
   styleUrl: './checkout.scss'
 })
@@ -130,26 +132,18 @@ export class Checkout {
       this.showCitySuggestions.set(false);
       return;
     }
-    this.citySearchTimer = setTimeout(() => {
-      const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&countrycodes=in&format=json&addressdetails=1&limit=8`;
-      this.http.get<any[]>(url, { headers: { 'User-Agent': 'VivaPetals/1.0' } }).subscribe({
-        next: (res) => {
-          const seen = new Set<string>();
-          const suggestions = res
-            .map(r => ({
-              city: r.address.city || r.address.town || r.address.village || r.address.county || '',
-              state: r.address.state || ''
-            }))
-            .filter(s => {
-              if (!s.city || seen.has(s.city.toLowerCase())) return false;
-              seen.add(s.city.toLowerCase());
-              return true;
-            });
-          this.citySuggestions.set(suggestions);
-          this.showCitySuggestions.set(suggestions.length > 0);
-        },
-        error: () => this.showCitySuggestions.set(false)
-      });
+    this.citySearchTimer = setTimeout(async () => {
+      const res = await this.geocodeService.search(query);
+      const seen = new Set<string>();
+      const suggestions = res
+        .map(r => ({ city: r.city, state: r.state }))
+        .filter(s => {
+          if (!s.city || seen.has(s.city.toLowerCase())) return false;
+          seen.add(s.city.toLowerCase());
+          return true;
+        });
+      this.citySuggestions.set(suggestions);
+      this.showCitySuggestions.set(suggestions.length > 0);
     }, 350);
   }
 
@@ -164,7 +158,7 @@ export class Checkout {
     setTimeout(() => this.showCitySuggestions.set(false), 150);
   }
 
-  onZipChange(): void {
+  async onZipChange(): Promise<void> {
     const zip = this.formData.zip.trim();
     if (zip.length !== 6 || !/^\d{6}$/.test(zip)) {
       this.zipLookupError.set('');
@@ -172,23 +166,24 @@ export class Checkout {
     }
     this.zipLookupLoading.set(true);
     this.zipLookupError.set('');
-    const url = `https://nominatim.openstreetmap.org/search?postalcode=${zip}&country=India&format=json&addressdetails=1&limit=1`;
-    this.http.get<any[]>(url, { headers: { 'User-Agent': 'VivaPetals/1.0' } }).subscribe({
-      next: (res) => {
-        this.zipLookupLoading.set(false);
-        if (res?.length > 0) {
-          const addr = res[0].address;
-          this.formData.city = addr.city || addr.town || addr.village || addr.county || addr.state_district || '';
-          this.formData.state = addr.state || '';
-        } else {
-          this.zipLookupError.set('Pincode not found');
-        }
-      },
-      error: () => {
-        this.zipLookupLoading.set(false);
-        this.zipLookupError.set('Could not fetch pincode details');
-      }
-    });
+    const res = await this.geocodeService.search(zip + ' India');
+    this.zipLookupLoading.set(false);
+    const match = res.find(r => r.pincode === zip) || res[0];
+    if (match) {
+      this.formData.city = match.city;
+      this.formData.state = match.state;
+    } else {
+      this.zipLookupError.set('Pincode not found');
+    }
+  }
+
+  onDeliveryLocationPicked(loc: PickedLocation): void {
+    this.formData.latitude = loc.latitude;
+    this.formData.longitude = loc.longitude;
+    if (loc.address) this.formData.address = loc.address;
+    if (loc.city) this.formData.city = loc.city;
+    if (loc.state) this.formData.state = loc.state;
+    if (loc.pincode) this.formData.zip = loc.pincode;
   }
 
   formData = {
@@ -200,6 +195,8 @@ export class Checkout {
     city: '',
     state: '',
     zip: '',
+    latitude: null as number | null,
+    longitude: null as number | null,
     cardName: '',
     cardNumber: '',
     expiry: '',
@@ -214,6 +211,7 @@ export class Checkout {
     public cartService: CartService,
     public authService: AuthService,
     private http: HttpClient,
+    private geocodeService: GeocodeService,
     private router: Router,
     private scroller: ViewportScroller,
     private confetti: ConfettiService,
@@ -366,7 +364,9 @@ export class Checkout {
         address: this.formData.address,
         city: this.formData.city,
         state: this.formData.state,
-        zip: this.formData.zip
+        zip: this.formData.zip,
+        latitude: this.formData.latitude,
+        longitude: this.formData.longitude
       },
       delivery_type: this.deliveryType(),
       delivery_datetime: deliveryDatetime,

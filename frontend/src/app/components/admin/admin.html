@@ -266,9 +266,14 @@
                 <label class="form-label">Phone
                   <input type="tel" class="form-input" [(ngModel)]="merchantForm.phone" placeholder="Optional">
                 </label>
-                <label class="form-label">Shop address
-                  <input type="text" class="form-input" [(ngModel)]="merchantForm.address" placeholder="Street / area">
+                <label class="form-label">Shop location
+                  <app-location-picker height="240px" (locationPicked)="onMerchantLocationPicked($event)"></app-location-picker>
                 </label>
+                <div class="form-row">
+                  <label class="form-label">Shop address
+                    <input type="text" class="form-input" [(ngModel)]="merchantForm.address" placeholder="Street / area">
+                  </label>
+                </div>
                 <div class="form-row">
                   <label class="form-label">City
                     <input type="text" class="form-input" [(ngModel)]="merchantForm.city" placeholder="e.g. Hyderabad">
@@ -280,7 +285,7 @@
                 <label class="form-label">Pincode
                   <input type="text" class="form-input" [(ngModel)]="merchantForm.pincode" placeholder="Optional" maxlength="10">
                 </label>
-                <p class="modal-hint"><i class="bi bi-geo-alt"></i> Used later to route orders to the merchant closest to each customer.</p>
+                <p class="modal-hint"><i class="bi bi-geo-alt"></i> Used to route orders to the merchant closest to each customer.</p>
               </div>
               <div class="modal-footer">
                 <button class="btn-cancel" (click)="closeMerchantForm()">Cancel</button>

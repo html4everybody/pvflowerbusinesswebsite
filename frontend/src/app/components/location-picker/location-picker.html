@@ -1,0 +1,54 @@
+<div class="lp-wrap">
+  <div class="lp-search-row">
+    <div class="lp-search-box">
+      <i class="bi bi-search"></i>
+      <input
+        type="text"
+        placeholder="Search for an address, area or landmark..."
+        [ngModel]="searchQuery()"
+        (ngModelChange)="searchQuery.set($event)"
+        (input)="onSearchInput()"
+        (focus)="showResults.set(results().length > 0)"
+      />
+      @if (searching()) {
+        <span class="lp-spinner"></span>
+      }
+      @if (showResults() && results().length > 0) {
+        <ul class="lp-results">
+          @for (r of results(); track r.display_name) {
+            <li (click)="pickResult(r)">
+              <i class="bi bi-geo-alt"></i>
+              <span>{{ r.display_name }}</span>
+            </li>
+          }
+        </ul>
+      }
+    </div>
+    <button type="button" class="lp-locate-btn" (click)="useMyLocation()" [disabled]="locating()">
+      @if (locating()) {
+        <span class="lp-spinner"></span>
+      } @else {
+        <i class="bi bi-crosshair"></i>
+      }
+      <span>Use my location</span>
+    </button>
+  </div>
+
+  @if (errorMsg()) {
+    <p class="lp-error"><i class="bi bi-exclamation-circle"></i> {{ errorMsg() }}</p>
+  }
+
+  <div #mapEl class="lp-map" [style.height]="height"></div>
+
+  @if (selected(); as loc) {
+    <div class="lp-summary">
+      <i class="bi bi-check-circle-fill"></i>
+      <div>
+        <strong>{{ loc.address || 'Pinned location' }}</strong>
+        <span>{{ locationSubtitle(loc) }}</span>
+      </div>
+    </div>
+  } @else {
+    <p class="lp-hint"><i class="bi bi-info-circle"></i> Search an address, tap "Use my location", or click/drag the pin on the map.</p>
+  }
+</div>

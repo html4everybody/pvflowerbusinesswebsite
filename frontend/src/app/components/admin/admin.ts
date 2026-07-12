@@ -9,12 +9,13 @@ import { ConfirmService } from '../../services/confirm';
 import { NoticeService } from '../../services/notice';
 import { environment } from '../../../environments/environment';
 import { DatePicker } from '../date-picker/date-picker';
+import { LocationPicker, PickedLocation } from '../location-picker/location-picker';
 
 export type AdminSection = 'overview' | 'orders' | 'products' | 'inventory' | 'customers' | 'analytics' | 'zones' | 'deals' | 'bundles' | 'plans' | 'subscriptions' | 'studio' | 'occasions' | 'merchants' | 'payouts';
 
 @Component({
   selector: 'app-admin',
-  imports: [RouterLink, FormsModule, TitleCasePipe, DecimalPipe, DatePicker],
+  imports: [RouterLink, FormsModule, TitleCasePipe, DecimalPipe, DatePicker, LocationPicker],
   templateUrl: './admin.html',
   styleUrl: './admin.scss'
 })
@@ -489,7 +490,16 @@ export class Admin implements OnInit {
   merchantForm = this.blankMerchantForm();
 
   private blankMerchantForm() {
-    return { email: '', password: '', shop_name: '', contact_name: '', phone: '', address: '', city: '', state: '', pincode: '' };
+    return { email: '', password: '', shop_name: '', contact_name: '', phone: '', address: '', city: '', state: '', pincode: '', latitude: null as number | null, longitude: null as number | null };
+  }
+
+  onMerchantLocationPicked(loc: PickedLocation): void {
+    this.merchantForm.latitude = loc.latitude;
+    this.merchantForm.longitude = loc.longitude;
+    if (loc.address) this.merchantForm.address = loc.address;
+    if (loc.city) this.merchantForm.city = loc.city;
+    if (loc.state) this.merchantForm.state = loc.state;
+    if (loc.pincode) this.merchantForm.pincode = loc.pincode;
   }
 
   openMerchantForm(): void {

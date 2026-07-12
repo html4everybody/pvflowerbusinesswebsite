@@ -9,12 +9,13 @@ import { ConfirmService } from '../../services/confirm';
 import { NoticeService } from '../../services/notice';
 import { environment } from '../../../environments/environment';
 import { DatePicker } from '../date-picker/date-picker';
+import { LocationPicker, PickedLocation } from '../location-picker/location-picker';
 
 type MerchantSection = 'overview' | 'products' | 'orders' | 'settings';
 
 @Component({
   selector: 'app-merchant-dashboard',
-  imports: [RouterLink, FormsModule, DatePicker, DecimalPipe],
+  imports: [RouterLink, FormsModule, DatePicker, DecimalPipe, LocationPicker],
   templateUrl: './merchant-dashboard.html',
   styleUrl: './merchant-dashboard.scss',
 })
@@ -43,8 +44,22 @@ export class MerchantDashboard implements OnInit {
   productForm: any = this.blankProduct();
 
   // shop settings
-  shop = { shop_name: '', description: '', phone: '', logo: '', address: '', city: '', state: '', pincode: '' };
+  shop = {
+    shop_name: '', description: '', phone: '', logo: '', address: '', city: '', state: '', pincode: '',
+    latitude: null as number | null, longitude: null as number | null,
+  };
   savingShop = signal(false);
+  loadingShop = signal(false);
+  shopLoaded = signal(false);
+
+  onShopLocationPicked(loc: PickedLocation): void {
+    this.shop.latitude = loc.latitude;
+    this.shop.longitude = loc.longitude;
+    if (loc.address) this.shop.address = loc.address;
+    if (loc.city) this.shop.city = loc.city;
+    if (loc.state) this.shop.state = loc.state;
+    if (loc.pincode) this.shop.pincode = loc.pincode;
+  }
 
   notifOpen = signal(false);
 
@@ -114,14 +129,19 @@ export class MerchantDashboard implements OnInit {
   }
 
   loadShop(): void {
+    this.loadingShop.set(true);
     this.http.get<any>(`${this.api}/api/merchant/me?token=${this.token}`).subscribe({
       next: (res) => {
         const m = res?.merchant;
         if (m) this.shop = {
           shop_name: m.shop_name || '', description: m.description || '', phone: m.phone || '', logo: m.logo || '',
           address: m.address || '', city: m.city || '', state: m.state || '', pincode: m.pincode || '',
+          latitude: m.latitude ?? null, longitude: m.longitude ?? null,
         };
+        this.loadingShop.set(false);
+        this.shopLoaded.set(true);
       },
+      error: () => { this.loadingShop.set(false); this.shopLoaded.set(true); },
     });
   }
 

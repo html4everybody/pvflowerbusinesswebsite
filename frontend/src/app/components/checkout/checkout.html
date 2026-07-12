@@ -60,6 +60,11 @@
             </div>
 
             <div class="form-group full-width">
+              <label>Delivery location <span class="opt-label">(search, pin on map, or use my location)</span></label>
+              <app-location-picker height="240px" (locationPicked)="onDeliveryLocationPicked($event)"></app-location-picker>
+            </div>
+
+            <div class="form-group full-width">
               <label for="address">Street Address <span class="required-star">*</span></label>
               <input type="text" id="address" #addressField="ngModel" [(ngModel)]="formData.address" name="address" placeholder="123 Main Street, Apt 4B" required>
               @if (addressField.invalid && addressField.touched) {

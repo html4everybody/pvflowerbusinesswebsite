@@ -41,6 +41,63 @@ app = FastAPI(title="VivaPetals API")
 def ping():
     return {"status": "ok"}
 
+# ── Geocoding (OpenStreetMap Nominatim — free, no API key/card required) ─────
+# Proxied through our own backend rather than called directly from the
+# browser: lets us set a proper identifying User-Agent (Nominatim's usage
+# policy asks for one; browsers won't let JS override that header), and
+# gives us one place to centralize the "max ~1 req/sec" courtesy limit their
+# free service asks for, instead of every visitor's browser hitting it raw.
+_NOMINATIM_BASE = "https://nominatim.openstreetmap.org"
+_NOMINATIM_HEADERS = {"User-Agent": "VivaPetals-FlowerDelivery/1.0 (contact via vivapetals.com)"}
+
+def _parse_nominatim_address(item: dict) -> dict:
+    addr = item.get("address", {}) or {}
+    line1 = ", ".join(filter(None, [addr.get("house_number"), addr.get("road") or addr.get("pedestrian"), addr.get("suburb")]))
+    city = addr.get("city") or addr.get("town") or addr.get("village") or addr.get("municipality") or addr.get("county") or ""
+    return {
+        "display_name": item.get("display_name", ""),
+        "address": line1 or item.get("display_name", "").split(",")[0],
+        "city": city,
+        "state": addr.get("state", ""),
+        "pincode": addr.get("postcode", ""),
+        "latitude": float(item["lat"]) if item.get("lat") else None,
+        "longitude": float(item["lon"]) if item.get("lon") else None,
+    }
+
+@app.get("/api/geocode/search")
+def geocode_search(q: str):
+    q = (q or "").strip()
+    if len(q) < 3:
+        return []
+    try:
+        with _httpx.Client(timeout=6) as client:
+            resp = client.get(f"{_NOMINATIM_BASE}/search", headers=_NOMINATIM_HEADERS, params={
+                "format": "jsonv2", "addressdetails": 1, "limit": 6, "countrycodes": "in", "q": q,
+            })
+        resp.raise_for_status()
+        return [_parse_nominatim_address(item) for item in resp.json()]
+    except Exception as e:
+        print(f"[Geocode] search failed: {e}", flush=True)
+        raise HTTPException(status_code=502, detail="Location search is temporarily unavailable.")
+
+@app.get("/api/geocode/reverse")
+def geocode_reverse(lat: float, lon: float):
+    try:
+        with _httpx.Client(timeout=6) as client:
+            resp = client.get(f"{_NOMINATIM_BASE}/reverse", headers=_NOMINATIM_HEADERS, params={
+                "format": "jsonv2", "addressdetails": 1, "lat": lat, "lon": lon,
+            })
+        resp.raise_for_status()
+        data = resp.json()
+        if "error" in data:
+            raise HTTPException(status_code=404, detail="No address found for this location.")
+        return _parse_nominatim_address(data)
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"[Geocode] reverse failed: {e}", flush=True)
+        raise HTTPException(status_code=502, detail="Location lookup is temporarily unavailable.")
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -2021,6 +2078,8 @@ class MerchantApplyRequest(BaseModel):
     city: Optional[str] = ""
     state: Optional[str] = ""
     pincode: Optional[str] = ""
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
 
 
 @app.post("/api/merchant/apply")
@@ -2053,6 +2112,7 @@ def merchant_apply(req: MerchantApplyRequest):
         "phone": req.phone or "",
         "address": req.address or "", "city": req.city or "",
         "state": req.state or "", "pincode": req.pincode or "",
+        "latitude": req.latitude, "longitude": req.longitude,
         "email": email,
         "status": "pending",
         "commission_rate": 15,
@@ -3704,6 +3764,9 @@ def create_order(req: OrderRequest):
     }
     if _has_column("orders", "source"):
         order_row["source"] = "retail"
+    if _has_column("orders", "latitude"):
+        order_row["latitude"] = req.customer.get("latitude")
+        order_row["longitude"] = req.customer.get("longitude")
     try:
         supabase.table("orders").insert(order_row).execute()
     except Exception as e:

@@ -256,6 +256,14 @@
             <input type="url" [(ngModel)]="shop.logo" name="logo" placeholder="https://…">
           </div>
           <div class="field">
+            <label>Shop location</label>
+            @if (shopLoaded()) {
+              <app-location-picker height="240px" [initialLat]="shop.latitude" [initialLng]="shop.longitude" (locationPicked)="onShopLocationPicked($event)"></app-location-picker>
+            } @else {
+              <p class="field-hint"><i class="bi bi-arrow-repeat vp-spin"></i> Loading map…</p>
+            }
+          </div>
+          <div class="field">
             <label>Shop address</label>
             <input type="text" [(ngModel)]="shop.address" name="address" placeholder="Street / area" maxlength="120">
           </div>
