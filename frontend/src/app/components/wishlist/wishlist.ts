@@ -56,9 +56,14 @@ export class Wishlist implements OnInit {
           this.toastService.show('Items saved to your wishlist!');
           this.router.navigate(['/wishlist']);
         }
-      } else if (!this.authService.isLoggedIn()) {
-        this.toastService.show('Please sign in to continue.', 'error');
-        setTimeout(() => this.router.navigate(['/signin']), 150);
+      } else {
+        // No shared ids — reset to own wishlist view
+        this.isSharedView = false;
+        this.sharedIds = [];
+        if (!this.authService.isLoggedIn()) {
+          this.toastService.show('Please sign in to continue.', 'error');
+          setTimeout(() => this.router.navigate(['/signin']), 150);
+        }
       }
     });
   }
