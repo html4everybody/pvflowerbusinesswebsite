@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
-import { RouterLink } from '@angular/router';
-import { NoticeService } from '../../services/notice';
+import { Router, RouterLink } from '@angular/router';
+import { NoticeService, UserNotice } from '../../services/notice';
 
 @Component({
   selector: 'app-notifications',
@@ -9,11 +9,17 @@ import { NoticeService } from '../../services/notice';
   styleUrl: './notifications.scss',
 })
 export class Notifications implements OnInit {
-  constructor(public noticeService: NoticeService) {}
+  constructor(public noticeService: NoticeService, private router: Router) {}
 
   ngOnInit(): void {
     this.noticeService.load();
-    this.noticeService.markAllRead();
+  }
+
+  goToNotice(n: UserNotice): void {
+    const route = this.noticeService.noticeRoute(n);
+    if (!route) return;
+    this.noticeService.markOneRead(n.id);
+    this.router.navigate(route);
   }
 
   formatDate(dateStr: string): string {

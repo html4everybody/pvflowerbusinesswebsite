@@ -44,10 +44,25 @@ export class NoticeService {
     this.http.patch(`${environment.apiUrl}/api/notices/read?email=${encodeURIComponent(email)}`, {}).subscribe({ error: () => {} });
   }
 
+  markOneRead(id: string): void {
+    const email = this.auth.user()?.email;
+    if (!email) return;
+    this.notices.update(l => l.map(n => n.id === id ? { ...n, read: true } : n));
+    this.http.patch(`${environment.apiUrl}/api/notices/${id}/read?email=${encodeURIComponent(email)}`, {}).subscribe({ error: () => {} });
+  }
+
   dismiss(id: string): void {
     const email = this.auth.user()?.email;
     if (!email) return;
     this.notices.update(l => l.filter(n => n.id !== id));
     this.http.delete(`${environment.apiUrl}/api/notices/${id}?email=${encodeURIComponent(email)}`).subscribe({ error: () => {} });
+  }
+
+  noticeRoute(n: UserNotice): string[] | null {
+    if (!n.ref_type) return null;
+    if (n.ref_type === 'order' && n.ref_id) return ['/orders', n.ref_id];
+    if (n.ref_type === 'subscription') return ['/my-subscriptions'];
+    if (n.ref_type === 'booking') return ['/my-studio'];
+    return null;
   }
 }
