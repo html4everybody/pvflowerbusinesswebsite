@@ -3027,6 +3027,85 @@ def delete_bundle_deal(deal_id: str, token: str):
 
 # ── Contact Route ──────────────────────────────────────────────────────────────
 
+def _send_contact_notification(name: str, email: str, phone: str, subject: str, message: str):
+    if not RESEND_API_KEY:
+        return
+    subject_labels = {
+        "general": "General Inquiry", "order": "Order Status",
+        "delivery": "Delivery Question", "feedback": "Feedback", "other": "Other"
+    }
+    subject_label = subject_labels.get(subject, subject.title() if subject else "General Inquiry")
+    owner_html = f"""
+    <!DOCTYPE html><html><body style="margin:0;padding:0;background:#fdf0f5;font-family:'Segoe UI',Arial,sans-serif;">
+      <table width="100%" cellpadding="0" cellspacing="0">
+        <tr><td align="center" style="padding:40px 16px;">
+          <table width="520" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(200,75,122,0.1);">
+            <tr><td style="background:linear-gradient(135deg,#c84b7a,#9c2d55);padding:28px 40px;text-align:center;">
+              <div style="color:#fff;font-size:1.3rem;font-weight:800;letter-spacing:-0.03em;">🌸 VivaPetals — New Message</div>
+            </td></tr>
+            <tr><td style="padding:32px 40px;">
+              <p style="margin:0 0 20px;color:#555;font-size:0.95rem;">You have a new contact form submission:</p>
+              <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
+                <tr><td style="padding:10px 0;border-bottom:1px solid #f0e0e8;color:#999;font-size:0.83rem;width:110px;">Name</td><td style="padding:10px 0;border-bottom:1px solid #f0e0e8;color:#1e1e1e;font-weight:600;">{name}</td></tr>
+                <tr><td style="padding:10px 0;border-bottom:1px solid #f0e0e8;color:#999;font-size:0.83rem;">Email</td><td style="padding:10px 0;border-bottom:1px solid #f0e0e8;color:#1e1e1e;"><a href="mailto:{email}" style="color:#c84b7a;">{email}</a></td></tr>
+                <tr><td style="padding:10px 0;border-bottom:1px solid #f0e0e8;color:#999;font-size:0.83rem;">Phone</td><td style="padding:10px 0;border-bottom:1px solid #f0e0e8;color:#1e1e1e;">{phone or '—'}</td></tr>
+                <tr><td style="padding:10px 0;border-bottom:1px solid #f0e0e8;color:#999;font-size:0.83rem;">Subject</td><td style="padding:10px 0;border-bottom:1px solid #f0e0e8;color:#1e1e1e;">{subject_label}</td></tr>
+              </table>
+              <div style="margin-top:20px;padding:16px;background:#fdf0f5;border-radius:10px;border-left:4px solid #c84b7a;">
+                <p style="margin:0;color:#1e1e1e;font-size:0.93rem;line-height:1.7;white-space:pre-wrap;">{message}</p>
+              </div>
+              <div style="margin-top:24px;text-align:center;">
+                <a href="mailto:{email}" style="display:inline-block;padding:12px 28px;background:linear-gradient(135deg,#c84b7a,#9c2d55);color:#fff;text-decoration:none;border-radius:999px;font-weight:700;font-size:0.9rem;">Reply to {name}</a>
+              </div>
+            </td></tr>
+          </table>
+        </td></tr>
+      </table>
+    </body></html>
+    """
+    customer_html = f"""
+    <!DOCTYPE html><html><body style="margin:0;padding:0;background:#fdf0f5;font-family:'Segoe UI',Arial,sans-serif;">
+      <table width="100%" cellpadding="0" cellspacing="0">
+        <tr><td align="center" style="padding:40px 16px;">
+          <table width="520" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(200,75,122,0.1);">
+            <tr><td style="background:linear-gradient(135deg,#c84b7a,#9c2d55);padding:32px 40px;text-align:center;">
+              <div style="font-size:2rem;">🌸</div>
+              <div style="color:#fff;font-size:1.5rem;font-weight:800;margin-top:8px;letter-spacing:-0.03em;">VivaPetals</div>
+            </td></tr>
+            <tr><td style="padding:40px;">
+              <h2 style="margin:0 0 12px;color:#1e1e1e;font-size:1.25rem;font-weight:800;">Hi {name}, we got your message!</h2>
+              <p style="color:#666;line-height:1.6;margin:0 0 20px;">Thanks for reaching out. We've received your message and will get back to you within <strong>24 hours</strong>.</p>
+              <div style="padding:16px;background:#fdf0f5;border-radius:10px;border-left:4px solid #c84b7a;margin-bottom:24px;">
+                <p style="margin:0 0 6px;color:#999;font-size:0.78rem;font-weight:600;text-transform:uppercase;">Your message</p>
+                <p style="margin:0;color:#1e1e1e;font-size:0.9rem;line-height:1.6;white-space:pre-wrap;">{message}</p>
+              </div>
+              <p style="color:#999;font-size:0.83rem;line-height:1.6;margin:0;">If you need urgent help, WhatsApp us at <a href="https://wa.me/918555097536" style="color:#c84b7a;">+91 85550 97536</a>.</p>
+              <hr style="border:none;border-top:1px solid #f0e0e8;margin:24px 0;">
+              <p style="color:#bbb;font-size:0.75rem;margin:0;text-align:center;">VivaPetals · orderhere@vivapetals.com</p>
+            </td></tr>
+          </table>
+        </td></tr>
+      </table>
+    </body></html>
+    """
+    try:
+        with _httpx.Client() as client:
+            client.post(
+                "https://api.resend.com/emails",
+                headers={"Authorization": f"Bearer {RESEND_API_KEY}", "Content-Type": "application/json"},
+                json={"from": "VivaPetals <orderhere@vivapetals.com>", "to": ["orderhere@vivapetals.com"], "subject": f"New message from {name} — {subject_label}", "html": owner_html},
+                timeout=10
+            )
+            client.post(
+                "https://api.resend.com/emails",
+                headers={"Authorization": f"Bearer {RESEND_API_KEY}", "Content-Type": "application/json"},
+                json={"from": "VivaPetals <orderhere@vivapetals.com>", "to": [email], "subject": "We received your message — VivaPetals", "html": customer_html},
+                timeout=10
+            )
+    except Exception as e:
+        print(f"[Email] Contact notification failed: {e}", flush=True)
+
+
 @app.post("/api/contact")
 def submit_contact(req: ContactRequest):
     supabase.table("contacts").insert({
@@ -3036,6 +3115,7 @@ def submit_contact(req: ContactRequest):
         "subject": req.subject,
         "message": req.message
     }).execute()
+    _send_contact_notification(req.name, req.email, req.phone, req.subject, req.message)
     return {"message": "Message received successfully"}
 
 # ── Loyalty: earn on delivery, refund on cancel ─────────────────────────────────
