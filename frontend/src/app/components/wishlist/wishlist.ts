@@ -1,5 +1,6 @@
 import { Component, OnInit, signal } from '@angular/core';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { DecimalPipe } from '@angular/common';
 import { ProductService } from '../../services/product';
 import { WishlistService } from '../../services/wishlist';
 import { CartService } from '../../services/cart';
@@ -8,7 +9,7 @@ import { Product } from '../../models/product.model';
 
 @Component({
   selector: 'app-wishlist',
-  imports: [RouterLink],
+  imports: [RouterLink, DecimalPipe],
   templateUrl: './wishlist.html',
   styleUrl: './wishlist.scss'
 })
@@ -23,6 +24,7 @@ export class Wishlist implements OnInit {
 
   constructor(
     private route: ActivatedRoute,
+    private router: Router,
     private productService: ProductService,
     public wishlistService: WishlistService,
     private cartService: CartService,
@@ -80,6 +82,23 @@ export class Wishlist implements OnInit {
     if (!this.wishlistService.has(product.id)) {
       this.wishlistService.toggle(product);
     }
+  }
+
+  goToProduct(id: number): void {
+    this.router.navigate(['/products', id]);
+  }
+
+  getQuantity(id: number): number {
+    return this.cartService.items().find(i => i.product.id === id)?.quantity ?? 0;
+  }
+
+  incrementQuantity(product: Product): void {
+    this.cartService.addToCart(product);
+  }
+
+  decrementQuantity(product: Product): void {
+    const qty = this.getQuantity(product.id);
+    this.cartService.updateQuantity(product.id, qty - 1);
   }
 
   shareWishlist(): void {
