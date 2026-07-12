@@ -48,38 +48,57 @@
   @if (displayProducts.length > 0) {
     <div class="wishlist-grid">
       @for (product of displayProducts; track product.id) {
-        <div class="wishlist-card">
-          <a [routerLink]="['/products', product.id]" class="card-image-link">
-            <img [src]="product.image" [alt]="product.name" loading="lazy">
-          </a>
-          <div class="card-info">
-            <h3><a [routerLink]="['/products', product.id]">{{ product.name }}</a></h3>
-            <p class="card-price">₹{{ product.price.toFixed(2) }}</p>
-          </div>
-          <div class="card-actions">
-            <button class="btn-cart" (click)="addToCart(product)">
-              <i class="bi bi-bag"></i>
-              Add to Cart
+        <div class="product-card" (click)="goToProduct(product.id)">
+
+          <!-- Heart (shared view) / Delete (own wishlist) -->
+          @if (isSharedView) {
+            <button
+              class="wishlist-btn"
+              [class.active]="wishlistService.has(product.id)"
+              (click)="saveOneToWishlist(product); $event.stopPropagation()"
+              [title]="wishlistService.has(product.id) ? 'Saved' : 'Save to wishlist'">
+              @if (wishlistService.has(product.id)) {
+                <i class="bi bi-heart-fill"></i>
+              } @else {
+                <i class="bi bi-heart"></i>
+              }
             </button>
-            @if (isSharedView) {
-              <button
-                class="btn-save"
-                (click)="saveOneToWishlist(product)"
-                [class.saved]="wishlistService.has(product.id)">
-                @if (wishlistService.has(product.id)) {
-                  <i class="bi bi-heart-fill"></i>
-                  Saved
+          } @else {
+            <button
+              class="delete-btn"
+              (click)="wishlistService.remove(product.id); $event.stopPropagation()"
+              title="Remove from wishlist">
+              <i class="bi bi-trash3"></i>
+            </button>
+          }
+
+          <div class="card-inner">
+            <div class="front-image">
+              <img [src]="product.image" [alt]="product.name" loading="lazy">
+            </div>
+            <div class="front-info">
+              <h3>{{ product.name }}</h3>
+              <div class="front-info-bottom">
+                @if (product.discount_percent) {
+                  <span class="price">₹{{ (product.final_price ?? product.price) | number:'1.0-0' }}</span>
+                  <span class="price-base">₹{{ product.price | number:'1.0-0' }}</span>
                 } @else {
-                  <i class="bi bi-heart"></i>
-                  Save
+                  <span class="price">₹{{ product.price | number:'1.0-0' }}</span>
                 }
-              </button>
-            } @else {
-              <button class="btn-remove" (click)="wishlistService.remove(product.id)">
-                <i class="bi bi-trash3"></i>
-                Remove
-              </button>
-            }
+                @if (getQuantity(product.id) === 0) {
+                  <button class="btn-add-front" (click)="addToCart(product); $event.stopPropagation()">
+                    <i class="bi bi-bag"></i>
+                    Add
+                  </button>
+                } @else {
+                  <div class="quantity-control" (click)="$event.stopPropagation()">
+                    <button class="qty-btn" (click)="decrementQuantity(product)">−</button>
+                    <span class="qty-value">{{ getQuantity(product.id) }}</span>
+                    <button class="qty-btn" (click)="incrementQuantity(product)">+</button>
+                  </div>
+                }
+              </div>
+            </div>
           </div>
         </div>
       }

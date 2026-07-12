@@ -1,6 +1,8 @@
-import { Injectable, signal, computed, effect } from '@angular/core';
+import { Injectable, signal, computed, effect, inject } from '@angular/core';
+import { Router } from '@angular/router';
 import { Product } from '../models/product.model';
 import { AuthService } from './auth';
+import { ToastService } from './toast';
 
 const KEY = 'viva_wishlist';
 
@@ -8,19 +10,28 @@ const KEY = 'viva_wishlist';
 export class WishlistService {
   private _ids = signal<number[]>([]);
   readonly count = computed(() => this._ids().length);
+  private router = inject(Router);
+  private toast = inject(ToastService);
 
   constructor(private authService: AuthService) {
-    // Load wishlist from localStorage for both guests and logged-in users.
-    // Saved items persist across sessions and seamlessly carry over on login.
+    // Only load wishlist for logged-in users; clear for guests.
     effect(() => {
-      this.authService.user(); // track signal so wishlist reacts to auth changes
-      this._ids.set(this.load());
+      if (this.authService.user()) {
+        this._ids.set(this.load());
+      } else {
+        this._ids.set([]);
+      }
     });
   }
 
   has(id: number): boolean { return this._ids().includes(id); }
 
   toggle(product: Product): boolean {
+    if (!this.authService.user()) {
+      this.toast.show('Please sign in to save items to your wishlist.', 'error');
+      setTimeout(() => this.router.navigate(['/signin']), 150);
+      return false;
+    }
     this._ids.update(ids =>
       ids.includes(product.id) ? ids.filter(i => i !== product.id) : [...ids, product.id]
     );
