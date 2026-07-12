@@ -2180,6 +2180,7 @@ def merchant_orders(token: str):
             "order_id": p["order_id"],
             "status": p.get("status", "confirmed"),
             "payout": p.get("payout", 0),               # merchant's earnings only
+            "payout_status": p.get("payout_status", "unpaid"),
             "delivery_date": p.get("delivery_date"),
             "created_at": p.get("created_at"),
             "customer_name": o.get("customer_name", ""),
@@ -2223,6 +2224,16 @@ def merchant_stats(token: str):
     live_count = sum(1 for p in my_products if p.get("status") == "approved")
     pending_products = sum(1 for p in my_products if p.get("status") == "pending")
     status_counts = Counter(p.get("status", "confirmed") for p in parts)
+
+    # Earnings breakdown — mirrors a seller-panel "balance" view:
+    #   in_progress: not delivered yet, so nothing is payable yet
+    #   pending_payout: delivered, admin hasn't settled it yet (money owed)
+    #   paid_out: delivered AND settled (money already sent)
+    paid_out = round(sum(float(p.get("payout", 0) or 0) for p in active if p.get("payout_status") == "paid"), 2)
+    pending_payout = round(sum(float(p.get("payout", 0) or 0) for p in active
+                               if p.get("status") == "delivered" and p.get("payout_status") != "paid"), 2)
+    in_progress_value = round(sum(float(p.get("payout", 0) or 0) for p in active if p.get("status") != "delivered"), 2)
+
     return {
         "shop_name": m.get("shop_name", ""),
         "product_count": len(my_products),
@@ -2230,7 +2241,9 @@ def merchant_stats(token: str):
         "pending_products": pending_products,
         "order_count": len(parts),
         "pending_count": status_counts.get("confirmed", 0) + status_counts.get("preparing", 0),
-        "earnings": round(sum(float(p.get("payout", 0) or 0) for p in active), 2),
+        "paid_out": paid_out,
+        "pending_payout": pending_payout,
+        "in_progress_value": in_progress_value,
         "status_counts": dict(status_counts),
     }
 
@@ -2257,6 +2270,108 @@ def admin_list_merchants(token: str):
     for m in merchants:
         m["product_count"] = counts.get(m["id"], 0)
     return merchants
+
+
+# ── Admin: payouts (merchant settlement ledger) ──────────────────────────────
+# The customer pays VivaPetals in full — there's no split-payment gateway.
+# Instead this is an internal ledger: once a merchant's part of an order is
+# marked `delivered`, their payout becomes DUE. Admin settles it manually
+# (after actually paying the merchant, e.g. bank transfer) and records that
+# here — individually per order, or in one bulk "pay all" action per shop.
+
+def _aggregate_payouts(parts: list, shop_by_id: dict) -> dict:
+    """Pure aggregation over order_merchant_parts rows into the admin payout
+    summary: per-merchant pending/paid totals + platform-wide totals.
+    Cancelled parts never owe anything. A part only counts toward "pending"
+    once its fulfillment status is 'delivered' — see module docstring above
+    admin_payouts_summary for why."""
+    by_merchant: dict = {}
+    total_pending = total_paid = total_commission = 0.0
+    for p in parts:
+        if p.get("status") == "cancelled":
+            continue
+        mid = p.get("merchant_id")
+        row = by_merchant.setdefault(mid, {
+            "merchant_id": mid, "shop_name": shop_by_id.get(mid, "Unknown"),
+            "pending_amount": 0.0, "pending_count": 0, "paid_amount": 0.0, "paid_count": 0,
+        })
+        payout = float(p.get("payout", 0) or 0)
+        total_commission += float(p.get("commission", 0) or 0)
+        if p.get("payout_status") == "paid":
+            row["paid_amount"] += payout
+            row["paid_count"] += 1
+            total_paid += payout
+        elif p.get("status") == "delivered":
+            row["pending_amount"] += payout
+            row["pending_count"] += 1
+            total_pending += payout
+
+    merchant_rows = sorted(by_merchant.values(), key=lambda r: r["pending_amount"], reverse=True)
+    for r in merchant_rows:
+        r["pending_amount"] = round(r["pending_amount"], 2)
+        r["paid_amount"] = round(r["paid_amount"], 2)
+
+    return {
+        "total_pending": round(total_pending, 2),
+        "total_paid": round(total_paid, 2),
+        "total_commission": round(total_commission, 2),
+        "merchants": merchant_rows,
+    }
+
+
+@app.get("/api/admin/payouts")
+def admin_payouts_summary(token: str):
+    require_admin(token)
+    parts = supabase.table("order_merchant_parts").select("*").execute().data or []
+    merchants = supabase.table("merchants").select("id, shop_name").execute().data or []
+    shop_by_id = {m["id"]: m["shop_name"] for m in merchants}
+    return _aggregate_payouts(parts, shop_by_id)
+
+
+@app.get("/api/admin/payouts/{merchant_id}")
+def admin_payouts_for_merchant(merchant_id: str, token: str):
+    require_admin(token)
+    parts = (supabase.table("order_merchant_parts").select("*")
+             .eq("merchant_id", merchant_id).neq("status", "cancelled")
+             .order("created_at", desc=True).execute().data or [])
+    return parts
+
+
+class PayoutMarkPaidRequest(BaseModel):
+    token: str
+    note: Optional[str] = ""
+
+
+@app.patch("/api/admin/payouts/{part_id}/pay")
+def admin_mark_payout_paid(part_id: str, req: PayoutMarkPaidRequest):
+    require_admin(req.token)
+    existing = supabase.table("order_merchant_parts").select("status, payout_status").eq("id", part_id).execute().data
+    if not existing:
+        raise HTTPException(status_code=404, detail="Payout not found")
+    if existing[0].get("status") != "delivered":
+        raise HTTPException(status_code=400, detail="Only delivered orders can be settled.")
+    if existing[0].get("payout_status") == "paid":
+        raise HTTPException(status_code=400, detail="Already paid.")
+    supabase.table("order_merchant_parts").update({
+        "payout_status": "paid", "paid_at": datetime.now(timezone.utc).isoformat(), "payout_note": req.note or "",
+    }).eq("id", part_id).execute()
+    return {"status": "paid"}
+
+
+@app.post("/api/admin/payouts/{merchant_id}/pay-all")
+def admin_pay_all_for_merchant(merchant_id: str, req: PayoutMarkPaidRequest):
+    require_admin(req.token)
+    due = (supabase.table("order_merchant_parts").select("id, payout")
+           .eq("merchant_id", merchant_id).eq("status", "delivered").eq("payout_status", "unpaid")
+           .execute().data or [])
+    if not due:
+        return {"status": "ok", "paid_count": 0, "paid_amount": 0}
+    ids = [d["id"] for d in due]
+    total = round(sum(float(d.get("payout", 0) or 0) for d in due), 2)
+    supabase.table("order_merchant_parts").update({
+        "payout_status": "paid", "paid_at": datetime.now(timezone.utc).isoformat(), "payout_note": req.note or "",
+    }).in_("id", ids).execute()
+    return {"status": "ok", "paid_count": len(ids), "paid_amount": total}
 
 
 def _sync_user_role(user_id, status):
@@ -3138,6 +3253,75 @@ def admin_delete_order(order_id: str, token: str, reason: Optional[str] = None):
     create_user_notice(email, "Order removed", msg, "order", order_id)
     return {"status": "ok"}
 
+
+# ── Order → merchant routing (consolidation) ─────────────────────────────────
+# Goal: a customer's order should land at as FEW merchants as possible. A
+# merchant's own unique product pins the order to that merchant with no
+# ambiguity. Shared catalog items (same product carried by several merchants)
+# should then preferentially go to a merchant the order is already pinned to
+# — no need to split the order across shops just because a catalog item's
+# "default" row belonged to someone else. Only when nothing pins the order
+# (or the pinned merchant doesn't carry that item) do we fall back to picking
+# any merchant that has it in stock.
+#
+# TODO(delivery-routing): once customer + merchant coordinates are used for
+# real distance-based delivery, that fallback step should pick the NEAREST
+# in-stock assigned merchant instead of just the first one. Merchant lat/lng
+# is already stored (see merchants.latitude/longitude) for exactly this.
+
+def _resolve_order_merchants(items: list) -> dict:
+    """Map each cart line's product id -> (merchant_id, merchant_price),
+    consolidating catalog (shared) items onto whichever merchant the order
+    is already pinned to via a unique product, where possible."""
+    products_by_id = {p["id"]: p for p in PRODUCTS}
+    catalog_siblings: dict = {}
+    for p in PRODUCTS:
+        cid = p.get("catalog_id")
+        if cid:
+            catalog_siblings.setdefault(cid, []).append(p)
+
+    # Pin the order to whichever merchant(s) own a unique (non-catalog) item
+    # in the cart. The merchant with the most pinned quantity becomes the
+    # "primary" merchant catalog items should consolidate onto.
+    pinned_qty = Counter()
+    for item in items:
+        p = products_by_id.get(item.productId)
+        if p and not p.get("catalog_id"):
+            pinned_qty[p.get("merchant_id") or HOUSE_MERCHANT_ID] += item.quantity
+    primary_merchant = pinned_qty.most_common(1)[0][0] if pinned_qty else None
+    pinned_merchants = set(pinned_qty.keys())
+
+    resolved = {}
+    for item in items:
+        p = products_by_id.get(item.productId)
+        if not p:
+            resolved[item.productId] = (HOUSE_MERCHANT_ID, 0.0)
+            continue
+
+        cid = p.get("catalog_id")
+        if not cid:
+            # Unique product — always fulfilled by its own (only) merchant.
+            resolved[item.productId] = (p.get("merchant_id") or HOUSE_MERCHANT_ID, float(p.get("merchant_price", 0) or 0))
+            continue
+
+        live = {s["merchant_id"]: s for s in catalog_siblings.get(cid, [])
+                if s.get("status") == "approved" and s.get("inStock")}
+        if not live:
+            # Nothing currently sellable for this catalog item anywhere —
+            # keep whatever row the customer was shown so checkout can proceed.
+            resolved[item.productId] = (p.get("merchant_id") or HOUSE_MERCHANT_ID, float(p.get("merchant_price", 0) or 0))
+            continue
+
+        if primary_merchant in live:
+            chosen = live[primary_merchant]
+        else:
+            other_pin = next((mid for mid in pinned_merchants if mid in live), None)
+            chosen = live[other_pin] if other_pin else next(iter(live.values()))  # TODO: nearest-by-location
+        resolved[item.productId] = (chosen["merchant_id"], float(chosen.get("merchant_price", 0) or 0))
+
+    return resolved
+
+
 @app.post("/api/orders")
 def create_order(req: OrderRequest):
     order_id = "FLR" + str(uuid.uuid4())[:8].upper()
@@ -3188,9 +3372,11 @@ def create_order(req: OrderRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
     if req.items:
-        # Each product's owning merchant + the price that merchant earns per unit.
-        product_meta = {p["id"]: (p.get("merchant_id") or HOUSE_MERCHANT_ID, float(p.get("merchant_price", 0) or 0))
-                        for p in PRODUCTS}
+        # Resolve each line to the merchant who should fulfill it — unique
+        # products pin the order to their owner; shared catalog items then
+        # consolidate onto that same merchant wherever possible (see
+        # _resolve_order_merchants) instead of splitting needlessly.
+        product_meta = _resolve_order_merchants(req.items)
         supabase.table("order_items").insert([
             {
                 "order_id": order_id,

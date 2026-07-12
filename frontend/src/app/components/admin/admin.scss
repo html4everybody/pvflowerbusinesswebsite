@@ -1370,3 +1370,63 @@
     background: var(--bg-raised); padding: 0.1rem 0.5rem; border-radius: var(--radius-full);
   }
 }
+
+// ── Payouts (merchant settlement ledger) ────────────────────────────────────
+.balance-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+.balance-card {
+  display: flex; align-items: flex-start; gap: 1rem;
+  padding: 1.3rem 1.4rem; border-radius: var(--radius-lg, 16px);
+  color: #fff; box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+  position: relative; overflow: hidden;
+
+  &::after {
+    content: ''; position: absolute; inset: 0;
+    background: radial-gradient(120% 100% at 100% 0%, rgba(255,255,255,0.16), transparent 60%);
+    pointer-events: none;
+  }
+  &.paid     { background: linear-gradient(135deg, #059669, #047857); }
+  &.pending  { background: linear-gradient(135deg, #d97706, #b45309); }
+  &.progress { background: linear-gradient(135deg, #4f46e5, #4338ca); }
+
+  .bc-icon {
+    width: 42px; height: 42px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(255,255,255,0.18); border-radius: 10px; font-size: 1.2rem;
+  }
+  .bc-body { display: flex; flex-direction: column; gap: 0.15rem; min-width: 0; }
+  .bc-label { font-size: 0.78rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em; opacity: 0.85; }
+  .bc-val { font-size: 1.7rem; font-weight: 800; line-height: 1.15; }
+  .bc-sub { font-size: 0.76rem; opacity: 0.8; }
+}
+
+.payout-list { display: grid; gap: 0.85rem; }
+.payout-card {
+  background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm); overflow: hidden;
+}
+.payout-row {
+  display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;
+  width: 100%; padding: 1rem 1.1rem; border: none; background: none; cursor: pointer;
+  font-family: inherit; text-align: left; color: var(--text);
+  transition: background 0.12s ease;
+  &:hover { background: var(--bg-raised); }
+}
+.payout-chevron { color: var(--text-muted); font-size: 0.9rem; flex-shrink: 0; }
+.payout-shop { font-weight: 700; display: inline-flex; align-items: center; gap: 0.5rem; flex: 1; min-width: 160px; }
+.payout-figure {
+  font-size: 0.85rem; color: var(--text-muted); white-space: nowrap;
+  strong { font-weight: 800; }
+  &.pending strong { color: var(--warning); }
+  &.paid strong { color: var(--success); }
+}
+.payout-actions { display: flex; justify-content: flex-end; padding: 0 1.1rem 1rem; }
+.payout-detail { padding: 0 1.1rem 1.1rem; border-top: 1px solid var(--border); padding-top: 1rem; overflow-x: auto; }
+.payout-note { font-size: 0.72rem; color: var(--text-subtle); margin-top: 0.2rem; font-style: italic; }
+
+.vp-spin { display: inline-block; animation: vp-spin 0.9s linear infinite; }
+@keyframes vp-spin { to { transform: rotate(360deg); } }

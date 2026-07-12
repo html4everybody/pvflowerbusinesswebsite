@@ -280,3 +280,54 @@
   padding: 0.15rem 0.5rem; border-radius: var(--radius-full);
   margin-left: 0.4rem; vertical-align: middle;
 }
+
+// ── Balance row (paid / pending / in-progress earnings) ────────────────────
+.balance-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+.balance-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 1.3rem 1.4rem;
+  border-radius: var(--radius-lg);
+  color: #fff;
+  box-shadow: var(--shadow-md);
+  position: relative;
+  overflow: hidden;
+
+  &::after {
+    content: '';
+    position: absolute; inset: 0;
+    background: radial-gradient(120% 100% at 100% 0%, rgba(255,255,255,0.16), transparent 60%);
+    pointer-events: none;
+  }
+
+  &.paid     { background: linear-gradient(135deg, #059669, #047857); }
+  &.pending  { background: linear-gradient(135deg, #d97706, #b45309); }
+  &.progress { background: linear-gradient(135deg, #64748b, #475569); }
+
+  .bc-icon {
+    width: 42px; height: 42px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(255,255,255,0.18); border-radius: var(--radius-sm);
+    font-size: 1.2rem;
+  }
+  .bc-body { display: flex; flex-direction: column; gap: 0.15rem; min-width: 0; }
+  .bc-label { font-size: 0.78rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em; opacity: 0.85; }
+  .bc-val { font-size: 1.7rem; font-weight: 800; line-height: 1.15; }
+  .bc-sub { font-size: 0.76rem; opacity: 0.8; }
+}
+
+// Payout settlement badge on an order card
+.oc-payout-badge {
+  display: inline-flex; align-items: center; gap: 0.3rem;
+  font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.02em;
+  padding: 0.15rem 0.5rem; border-radius: var(--radius-full);
+  margin-left: 0.5rem; vertical-align: middle;
+  background: rgba(217,119,6,0.14); color: var(--warning);
+  &.paid { background: rgba(5,150,105,0.14); color: var(--success); }
+}

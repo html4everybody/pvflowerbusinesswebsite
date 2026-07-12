@@ -2,18 +2,18 @@ import { Component, OnInit, signal, computed, effect } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
-import { TitleCasePipe } from '@angular/common';
+import { TitleCasePipe, DecimalPipe } from '@angular/common';
 import { AuthService } from '../../services/auth';
 import { ToastService } from '../../services/toast';
 import { ConfirmService } from '../../services/confirm';
 import { environment } from '../../../environments/environment';
 import { DatePicker } from '../date-picker/date-picker';
 
-export type AdminSection = 'overview' | 'orders' | 'products' | 'inventory' | 'customers' | 'analytics' | 'zones' | 'deals' | 'bundles' | 'plans' | 'subscriptions' | 'studio' | 'occasions' | 'merchants';
+export type AdminSection = 'overview' | 'orders' | 'products' | 'inventory' | 'customers' | 'analytics' | 'zones' | 'deals' | 'bundles' | 'plans' | 'subscriptions' | 'studio' | 'occasions' | 'merchants' | 'payouts';
 
 @Component({
   selector: 'app-admin',
-  imports: [RouterLink, FormsModule, TitleCasePipe, DatePicker],
+  imports: [RouterLink, FormsModule, TitleCasePipe, DecimalPipe, DatePicker],
   templateUrl: './admin.html',
   styleUrl: './admin.scss'
 })
@@ -219,6 +219,7 @@ export class Admin implements OnInit {
     // merchants" checklist in the product form always has data ready.
     this.loadProducts();
     this.loadMerchants();
+    this.loadPayouts();
     // If restored section needs lazy-loaded data, trigger it
     const section = this.activeSection();
     if (section === 'inventory' && !this.inventory().length) this.loadInventory();
@@ -231,6 +232,7 @@ export class Admin implements OnInit {
     if (section === 'subscriptions' && !this.subscriptions().length) this.loadSubscriptions();
     if (section === 'studio' && !this.studioBookings().length) this.loadStudio();
     if (section === 'occasions' && !this.occasions().length) this.loadOccasions();
+    if (section === 'payouts') this.loadPayouts();
   }
 
   get token(): string { return this.authService.getToken(); }
@@ -251,6 +253,7 @@ export class Admin implements OnInit {
     if (section === 'studio' && !this.studioBookings().length) this.loadStudio();
     if (section === 'occasions' && !this.occasions().length) this.loadOccasions();
     if (section === 'merchants') this.loadMerchants();
+    if (section === 'payouts') this.loadPayouts();
   }
 
   // ── Merchants (marketplace sellers) ───────────────────────────────────────
@@ -278,6 +281,82 @@ export class Admin implements OnInit {
     this.http.patch(`${environment.apiUrl}/api/admin/merchants/${m.id}/commission`, { token: this.token, commission_rate: rate }).subscribe({
       next: () => this.toastService.show(`${m.shop_name} commission set to ${rate}%`, 'success'),
       error: (err) => this.toastService.show(err?.error?.detail || 'Update failed', 'error'),
+    });
+  }
+
+  // ── Payouts (merchant settlement ledger) ───────────────────────────────────
+  // Customer pays VivaPetals in full; once a merchant's part of an order is
+  // delivered, it's "due" — admin settles it here (records that they actually
+  // paid the merchant, e.g. by bank transfer), individually or in bulk.
+  payoutsSummary = signal<any>(null);
+  loadingPayouts = signal(false);
+  expandedMerchantId = signal<string | null>(null);
+  payoutDetail = signal<any[]>([]);
+  loadingPayoutDetail = signal(false);
+  payingAll = signal<string | null>(null);
+  payingPartId = signal<string | null>(null);
+
+  loadPayouts(): void {
+    this.loadingPayouts.set(true);
+    this.http.get<any>(`${environment.apiUrl}/api/admin/payouts?token=${this.token}`).subscribe({
+      next: (data) => { this.payoutsSummary.set(data); this.loadingPayouts.set(false); },
+      error: () => { this.loadingPayouts.set(false); this.toastService.show('Could not load payouts', 'error'); },
+    });
+  }
+
+  toggleMerchantPayouts(merchantId: string): void {
+    if (this.expandedMerchantId() === merchantId) { this.expandedMerchantId.set(null); return; }
+    this.expandedMerchantId.set(merchantId);
+    this.refreshPayoutDetail(merchantId);
+  }
+
+  private refreshPayoutDetail(merchantId: string): void {
+    this.loadingPayoutDetail.set(true);
+    this.http.get<any[]>(`${environment.apiUrl}/api/admin/payouts/${merchantId}?token=${this.token}`).subscribe({
+      next: (data) => { this.payoutDetail.set(data || []); this.loadingPayoutDetail.set(false); },
+      error: () => { this.loadingPayoutDetail.set(false); this.toastService.show('Could not load payout detail', 'error'); },
+    });
+  }
+
+  async markPayoutPaid(part: any): Promise<void> {
+    const res = await this.confirmService.askReason({
+      title: 'Mark this payout as paid?',
+      message: `Confirm you've paid ₹${part.payout} for order #${part.order_id}. This records the settlement — it doesn't move any money.`,
+      confirmText: 'Mark Paid',
+      promptLabel: 'Note (optional)', promptPlaceholder: 'e.g. Paid via UPI, ref #12345',
+    });
+    if (!res.ok) return;
+    this.payingPartId.set(part.id);
+    this.http.patch(`${environment.apiUrl}/api/admin/payouts/${part.id}/pay`, { token: this.token, note: res.reason }).subscribe({
+      next: () => {
+        this.payingPartId.set(null);
+        this.toastService.show('Marked as paid');
+        const expanded = this.expandedMerchantId();
+        if (expanded) this.refreshPayoutDetail(expanded);
+        this.loadPayouts();
+      },
+      error: (err) => { this.payingPartId.set(null); this.toastService.show(err.error?.detail || 'Failed to mark paid', 'error'); },
+    });
+  }
+
+  async payAllForMerchant(m: any): Promise<void> {
+    if (!m.pending_count) { this.toastService.show('Nothing pending for this merchant', 'error'); return; }
+    const res = await this.confirmService.askReason({
+      title: `Settle all pending payouts for ${m.shop_name}?`,
+      message: `This marks ${m.pending_count} delivered order(s) totalling ₹${m.pending_amount} as paid. Make sure you've actually paid the merchant first — this only records it.`,
+      confirmText: 'Pay All', danger: true,
+      promptLabel: 'Note (optional, applied to all)', promptPlaceholder: 'e.g. Weekly settlement — bank transfer',
+    });
+    if (!res.ok) return;
+    this.payingAll.set(m.merchant_id);
+    this.http.post<any>(`${environment.apiUrl}/api/admin/payouts/${m.merchant_id}/pay-all`, { token: this.token, note: res.reason }).subscribe({
+      next: (r) => {
+        this.payingAll.set(null);
+        this.toastService.show(`Settled ${r.paid_count} order(s) — ₹${r.paid_amount} paid to ${m.shop_name}`);
+        this.loadPayouts();
+        if (this.expandedMerchantId() === m.merchant_id) this.refreshPayoutDetail(m.merchant_id);
+      },
+      error: (err) => { this.payingAll.set(null); this.toastService.show(err.error?.detail || 'Settlement failed', 'error'); },
     });
   }
 

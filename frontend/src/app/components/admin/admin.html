@@ -47,6 +47,13 @@
         <i class="bi bi-shop" style="font-size:16px"></i>
         Merchants
       </button>
+      <button class="nav-item" [class.active]="activeSection() === 'payouts'" (click)="navigateTo('payouts')">
+        <i class="bi bi-wallet2" style="font-size:16px"></i>
+        Payouts
+        @if (payoutsSummary()?.total_pending > 0) {
+          <span class="nav-badge">₹{{ payoutsSummary().total_pending | number:'1.0-0' }}</span>
+        }
+      </button>
       <button class="nav-item" [class.active]="activeSection() === 'analytics'" (click)="navigateTo('analytics')">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/>
@@ -294,6 +301,123 @@
               </div>
             }
           </div>
+        }
+      </div>
+    }
+
+    <!-- ── Payouts (merchant settlement ledger) ────────────────────────────── -->
+    @if (activeSection() === 'payouts') {
+      <div class="section-wrap">
+        <div class="section-header">
+          <h1>Payouts</h1>
+          <div class="section-header-actions">
+            <button class="btn-refresh" (click)="loadPayouts()" [disabled]="loadingPayouts()">
+              <i class="bi bi-arrow-repeat"></i> Refresh
+            </button>
+          </div>
+        </div>
+        <p class="modal-hint" style="margin-bottom:1.25rem;">
+          <i class="bi bi-info-circle"></i> Customers pay VivaPetals in full. Once a merchant's part of an order is
+          <strong>delivered</strong>, it becomes due — settle it here after you've actually paid the merchant
+          (bank transfer, UPI, etc). This only records the settlement; no money moves automatically.
+        </p>
+
+        @if (loadingPayouts() && !payoutsSummary()) {
+          <div class="loading-state"><div class="spinner"></div><p>Loading payouts...</p></div>
+        } @else if (payoutsSummary(); as s) {
+          <div class="balance-row">
+            <div class="balance-card pending">
+              <span class="bc-icon"><i class="bi bi-hourglass-split"></i></span>
+              <div class="bc-body">
+                <span class="bc-label">Pending payout</span>
+                <span class="bc-val">₹{{ s.total_pending | number:'1.0-0' }}</span>
+                <span class="bc-sub">Owed to merchants, not yet settled</span>
+              </div>
+            </div>
+            <div class="balance-card paid">
+              <span class="bc-icon"><i class="bi bi-wallet2"></i></span>
+              <div class="bc-body">
+                <span class="bc-label">Paid out</span>
+                <span class="bc-val">₹{{ s.total_paid | number:'1.0-0' }}</span>
+                <span class="bc-sub">Settled all-time</span>
+              </div>
+            </div>
+            <div class="balance-card progress">
+              <span class="bc-icon"><i class="bi bi-graph-up-arrow"></i></span>
+              <div class="bc-body">
+                <span class="bc-label">Platform commission</span>
+                <span class="bc-val">₹{{ s.total_commission | number:'1.0-0' }}</span>
+                <span class="bc-sub">Your margin, all-time</span>
+              </div>
+            </div>
+          </div>
+
+          @if (!s.merchants.length) {
+            <div class="empty-state"><p>No merchant orders yet.</p></div>
+          } @else {
+            <div class="payout-list">
+              @for (m of s.merchants; track m.merchant_id) {
+                <div class="payout-card">
+                  <button class="payout-row" (click)="toggleMerchantPayouts(m.merchant_id)">
+                    <i class="bi payout-chevron" [class.bi-chevron-down]="expandedMerchantId() === m.merchant_id" [class.bi-chevron-right]="expandedMerchantId() !== m.merchant_id"></i>
+                    <span class="payout-shop"><i class="bi bi-shop"></i> {{ m.shop_name }}</span>
+                    <span class="payout-figure pending"><strong>₹{{ m.pending_amount | number:'1.0-0' }}</strong> pending ({{ m.pending_count }})</span>
+                    <span class="payout-figure paid"><strong>₹{{ m.paid_amount | number:'1.0-0' }}</strong> paid ({{ m.paid_count }})</span>
+                  </button>
+                  <div class="payout-actions">
+                    <button class="btn-approve" [disabled]="!m.pending_count || payingAll() === m.merchant_id" (click)="payAllForMerchant(m)">
+                      @if (payingAll() === m.merchant_id) { <i class="bi bi-arrow-repeat vp-spin"></i> Settling… }
+                      @else { <i class="bi bi-check-lg"></i> Pay All ({{ m.pending_count }}) }
+                    </button>
+                  </div>
+
+                  @if (expandedMerchantId() === m.merchant_id) {
+                    <div class="payout-detail">
+                      @if (loadingPayoutDetail()) {
+                        <div class="loading-state"><div class="spinner"></div></div>
+                      } @else if (!payoutDetail().length) {
+                        <p class="modal-hint">No orders for this merchant yet.</p>
+                      } @else {
+                        <table class="data-table">
+                          <thead>
+                            <tr><th>Order</th><th>Status</th><th>Subtotal</th><th>Commission</th><th>Payout</th><th>Settlement</th><th></th></tr>
+                          </thead>
+                          <tbody>
+                            @for (p of payoutDetail(); track p.id) {
+                              <tr>
+                                <td class="mono">#{{ p.order_id }}</td>
+                                <td><span class="oc-badge" [class]="p.status">{{ p.status }}</span></td>
+                                <td class="mono">₹{{ p.subtotal }}</td>
+                                <td class="mono">₹{{ p.commission }}</td>
+                                <td class="mono">₹{{ p.payout }}</td>
+                                <td>
+                                  @if (p.payout_status === 'paid') {
+                                    <span class="mc-badge approved"><i class="bi bi-check-circle-fill"></i> Paid</span>
+                                    @if (p.payout_note) { <div class="payout-note">{{ p.payout_note }}</div> }
+                                  } @else if (p.status === 'delivered') {
+                                    <span class="mc-badge pending">Due</span>
+                                  } @else {
+                                    <span class="mc-badge suspended">Not yet</span>
+                                  }
+                                </td>
+                                <td>
+                                  @if (p.payout_status !== 'paid' && p.status === 'delivered') {
+                                    <button class="btn-edit-small" [disabled]="payingPartId() === p.id" (click)="markPayoutPaid(p)">
+                                      @if (payingPartId() === p.id) { Marking… } @else { Mark Paid }
+                                    </button>
+                                  }
+                                </td>
+                              </tr>
+                            }
+                          </tbody>
+                        </table>
+                      }
+                    </div>
+                  }
+                </div>
+              }
+            </div>
+          }
         }
       </div>
     }

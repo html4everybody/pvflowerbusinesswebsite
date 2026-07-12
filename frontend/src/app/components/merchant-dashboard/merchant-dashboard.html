@@ -31,8 +31,34 @@
       <div class="sec">
         <div class="sec-head"><h1>Overview</h1></div>
         @if (stats(); as s) {
+          <div class="balance-row">
+            <div class="balance-card paid">
+              <span class="bc-icon"><i class="bi bi-wallet2"></i></span>
+              <div class="bc-body">
+                <span class="bc-label">Paid out</span>
+                <span class="bc-val">₹{{ s.paid_out | number:'1.0-0' }}</span>
+                <span class="bc-sub">Settled by admin</span>
+              </div>
+            </div>
+            <div class="balance-card pending">
+              <span class="bc-icon"><i class="bi bi-hourglass-split"></i></span>
+              <div class="bc-body">
+                <span class="bc-label">Pending payout</span>
+                <span class="bc-val">₹{{ s.pending_payout | number:'1.0-0' }}</span>
+                <span class="bc-sub">Delivered — awaiting settlement</span>
+              </div>
+            </div>
+            <div class="balance-card progress">
+              <span class="bc-icon"><i class="bi bi-truck"></i></span>
+              <div class="bc-body">
+                <span class="bc-label">In progress</span>
+                <span class="bc-val">₹{{ s.in_progress_value | number:'1.0-0' }}</span>
+                <span class="bc-sub">Not delivered yet</span>
+              </div>
+            </div>
+          </div>
+
           <div class="stat-grid">
-            <div class="stat-tile"><span class="st-icon green"><i class="bi bi-cash-coin"></i></span><div><span class="st-val">₹{{ s.earnings | number:'1.0-0' }}</span><span class="st-label">Your earnings</span></div></div>
             <div class="stat-tile"><span class="st-icon violet"><i class="bi bi-bag-check"></i></span><div><span class="st-val">{{ s.order_count }}</span><span class="st-label">Orders</span></div></div>
             <div class="stat-tile"><span class="st-icon amber"><i class="bi bi-hourglass-split"></i></span><div><span class="st-val">{{ s.pending_count }}</span><span class="st-label">To fulfil</span></div></div>
             <div class="stat-tile"><span class="st-icon blue"><i class="bi bi-box-seam"></i></span><div><span class="st-val">{{ s.product_count }}</span><span class="st-label">Products</span></div></div>
@@ -124,7 +150,13 @@
                     <span class="oc-num">#{{ o.order_id }}</span>
                     <span class="oc-badge" [class]="o.status">{{ STATUS_LABELS[o.status] || o.status }}</span>
                   </div>
-                  <div class="oc-payout">₹{{ o.payout | number:'1.0-0' }} <span>payout</span></div>
+                  <div class="oc-payout">
+                    ₹{{ o.payout | number:'1.0-0' }} <span>payout</span>
+                    <span class="oc-payout-badge" [class.paid]="o.payout_status === 'paid'">
+                      <i class="bi" [class.bi-check-circle-fill]="o.payout_status === 'paid'" [class.bi-clock-history]="o.payout_status !== 'paid'"></i>
+                      {{ o.payout_status === 'paid' ? 'Paid' : 'Pending' }}
+                    </span>
+                  </div>
                 </div>
 
                 <div class="oc-items">
