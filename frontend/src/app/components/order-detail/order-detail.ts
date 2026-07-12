@@ -216,6 +216,24 @@ export class OrderDetail implements OnInit {
     });
   }
 
+  itemsSubtotal(o: any): number {
+    return (o.items || []).reduce((sum: number, i: any) => sum + (i.price * i.quantity), 0);
+  }
+
+  shippingFee(o: any): number {
+    if (o.shipping_fee != null) return o.shipping_fee;
+    return this.itemsSubtotal(o) >= 50 ? 0 : 9.99;
+  }
+
+  pointsDiscountAmount(o: any): number {
+    return o.points_redeemed ? +((o.points_redeemed / 10).toFixed(2)) : 0;
+  }
+
+  promoDiscountAmount(o: any): number {
+    const total = o.discount_amount || 0;
+    return Math.max(0, +((total - this.pointsDiscountAmount(o)).toFixed(2)));
+  }
+
   formatDelivery(o: any): { label: string; detail: string } {
     if (!o.delivery_type || o.delivery_type === 'immediate') {
       return { label: 'Immediate Delivery', detail: 'As soon as possible' };
