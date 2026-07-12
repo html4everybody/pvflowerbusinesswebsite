@@ -44,12 +44,35 @@ export class Account implements OnInit {
   ordersError   = signal(false);
   orderSearch   = signal('');
   orderStatus   = signal('all');
+  orderDateFilter = signal('all');
+
+  availableYears = computed(() => {
+    const years = new Set(this.orders().map(o => new Date(o.created_at).getFullYear()));
+    return Array.from(years).sort((a, b) => b - a);
+  });
 
   visibleOrders = computed(() => {
     let list = this.orders();
     const q = this.orderSearch().trim().toLowerCase();
     if (q) list = list.filter(o => o.id.toLowerCase().includes(q));
     if (this.orderStatus() !== 'all') list = list.filter(o => o.status === this.orderStatus());
+    const dateF = this.orderDateFilter();
+    if (dateF !== 'all') {
+      const now = new Date();
+      if (dateF === 'last_month') {
+        const cutoff = new Date(now); cutoff.setMonth(now.getMonth() - 1);
+        list = list.filter(o => new Date(o.created_at) >= cutoff);
+      } else if (dateF === 'last_3_months') {
+        const cutoff = new Date(now); cutoff.setMonth(now.getMonth() - 3);
+        list = list.filter(o => new Date(o.created_at) >= cutoff);
+      } else if (dateF === 'last_6_months') {
+        const cutoff = new Date(now); cutoff.setMonth(now.getMonth() - 6);
+        list = list.filter(o => new Date(o.created_at) >= cutoff);
+      } else {
+        const year = parseInt(dateF);
+        if (!isNaN(year)) list = list.filter(o => new Date(o.created_at).getFullYear() === year);
+      }
+    }
     return list;
   });
 

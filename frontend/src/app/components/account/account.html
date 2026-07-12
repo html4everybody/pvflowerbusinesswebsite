@@ -112,14 +112,25 @@
               <button class="orders-search-clear" (click)="orderSearch.set('')">×</button>
             }
           </div>
-          <select class="orders-status-filter" [value]="orderStatus()" (change)="orderStatus.set($any($event.target).value)">
-            <option value="all">All Orders</option>
-            <option value="confirmed">Confirmed</option>
-            <option value="preparing">Preparing</option>
-            <option value="out_for_delivery">Out for Delivery</option>
-            <option value="delivered">Delivered</option>
-            <option value="cancelled">Cancelled</option>
-          </select>
+          <div class="orders-filters">
+            <select class="orders-status-filter" [value]="orderStatus()" (change)="orderStatus.set($any($event.target).value)">
+              <option value="all">All Orders</option>
+              <option value="confirmed">Confirmed</option>
+              <option value="preparing">Preparing</option>
+              <option value="out_for_delivery">Out for Delivery</option>
+              <option value="delivered">Delivered</option>
+              <option value="cancelled">Cancelled</option>
+            </select>
+            <select class="orders-status-filter" [value]="orderDateFilter()" (change)="orderDateFilter.set($any($event.target).value)">
+              <option value="all">All Time</option>
+              <option value="last_month">Last Month</option>
+              <option value="last_3_months">Last 3 Months</option>
+              <option value="last_6_months">Last 6 Months</option>
+              @for (year of availableYears(); track year) {
+                <option [value]="year">{{ year }}</option>
+              }
+            </select>
+          </div>
         </div>
 
         @if (ordersLoading()) {

@@ -283,7 +283,12 @@
   gap: 0.75rem;
   margin-bottom: 1.25rem;
   align-items: center;
+}
 
+.orders-filters {
+  display: flex;
+  gap: 0.5rem;
+  flex-shrink: 0;
 }
 
 .orders-search-wrap {
