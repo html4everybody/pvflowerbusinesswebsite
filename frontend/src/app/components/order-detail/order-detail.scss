@@ -519,6 +519,29 @@
     .section { margin-bottom: 0; }
   }
 
+  // Customer view — 4-cell grid with explicit placement
+  .detail-four-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    align-items: start;
+
+    .section { margin-bottom: 0; }
+
+    .g-items    { grid-column: 1; grid-row: 1; }
+    .g-tracking { grid-column: 2; grid-row: 1; }
+    .g-summary  { grid-column: 2; grid-row: 2; }
+    .g-delivery { grid-column: 1; grid-row: 2; }
+
+    @media (max-width: 768px) {
+      grid-template-columns: 1fr;
+      .g-items    { grid-column: 1; grid-row: 1; }
+      .g-tracking { grid-column: 1; grid-row: 2; }
+      .g-summary  { grid-column: 1; grid-row: 3; }
+      .g-delivery { grid-column: 1; grid-row: 4; }
+    }
+  }
+
   // Customer details grid (admin)
   .customer-details-grid {
     display: grid;
