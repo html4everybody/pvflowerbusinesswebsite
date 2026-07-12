@@ -1,6 +1,7 @@
 import { Component, OnInit, signal, computed, effect } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
+import { retry } from 'rxjs/operators';
 import { FormsModule } from '@angular/forms';
 import { TitleCasePipe, DecimalPipe } from '@angular/common';
 import { AuthService } from '../../services/auth';
@@ -36,7 +37,8 @@ export class Admin implements OnInit {
 
   // ── Stats (derived from orders, no extra API call) ─────────────────────────
   lastRefreshed = signal<Date | null>(null);
-  statsReady = computed(() => !this.loadingOrders() && this.orders().length > 0);
+  ordersLoaded = signal(false);
+  statsReady = computed(() => this.ordersLoaded() && !this.loadingOrders());
   stats = computed(() => {
     const list = this.orders();
     const today = new Date().toISOString().slice(0, 10);
@@ -152,7 +154,7 @@ export class Admin implements OnInit {
 
   // ── Customers ──────────────────────────────────────────────────────────────
   merchants = signal<any[]>([]);
-  loadingMerchants = signal(false);
+  loadingMerchants = signal(true);
   updatingMerchant = signal<string | null>(null);
 
   customers = signal<any[]>([]);
@@ -270,10 +272,12 @@ export class Admin implements OnInit {
   // ── Merchants (marketplace sellers) ───────────────────────────────────────
   loadMerchants(): void {
     this.loadingMerchants.set(true);
-    this.http.get<any[]>(`${environment.apiUrl}/api/admin/merchants?token=${this.token}`).subscribe({
-      next: (data) => { this.merchants.set(data || []); this.loadingMerchants.set(false); },
-      error: () => { this.loadingMerchants.set(false); this.toastService.show('Could not load merchants', 'error'); },
-    });
+    this.http.get<any[]>(`${environment.apiUrl}/api/admin/merchants?token=${this.token}`)
+      .pipe(retry({ count: 5, delay: 5000 }))
+      .subscribe({
+        next: (data) => { this.merchants.set(data || []); this.loadingMerchants.set(false); },
+        error: () => { this.loadingMerchants.set(false); },
+      });
   }
 
   setMerchantStatus(m: any, status: 'approved' | 'suspended' | 'pending'): void {
@@ -309,10 +313,12 @@ export class Admin implements OnInit {
 
   loadPayouts(): void {
     this.loadingPayouts.set(true);
-    this.http.get<any>(`${environment.apiUrl}/api/admin/payouts?token=${this.token}`).subscribe({
-      next: (data) => { this.payoutsSummary.set(data); this.loadingPayouts.set(false); },
-      error: () => { this.loadingPayouts.set(false); this.toastService.show('Could not load payouts', 'error'); },
-    });
+    this.http.get<any>(`${environment.apiUrl}/api/admin/payouts?token=${this.token}`)
+      .pipe(retry({ count: 5, delay: 5000 }))
+      .subscribe({
+        next: (data) => { this.payoutsSummary.set(data); this.loadingPayouts.set(false); },
+        error: () => { this.loadingPayouts.set(false); },
+      });
   }
 
   toggleMerchantPayouts(merchantId: string): void {
@@ -394,15 +400,19 @@ export class Admin implements OnInit {
   loadOrders(): void {
     this.loadingOrders.set(true);
     this.loadError.set('');
-    this.http.get<any[]>(`${environment.apiUrl}/api/admin/orders?token=${this.token}`).subscribe({
-      next: (data) => { this.orders.set(data); this.loadingOrders.set(false); this.lastRefreshed.set(new Date()); },
-      error: (err) => {
-        this.loadingOrders.set(false);
-        if (err.status === 401) this.loadError.set('Session expired. Please log out and back in.');
-        else if (err.status === 403) this.loadError.set('Access denied. Admin access required.');
-        else this.loadError.set('Could not load orders. Please refresh.');
-      }
-    });
+    this.ordersLoaded.set(false);
+    this.http.get<any[]>(`${environment.apiUrl}/api/admin/orders?token=${this.token}`)
+      .pipe(retry({ count: 5, delay: 5000 }))
+      .subscribe({
+        next: (data) => { this.orders.set(data); this.loadingOrders.set(false); this.ordersLoaded.set(true); this.lastRefreshed.set(new Date()); },
+        error: (err) => {
+          this.loadingOrders.set(false);
+          this.ordersLoaded.set(true);
+          if (err.status === 401) this.loadError.set('Session expired. Please log out and back in.');
+          else if (err.status === 403) this.loadError.set('Access denied. Admin access required.');
+          else this.loadError.set('Could not load orders. Please refresh.');
+        }
+      });
   }
 
   refresh(): void {
@@ -425,10 +435,12 @@ export class Admin implements OnInit {
   loadProducts(): void {
     this.loadingProducts.set(true);
     // Admin endpoint returns ALL products (every status) with shop names + profit.
-    this.http.get<any[]>(`${environment.apiUrl}/api/admin/products?token=${this.token}`).subscribe({
-      next: (data) => { this.products.set(data || []); this.loadingProducts.set(false); },
-      error: () => this.loadingProducts.set(false)
-    });
+    this.http.get<any[]>(`${environment.apiUrl}/api/admin/products?token=${this.token}`)
+      .pipe(retry({ count: 5, delay: 5000 }))
+      .subscribe({
+        next: (data) => { this.products.set(data || []); this.loadingProducts.set(false); },
+        error: () => this.loadingProducts.set(false)
+      });
   }
 
   pendingProducts = computed(() => this.products().filter(p => p.status === 'pending'));
