@@ -6,6 +6,7 @@ import { TitleCasePipe, DecimalPipe } from '@angular/common';
 import { AuthService } from '../../services/auth';
 import { ToastService } from '../../services/toast';
 import { ConfirmService } from '../../services/confirm';
+import { NoticeService } from '../../services/notice';
 import { environment } from '../../../environments/environment';
 import { DatePicker } from '../date-picker/date-picker';
 
@@ -197,15 +198,24 @@ export class Admin implements OnInit {
   bundleForm = { name: '', description: '', emoji: '', product_ids: '' as string, promo_code: '', savings_pct: 15 };
   savingBundle = signal(false);
 
+  notifOpen = signal(false);
+
   constructor(
     private authService: AuthService,
     private http: HttpClient,
     private router: Router,
     private toastService: ToastService,
-    private confirmService: ConfirmService
+    private confirmService: ConfirmService,
+    public noticeService: NoticeService,
   ) {
     effect(() => sessionStorage.setItem('admin_section', this.activeSection()));
     effect(() => sessionStorage.setItem('admin_tab', this.activeTab()));
+  }
+
+  toggleNotif(): void {
+    const next = !this.notifOpen();
+    this.notifOpen.set(next);
+    if (next) this.noticeService.load();
   }
 
   ngOnInit(): void {

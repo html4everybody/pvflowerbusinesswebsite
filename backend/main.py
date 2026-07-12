@@ -1246,17 +1246,32 @@ def approve_product(product_id: int, req: ProductApproveRequest):
         "reject_reason": None,
     }).eq("id", product_id).execute()
     load_products()
-    return next((p for p in PRODUCTS if p["id"] == product_id), {"status": "approved"})
+    p = next((p for p in PRODUCTS if p["id"] == product_id), None)
+    if p and p.get("merchant_id") and p.get("merchant_id") != HOUSE_MERCHANT_ID:
+        create_user_notice(
+            _merchant_email(p["merchant_id"]), "✅ Product approved",
+            f"\"{p['name']}\" is now live on VivaPetals at ₹{p['price']}.",
+            "merchant_product", str(product_id),
+        )
+    return p or {"status": "approved"}
 
 
 @app.patch("/api/admin/products/{product_id}/reject")
 def reject_product(product_id: int, req: ProductRejectRequest):
     require_admin(req.token)
+    reason = req.reason or "Not accepted at this time."
     supabase.table("products").update({
         "status": "rejected",
-        "reject_reason": req.reason or "Not accepted at this time.",
+        "reject_reason": reason,
     }).eq("id", product_id).execute()
     load_products()
+    p = next((p for p in PRODUCTS if p["id"] == product_id), None)
+    if p and p.get("merchant_id") and p.get("merchant_id") != HOUSE_MERCHANT_ID:
+        create_user_notice(
+            _merchant_email(p["merchant_id"]), "❌ Product rejected",
+            f"\"{p['name']}\" was not approved. Reason: {reason}",
+            "merchant_product", str(product_id),
+        )
     return {"status": "rejected"}
 
 @app.delete("/api/admin/products/{product_id}")
@@ -1979,6 +1994,11 @@ def merchant_apply(req: MerchantApplyRequest):
         "status": "pending",
         "commission_rate": 15,
     }).execute()
+    _notify_all_admins(
+        "🏪 New merchant application",
+        f"\"{shop_name}\" applied to sell on VivaPetals — review it in the Merchants tab.",
+        "merchant_application", email,
+    )
     return {"status": "pending", "message": "Application submitted! An admin will review your shop shortly."}
 
 
@@ -2156,6 +2176,54 @@ MERCHANT_STATUS_FLOW = {
     "delivered": [], "cancelled": [],
 }
 
+ORDER_STATUS_RANK = {"confirmed": 0, "preparing": 1, "out_for_delivery": 2, "delivered": 3}
+
+
+def _compute_order_status(part_statuses: list) -> str:
+    """Pure: an order is only as "done" as its least-advanced active
+    (non-cancelled) merchant part — all-cancelled -> cancelled; otherwise the
+    minimum rank among the rest. Mirrors how Amazon/Myntra show one order
+    status until every seller's package has shipped/delivered."""
+    active = [s for s in part_statuses if s != "cancelled"]
+    return "cancelled" if not active else min(active, key=lambda s: ORDER_STATUS_RANK.get(s, 0))
+
+
+def _recompute_order_status_from_parts(order_id: str):
+    """Keep the parent `orders.status` in sync after a merchant updates their
+    part of an order. Notifies the customer (in-app + SMS/WhatsApp) only if
+    the status actually changed, reusing the same pipeline the admin's direct
+    status endpoint uses."""
+    parts = supabase.table("order_merchant_parts").select("status").eq("order_id", order_id).execute().data or []
+    if not parts:
+        return
+    new_status = _compute_order_status([p["status"] for p in parts])
+
+    order = supabase.table("orders").select("status, customer_email, customer_phone").eq("id", order_id).execute().data
+    if not order:
+        return
+    old_status = order[0].get("status")
+    if old_status == new_status or old_status == "cancelled":
+        return  # no-op, or a cancelled order stays cancelled regardless of part churn
+
+    supabase.table("orders").update({"status": new_status}).eq("id", order_id).execute()
+    send_notifications(order_id, new_status, order[0].get("customer_phone") or "")
+    if new_status in ORDER_STATUS_NOTICE:
+        title, phrase = ORDER_STATUS_NOTICE[new_status]
+        create_user_notice(order[0].get("customer_email"), title, f"Your order #{order_id} {phrase}.", "order", order_id)
+
+
+def _merchant_email(merchant_id) -> Optional[str]:
+    if not merchant_id:
+        return None
+    r = supabase.table("merchants").select("email").eq("id", merchant_id).execute().data
+    return r[0].get("email") if r else None
+
+
+def _notify_all_admins(title: str, message: str, ref_type: str, ref_id: str):
+    admins = supabase.table("users").select("email").eq("is_admin", True).execute().data or []
+    for a in admins:
+        create_user_notice(a.get("email"), title, message, ref_type, ref_id)
+
 
 @app.get("/api/merchant/orders")
 def merchant_orders(token: str):
@@ -2212,6 +2280,7 @@ def merchant_update_order_status(order_id: str, req: MerchantOrderStatusUpdate):
          .eq("order_id", order_id).eq("merchant_id", m["id"]).execute())
     if not r.data:
         raise HTTPException(status_code=404, detail="Order part not found")
+    _recompute_order_status_from_parts(order_id)
     return {"status": req.status}
 
 
@@ -2345,7 +2414,7 @@ class PayoutMarkPaidRequest(BaseModel):
 @app.patch("/api/admin/payouts/{part_id}/pay")
 def admin_mark_payout_paid(part_id: str, req: PayoutMarkPaidRequest):
     require_admin(req.token)
-    existing = supabase.table("order_merchant_parts").select("status, payout_status").eq("id", part_id).execute().data
+    existing = supabase.table("order_merchant_parts").select("status, payout_status, merchant_id, payout, order_id").eq("id", part_id).execute().data
     if not existing:
         raise HTTPException(status_code=404, detail="Payout not found")
     if existing[0].get("status") != "delivered":
@@ -2355,6 +2424,11 @@ def admin_mark_payout_paid(part_id: str, req: PayoutMarkPaidRequest):
     supabase.table("order_merchant_parts").update({
         "payout_status": "paid", "paid_at": datetime.now(timezone.utc).isoformat(), "payout_note": req.note or "",
     }).eq("id", part_id).execute()
+    create_user_notice(
+        _merchant_email(existing[0].get("merchant_id")), "💰 Payout settled",
+        f"₹{existing[0].get('payout')} for order #{existing[0].get('order_id')} has been paid to you.",
+        "merchant_payout", part_id,
+    )
     return {"status": "paid"}
 
 
@@ -2371,6 +2445,11 @@ def admin_pay_all_for_merchant(merchant_id: str, req: PayoutMarkPaidRequest):
     supabase.table("order_merchant_parts").update({
         "payout_status": "paid", "paid_at": datetime.now(timezone.utc).isoformat(), "payout_note": req.note or "",
     }).in_("id", ids).execute()
+    create_user_notice(
+        _merchant_email(merchant_id), "💰 Payout settled",
+        f"{len(ids)} order(s) totalling ₹{total} have been paid to you.",
+        "merchant_payout", merchant_id,
+    )
     return {"status": "ok", "paid_count": len(ids), "paid_amount": total}
 
 
@@ -2393,6 +2472,15 @@ def admin_set_merchant_status(merchant_id: str, req: MerchantStatusRequest):
     if not r.data:
         raise HTTPException(status_code=404, detail="Merchant not found")
     _sync_user_role(r.data[0].get("user_id"), req.status)
+    email = r.data[0].get("email")
+    if req.status == "approved":
+        create_user_notice(email, "🎉 Shop approved!",
+                            "Your VivaPetals shop is live — you can now add products and start selling.",
+                            "merchant_status", merchant_id)
+    elif req.status == "suspended":
+        create_user_notice(email, "Shop suspended",
+                            "Your VivaPetals shop has been suspended. Contact support for details.",
+                            "merchant_status", merchant_id)
     return {"status": req.status}
 
 
@@ -3395,9 +3483,10 @@ def create_order(req: OrderRequest):
         agg = {}
         for item in req.items:
             mid, mprice = product_meta.get(item.productId, (HOUSE_MERCHANT_ID, float(item.price)))
-            a = agg.setdefault(mid, {"subtotal": 0.0, "payout": 0.0})
+            a = agg.setdefault(mid, {"subtotal": 0.0, "payout": 0.0, "qty": 0})
             a["subtotal"] += float(item.price) * int(item.quantity)
             a["payout"] += mprice * int(item.quantity)
+            a["qty"] += int(item.quantity)
         if agg:
             parts = []
             for mid, a in agg.items():
@@ -3414,6 +3503,18 @@ def create_order(req: OrderRequest):
                 })
             try:
                 supabase.table("order_merchant_parts").insert(parts).execute()
+                # Tell each assigned merchant they have something new to pack
+                # (the house merchant IS the admin, so skip — they already see
+                # every order in their own dashboard).
+                for mid, a in agg.items():
+                    if mid == HOUSE_MERCHANT_ID:
+                        continue
+                    email = _merchant_email(mid)
+                    create_user_notice(
+                        email, "🌸 New order",
+                        f"Order #{order_id} — {a['qty']} item(s) to prepare. You'll earn ₹{round(a['payout'], 2)}.",
+                        "merchant_order", order_id,
+                    )
             except Exception as e:
                 print(f"[Order] merchant parts insert error: {e}", flush=True)
 

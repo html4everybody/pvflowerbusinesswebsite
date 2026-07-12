@@ -6,6 +6,7 @@ import { DecimalPipe } from '@angular/common';
 import { AuthService } from '../../services/auth';
 import { ToastService } from '../../services/toast';
 import { ConfirmService } from '../../services/confirm';
+import { NoticeService } from '../../services/notice';
 import { environment } from '../../../environments/environment';
 import { DatePicker } from '../date-picker/date-picker';
 
@@ -45,13 +46,22 @@ export class MerchantDashboard implements OnInit {
   shop = { shop_name: '', description: '', phone: '', logo: '', address: '', city: '', state: '', pincode: '' };
   savingShop = signal(false);
 
+  notifOpen = signal(false);
+
   constructor(
     private http: HttpClient,
     public auth: AuthService,
     private toast: ToastService,
     private confirm: ConfirmService,
     private router: Router,
+    public noticeService: NoticeService,
   ) {}
+
+  toggleNotif(): void {
+    const next = !this.notifOpen();
+    this.notifOpen.set(next);
+    if (next) this.noticeService.load();
+  }
 
   private get token(): string { return this.auth.getToken(); }
   private get api(): string { return environment.apiUrl; }

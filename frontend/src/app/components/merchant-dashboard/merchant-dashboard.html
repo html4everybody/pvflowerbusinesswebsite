@@ -26,6 +26,46 @@
 
   <main class="merch-main">
 
+    <!-- Notification bell -->
+    <div class="merch-topbar">
+      <div class="notif-wrapper">
+        <button class="notif-icon" [class.active]="notifOpen()" (click)="toggleNotif()" title="Notifications" aria-label="Notifications">
+          <i class="bi bi-bell"></i>
+          @if (noticeService.unread() > 0) {
+            <span class="notif-badge">{{ noticeService.unread() > 9 ? '9+' : noticeService.unread() }}</span>
+          }
+        </button>
+        @if (notifOpen()) {
+          <div class="notif-dropdown">
+            <div class="notif-head">
+              <span>Notifications</span>
+              @if (noticeService.unread() > 0) {
+                <a (click)="noticeService.markAllRead()">Mark all read</a>
+              }
+            </div>
+            @if (noticeService.notices().length === 0) {
+              <div class="notif-empty"><i class="bi bi-bell"></i> You're all caught up.</div>
+            } @else {
+              <div class="notif-list">
+                @for (n of noticeService.notices().slice(0, 8); track n.id) {
+                  <div class="notif-item" [class.unread]="!n.read" (click)="noticeService.markOneRead(n.id)">
+                    <div class="notif-item-top">
+                      <span class="notif-item-title">
+                        @if (!n.read) { <span class="unread-dot"></span> }
+                        {{ n.title }}
+                      </span>
+                      <button class="notif-item-x" title="Dismiss" (click)="noticeService.dismiss(n.id); $event.stopPropagation()">×</button>
+                    </div>
+                    <p class="notif-item-msg">{{ n.message }}</p>
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        }
+      </div>
+    </div>
+
     <!-- ── Overview ─────────────────────────────────────────────────────── -->
     @if (activeSection() === 'overview') {
       <div class="sec">
