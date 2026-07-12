@@ -537,8 +537,9 @@
     @media (max-width: 768px) {
       display: flex;
       flex-direction: column;
+      align-items: stretch;
 
-      // Dissolve col wrappers so children become flex items
+      // Dissolve col wrappers so children become direct flex items
       .left-col,
       .right-col { display: contents; }
 
