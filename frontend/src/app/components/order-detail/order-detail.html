@@ -186,136 +186,60 @@
       <!-- ── CUSTOMER VIEW ──────────────────────────────── -->
       @if (!isAdmin) {
 
-        <!-- Order Summary (full width) -->
-        <div class="section order-summary-card">
-          <h2 class="section-title">
-            <i class="bi bi-file-text"></i>
-            Order Summary
-          </h2>
-          <div class="summary-info-grid">
-            <div class="summary-info-row">
-              <span class="summary-label">Order ID</span>
-              <span class="summary-value mono">{{ o.id }}</span>
-            </div>
-            <div class="summary-info-row">
-              <span class="summary-label">Placed on</span>
-              <span class="summary-value">{{ formatDate(o.created_at) }}</span>
-            </div>
-            <div class="summary-info-row">
-              <span class="summary-label">Customer</span>
-              <span class="summary-value">{{ o.customer_name }}</span>
-            </div>
-            @if (o.customer_address) {
-              <div class="summary-info-row">
-                <span class="summary-label">Delivery to</span>
-                <span class="summary-value">{{ o.customer_address }}</span>
-              </div>
-            }
-            @if (o.payment_method) {
-              <div class="summary-info-row">
-                <span class="summary-label">Payment</span>
-                <span class="summary-value">{{ o.payment_method.replace('_', ' ') | titlecase }}</span>
-              </div>
-            }
-          </div>
-        </div>
-
-        <!-- Two-column: Order Items | Tracking -->
+        <!-- Two-column: Left (Items + Delivery) | Right (Summary + Tracking) -->
         <div class="two-col">
 
-          <!-- Left: Order Items -->
-          @if (o.items && o.items.length > 0) {
-            <div class="section">
-              <h2 class="section-title">
-                <i class="bi bi-bag"></i>
-                Order Items
-              </h2>
-              <div class="items-card">
-                @for (item of o.items; track item.id) {
-                  <div class="order-item">
-                    <img [src]="item.image" [alt]="item.name" class="item-image">
-                    <div class="item-details">
-                      <span class="item-name">{{ item.name }}</span>
-                      <span class="item-qty">Qty: {{ item.quantity }}</span>
-                    </div>
-                    <span class="item-price">₹{{ (item.price * item.quantity).toFixed(2) }}</span>
-                  </div>
-                }
-                <div class="order-breakdown">
-                  <div class="breakdown-row">
-                    <span>Subtotal</span>
-                    <span>₹{{ itemsSubtotal(o).toFixed(2) }}</span>
-                  </div>
-                  <div class="breakdown-row">
-                    <span>Shipping</span>
-                    <span>{{ shippingFee(o) > 0 ? '₹' + shippingFee(o).toFixed(2) : 'Free' }}</span>
-                  </div>
-                  @if (pointsDiscountAmount(o) > 0) {
-                    <div class="breakdown-row breakdown-discount">
-                      <span>Loyalty points ({{ o.points_redeemed }} pts)</span>
-                      <span>−₹{{ pointsDiscountAmount(o).toFixed(2) }}</span>
+          <!-- Left: Order Items + Delivery Type -->
+          <div class="left-col">
+
+            @if (o.items && o.items.length > 0) {
+              <div class="section">
+                <h2 class="section-title">
+                  <i class="bi bi-bag"></i>
+                  Order Items
+                </h2>
+                <div class="items-card">
+                  @for (item of o.items; track item.id) {
+                    <div class="order-item">
+                      <img [src]="item.image" [alt]="item.name" class="item-image">
+                      <div class="item-details">
+                        <span class="item-name">{{ item.name }}</span>
+                        <span class="item-qty">Qty: {{ item.quantity }}</span>
+                      </div>
+                      <span class="item-price">₹{{ (item.price * item.quantity).toFixed(2) }}</span>
                     </div>
                   }
-                  @if (promoDiscountAmount(o) > 0) {
-                    <div class="breakdown-row breakdown-discount">
-                      <span>{{ o.promo_code ? 'Promo (' + o.promo_code + ')' : 'Promo discount' }}</span>
-                      <span>−₹{{ promoDiscountAmount(o).toFixed(2) }}</span>
+                  <div class="order-breakdown">
+                    <div class="breakdown-row">
+                      <span>Subtotal</span>
+                      <span>₹{{ itemsSubtotal(o).toFixed(2) }}</span>
                     </div>
-                  }
-                  <div class="breakdown-row breakdown-total">
-                    <span>Total</span>
-                    <span>₹{{ o.total.toFixed(2) }}</span>
+                    <div class="breakdown-row">
+                      <span>Shipping</span>
+                      <span>{{ shippingFee(o) > 0 ? '₹' + shippingFee(o).toFixed(2) : 'Free' }}</span>
+                    </div>
+                    @if (pointsDiscountAmount(o) > 0) {
+                      <div class="breakdown-row breakdown-discount">
+                        <span>Loyalty points ({{ o.points_redeemed }} pts)</span>
+                        <span>−₹{{ pointsDiscountAmount(o).toFixed(2) }}</span>
+                      </div>
+                    }
+                    @if (promoDiscountAmount(o) > 0) {
+                      <div class="breakdown-row breakdown-discount">
+                        <span>{{ o.promo_code ? 'Promo (' + o.promo_code + ')' : 'Promo discount' }}</span>
+                        <span>−₹{{ promoDiscountAmount(o).toFixed(2) }}</span>
+                      </div>
+                    }
+                    <div class="breakdown-row breakdown-total">
+                      <span>Total</span>
+                      <span>₹{{ o.total.toFixed(2) }}</span>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          }
+            }
 
-          <!-- Right: Tracking + Delivery Type -->
-          <div class="right-col">
-
-            <!-- Order Tracking -->
-            <div class="section">
-              <h2 class="section-title">
-                <i class="bi bi-truck"></i>
-                Order Tracking
-              </h2>
-              @if (o.status === 'cancelled') {
-                <div class="cancelled-banner">
-                  <i class="bi bi-x-circle"></i>
-                  This order was cancelled.
-                </div>
-              } @else {
-                <div class="tracking-timeline">
-                  @for (step of STATUS_ORDER; track step; let i = $index) {
-                    <div class="tracking-step"
-                         [class.done]="statusIndex(o.status) > i"
-                         [class.active]="statusIndex(o.status) === i">
-                      <div class="step-icon">
-                        @if (statusIndex(o.status) >= i) {
-                          <i class="bi bi-check-lg"></i>
-                        } @else {
-                          {{ i + 1 }}
-                        }
-                      </div>
-                      @if (i < STATUS_ORDER.length - 1) {
-                        <div class="step-line"
-                             [class.done]="statusIndex(o.status) > i"
-                             [class.flowing]="statusIndex(o.status) === i"></div>
-                      }
-                      <div class="step-info">
-                        <span class="step-label">{{ STATUS_LABELS[step] }}</span>
-                        @if (statusIndex(o.status) === i) {
-                          <span class="step-desc">{{ STATUS_DESCRIPTIONS[step] }}</span>
-                        }
-                      </div>
-                    </div>
-                  }
-                </div>
-              }
-            </div>
-
-            <!-- Delivery Type -->
+            <!-- Delivery Type (moved to left col) -->
             <div class="section">
               <h2 class="section-title">
                 <i class="bi bi-calendar3"></i>
@@ -393,22 +317,85 @@
               }
             </div>
 
-            <!-- Notifications -->
-            @if (o.notifications?.length) {
-              <div class="section">
-                <h2 class="section-title">
-                  <i class="bi bi-bell"></i>
-                  Notifications Sent
-                </h2>
-                <div class="notif-list">
-                  @for (n of o.notifications; track n.id) {
-                    <span class="notif-chip" [class.sms]="n.channel==='sms'" [class.wa]="n.channel==='whatsapp'">
-                      <i class="bi" [class.bi-whatsapp]="n.channel==='whatsapp'" [class.bi-phone]="n.channel!=='whatsapp'"></i> {{ STATUS_LABELS[n.status] }} via {{ n.channel === 'whatsapp' ? 'WhatsApp' : 'SMS' }}
-                    </span>
+          </div>
+
+          <!-- Right: Order Summary + Tracking -->
+          <div class="right-col">
+
+            <!-- Order Summary -->
+            <div class="section order-summary-card">
+              <h2 class="section-title">
+                <i class="bi bi-file-text"></i>
+                Order Summary
+              </h2>
+              <div class="summary-info-grid">
+                <div class="summary-info-row">
+                  <span class="summary-label">Order ID</span>
+                  <span class="summary-value mono">{{ o.id }}</span>
+                </div>
+                <div class="summary-info-row">
+                  <span class="summary-label">Placed on</span>
+                  <span class="summary-value">{{ formatDate(o.created_at) }}</span>
+                </div>
+                <div class="summary-info-row">
+                  <span class="summary-label">Customer</span>
+                  <span class="summary-value">{{ o.customer_name }}</span>
+                </div>
+                @if (o.customer_address) {
+                  <div class="summary-info-row">
+                    <span class="summary-label">Delivery to</span>
+                    <span class="summary-value">{{ o.customer_address }}</span>
+                  </div>
+                }
+                @if (o.payment_method) {
+                  <div class="summary-info-row">
+                    <span class="summary-label">Payment</span>
+                    <span class="summary-value">{{ o.payment_method.replace('_', ' ') | titlecase }}</span>
+                  </div>
+                }
+              </div>
+            </div>
+
+            <!-- Order Tracking -->
+            <div class="section">
+              <h2 class="section-title">
+                <i class="bi bi-truck"></i>
+                Order Tracking
+              </h2>
+              @if (o.status === 'cancelled') {
+                <div class="cancelled-banner">
+                  <i class="bi bi-x-circle"></i>
+                  This order was cancelled.
+                </div>
+              } @else {
+                <div class="tracking-timeline">
+                  @for (step of STATUS_ORDER; track step; let i = $index) {
+                    <div class="tracking-step"
+                         [class.done]="statusIndex(o.status) > i"
+                         [class.active]="statusIndex(o.status) === i">
+                      <div class="step-icon">
+                        @if (statusIndex(o.status) >= i) {
+                          <i class="bi bi-check-lg"></i>
+                        } @else {
+                          {{ i + 1 }}
+                        }
+                      </div>
+                      @if (i < STATUS_ORDER.length - 1) {
+                        <div class="step-line"
+                             [class.done]="statusIndex(o.status) > i"
+                             [class.flowing]="statusIndex(o.status) === i"></div>
+                      }
+                      <div class="step-info">
+                        <span class="step-label">{{ STATUS_LABELS[step] }}</span>
+                        @if (statusIndex(o.status) === i) {
+                          <span class="step-desc">{{ STATUS_DESCRIPTIONS[step] }}</span>
+                        }
+                      </div>
+                    </div>
                   }
                 </div>
-              </div>
-            }
+              }
+            </div>
 
           </div>
         </div>
