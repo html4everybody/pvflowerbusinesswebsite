@@ -140,6 +140,26 @@
                   </div>
                 }
               </div>
+              <div class="items-breakdown">
+                <div class="breakdown-row">
+                  <span>Subtotal</span>
+                  <span>₹{{ itemsSubtotal(o).toFixed(2) }}</span>
+                </div>
+                <div class="breakdown-row">
+                  <span>Shipping</span>
+                  <span>{{ shippingFee(o) > 0 ? '₹' + shippingFee(o).toFixed(2) : 'Free' }}</span>
+                </div>
+                @if (discountAmount(o) > 0) {
+                  <div class="breakdown-row breakdown-discount">
+                    <span>{{ discountLabel(o) }}</span>
+                    <span>−₹{{ discountAmount(o).toFixed(2) }}</span>
+                  </div>
+                }
+                <div class="breakdown-row breakdown-total">
+                  <span>Total</span>
+                  <span>₹{{ o.total?.toFixed(2) }}</span>
+                </div>
+              </div>
             </div>
           }
 

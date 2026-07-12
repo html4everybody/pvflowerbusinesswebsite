@@ -3673,6 +3673,10 @@ def create_order(req: OrderRequest):
             if u.data:
                 user_id = u.data[0]["id"]
 
+    items_subtotal = sum(float(item.price) * int(item.quantity) for item in (req.items or []))
+    shipping_fee = 0.0 if items_subtotal >= 50 else 9.99
+    discount_amount = round(max(0.0, items_subtotal + shipping_fee - req.total), 2)
+
     order_row = {
         "id": order_id,
         "user_id": user_id,
@@ -3693,6 +3697,10 @@ def create_order(req: OrderRequest):
         "recurrence_type": req.recurrence_type,
         "next_recurrence_date": next_recurrence_date,
         "payment_method": req.payment_method,
+        "shipping_fee": shipping_fee,
+        "discount_amount": discount_amount,
+        "promo_code": (req.promo_code or "").strip().upper() or None,
+        "points_redeemed": req.points_redeemed or 0,
     }
     if _has_column("orders", "source"):
         order_row["source"] = "retail"
