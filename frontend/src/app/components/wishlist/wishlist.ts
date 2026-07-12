@@ -5,6 +5,7 @@ import { ProductService } from '../../services/product';
 import { WishlistService } from '../../services/wishlist';
 import { CartService } from '../../services/cart';
 import { AuthService } from '../../services/auth';
+import { ToastService } from '../../services/toast';
 import { FeedbackService } from '../../services/feedback';
 import { Product } from '../../models/product.model';
 
@@ -30,6 +31,7 @@ export class Wishlist implements OnInit {
     public wishlistService: WishlistService,
     private cartService: CartService,
     private authService: AuthService,
+    private toastService: ToastService,
     private feedbackService: FeedbackService
   ) {}
 
@@ -42,7 +44,8 @@ export class Wishlist implements OnInit {
           .filter(n => !isNaN(n) && n > 0);
         this.isSharedView = this.sharedIds.length > 0;
       } else if (!this.authService.isLoggedIn()) {
-        this.router.navigate(['/signin']);
+        this.toastService.show('Please sign in to continue.', 'error');
+        setTimeout(() => this.router.navigate(['/signin']), 150);
       }
     });
   }
