@@ -353,5 +353,9 @@
   .timeline-card { padding: 1.1rem 1rem; }
   .step-name { font-size: 0.65rem; }
 
-  .detail-grid { grid-template-columns: 1fr; }
+  .detail-grid {
+    grid-template-columns: 1fr;
+    .detail-card:first-child { order: 2; }
+    .detail-card:last-child  { order: 1; }
+  }
 }
