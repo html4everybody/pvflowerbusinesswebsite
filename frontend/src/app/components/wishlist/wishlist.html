@@ -50,7 +50,7 @@
       @for (product of displayProducts; track product.id) {
         <div class="product-card" (click)="goToProduct(product.id)">
 
-          <!-- Heart / save / remove button -->
+          <!-- Heart (shared view) / Delete (own wishlist) -->
           @if (isSharedView) {
             <button
               class="wishlist-btn"
@@ -65,10 +65,10 @@
             </button>
           } @else {
             <button
-              class="wishlist-btn active"
+              class="delete-btn"
               (click)="wishlistService.remove(product.id); $event.stopPropagation()"
               title="Remove from wishlist">
-              <i class="bi bi-heart-fill"></i>
+              <i class="bi bi-trash3"></i>
             </button>
           }
 

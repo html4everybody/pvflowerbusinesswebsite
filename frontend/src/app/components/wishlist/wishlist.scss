@@ -163,6 +163,30 @@
     &.active { color: #d12052; }
   }
 
+  .delete-btn {
+    position: absolute;
+    top: 0.6rem; right: 0.6rem;
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(4px);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted);
+    transition: all 0.2s ease;
+    z-index: 20;
+    padding: 0;
+
+    &:hover {
+      background: #fff0f0;
+      color: #e53e3e;
+      transform: scale(1.15);
+    }
+  }
+
   .card-inner {
     width: 100%; height: 100%;
     border-radius: var(--radius-md);
@@ -474,7 +498,7 @@
 .back-link .bi { font-size: 16px; }
 .shared-banner .bi { font-size: 18px; }
 .btn-add-all .bi, .btn-share .bi, .btn-save-all .bi { font-size: 14px; }
-.product-card .wishlist-btn .bi { font-size: 15px; }
+.product-card .wishlist-btn .bi, .product-card .delete-btn .bi { font-size: 15px; }
 .btn-add-front .bi { font-size: 12px; }
 .empty-wishlist .empty-icon { font-size: 64px; }
 .cart-toast .toast-icon .bi, .share-toast .bi { font-size: 15px; }
