@@ -47,7 +47,6 @@
     position: relative;
     overflow: hidden;
     border-radius: var(--radius-md);
-    cursor: zoom-in;
     aspect-ratio: 1;
     border: 1px solid var(--border);
 
@@ -55,26 +54,8 @@
       width: 100%;
       height: 100%;
       object-fit: cover;
-      transition: transform 0.12s ease;
       display: block;
-
-      &.zoomed { transform: scale(2.2); }
     }
-
-    .zoom-hint {
-      position: absolute;
-      bottom: 0.75rem;
-      right: 0.75rem;
-      background: rgba(0, 0, 0, 0.5);
-      color: white;
-      font-size: 0.72rem;
-      padding: 0.28rem 0.65rem;
-      border-radius: var(--radius-full);
-      transition: opacity 0.2s;
-      pointer-events: none;
-    }
-
-    &:hover .zoom-hint { opacity: 0; }
   }
 
   .gallery-thumbs {
@@ -1002,92 +983,12 @@
   }
 }
 
-// ── Lightbox ──────────────────────────────────────────────────────────────────
-.lightbox-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 9999;
-  background: rgba(0, 0, 0, 0.93);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  animation: fadeIn 0.2s ease;
-
-  .lightbox-inner {
-    position: relative;
-
-    img {
-      max-width: 90vw;
-      max-height: 85vh;
-      object-fit: contain;
-      border-radius: var(--radius-md);
-      display: block;
-    }
-  }
-
-  .lb-close, .lb-prev, .lb-next {
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    color: white;
-    cursor: pointer;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: background 0.2s;
-
-    &:hover { background: rgba(255, 255, 255, 0.25); }
-  }
-
-  .lb-close {
-    position: absolute;
-    top: -2.5rem;
-    right: 0;
-    width: 36px;
-    height: 36px;
-    font-size: 1.1rem;
-  }
-
-  .lb-prev, .lb-next {
-    position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 44px;
-    height: 44px;
-    font-size: 1.8rem;
-    line-height: 1;
-  }
-
-  .lb-prev { left: -3.5rem; }
-  .lb-next { right: -3.5rem; }
-
-  .lb-dots {
-    display: flex;
-    gap: 0.4rem;
-    justify-content: center;
-    margin-top: 1rem;
-
-    span {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: rgba(255, 255, 255, 0.35);
-      cursor: pointer;
-      transition: background 0.2s;
-
-      &.active { background: white; }
-    }
-  }
-}
-
 // ── Mobile ────────────────────────────────────────────────────────────────────
 @media (max-width: 600px) {
   .product-detail .fbt-layout { flex-direction: column; align-items: flex-start; }
   .product-detail .fbt-summary { width: 100%; }
   .product-detail .btn-fbt-cart { width: 100%; }
   .product-detail .rating-summary { flex-direction: column; gap: 1.25rem; }
-  .lightbox-overlay .lb-prev { left: -2rem; }
-  .lightbox-overlay .lb-next { right: -2rem; }
 }
 
 .btn-add-to-cart .bi { font-size: 16px; }

@@ -1,4 +1,4 @@
-import { Component, HostListener, OnInit, signal } from '@angular/core';
+import { Component, OnInit, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
@@ -25,9 +25,6 @@ export class ProductDetail implements OnInit {
 
   activeTab = signal<'description' | 'care' | 'reviews'>('description');
   activeImageIdx = signal(0);
-  lightboxOpen = signal(false);
-  zoomActive = signal(false);
-  zoomOrigin = signal('50% 50%');
 
   gallery: string[] = [];
   careTips: CareTip[] = [];
@@ -89,11 +86,6 @@ export class ProductDetail implements OnInit {
     });
   }
 
-  @HostListener('document:keydown.escape')
-  onEscape(): void {
-    if (this.lightboxOpen()) this.closeLightbox();
-  }
-
   decreaseQuantity(): void {
     if (this.quantity > 1) this.quantity--;
   }
@@ -113,34 +105,6 @@ export class ProductDetail implements OnInit {
 
   selectImage(i: number): void {
     this.activeImageIdx.set(i);
-  }
-
-  openLightbox(): void {
-    this.lightboxOpen.set(true);
-  }
-
-  closeLightbox(): void {
-    this.lightboxOpen.set(false);
-  }
-
-  prevImage(): void {
-    this.activeImageIdx.set(
-      (this.activeImageIdx() - 1 + this.gallery.length) % this.gallery.length
-    );
-  }
-
-  nextImage(): void {
-    this.activeImageIdx.set(
-      (this.activeImageIdx() + 1) % this.gallery.length
-    );
-  }
-
-  onMouseMove(e: MouseEvent): void {
-    this.zoomActive.set(true);
-    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-    const x = ((e.clientX - rect.left) / rect.width) * 100;
-    const y = ((e.clientY - rect.top) / rect.height) * 100;
-    this.zoomOrigin.set(`${x.toFixed(1)}% ${y.toFixed(1)}%`);
   }
 
   toggleFbt(id: number): void {
