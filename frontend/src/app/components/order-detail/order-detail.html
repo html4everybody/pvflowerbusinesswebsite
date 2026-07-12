@@ -76,9 +76,31 @@
                     <span class="item-price">₹{{ (item.price * item.quantity).toFixed(2) }}</span>
                   </div>
                 }
-                <div class="order-total-row">
-                  <span>Total</span>
-                  <span class="total-amount">₹{{ o.total.toFixed(2) }}</span>
+                <div class="order-breakdown">
+                  <div class="breakdown-row">
+                    <span>Subtotal</span>
+                    <span>₹{{ itemsSubtotal(o).toFixed(2) }}</span>
+                  </div>
+                  <div class="breakdown-row">
+                    <span>Shipping</span>
+                    <span>{{ shippingFee(o) > 0 ? '₹' + shippingFee(o).toFixed(2) : 'Free' }}</span>
+                  </div>
+                  @if (pointsDiscountAmount(o) > 0) {
+                    <div class="breakdown-row breakdown-discount">
+                      <span>Loyalty points ({{ o.points_redeemed }} pts)</span>
+                      <span>−₹{{ pointsDiscountAmount(o).toFixed(2) }}</span>
+                    </div>
+                  }
+                  @if (promoDiscountAmount(o) > 0) {
+                    <div class="breakdown-row breakdown-discount">
+                      <span>{{ o.promo_code ? 'Promo (' + o.promo_code + ')' : 'Promo discount' }}</span>
+                      <span>−₹{{ promoDiscountAmount(o).toFixed(2) }}</span>
+                    </div>
+                  }
+                  <div class="breakdown-row breakdown-total">
+                    <span>Total</span>
+                    <span>₹{{ o.total.toFixed(2) }}</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -164,40 +186,139 @@
       <!-- ── CUSTOMER VIEW ──────────────────────────────── -->
       @if (!isAdmin) {
 
-        <!-- Two-column: Order Items | Tracking -->
-        <div class="two-col">
+        <!--
+          Desktop: left-col (Items, Delivery) | right-col (Tracking, Summary)
+          Mobile:  Items → Tracking → Summary → Delivery  (via display:contents + order)
+        -->
+        <div class="detail-four-grid">
 
-          <!-- Left: Order Items -->
-          @if (o.items && o.items.length > 0) {
-            <div class="section">
-              <h2 class="section-title">
-                <i class="bi bi-bag"></i>
-                Order Items
-              </h2>
-              <div class="items-card">
-                @for (item of o.items; track item.id) {
-                  <div class="order-item">
-                    <img [src]="item.image" [alt]="item.name" class="item-image">
-                    <div class="item-details">
-                      <span class="item-name">{{ item.name }}</span>
-                      <span class="item-qty">Qty: {{ item.quantity }}</span>
+          <!-- LEFT COL: Order Items + Delivery Type -->
+          <div class="left-col">
+
+            @if (o.items && o.items.length > 0) {
+              <div class="section g-items">
+                <h2 class="section-title">
+                  <i class="bi bi-bag"></i>
+                  Order Items
+                </h2>
+                <div class="items-card">
+                  @for (item of o.items; track item.id) {
+                    <div class="order-item">
+                      <img [src]="item.image" [alt]="item.name" class="item-image">
+                      <div class="item-details">
+                        <span class="item-name">{{ item.name }}</span>
+                        <span class="item-qty">Qty: {{ item.quantity }}</span>
+                      </div>
+                      <span class="item-price">₹{{ (item.price * item.quantity).toFixed(2) }}</span>
                     </div>
-                    <span class="item-price">₹{{ (item.price * item.quantity).toFixed(2) }}</span>
+                  }
+                  <div class="order-breakdown">
+                    <div class="breakdown-row">
+                      <span>Subtotal</span>
+                      <span>₹{{ itemsSubtotal(o).toFixed(2) }}</span>
+                    </div>
+                    <div class="breakdown-row">
+                      <span>Shipping</span>
+                      <span>{{ shippingFee(o) > 0 ? '₹' + shippingFee(o).toFixed(2) : 'Free' }}</span>
+                    </div>
+                    @if (pointsDiscountAmount(o) > 0) {
+                      <div class="breakdown-row breakdown-discount">
+                        <span>Loyalty points ({{ o.points_redeemed }} pts)</span>
+                        <span>−₹{{ pointsDiscountAmount(o).toFixed(2) }}</span>
+                      </div>
+                    }
+                    @if (promoDiscountAmount(o) > 0) {
+                      <div class="breakdown-row breakdown-discount">
+                        <span>{{ o.promo_code ? 'Promo (' + o.promo_code + ')' : 'Promo discount' }}</span>
+                        <span>−₹{{ promoDiscountAmount(o).toFixed(2) }}</span>
+                      </div>
+                    }
+                    <div class="breakdown-row breakdown-total">
+                      <span>Total</span>
+                      <span>₹{{ o.total.toFixed(2) }}</span>
+                    </div>
                   </div>
-                }
-                <div class="order-total-row">
-                  <span>Total</span>
-                  <span class="total-amount">₹{{ o.total.toFixed(2) }}</span>
                 </div>
               </div>
-            </div>
-          }
+            }
 
-          <!-- Right: Tracking + Delivery Type -->
+            <div class="section g-delivery">
+              <h2 class="section-title">
+                <i class="bi bi-calendar3"></i>
+                Delivery Type
+              </h2>
+              @if (formatDelivery(o); as delivery) {
+                <div class="delivery-card" [class.scheduled]="o.delivery_type === 'scheduled'">
+                  <div class="delivery-icon">
+                    @if (o.delivery_type === 'scheduled') {
+                      <i class="bi bi-calendar3"></i>
+                    } @else {
+                      <i class="bi bi-clock"></i>
+                    }
+                  </div>
+                  <div class="delivery-info">
+                    <span class="delivery-label">{{ delivery.label }}</span>
+                    <span class="delivery-detail">{{ delivery.detail }}</span>
+                    @if (o.is_recurring && o.next_recurrence_date) {
+                      <span class="recurrence-note">Next annual delivery: {{ formatRecurrenceDate(o.next_recurrence_date) }}</span>
+                    }
+                  </div>
+                  @if (o.status !== 'cancelled' && o.status !== 'delivered') {
+                    <button class="btn-edit" (click)="startEditDelivery()" title="Edit delivery schedule">
+                      <i class="bi bi-pencil"></i>
+                      Edit
+                    </button>
+                  }
+                </div>
+              }
+              @if (editingDelivery()) {
+                <div class="delivery-edit-panel">
+                  <div class="dec-options">
+                    <div class="dec-card" [class.selected]="editDelivery().type === 'immediate'" (click)="setEditType('immediate')">
+                      <div class="dec-radio" [class.filled]="editDelivery().type === 'immediate'"></div>
+                      <div><strong>Immediately</strong><span>As soon as possible</span></div>
+                    </div>
+                    <div class="dec-card" [class.selected]="editDelivery().type === 'scheduled'" (click)="setEditType('scheduled')">
+                      <div class="dec-radio" [class.filled]="editDelivery().type === 'scheduled'"></div>
+                      <div><strong>Schedule</strong><span>Pick date & time</span></div>
+                    </div>
+                  </div>
+                  @if (editDelivery().type === 'scheduled') {
+                    <div class="dec-fields">
+                      <div class="dec-field">
+                        <label>Date</label>
+                        <app-date-picker [min]="minDate" [ngModel]="editDelivery().date" (ngModelChange)="setEditDate($event)" [ngModelOptions]="{standalone: true}" placeholder="Select date"></app-date-picker>
+                      </div>
+                      <div class="dec-field">
+                        <label>Time Slot</label>
+                        <select [value]="editDelivery().time" (change)="setEditTime($any($event.target).value)">
+                          <option value="">Select a slot</option>
+                          @for (slot of timeSlots; track slot.key) {
+                            <option [value]="slot.key">{{ slot.label }}</option>
+                          }
+                        </select>
+                      </div>
+                    </div>
+                  }
+                  @if (deliverySaveError()) {
+                    <div class="dec-error">{{ deliverySaveError() }}</div>
+                  }
+                  <div class="dec-actions">
+                    <button class="btn-dec-save" (click)="saveDelivery()" [disabled]="savingDelivery()">
+                      {{ savingDelivery() ? 'Saving...' : 'Save Changes' }}
+                    </button>
+                    <button class="btn-dec-cancel" (click)="cancelEditDelivery()" [disabled]="savingDelivery()">Cancel</button>
+                  </div>
+                </div>
+              }
+            </div>
+
+          </div><!-- /left-col -->
+
+          <!-- RIGHT COL: Order Tracking + Order Summary -->
           <div class="right-col">
 
-            <!-- Order Tracking -->
-            <div class="section">
+            <div class="section g-tracking">
               <h2 class="section-title">
                 <i class="bi bi-truck"></i>
                 Order Tracking
@@ -237,103 +358,42 @@
               }
             </div>
 
-            <!-- Delivery Type -->
-            <div class="section">
+            <div class="section order-summary-card g-summary">
               <h2 class="section-title">
-                <i class="bi bi-calendar3"></i>
-                Delivery Type
+                <i class="bi bi-file-text"></i>
+                Order Summary
               </h2>
-              @if (formatDelivery(o); as delivery) {
-                <div class="delivery-card" [class.scheduled]="o.delivery_type === 'scheduled'">
-                  <div class="delivery-icon">
-                    @if (o.delivery_type === 'scheduled') {
-                      <i class="bi bi-calendar3"></i>
-                    } @else {
-                      <i class="bi bi-clock"></i>
-                    }
-                  </div>
-                  <div class="delivery-info">
-                    <span class="delivery-label">{{ delivery.label }}</span>
-                    <span class="delivery-detail">{{ delivery.detail }}</span>
-                    @if (o.is_recurring && o.next_recurrence_date) {
-                      <span class="recurrence-note">Next annual delivery: {{ formatRecurrenceDate(o.next_recurrence_date) }}</span>
-                    }
-                  </div>
-                  @if (o.status !== 'cancelled' && o.status !== 'delivered') {
-                    <button class="btn-edit" (click)="startEditDelivery()" title="Edit delivery schedule">
-                      <i class="bi bi-pencil"></i>
-                      Edit
-                    </button>
-                  }
+              <div class="summary-info-grid">
+                <div class="summary-info-row">
+                  <span class="summary-label">Order ID</span>
+                  <span class="summary-value mono">{{ o.id }}</span>
                 </div>
-              }
-              @if (editingDelivery()) {
-                <div class="delivery-edit-panel">
-                  <div class="dec-options">
-                    <div class="dec-card" [class.selected]="editDelivery().type === 'immediate'" (click)="setEditType('immediate')">
-                      <div class="dec-radio" [class.filled]="editDelivery().type === 'immediate'"></div>
-                      <div>
-                        <strong>Immediately</strong>
-                        <span>As soon as possible</span>
-                      </div>
-                    </div>
-                    <div class="dec-card" [class.selected]="editDelivery().type === 'scheduled'" (click)="setEditType('scheduled')">
-                      <div class="dec-radio" [class.filled]="editDelivery().type === 'scheduled'"></div>
-                      <div>
-                        <strong>Schedule</strong>
-                        <span>Pick date & time</span>
-                      </div>
-                    </div>
-                  </div>
-                  @if (editDelivery().type === 'scheduled') {
-                    <div class="dec-fields">
-                      <div class="dec-field">
-                        <label>Date</label>
-                        <app-date-picker [min]="minDate" [ngModel]="editDelivery().date" (ngModelChange)="setEditDate($event)" [ngModelOptions]="{standalone: true}" placeholder="Select date"></app-date-picker>
-                      </div>
-                      <div class="dec-field">
-                        <label>Time Slot</label>
-                        <select [value]="editDelivery().time" (change)="setEditTime($any($event.target).value)">
-                          <option value="">Select a slot</option>
-                          @for (slot of timeSlots; track slot.key) {
-                            <option [value]="slot.key">{{ slot.label }}</option>
-                          }
-                        </select>
-                      </div>
-                    </div>
-                  }
-                  @if (deliverySaveError()) {
-                    <div class="dec-error">{{ deliverySaveError() }}</div>
-                  }
-                  <div class="dec-actions">
-                    <button class="btn-dec-save" (click)="saveDelivery()" [disabled]="savingDelivery()">
-                      {{ savingDelivery() ? 'Saving...' : 'Save Changes' }}
-                    </button>
-                    <button class="btn-dec-cancel" (click)="cancelEditDelivery()" [disabled]="savingDelivery()">Cancel</button>
-                  </div>
+                <div class="summary-info-row">
+                  <span class="summary-label">Placed on</span>
+                  <span class="summary-value">{{ formatDate(o.created_at) }}</span>
                 </div>
-              }
+                <div class="summary-info-row">
+                  <span class="summary-label">Customer</span>
+                  <span class="summary-value">{{ o.customer_name }}</span>
+                </div>
+                @if (o.customer_address) {
+                  <div class="summary-info-row">
+                    <span class="summary-label">Delivery to</span>
+                    <span class="summary-value">{{ o.customer_address }}</span>
+                  </div>
+                }
+                @if (o.payment_method) {
+                  <div class="summary-info-row">
+                    <span class="summary-label">Payment</span>
+                    <span class="summary-value">{{ o.payment_method.replace('_', ' ') | titlecase }}</span>
+                  </div>
+                }
+              </div>
             </div>
 
-            <!-- Notifications -->
-            @if (o.notifications?.length) {
-              <div class="section">
-                <h2 class="section-title">
-                  <i class="bi bi-bell"></i>
-                  Notifications Sent
-                </h2>
-                <div class="notif-list">
-                  @for (n of o.notifications; track n.id) {
-                    <span class="notif-chip" [class.sms]="n.channel==='sms'" [class.wa]="n.channel==='whatsapp'">
-                      <i class="bi" [class.bi-whatsapp]="n.channel==='whatsapp'" [class.bi-phone]="n.channel!=='whatsapp'"></i> {{ STATUS_LABELS[n.status] }} via {{ n.channel === 'whatsapp' ? 'WhatsApp' : 'SMS' }}
-                    </span>
-                  }
-                </div>
-              </div>
-            }
+          </div><!-- /right-col -->
 
-          </div>
-        </div>
+        </div><!-- /detail-four-grid -->
 
         <!-- Cancel Order (bottom right) -->
         @if (!isAdmin && o.status !== 'cancelled' && o.status !== 'delivered') {

@@ -1,5 +1,6 @@
 import { Component, signal, computed, ViewChild } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
+import { ViewportScroller } from '@angular/common';
 import { FormsModule, NgForm } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { CartService } from '../../services/cart';
@@ -214,6 +215,7 @@ export class Checkout {
     public authService: AuthService,
     private http: HttpClient,
     private router: Router,
+    private scroller: ViewportScroller,
     private confetti: ConfettiService,
     private loyaltyService: LoyaltyService,
     private promoService: PromoService
@@ -384,6 +386,7 @@ export class Checkout {
         this.newLoyaltyBalance.set(res.new_balance ?? 0);
         this.orderPlaced.set(true);
         this.cartService.clearCart();
+        this.scroller.scrollToPosition([0, 0]);
         setTimeout(() => this.confetti.burst(), 300);
       },
       error: (err) => {

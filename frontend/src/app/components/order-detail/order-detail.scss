@@ -134,6 +134,40 @@
     margin-bottom: 1rem;
   }
 
+  .order-summary-card {
+    .summary-info-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+
+    .summary-info-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 1rem;
+      padding: 0.6rem 0;
+      border-bottom: 1px solid var(--border);
+
+      &:last-child { border-bottom: none; }
+    }
+
+    .summary-label {
+      font-size: 0.83rem;
+      color: var(--text-muted);
+      flex-shrink: 0;
+    }
+
+    .summary-value {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--text);
+      text-align: right;
+
+      &.mono { font-family: monospace; letter-spacing: 0.03em; }
+    }
+  }
+
   .section-title {
     display: flex;
     align-items: center;
@@ -476,12 +510,44 @@
     align-items: start;
   }
 
+  .left-col,
   .right-col {
     display: flex;
     flex-direction: column;
     gap: 1rem;
 
     .section { margin-bottom: 0; }
+  }
+
+  // Customer view — two flex columns on desktop, ordered stack on mobile
+  .detail-four-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    align-items: start;
+
+    .left-col,
+    .right-col {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      .section { margin-bottom: 0; }
+    }
+
+    @media (max-width: 768px) {
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+
+      // Dissolve col wrappers so children become direct flex items
+      .left-col,
+      .right-col { display: contents; }
+
+      .g-items    { order: 1; }
+      .g-tracking { order: 2; }
+      .g-summary  { order: 3; }
+      .g-delivery { order: 4; }
+    }
   }
 
   // Customer details grid (admin)
@@ -557,19 +623,31 @@
       }
     }
 
-    .order-total-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 0.85rem 1rem;
+    .order-breakdown {
+      padding: 0.75rem 1rem 0.85rem;
       background: var(--bg);
       border-top: 2px solid var(--border);
-      font-size: 0.9rem;
-      color: var(--text-muted);
-      font-weight: 500;
+      display: flex;
+      flex-direction: column;
+      gap: 0.3rem;
+    }
 
-      .total-amount {
-        font-size: 1.05rem;
+    .breakdown-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.83rem;
+      color: var(--text-muted);
+
+      &.breakdown-discount {
+        color: #16a34a;
+        font-weight: 600;
+      }
+
+      &.breakdown-total {
+        margin-top: 0.3rem;
+        padding-top: 0.5rem;
+        border-top: 1px solid var(--border);
+        font-size: 0.95rem;
         font-weight: 700;
         color: var(--text);
       }
