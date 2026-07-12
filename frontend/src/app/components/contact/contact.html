@@ -56,10 +56,7 @@
               </div>
               <div class="form-group">
                 <label for="email">Email Address</label>
-                <input type="email" id="email" #emailField="ngModel" [(ngModel)]="formData.email" name="email" placeholder="you@example.com" required>
-                @if (emailField.invalid && emailField.touched) {
-                  <div class="field-error">Email address is required</div>
-                }
+                <input type="email" id="email" [(ngModel)]="formData.email" name="email" placeholder="you@example.com">
               </div>
             </div>
 
