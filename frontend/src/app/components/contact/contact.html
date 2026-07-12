@@ -96,7 +96,7 @@
               <div class="error-msg">{{ errorMessage() }}</div>
             }
 
-            <button type="submit" class="btn-submit" [disabled]="loading()">
+            <button type="submit" class="btn-submit" [disabled]="loading() || contactForm.invalid">
               @if (!loading()) {
                 <i class="bi bi-send"></i>
               }
