@@ -147,12 +147,12 @@ export class Header implements OnInit {
   closeNotif(): void {
     if (!this.notifOpen) return;
     this.notifOpen = false;
-    this.noticeService.markAllRead();   // seen → clear the badge
   }
 
   onNotifClick(n: UserNotice): void {
     const route = this.noticeService.noticeRoute(n);
     this.notifOpen = false;
+    this.noticeService.markOneRead(n.id);
     if (route) this.router.navigate(route);
   }
 

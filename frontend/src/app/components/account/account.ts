@@ -80,11 +80,7 @@ export class Account implements OnInit {
     const savedTab = sessionStorage.getItem('account_tab') as Tab;
     this.activeTab = signal<Tab>(isBackNav && savedTab ? savedTab : 'profile');
     effect(() => sessionStorage.setItem('account_tab', this.activeTab()));
-    // Mark notices read when the user opens the Notifications tab (re-runs once they load).
-    effect(() => {
-      this.noticeService.notices();
-      if (this.activeTab() === 'notifications') this.noticeService.markAllRead();
-    });
+
     const user = this.authService.user();
     if (user) {
       this.profileForm.firstName = user.firstName;

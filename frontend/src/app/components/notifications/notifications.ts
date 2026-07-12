@@ -13,12 +13,13 @@ export class Notifications implements OnInit {
 
   ngOnInit(): void {
     this.noticeService.load();
-    this.noticeService.markAllRead();
   }
 
   goToNotice(n: UserNotice): void {
     const route = this.noticeService.noticeRoute(n);
-    if (route) this.router.navigate(route);
+    if (!route) return;
+    this.noticeService.markOneRead(n.id);
+    this.router.navigate(route);
   }
 
   formatDate(dateStr: string): string {

@@ -44,6 +44,13 @@ export class NoticeService {
     this.http.patch(`${environment.apiUrl}/api/notices/read?email=${encodeURIComponent(email)}`, {}).subscribe({ error: () => {} });
   }
 
+  markOneRead(id: string): void {
+    const email = this.auth.user()?.email;
+    if (!email) return;
+    this.notices.update(l => l.map(n => n.id === id ? { ...n, read: true } : n));
+    this.http.patch(`${environment.apiUrl}/api/notices/${id}/read?email=${encodeURIComponent(email)}`, {}).subscribe({ error: () => {} });
+  }
+
   dismiss(id: string): void {
     const email = this.auth.user()?.email;
     if (!email) return;

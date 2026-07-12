@@ -2870,6 +2870,14 @@ def mark_notices_read(email: str):
         pass
     return {"status": "ok"}
 
+@app.patch("/api/notices/{notice_id}/read")
+def mark_one_notice_read(notice_id: str, email: str):
+    try:
+        supabase.table("user_notices").update({"read": True}).eq("id", notice_id).eq("customer_email", email).execute()
+    except Exception:
+        pass
+    return {"status": "ok"}
+
 @app.delete("/api/notices/{notice_id}")
 def delete_notice(notice_id: str, email: str):
     supabase.table("user_notices").delete().eq("id", notice_id).eq("customer_email", email).execute()
