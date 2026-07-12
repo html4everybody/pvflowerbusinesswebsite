@@ -54,6 +54,7 @@ export class Wishlist implements OnInit {
             if (product && !this.wishlistService.has(id)) this.wishlistService.toggle(product);
           });
           this.toastService.show('Items saved to your wishlist!');
+          this.router.navigate(['/wishlist']);
         }
       } else if (!this.authService.isLoggedIn()) {
         this.toastService.show('Please sign in to continue.', 'error');
