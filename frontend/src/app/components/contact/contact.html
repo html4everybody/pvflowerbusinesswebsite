@@ -49,22 +49,31 @@
             <div class="form-row">
               <div class="form-group">
                 <label for="name">Your Name</label>
-                <input type="text" id="name" [(ngModel)]="formData.name" name="name" placeholder="John Doe" required>
+                <input type="text" id="name" #nameField="ngModel" [(ngModel)]="formData.name" name="name" placeholder="John Doe" required>
+                @if (nameField.invalid && nameField.touched) {
+                  <div class="field-error">Name is required</div>
+                }
               </div>
               <div class="form-group">
                 <label for="email">Email Address</label>
-                <input type="email" id="email" [(ngModel)]="formData.email" name="email" placeholder="you@example.com" required>
+                <input type="email" id="email" #emailField="ngModel" [(ngModel)]="formData.email" name="email" placeholder="you@example.com" required>
+                @if (emailField.invalid && emailField.touched) {
+                  <div class="field-error">Email address is required</div>
+                }
               </div>
             </div>
 
             <div class="form-row">
               <div class="form-group">
                 <label for="phone">Phone Number</label>
-                <input type="tel" id="phone" [(ngModel)]="formData.phone" name="phone" placeholder="Your phone number" required>
+                <input type="tel" id="phone" #phoneField="ngModel" [(ngModel)]="formData.phone" name="phone" placeholder="Your phone number" required>
+                @if (phoneField.invalid && phoneField.touched) {
+                  <div class="field-error">Phone number is required</div>
+                }
               </div>
               <div class="form-group">
                 <label for="subject">Subject</label>
-                <select id="subject" [(ngModel)]="formData.subject" name="subject" required>
+                <select id="subject" #subjectField="ngModel" [(ngModel)]="formData.subject" name="subject" required>
                   <option value="">Select a subject</option>
                   <option value="general">General Inquiry</option>
                   <option value="order">Order Status</option>
@@ -72,19 +81,25 @@
                   <option value="feedback">Feedback</option>
                   <option value="other">Other</option>
                 </select>
+                @if (subjectField.invalid && subjectField.touched) {
+                  <div class="field-error">Please select a subject</div>
+                }
               </div>
             </div>
 
             <div class="form-group">
               <label for="message">Your Message</label>
-              <textarea id="message" [(ngModel)]="formData.message" name="message" rows="5" required placeholder="How can we help you?"></textarea>
+              <textarea id="message" #messageField="ngModel" [(ngModel)]="formData.message" name="message" rows="5" required placeholder="How can we help you?"></textarea>
+              @if (messageField.invalid && messageField.touched) {
+                <div class="field-error">Message is required</div>
+              }
             </div>
 
             @if (errorMessage()) {
               <div class="error-msg">{{ errorMessage() }}</div>
             }
 
-            <button type="submit" class="btn-submit" [disabled]="loading() || contactForm.invalid">
+            <button type="submit" class="btn-submit" [disabled]="loading()">
               @if (!loading()) {
                 <i class="bi bi-send"></i>
               }
