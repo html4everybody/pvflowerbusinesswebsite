@@ -9,19 +9,34 @@
     </div>
 
     @if (!loading()) {
-      <div class="tabs">
-        <button class="tab-btn" [class.active]="activeTab() === 'active'" (click)="activeTab.set('active')">
-          My Orders
-          @if (activeOrders().length > 0) {
-            <span class="tab-badge">{{ activeOrders().length }}</span>
-          }
-        </button>
-        <button class="tab-btn" [class.active]="activeTab() === 'cancelled'" (click)="activeTab.set('cancelled')">
-          Cancelled
-          @if (cancelledOrders().length > 0) {
-            <span class="tab-badge cancelled">{{ cancelledOrders().length }}</span>
-          }
-        </button>
+      <div class="tabs-row">
+        <div class="tabs">
+          <button class="tab-btn" [class.active]="activeTab() === 'active'" (click)="activeTab.set('active')">
+            My Orders
+            @if (activeOrders().length > 0) {
+              <span class="tab-badge">{{ activeOrders().length }}</span>
+            }
+          </button>
+          <button class="tab-btn" [class.active]="activeTab() === 'cancelled'" (click)="activeTab.set('cancelled')">
+            Cancelled
+            @if (cancelledOrders().length > 0) {
+              <span class="tab-badge cancelled">{{ cancelledOrders().length }}</span>
+            }
+          </button>
+        </div>
+        <div class="date-filter-wrap">
+          <i class="bi bi-calendar3"></i>
+          <select class="date-select" [ngModel]="dateFilter()" (ngModelChange)="dateFilter.set($event)">
+            <option value="all">All Time</option>
+            <option value="last_month">Last Month</option>
+            <option value="last_3_months">Last 3 Months</option>
+            <option value="last_6_months">Last 6 Months</option>
+            @for (year of availableYears(); track year) {
+              <option [value]="year">{{ year }}</option>
+            }
+          </select>
+          <i class="bi bi-chevron-down chev"></i>
+        </div>
       </div>
     }
 
@@ -33,7 +48,11 @@
     } @else if (visibleOrders().length === 0) {
       <div class="empty-state">
         <i class="bi bi-file-earmark-text empty-icon"></i>
-        @if (activeTab() === 'active') {
+        @if (dateFilter() !== 'all') {
+          <h2>No orders found</h2>
+          <p>No orders match the selected period.</p>
+          <button class="btn-shop" (click)="dateFilter.set('all')">Clear filter</button>
+        } @else if (activeTab() === 'active') {
           <h2>No orders yet</h2>
           <p>Your order history will appear here once you place an order.</p>
           <a routerLink="/" class="btn-shop">Browse Flowers</a>

@@ -33,11 +33,48 @@
     }
   }
 
+  .tabs-row {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+
   .tabs {
     display: flex;
     gap: 0.25rem;
     border-bottom: 2px solid var(--border);
-    margin-bottom: 1.5rem;
+    flex: 1;
+  }
+
+  .date-filter-wrap {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    background: var(--bg-card);
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    padding: 0.38rem 0.65rem;
+    flex-shrink: 0;
+    margin-bottom: 2px;
+
+    .bi-calendar3 { color: var(--accent); font-size: 0.85rem; }
+    .chev { color: var(--text-muted); font-size: 0.7rem; pointer-events: none; }
+
+    .date-select {
+      border: none;
+      outline: none;
+      background: transparent;
+      color: var(--text);
+      font-size: 0.82rem;
+      font-family: inherit;
+      font-weight: 500;
+      cursor: pointer;
+      appearance: none;
+      -webkit-appearance: none;
+      padding-right: 0.1rem;
+    }
   }
 
   .tab-btn {
