@@ -4,6 +4,7 @@ import { DecimalPipe } from '@angular/common';
 import { ProductService } from '../../services/product';
 import { WishlistService } from '../../services/wishlist';
 import { CartService } from '../../services/cart';
+import { AuthService } from '../../services/auth';
 import { FeedbackService } from '../../services/feedback';
 import { Product } from '../../models/product.model';
 
@@ -28,6 +29,7 @@ export class Wishlist implements OnInit {
     private productService: ProductService,
     public wishlistService: WishlistService,
     private cartService: CartService,
+    private authService: AuthService,
     private feedbackService: FeedbackService
   ) {}
 
@@ -39,6 +41,8 @@ export class Wishlist implements OnInit {
           .map(Number)
           .filter(n => !isNaN(n) && n > 0);
         this.isSharedView = this.sharedIds.length > 0;
+      } else if (!this.authService.isLoggedIn()) {
+        this.router.navigate(['/signin']);
       }
     });
   }
