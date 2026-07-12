@@ -184,7 +184,7 @@
       </button>
 
       <!-- Wishlist Icon -->
-      <a routerLink="/wishlist" routerLinkActive="active" class="wishlist-icon" title="My Wishlist">
+      <a routerLink="/wishlist" routerLinkActive="active" class="wishlist-icon" [class.has-items]="wishlistService.count() > 0" title="My Wishlist">
         @if (wishlistService.count() > 0) {
           <i class="bi bi-heart-fill"></i>
         } @else {

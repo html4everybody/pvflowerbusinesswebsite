@@ -523,6 +523,7 @@
     text-decoration: none;
     transition: background 0.15s ease, color 0.15s ease;
 
+    &.has-items { color: #d12052; }
     &:hover, &.active {
       background: var(--accent-light);
       color: var(--accent);
