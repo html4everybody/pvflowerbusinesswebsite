@@ -43,6 +43,18 @@ export class Wishlist implements OnInit {
           .map(Number)
           .filter(n => !isNaN(n) && n > 0);
         this.isSharedView = this.sharedIds.length > 0;
+
+        // Auto-complete a pending save that was interrupted by the signin flow
+        const pending = sessionStorage.getItem('wishlist_pending_save');
+        if (pending && this.authService.isLoggedIn()) {
+          sessionStorage.removeItem('wishlist_pending_save');
+          const pendingIds = JSON.parse(pending) as number[];
+          pendingIds.forEach(id => {
+            const product = this.productService.getProductById(id);
+            if (product && !this.wishlistService.has(id)) this.wishlistService.toggle(product);
+          });
+          this.toastService.show('Items saved to your wishlist!');
+        }
       } else if (!this.authService.isLoggedIn()) {
         this.toastService.show('Please sign in to continue.', 'error');
         setTimeout(() => this.router.navigate(['/signin']), 150);
@@ -77,18 +89,27 @@ export class Wishlist implements OnInit {
   }
 
   saveSharedToWishlist(): void {
+    if (!this.authService.isLoggedIn()) {
+      sessionStorage.setItem('wishlist_pending_save', JSON.stringify(this.sharedIds));
+      this.toastService.show('Please sign in to save items to your wishlist.', 'error');
+      setTimeout(() => this.router.navigate(['/signin'], { queryParams: { returnUrl: this.router.url } }), 150);
+      return;
+    }
     this.sharedIds.forEach(id => {
       const product = this.productService.getProductById(id);
-      if (product && !this.wishlistService.has(id)) {
-        this.wishlistService.toggle(product);
-      }
+      if (product && !this.wishlistService.has(id)) this.wishlistService.toggle(product);
     });
+    this.toastService.show('Items saved to your wishlist!');
   }
 
   saveOneToWishlist(product: Product): void {
-    if (!this.wishlistService.has(product.id)) {
-      this.wishlistService.toggle(product);
+    if (!this.authService.isLoggedIn()) {
+      sessionStorage.setItem('wishlist_pending_save', JSON.stringify([product.id]));
+      this.toastService.show('Please sign in to save items to your wishlist.', 'error');
+      setTimeout(() => this.router.navigate(['/signin'], { queryParams: { returnUrl: this.router.url } }), 150);
+      return;
     }
+    if (!this.wishlistService.has(product.id)) this.wishlistService.toggle(product);
   }
 
   goToProduct(id: number): void {
