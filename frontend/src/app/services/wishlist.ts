@@ -29,7 +29,7 @@ export class WishlistService {
   toggle(product: Product): boolean {
     if (!this.authService.user()) {
       this.toast.show('Please sign in to save items to your wishlist.', 'error');
-      this.router.navigate(['/signin']);
+      setTimeout(() => this.router.navigate(['/signin']), 150);
       return false;
     }
     this._ids.update(ids =>
