@@ -311,6 +311,36 @@
   .item-price { font-size: 0.88rem; font-weight: 700; color: var(--text); flex-shrink: 0; }
 }
 
+.items-breakdown {
+  margin-top: 0.85rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.breakdown-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.83rem;
+  color: var(--text-muted);
+
+  &.breakdown-discount {
+    color: #16a34a;
+    font-weight: 600;
+  }
+
+  &.breakdown-total {
+    margin-top: 0.25rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid var(--border);
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--text);
+  }
+}
+
 // ── Responsive ────────────────────────────────────────────────────────────────
 @media (max-width: 600px) {
   .track-page { padding: 1.5rem 0.85rem 3rem; }

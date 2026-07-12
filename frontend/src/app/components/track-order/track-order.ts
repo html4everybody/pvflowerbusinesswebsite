@@ -78,4 +78,24 @@ export class TrackOrder implements OnInit {
       hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Kolkata'
     });
   }
+
+  itemsSubtotal(o: any): number {
+    return (o.items || []).reduce((sum: number, i: any) => sum + (i.price * i.quantity), 0);
+  }
+
+  shippingFee(o: any): number {
+    if (o.shipping_fee != null) return o.shipping_fee;
+    // fallback for old orders without stored shipping_fee
+    return this.itemsSubtotal(o) >= 50 ? 0 : 9.99;
+  }
+
+  discountAmount(o: any): number {
+    return o.discount_amount || 0;
+  }
+
+  discountLabel(o: any): string {
+    if (o.promo_code) return `Promo (${o.promo_code})`;
+    if (o.points_redeemed > 0) return `Loyalty points (${o.points_redeemed} pts)`;
+    return 'Discount';
+  }
 }
