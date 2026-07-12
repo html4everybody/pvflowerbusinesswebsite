@@ -100,29 +100,29 @@
 }
 
 .btn-add-all {
-  background: linear-gradient(180deg, #3b82f6 0%, var(--accent) 50%, #1e56c8 100%);
-  color: white;
-  border: 1.5px solid var(--accent);
-  box-shadow: 0 3px 12px rgba(37, 99, 235, 0.3), inset 0 1px 0 rgba(255,255,255,0.15);
+  background: var(--accent-light);
+  color: var(--accent);
+  border: 1.5px solid var(--accent-mid);
+  box-shadow: 0 2px 8px rgba(209, 32, 82, 0.15);
 
   &:hover {
-    background: linear-gradient(180deg, #3b82f6 0%, var(--accent-dark) 100%);
-    box-shadow: 0 5px 16px rgba(37, 99, 235, 0.42), inset 0 1px 0 rgba(255,255,255,0.15);
+    opacity: 0.85;
     transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(209, 32, 82, 0.25);
   }
 }
 
 .btn-save-all {
-  background: linear-gradient(180deg, #3b82f6 0%, var(--accent) 50%, #1e56c8 100%);
-  color: white;
-  border: 1.5px solid var(--accent);
+  background: var(--accent-light);
+  color: var(--accent);
+  border: 1.5px solid var(--accent-mid);
   margin-left: 0.25rem;
-  box-shadow: 0 3px 12px rgba(37, 99, 235, 0.3), inset 0 1px 0 rgba(255,255,255,0.15);
+  box-shadow: 0 2px 8px rgba(209, 32, 82, 0.15);
 
   &:hover {
-    background: linear-gradient(180deg, #3b82f6 0%, var(--accent-dark) 100%);
-    box-shadow: 0 5px 14px rgba(37, 99, 235, 0.4);
+    opacity: 0.85;
     transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(209, 32, 82, 0.25);
   }
 }
 
