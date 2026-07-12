@@ -186,6 +186,40 @@
       <!-- ── CUSTOMER VIEW ──────────────────────────────── -->
       @if (!isAdmin) {
 
+        <!-- Order Summary (full width) -->
+        <div class="section order-summary-card">
+          <h2 class="section-title">
+            <i class="bi bi-file-text"></i>
+            Order Summary
+          </h2>
+          <div class="summary-info-grid">
+            <div class="summary-info-row">
+              <span class="summary-label">Order ID</span>
+              <span class="summary-value mono">{{ o.id }}</span>
+            </div>
+            <div class="summary-info-row">
+              <span class="summary-label">Placed on</span>
+              <span class="summary-value">{{ formatDate(o.created_at) }}</span>
+            </div>
+            <div class="summary-info-row">
+              <span class="summary-label">Customer</span>
+              <span class="summary-value">{{ o.customer_name }}</span>
+            </div>
+            @if (o.customer_address) {
+              <div class="summary-info-row">
+                <span class="summary-label">Delivery to</span>
+                <span class="summary-value">{{ o.customer_address }}</span>
+              </div>
+            }
+            @if (o.payment_method) {
+              <div class="summary-info-row">
+                <span class="summary-label">Payment</span>
+                <span class="summary-value">{{ o.payment_method.replace('_', ' ') | titlecase }}</span>
+              </div>
+            }
+          </div>
+        </div>
+
         <!-- Two-column: Order Items | Tracking -->
         <div class="two-col">
 

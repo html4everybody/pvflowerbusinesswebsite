@@ -1,6 +1,6 @@
 import { Component, OnInit, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { Location } from '@angular/common';
+import { Location, TitleCasePipe } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { AuthService } from '../../services/auth';
 import { ToastService } from '../../services/toast';
@@ -11,7 +11,7 @@ import { DatePicker } from '../date-picker/date-picker';
 
 @Component({
   selector: 'app-order-detail',
-  imports: [RouterLink, FormsModule, DatePicker],
+  imports: [RouterLink, FormsModule, DatePicker, TitleCasePipe],
   templateUrl: './order-detail.html',
   styleUrl: './order-detail.scss'
 })

@@ -134,6 +134,40 @@
     margin-bottom: 1rem;
   }
 
+  .order-summary-card {
+    .summary-info-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+
+    .summary-info-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 1rem;
+      padding: 0.6rem 0;
+      border-bottom: 1px solid var(--border);
+
+      &:last-child { border-bottom: none; }
+    }
+
+    .summary-label {
+      font-size: 0.83rem;
+      color: var(--text-muted);
+      flex-shrink: 0;
+    }
+
+    .summary-value {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--text);
+      text-align: right;
+
+      &.mono { font-family: monospace; letter-spacing: 0.03em; }
+    }
+  }
+
   .section-title {
     display: flex;
     align-items: center;
