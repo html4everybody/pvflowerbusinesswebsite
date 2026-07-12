@@ -81,6 +81,18 @@
   font-weight: 800;
   color: var(--text);
   font-size: 0.95rem;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.unread-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  flex-shrink: 0;
 }
 
 .notif-card-meta {

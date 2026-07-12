@@ -15,7 +15,10 @@
         @for (n of noticeService.notices(); track n.id) {
           <div class="notif-card" [class.unread]="!n.read" [class.clickable]="!!noticeService.noticeRoute(n)" (click)="goToNotice(n)">
             <div class="notif-card-top">
-              <span class="notif-card-title">{{ n.title }}</span>
+              <span class="notif-card-title">
+                @if (!n.read) { <span class="unread-dot"></span> }
+                {{ n.title }}
+              </span>
               <div class="notif-card-meta">
                 <span class="notif-card-date">{{ formatDate(n.created_at) }}</span>
                 <button class="notif-card-dismiss" title="Dismiss" (click)="noticeService.dismiss(n.id); $event.stopPropagation()">×</button>
