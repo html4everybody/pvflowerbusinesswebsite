@@ -384,6 +384,7 @@ export class Checkout {
         this.newLoyaltyBalance.set(res.new_balance ?? 0);
         this.orderPlaced.set(true);
         this.cartService.clearCart();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
         setTimeout(() => this.confetti.burst(), 300);
       },
       error: (err) => {
