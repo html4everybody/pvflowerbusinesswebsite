@@ -2,6 +2,7 @@ import { Component, OnInit, signal, computed, effect } from '@angular/core';
 import { Router, ActivatedRoute, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
+import { retry } from 'rxjs';
 import { AuthService } from '../../services/auth';
 import { NoticeService } from '../../services/notice';
 import { AccountNav } from '../account-nav/account-nav';
@@ -107,10 +108,12 @@ export class Account implements OnInit {
     this.ordersLoading.set(true);
     const token = this.authService.getToken();
     const params = `email=${encodeURIComponent(user.email)}${token ? `&token=${token}` : ''}`;
-    this.http.get<any[]>(`${environment.apiUrl}/api/orders?${params}`).subscribe({
-      next: (data) => { this.orders.set(data); this.ordersLoading.set(false); },
-      error: () => { this.ordersLoading.set(false); this.ordersError.set(true); }
-    });
+    this.http.get<any[]>(`${environment.apiUrl}/api/orders?${params}`)
+      .pipe(retry({ count: 2, delay: 1500 }))
+      .subscribe({
+        next: (data) => { this.orders.set(data); this.ordersLoading.set(false); },
+        error: () => { this.ordersLoading.set(false); this.ordersError.set(true); }
+      });
   }
 
   saveProfile() {
@@ -174,10 +177,12 @@ export class Account implements OnInit {
     this.ordersLoading.set(true);
     const token = this.authService.getToken();
     const params = `email=${encodeURIComponent(user.email)}${token ? `&token=${token}` : ''}`;
-    this.http.get<any[]>(`${environment.apiUrl}/api/orders?${params}`).subscribe({
-      next: (data) => { this.orders.set(data); this.ordersLoading.set(false); },
-      error: () => { this.ordersLoading.set(false); this.ordersError.set(true); }
-    });
+    this.http.get<any[]>(`${environment.apiUrl}/api/orders?${params}`)
+      .pipe(retry({ count: 2, delay: 1500 }))
+      .subscribe({
+        next: (data) => { this.orders.set(data); this.ordersLoading.set(false); },
+        error: () => { this.ordersLoading.set(false); this.ordersError.set(true); }
+      });
   }
 
   formatDate(dateStr: string): string {
