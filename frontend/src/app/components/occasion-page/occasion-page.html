@@ -1,5 +1,5 @@
 <!-- ── Loading ──────────────────────────────────────────────────────────────── -->
-@if (loading) {
+@if (loading()) {
   <main class="occasion-loading">
     <div class="occ-spinner"></div>
     <p>Curating the collection…</p>
@@ -7,7 +7,7 @@
 }
 
 <!-- ── Index: All Occasions ─────────────────────────────────────────────────── -->
-@if (!loading && isIndex) {
+@if (!loading() && isIndex) {
   <main class="occasion-index">
     <section class="index-grid-section">
       <div class="container">
@@ -32,7 +32,7 @@
 }
 
 <!-- ── Individual Occasion Landing Page ─────────────────────────────────────── -->
-@if (!loading && !isIndex && config) {
+@if (!loading() && !isIndex && config) {
   <main class="occasion-page" [style.--occ-accent]="config.accentColor">
 
     <!-- Hero -->

@@ -1,4 +1,5 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, signal } from '@angular/core';
+import { retry } from 'rxjs/operators';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { DecimalPipe } from '@angular/common';
 import { ProductService } from '../../services/product';
@@ -33,7 +34,7 @@ export class OccasionPage implements OnInit {
   config: OccasionConfig | null = null;
   products: Product[] = [];
   isIndex = false;
-  loading = true;
+  loading = signal(true);
   cartQuantities: { [id: number]: number } = {};
 
   constructor(
@@ -60,11 +61,11 @@ export class OccasionPage implements OnInit {
   }
 
   ngOnInit(): void {
-    this.occasionService.getAll().subscribe({
-      next: list => { this.allOccasions = list.map(o => this.mapOcc(o)); this.loading = false; this.handleRoute(); },
-      error: () => { this.loading = false; this.handleRoute(); },
+    this.occasionService.getAll().pipe(retry({ count: 5, delay: 5000 })).subscribe({
+      next: list => { this.allOccasions = list.map(o => this.mapOcc(o)); this.loading.set(false); this.handleRoute(); },
+      error: () => { this.loading.set(false); this.handleRoute(); },
     });
-    this.route.params.subscribe(() => { if (!this.loading) this.handleRoute(); });
+    this.route.params.subscribe(() => { if (!this.loading()) this.handleRoute(); });
   }
 
   private handleRoute(): void {
