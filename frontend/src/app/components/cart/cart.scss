@@ -266,19 +266,19 @@
 
     .btn-shop {
       display: inline-block;
-      background: var(--text);
-      color: var(--bg);
+      background: linear-gradient(135deg, #f97316, #ea6c00);
+      color: white;
       padding: 0.875rem 1.75rem;
       border-radius: var(--radius-full);
       text-decoration: none;
       font-weight: 700;
-      box-shadow: 0 4px 16px rgba(0,0,0,0.22), inset 0 1px 0 rgba(255,255,255,0.1);
+      box-shadow: 0 3px 12px rgba(249,115,22,0.35);
       transition: opacity 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
 
       &:hover {
         opacity: 0.9;
         transform: translateY(-1px);
-        box-shadow: 0 6px 20px rgba(0,0,0,0.28);
+        box-shadow: 0 5px 18px rgba(249,115,22,0.45);
       }
     }
   }
