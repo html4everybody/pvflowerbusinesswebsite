@@ -186,14 +186,10 @@
       <!-- ── CUSTOMER VIEW ──────────────────────────────── -->
       @if (!isAdmin) {
 
-        <!--
-          Desktop grid:  col1/row1=Items  col2/row1=Tracking
-                         col1/row2=Summary col2/row2=Delivery
-          Mobile order:  Items → Tracking → Summary → Delivery
-        -->
         <div class="detail-four-grid">
+          <div class="left-col">
 
-          <!-- Order Items — col1 row1 -->
+          <!-- Order Items -->
           @if (o.items && o.items.length > 0) {
             <div class="section g-items">
               <h2 class="section-title">
@@ -241,7 +237,10 @@
             </div>
           }
 
-          <!-- Order Tracking — col2 row1 -->
+          </div><!-- /left-col -->
+          <div class="right-col">
+
+          <!-- Order Tracking -->
           <div class="section g-tracking">
             <h2 class="section-title">
               <i class="bi bi-truck"></i>
@@ -282,7 +281,7 @@
             }
           </div>
 
-          <!-- Order Summary — col2 row2 -->
+          <!-- Order Summary -->
           <div class="section order-summary-card g-summary">
             <h2 class="section-title">
               <i class="bi bi-file-text"></i>
@@ -316,7 +315,10 @@
             </div>
           </div>
 
-          <!-- Delivery Type — col1 row2 -->
+          </div><!-- /right-col -->
+          <div class="left-col">
+
+          <!-- Delivery Type -->
           <div class="section g-delivery">
             <h2 class="section-title">
               <i class="bi bi-calendar3"></i>
@@ -394,7 +396,8 @@
             }
           </div>
 
-        </div>
+          </div><!-- /left-col (delivery) -->
+        </div><!-- /detail-four-grid -->
 
         <!-- Cancel Order (bottom right) -->
         @if (!isAdmin && o.status !== 'cancelled' && o.status !== 'delivered') {
