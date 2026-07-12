@@ -149,10 +149,16 @@
                   <span>Shipping</span>
                   <span>{{ shippingFee(o) > 0 ? '₹' + shippingFee(o).toFixed(2) : 'Free' }}</span>
                 </div>
-                @if (discountAmount(o) > 0) {
+                @if (pointsDiscountAmount(o) > 0) {
                   <div class="breakdown-row breakdown-discount">
-                    <span>{{ discountLabel(o) }}</span>
-                    <span>−₹{{ discountAmount(o).toFixed(2) }}</span>
+                    <span>Loyalty points ({{ o.points_redeemed }} pts)</span>
+                    <span>−₹{{ pointsDiscountAmount(o).toFixed(2) }}</span>
+                  </div>
+                }
+                @if (promoDiscountAmount(o) > 0) {
+                  <div class="breakdown-row breakdown-discount">
+                    <span>{{ o.promo_code ? 'Promo (' + o.promo_code + ')' : 'Promo discount' }}</span>
+                    <span>−₹{{ promoDiscountAmount(o).toFixed(2) }}</span>
                   </div>
                 }
                 <div class="breakdown-row breakdown-total">

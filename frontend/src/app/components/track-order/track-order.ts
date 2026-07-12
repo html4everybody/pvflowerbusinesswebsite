@@ -89,13 +89,12 @@ export class TrackOrder implements OnInit {
     return this.itemsSubtotal(o) >= 50 ? 0 : 9.99;
   }
 
-  discountAmount(o: any): number {
-    return o.discount_amount || 0;
+  pointsDiscountAmount(o: any): number {
+    return o.points_redeemed ? +((o.points_redeemed / 10).toFixed(2)) : 0;
   }
 
-  discountLabel(o: any): string {
-    if (o.promo_code) return `Promo (${o.promo_code})`;
-    if (o.points_redeemed > 0) return `Loyalty points (${o.points_redeemed} pts)`;
-    return 'Discount';
+  promoDiscountAmount(o: any): number {
+    const total = o.discount_amount || 0;
+    return Math.max(0, +((total - this.pointsDiscountAmount(o)).toFixed(2)));
   }
 }
