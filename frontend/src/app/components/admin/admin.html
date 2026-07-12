@@ -197,6 +197,8 @@
               <div class="stat-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg></div>
             </div>
           </div>
+        } @else if (loadError()) {
+          <div class="loading-state"><p>{{ loadError() }}</p></div>
         } @else {
           <div class="loading-state"><div class="spinner"></div><p>Loading stats...</p></div>
         }

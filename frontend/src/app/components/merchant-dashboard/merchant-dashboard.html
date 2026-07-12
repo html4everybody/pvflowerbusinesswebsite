@@ -109,8 +109,10 @@
             <button class="btn-primary" (click)="go('products'); newProduct()"><i class="bi bi-plus-lg"></i> Add product</button>
             <button class="btn-secondary" (click)="go('orders')"><i class="bi bi-bag-check"></i> View orders</button>
           </div>
-        } @else {
+        } @else if (loadingStats()) {
           <div class="loading"><i class="bi bi-arrow-repeat vp-spin"></i> Loading…</div>
+        } @else if (statsError()) {
+          <div class="loading"><i class="bi bi-wifi-off"></i> Could not load. Please refresh.</div>
         }
       </div>
     }

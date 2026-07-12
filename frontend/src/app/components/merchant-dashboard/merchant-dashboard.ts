@@ -2,6 +2,7 @@ import { Component, OnInit, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
+import { retry } from 'rxjs/operators';
 import { DecimalPipe } from '@angular/common';
 import { AuthService } from '../../services/auth';
 import { ToastService } from '../../services/toast';
@@ -30,6 +31,8 @@ export class MerchantDashboard implements OnInit {
   categories = signal<string[]>(this.BASE_CATEGORIES);
 
   stats = signal<any>(null);
+  loadingStats = signal(true);
+  statsError = signal(false);
   products = signal<any[]>([]);
   orders = signal<any[]>([]);
 
@@ -91,26 +94,34 @@ export class MerchantDashboard implements OnInit {
 
   // ── Data ────────────────────────────────────────────────────────────────
   loadStats(): void {
-    this.http.get<any>(`${this.api}/api/merchant/stats?token=${this.token}`).subscribe({
-      next: (s) => this.stats.set(s),
-      error: () => {},
-    });
+    this.loadingStats.set(true);
+    this.statsError.set(false);
+    this.http.get<any>(`${this.api}/api/merchant/stats?token=${this.token}`)
+      .pipe(retry({ count: 5, delay: 5000 }))
+      .subscribe({
+        next: (s) => { this.stats.set(s); this.loadingStats.set(false); },
+        error: () => { this.loadingStats.set(false); this.statsError.set(true); },
+      });
   }
 
   loadProducts(): void {
     this.loadingProducts.set(true);
-    this.http.get<any[]>(`${this.api}/api/merchant/products?token=${this.token}`).subscribe({
-      next: (p) => { this.products.set(p || []); this.loadingProducts.set(false); },
-      error: () => { this.loadingProducts.set(false); this.toast.show('Could not load products', 'error'); },
-    });
+    this.http.get<any[]>(`${this.api}/api/merchant/products?token=${this.token}`)
+      .pipe(retry({ count: 5, delay: 5000 }))
+      .subscribe({
+        next: (p) => { this.products.set(p || []); this.loadingProducts.set(false); },
+        error: () => { this.loadingProducts.set(false); },
+      });
   }
 
   loadOrders(): void {
     this.loadingOrders.set(true);
-    this.http.get<any[]>(`${this.api}/api/merchant/orders?token=${this.token}`).subscribe({
-      next: (o) => { this.orders.set(o || []); this.loadingOrders.set(false); },
-      error: () => { this.loadingOrders.set(false); this.toast.show('Could not load orders', 'error'); },
-    });
+    this.http.get<any[]>(`${this.api}/api/merchant/orders?token=${this.token}`)
+      .pipe(retry({ count: 5, delay: 5000 }))
+      .subscribe({
+        next: (o) => { this.orders.set(o || []); this.loadingOrders.set(false); },
+        error: () => { this.loadingOrders.set(false); },
+      });
   }
 
   loadShop(): void {
