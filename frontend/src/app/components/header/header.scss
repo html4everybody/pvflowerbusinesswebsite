@@ -1430,6 +1430,7 @@
       border-bottom: 1px solid var(--border);
       &:last-child { border-bottom: none; }
       &.unread { background: color-mix(in srgb, var(--accent) 8%, transparent); }
+      &.clickable { cursor: pointer; &:hover { background: color-mix(in srgb, var(--accent) 12%, transparent); } }
 
       .notif-item-top { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
       .notif-item-title { font-weight: 700; font-size: 0.83rem; color: var(--text); }

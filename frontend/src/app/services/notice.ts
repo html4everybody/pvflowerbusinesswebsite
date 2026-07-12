@@ -50,4 +50,12 @@ export class NoticeService {
     this.notices.update(l => l.filter(n => n.id !== id));
     this.http.delete(`${environment.apiUrl}/api/notices/${id}?email=${encodeURIComponent(email)}`).subscribe({ error: () => {} });
   }
+
+  noticeRoute(n: UserNotice): string[] | null {
+    if (!n.ref_type) return null;
+    if (n.ref_type === 'order' && n.ref_id) return ['/orders', n.ref_id];
+    if (n.ref_type === 'subscription') return ['/my-subscriptions'];
+    if (n.ref_type === 'booking') return ['/my-studio'];
+    return null;
+  }
 }

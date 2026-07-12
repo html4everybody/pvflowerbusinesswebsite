@@ -2793,9 +2793,9 @@ def update_order_status(order_id: str, req: StatusUpdateRequest):
     if req.status in ORDER_STATUS_NOTICE:
         title, phrase = ORDER_STATUS_NOTICE[req.status]
         summary = order_items_summary(order_id)
-        detail = f" ({summary})" if summary else ""
+        detail = f" — {summary}" if summary else ""
         create_user_notice(order.get("customer_email"), title,
-                            f"Your order {order_id}{detail} {phrase}.", "order", order_id)
+                            f"Your order #{order_id}{detail} {phrase}.", "order", order_id)
     return {"status": req.status}
 
 # ── User notices (messages the customer sees in their account) ──────────────────
@@ -2817,36 +2817,36 @@ def create_user_notice(email: Optional[str], title: str, message: str, ref_type:
         pass
 
 def order_items_summary(order_id: str) -> str:
-    """'Red Rose Bouquet (#1) ×2, Sunflower (#2) ×1' for an order."""
+    """'Red Rose Bouquet x2, Sunflower x1' for an order."""
     try:
-        items = supabase.table("order_items").select("product_id, name, quantity").eq("order_id", order_id).execute().data or []
-        return ", ".join(f"{it.get('name')} (#{it.get('product_id')}) ×{it.get('quantity')}" for it in items)
+        items = supabase.table("order_items").select("name, quantity").eq("order_id", order_id).execute().data or []
+        return ", ".join(f"{it.get('name')} x{it.get('quantity')}" for it in items)
     except Exception:
         return ""
 
 def booking_items_summary(items) -> str:
     """Same for a Petal Studio booking's items JSON list."""
     return ", ".join(
-        f"{it.get('product_name')} (#{it.get('product_id')}) ×{it.get('quantity')}"
+        f"{it.get('product_name')} x{it.get('quantity')}"
         for it in (items or [])
     )
 
 # Friendly status → notice text
 ORDER_STATUS_NOTICE = {
-    "preparing":        ("Order being prepared",   "is now being prepared 🌸"),
-    "out_for_delivery": ("Order out for delivery",  "is out for delivery 🚚 — arriving today!"),
-    "delivered":        ("Order delivered",         "has been delivered ✅ — we hope you love it!"),
+    "preparing":        ("Order being prepared",   "is now being prepared"),
+    "out_for_delivery": ("Order out for delivery",  "is out for delivery — arriving today!"),
+    "delivered":        ("Order delivered",         "has been delivered. We hope you love it!"),
     "cancelled":        ("Order cancelled",         "was cancelled"),
 }
 SUB_STATUS_NOTICE = {
     "paused":    ("Subscription paused",   "was paused by our team"),
-    "active":    ("Subscription resumed",  "is active again 🌸"),
+    "active":    ("Subscription resumed",  "is active again"),
     "cancelled": ("Subscription cancelled", "was cancelled"),
 }
 BOOKING_STATUS_NOTICE = {
-    "confirmed":  ("Booking confirmed",  "is confirmed ✅"),
-    "preparing":  ("Booking in preparation", "is being prepared 🌸"),
-    "completed":  ("Booking completed",  "is complete 🎉 — thank you!"),
+    "confirmed":  ("Booking confirmed",  "is confirmed"),
+    "preparing":  ("Booking in preparation", "is being prepared"),
+    "completed":  ("Booking completed",  "is complete. Thank you!"),
     "cancelled":  ("Booking cancelled",  "was cancelled"),
 }
 
@@ -2887,8 +2887,8 @@ def admin_delete_order(order_id: str, token: str, reason: Optional[str] = None):
     result = supabase.table("orders").delete().eq("id", order_id).execute()
     if not result.data:
         raise HTTPException(status_code=404, detail="Order not found")
-    detail = f" ({summary})" if summary else ""
-    msg = f"Your order {order_id}{detail} was cancelled and removed by our team."
+    detail = f" — {summary}" if summary else ""
+    msg = f"Your order #{order_id}{detail} was cancelled and removed by our team."
     if reason:
         msg += f" Reason: {reason}"
     create_user_notice(email, "Order removed", msg, "order", order_id)
@@ -3117,7 +3117,7 @@ def admin_update_subscription(sub_id: str, req: AdminSubscriptionUpdate, token: 
 
     if req.status and req.status != prev_status and req.status in SUB_STATUS_NOTICE:
         title, phrase = SUB_STATUS_NOTICE[req.status]
-        msg = f"Your Bloom Plan subscription {sub_id} {phrase}."
+        msg = f"Your Bloom Plan #{sub_id} {phrase}."
         if req.status == "cancelled" and req.admin_message:
             msg += f" Reason: {req.admin_message}"
         create_user_notice(email, title, msg, "subscription", sub_id)
@@ -3133,8 +3133,8 @@ def admin_delete_subscription(sub_id: str, token: str, reason: Optional[str] = N
     summary = booking_items_summary(existing[0].get("items"))
     # Soft-cancel: keep the record so the customer still sees it with the message.
     supabase.table("subscriptions").update({"status": "cancelled", "admin_message": reason}).eq("id", sub_id).execute()
-    detail = f" ({summary})" if summary else ""
-    msg = f"Your Bloom Plan subscription {sub_id}{detail} was cancelled by our team."
+    detail = f" — {summary}" if summary else ""
+    msg = f"Your Bloom Plan #{sub_id}{detail} was cancelled by our team."
     if reason:
         msg += f" Reason: {reason}"
     create_user_notice(email, "Subscription cancelled", msg, "subscription", sub_id)
@@ -3555,8 +3555,8 @@ def admin_delete_corporate_order(order_id: str, token: str, reason: Optional[str
     # Soft-cancel: keep the record (marked cancelled) so the customer still
     # sees it in My Studio with the admin's message.
     supabase.table("corporate_orders").update({"status": "cancelled", "admin_message": reason}).eq("id", order_id).execute()
-    detail = f" ({summary})" if summary else ""
-    msg = f"Your Petal Studio booking {order_id}{detail} was cancelled by our team."
+    detail = f" — {summary}" if summary else ""
+    msg = f"Your Petal Studio booking #{order_id}{detail} was cancelled by our team."
     if reason:
         msg += f" Reason: {reason}"
     create_user_notice(email, "Booking cancelled", msg, "booking", order_id)
@@ -3585,8 +3585,8 @@ def admin_update_corporate_status(order_id: str, req: CorporateStatusUpdate, tok
     if req.status in BOOKING_STATUS_NOTICE:
         title, phrase = BOOKING_STATUS_NOTICE[req.status]
         summary = booking_items_summary(existing[0].get("items"))
-        detail = f" ({summary})" if summary else ""
-        msg = f"Your Petal Studio booking {order_id}{detail} {phrase}."
+        detail = f" — {summary}" if summary else ""
+        msg = f"Your Petal Studio booking #{order_id}{detail} {phrase}."
         if req.status == "cancelled" and req.admin_message:
             msg += f" Reason: {req.admin_message}"
         create_user_notice(email, title, msg, "booking", order_id)

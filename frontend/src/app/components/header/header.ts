@@ -6,7 +6,7 @@ import { AuthService } from '../../services/auth';
 import { ThemeService } from '../../services/theme';
 import { ProductService } from '../../services/product';
 import { WishlistService } from '../../services/wishlist';
-import { NoticeService } from '../../services/notice';
+import { NoticeService, UserNotice } from '../../services/notice';
 import { ToastService } from '../../services/toast';
 import { Product } from '../../models/product.model';
 
@@ -148,6 +148,12 @@ export class Header implements OnInit {
     if (!this.notifOpen) return;
     this.notifOpen = false;
     this.noticeService.markAllRead();   // seen → clear the badge
+  }
+
+  onNotifClick(n: UserNotice): void {
+    const route = this.noticeService.noticeRoute(n);
+    this.notifOpen = false;
+    if (route) this.router.navigate(route);
   }
 
   get suggestions(): Product[] {

@@ -46,14 +46,27 @@
   border: 1px solid var(--border);
   border-radius: 12px;
   padding: 1rem 1.15rem;
-  transition: box-shadow 0.15s ease;
+  transition: box-shadow 0.15s ease, background 0.15s ease;
 
   &.unread {
     border-left: 3px solid var(--accent);
     background: color-mix(in srgb, var(--accent) 4%, var(--bg-card));
   }
 
-  &:hover { box-shadow: var(--shadow-sm); }
+  &.clickable {
+    cursor: pointer;
+    &:hover { box-shadow: var(--shadow-sm); background: color-mix(in srgb, var(--accent) 6%, var(--bg-card)); }
+  }
+}
+
+.notif-card-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin-top: 0.5rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--accent);
 }
 
 .notif-card-top {
