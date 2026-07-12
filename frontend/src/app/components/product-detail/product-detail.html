@@ -16,16 +16,10 @@
 
         <!-- Gallery -->
         <div class="product-gallery">
-          <div class="gallery-main"
-               (mouseleave)="zoomActive.set(false)"
-               (mousemove)="onMouseMove($event)"
-               (click)="openLightbox()">
+          <div class="gallery-main">
             <img [src]="gallery[activeImageIdx()]"
                  [alt]="product.name"
-                 class="main-image"
-                 [class.zoomed]="zoomActive()"
-                 [style.transform-origin]="zoomOrigin()">
-            <div class="zoom-hint"><i class="bi bi-search"></i> Click to expand</div>
+                 class="main-image">
           </div>
         </div>
 
@@ -97,22 +91,4 @@
     </div>
   }
 
-  <!-- Lightbox -->
-  @if (lightboxOpen()) {
-    <div class="lightbox-overlay" (click)="closeLightbox()">
-      <div class="lightbox-inner" (click)="$event.stopPropagation()">
-        <button class="lb-close" (click)="closeLightbox()"><i class="bi bi-x-lg"></i></button>
-        <button class="lb-prev" (click)="prevImage()">&#8249;</button>
-        <img [src]="gallery[activeImageIdx()]" [alt]="product?.name">
-        <button class="lb-next" (click)="nextImage()">&#8250;</button>
-        <div class="lb-dots">
-          @for (img of gallery; track $index) {
-            <span [class.active]="activeImageIdx() === $index"
-                  (click)="selectImage($index)">
-            </span>
-          }
-        </div>
-      </div>
-    </div>
-  }
 </main>
