@@ -2792,10 +2792,8 @@ def update_order_status(order_id: str, req: StatusUpdateRequest):
     send_notifications(order_id, req.status, order.get("customer_phone") or "")
     if req.status in ORDER_STATUS_NOTICE:
         title, phrase = ORDER_STATUS_NOTICE[req.status]
-        summary = order_items_summary(order_id)
-        detail = f" — {summary}" if summary else ""
         create_user_notice(order.get("customer_email"), title,
-                            f"Your order #{order_id}{detail} {phrase}.", "order", order_id)
+                            f"Your order #{order_id} {phrase}.", "order", order_id)
     return {"status": req.status}
 
 # ── User notices (messages the customer sees in their account) ──────────────────
@@ -2882,13 +2880,11 @@ def admin_delete_order(order_id: str, token: str, reason: Optional[str] = None):
     require_admin(token)
     existing = supabase.table("orders").select("customer_email").eq("id", order_id).execute().data
     email = existing[0]["customer_email"] if existing else None
-    summary = order_items_summary(order_id)
     supabase.table("order_items").delete().eq("order_id", order_id).execute()
     result = supabase.table("orders").delete().eq("id", order_id).execute()
     if not result.data:
         raise HTTPException(status_code=404, detail="Order not found")
-    detail = f" — {summary}" if summary else ""
-    msg = f"Your order #{order_id}{detail} was cancelled and removed by our team."
+    msg = f"Your order #{order_id} was cancelled and removed by our team."
     if reason:
         msg += f" Reason: {reason}"
     create_user_notice(email, "Order removed", msg, "order", order_id)
@@ -3130,11 +3126,9 @@ def admin_delete_subscription(sub_id: str, token: str, reason: Optional[str] = N
     if not existing:
         raise HTTPException(status_code=404, detail="Subscription not found")
     email = existing[0].get("customer_email")
-    summary = booking_items_summary(existing[0].get("items"))
     # Soft-cancel: keep the record so the customer still sees it with the message.
     supabase.table("subscriptions").update({"status": "cancelled", "admin_message": reason}).eq("id", sub_id).execute()
-    detail = f" — {summary}" if summary else ""
-    msg = f"Your Bloom Plan #{sub_id}{detail} was cancelled by our team."
+    msg = f"Your Bloom Plan #{sub_id} was cancelled by our team."
     if reason:
         msg += f" Reason: {reason}"
     create_user_notice(email, "Subscription cancelled", msg, "subscription", sub_id)
@@ -3551,12 +3545,10 @@ def admin_delete_corporate_order(order_id: str, token: str, reason: Optional[str
     if not existing:
         raise HTTPException(status_code=404, detail="Booking not found")
     email = existing[0].get("contact_email")
-    summary = booking_items_summary(existing[0].get("items"))
     # Soft-cancel: keep the record (marked cancelled) so the customer still
     # sees it in My Studio with the admin's message.
     supabase.table("corporate_orders").update({"status": "cancelled", "admin_message": reason}).eq("id", order_id).execute()
-    detail = f" — {summary}" if summary else ""
-    msg = f"Your Petal Studio booking #{order_id}{detail} was cancelled by our team."
+    msg = f"Your Petal Studio booking #{order_id} was cancelled by our team."
     if reason:
         msg += f" Reason: {reason}"
     create_user_notice(email, "Booking cancelled", msg, "booking", order_id)
@@ -3584,9 +3576,7 @@ def admin_update_corporate_status(order_id: str, req: CorporateStatusUpdate, tok
 
     if req.status in BOOKING_STATUS_NOTICE:
         title, phrase = BOOKING_STATUS_NOTICE[req.status]
-        summary = booking_items_summary(existing[0].get("items"))
-        detail = f" — {summary}" if summary else ""
-        msg = f"Your Petal Studio booking #{order_id}{detail} {phrase}."
+        msg = f"Your Petal Studio booking #{order_id} {phrase}."
         if req.status == "cancelled" and req.admin_message:
             msg += f" Reason: {req.admin_message}"
         create_user_notice(email, title, msg, "booking", order_id)
