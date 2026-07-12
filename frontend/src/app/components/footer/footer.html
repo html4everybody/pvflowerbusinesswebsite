@@ -22,7 +22,7 @@
         <ul>
           <li><a routerLink="/">Home</a></li>
           <li><a routerLink="/cart">My Cart</a></li>
-          <li><a routerLink="/orders">My Orders</a></li>
+          <li><a routerLink="/account" [queryParams]="{tab: 'orders'}">My Orders</a></li>
           <li><a routerLink="/contact">Contact Us</a></li>
           <li><a routerLink="/become-seller">Sell on VivaPetals</a></li>
           <li><a routerLink="/signin">Sign In</a></li>
@@ -33,11 +33,10 @@
       <div class="footer-section">
         <h4>Categories</h4>
         <ul>
-          <li><a routerLink="/" fragment="collection">Bouquets</a></li>
-          <li><a routerLink="/" fragment="collection">Garlands</a></li>
-          <li><a routerLink="/" fragment="collection">Flowers</a></li>
-          <li><a routerLink="/" fragment="collection">Decoration</a></li>
-          <li><a routerLink="/" fragment="collection">Gifts</a></li>
+          <li><a routerLink="/" [queryParams]="{category: 'Bouquets', scrollTo: 'collection'}">Bouquets</a></li>
+          <li><a routerLink="/" [queryParams]="{category: 'Garlands', scrollTo: 'collection'}">Garlands</a></li>
+          <li><a routerLink="/" [queryParams]="{category: 'Flowers', scrollTo: 'collection'}">Flowers</a></li>
+          <li><a routerLink="/" [queryParams]="{category: 'Gifts', scrollTo: 'collection'}">Gifts</a></li>
         </ul>
       </div>
 
