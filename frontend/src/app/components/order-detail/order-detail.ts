@@ -4,6 +4,7 @@ import { Location } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { AuthService } from '../../services/auth';
 import { ToastService } from '../../services/toast';
+import { ConfirmService } from '../../services/confirm';
 import { environment } from '../../../environments/environment';
 import { FormsModule } from '@angular/forms';
 import { DatePicker } from '../date-picker/date-picker';
@@ -68,7 +69,8 @@ export class OrderDetail implements OnInit {
     private location: Location,
     private http: HttpClient,
     private authService: AuthService,
-    private toastService: ToastService
+    private toastService: ToastService,
+    private confirmService: ConfirmService
   ) {}
 
   goBack(): void { this.location.back(); }
@@ -95,7 +97,7 @@ export class OrderDetail implements OnInit {
     return s === 'confirmed';
   }
 
-  cancelOrder(): void {
+  async cancelOrder(): Promise<void> {
     const o = this.order();
     if (!o) return;
     this.cancelError.set('');
@@ -103,6 +105,14 @@ export class OrderDetail implements OnInit {
       this.cancelError.set('This order is already being prepared. Please contact our team to cancel.');
       return;
     }
+    const confirmed = await this.confirmService.ask({
+      title: 'Cancel order?',
+      message: `Are you sure you want to cancel order ${o.id}? This cannot be undone.`,
+      confirmText: 'Yes, cancel order',
+      cancelText: 'Keep order',
+      danger: true,
+    });
+    if (!confirmed) return;
     this.cancelling.set(true);
     this.http.patch(`${environment.apiUrl}/api/orders/${o.id}/cancel`, {}).subscribe({
       next: () => {

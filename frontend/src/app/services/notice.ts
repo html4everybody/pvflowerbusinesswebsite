@@ -1,4 +1,4 @@
-import { Injectable, computed, inject, signal } from '@angular/core';
+import { Injectable, computed, effect, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { AuthService } from './auth';
 import { environment } from '../../environments/environment';
@@ -20,6 +20,13 @@ export class NoticeService {
 
   readonly notices = signal<UserNotice[]>([]);
   readonly unread = computed(() => this.notices().filter(n => !n.read).length);
+
+  constructor() {
+    effect(() => {
+      if (this.auth.user()?.email) this.load();
+      else this.notices.set([]);
+    });
+  }
 
   load(): void {
     const email = this.auth.user()?.email;

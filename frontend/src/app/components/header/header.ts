@@ -1,4 +1,4 @@
-import { Component, ElementRef, HostListener, OnInit, ViewChild, effect, signal } from '@angular/core';
+import { Component, ElementRef, HostListener, OnInit, ViewChild, signal } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { CartService } from '../../services/cart';
 import { SearchService } from '../../services/search';
@@ -132,11 +132,7 @@ export class Header implements OnInit {
     private toastService: ToastService,
     private el: ElementRef,
     private router: Router
-  ) {
-    effect(() => {
-      if (this.authService.user()?.email) this.noticeService.load();
-    });
-  }
+  ) {}
 
   ngOnInit(): void {}
 
