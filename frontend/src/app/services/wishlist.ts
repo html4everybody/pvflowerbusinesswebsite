@@ -2,6 +2,7 @@ import { Injectable, signal, computed, effect, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { Product } from '../models/product.model';
 import { AuthService } from './auth';
+import { ToastService } from './toast';
 
 const KEY = 'viva_wishlist';
 
@@ -10,6 +11,7 @@ export class WishlistService {
   private _ids = signal<number[]>([]);
   readonly count = computed(() => this._ids().length);
   private router = inject(Router);
+  private toast = inject(ToastService);
 
   constructor(private authService: AuthService) {
     // Only load wishlist for logged-in users; clear for guests.
@@ -26,6 +28,7 @@ export class WishlistService {
 
   toggle(product: Product): boolean {
     if (!this.authService.user()) {
+      this.toast.show('Please sign in to save items to your wishlist.', 'error');
       this.router.navigate(['/signin']);
       return false;
     }
