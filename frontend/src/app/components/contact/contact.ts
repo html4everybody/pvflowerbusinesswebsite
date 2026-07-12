@@ -1,6 +1,6 @@
 import { Component, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { FormsModule } from '@angular/forms';
+import { FormsModule, NgForm } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
 
@@ -25,7 +25,8 @@ export class Contact {
 
   constructor(private http: HttpClient) {}
 
-  submitForm(): void {
+  submitForm(form: NgForm): void {
+    if (form.invalid) return;
     this.loading.set(true);
     this.errorMessage.set('');
 

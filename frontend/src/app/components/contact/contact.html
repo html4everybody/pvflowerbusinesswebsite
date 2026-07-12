@@ -42,7 +42,7 @@
     <div class="contact-content">
       <div class="contact-form-wrapper">
         @if (!messageSent()) {
-          <form class="contact-form" (ngSubmit)="submitForm()">
+          <form class="contact-form" #contactForm="ngForm" (ngSubmit)="submitForm(contactForm)">
             <h2>Send us a Message</h2>
             <p class="form-sub">Fill in the form and our team will get back to you shortly.</p>
 
@@ -84,7 +84,7 @@
               <div class="error-msg">{{ errorMessage() }}</div>
             }
 
-            <button type="submit" class="btn-submit" [disabled]="loading()">
+            <button type="submit" class="btn-submit" [disabled]="loading() || contactForm.invalid">
               @if (!loading()) {
                 <i class="bi bi-send"></i>
               }
