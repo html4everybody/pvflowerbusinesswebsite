@@ -198,7 +198,17 @@
           <input type="number" min="0" [(ngModel)]="productForm.merchant_price">
           <span class="field-hint"><i class="bi bi-info-circle"></i> What you earn per unit. The admin sets the final selling price and approves it before it goes live.</span>
         </div>
-        <div class="field"><label>Image URL</label><input type="url" [(ngModel)]="productForm.image" placeholder="https://…"></div>
+        <div class="field">
+          <label>Image</label>
+          <input type="url" [(ngModel)]="productForm.image" placeholder="Paste an image URL, or upload below">
+          <div class="img-row">
+            <label class="btn-upload">
+              <i class="bi bi-upload"></i> {{ uploadingImage() ? 'Uploading…' : 'Upload from computer' }}
+              <input type="file" accept="image/*" hidden [disabled]="uploadingImage()" (change)="uploadProductImage($event)">
+            </label>
+            @if (productForm.image) { <img [src]="productForm.image" alt="Preview" class="img-preview"> }
+          </div>
+        </div>
         <label class="check"><input type="checkbox" [(ngModel)]="productForm.inStock"> In stock</label>
       </div>
       <div class="modal-foot">

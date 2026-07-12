@@ -127,6 +127,22 @@ export class MerchantDashboard implements OnInit {
 
   closeProductForm(): void { this.showProductForm.set(false); this.editingProduct.set(null); }
 
+  uploadingImage = signal(false);
+
+  uploadProductImage(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+    this.uploadingImage.set(true);
+    const form = new FormData();
+    form.append('file', file);
+    this.http.post<{ url: string }>(`${this.api}/api/merchant/upload?token=${this.token}`, form).subscribe({
+      next: (res) => { this.productForm.image = res.url; this.uploadingImage.set(false); },
+      error: (err) => { this.uploadingImage.set(false); this.toast.show(err?.error?.detail || 'Upload failed', 'error'); },
+    });
+    input.value = '';
+  }
+
   saveProduct(): void {
     if (!this.productForm.name?.trim() || !this.productForm.category?.trim() || this.productForm.merchant_price == null) {
       this.toast.show('Name, category and your price are required', 'error');

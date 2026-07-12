@@ -912,6 +912,30 @@ async def admin_upload_image(token: str, file: UploadFile = File(...)):
         raise HTTPException(status_code=500, detail=f"Upload failed ({up.status_code}): {up.text[:200]}")
     return {"url": f"{SUPABASE_URL}/storage/v1/object/public/Products/{path}"}
 
+@app.post("/api/merchant/upload")
+async def merchant_upload_image(token: str, file: UploadFile = File(...)):
+    """Merchant product-image upload → Supabase Storage (same bucket as admin)."""
+    require_merchant(token)
+    contents = await file.read()
+    if len(contents) > 8 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="Image too large (max 8 MB).")
+    ext = os.path.splitext(file.filename or "")[1].lower()
+    if ext not in (".png", ".jpg", ".jpeg", ".webp", ".gif", ".avif"):
+        ext = ".png"
+    path = f"uploads/{uuid.uuid4().hex}{ext}"
+    content_type = file.content_type or "image/png"
+    try:
+        up = _httpx.post(
+            f"{SUPABASE_URL}/storage/v1/object/Products/{path}",
+            headers={"apikey": SUPABASE_KEY, "Authorization": f"Bearer {SUPABASE_KEY}", "Content-Type": content_type},
+            content=contents, timeout=30,
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Upload failed: {e}")
+    if up.status_code not in (200, 201):
+        raise HTTPException(status_code=500, detail=f"Upload failed ({up.status_code}): {up.text[:200]}")
+    return {"url": f"{SUPABASE_URL}/storage/v1/object/public/Products/{path}"}
+
 def seed_dummy_merchants():
     """Create two demo merchant logins + sample approved products (idempotent).
     Logins: merchant1@vivapetals.com / merchant2@vivapetals.com — pw: Merchant@123."""
