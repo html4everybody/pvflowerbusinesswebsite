@@ -13,19 +13,19 @@
     <!-- Info Cards -->
     <div class="contact-info">
       <div class="info-card">
-        <div class="icon-wrap"><i class="bi bi-geo-alt"></i></div>
-        <h3>Visit Us</h3>
-        <p>123 Flower Street<br>Garden City, CA 90210</p>
-      </div>
-      <div class="info-card">
         <div class="icon-wrap"><i class="bi bi-telephone"></i></div>
         <h3>Call Us</h3>
-        <p>(555) 123-4567<br>Mon – Sat: 9am – 6pm</p>
+        <p><a href="tel:+918555097536">+91 85550 97536</a><br>Mon – Sat: 9am – 6pm</p>
+      </div>
+      <div class="info-card">
+        <div class="icon-wrap"><i class="bi bi-whatsapp"></i></div>
+        <h3>WhatsApp Us</h3>
+        <p><a href="https://wa.me/918555097536" target="_blank" rel="noopener">+91 85550 97536</a><br>Quick replies, 9am – 6pm</p>
       </div>
       <div class="info-card">
         <div class="icon-wrap"><i class="bi bi-envelope"></i></div>
         <h3>Email Us</h3>
-        <p>hello&#64;bloomandblossom.com</p>
+        <p><a href="mailto:orderhere@vivapetals.com">orderhere&#64;vivapetals.com</a></p>
       </div>
       <div class="info-card">
         <div class="icon-wrap"><i class="bi bi-chat-dots"></i></div>
@@ -42,29 +42,35 @@
     <div class="contact-content">
       <div class="contact-form-wrapper">
         @if (!messageSent()) {
-          <form class="contact-form" (ngSubmit)="submitForm()">
+          <form class="contact-form" #contactForm="ngForm" (ngSubmit)="submitForm(contactForm)">
             <h2>Send us a Message</h2>
             <p class="form-sub">Fill in the form and our team will get back to you shortly.</p>
 
             <div class="form-row">
               <div class="form-group">
                 <label for="name">Your Name</label>
-                <input type="text" id="name" [(ngModel)]="formData.name" name="name" placeholder="John Doe" required>
+                <input type="text" id="name" #nameField="ngModel" [(ngModel)]="formData.name" name="name" placeholder="John Doe" required>
+                @if (nameField.invalid && nameField.touched) {
+                  <div class="field-error">Name is required</div>
+                }
               </div>
               <div class="form-group">
                 <label for="email">Email Address</label>
-                <input type="email" id="email" [(ngModel)]="formData.email" name="email" placeholder="you@example.com" required>
+                <input type="email" id="email" [(ngModel)]="formData.email" name="email" placeholder="you@example.com">
               </div>
             </div>
 
             <div class="form-row">
               <div class="form-group">
                 <label for="phone">Phone Number</label>
-                <input type="tel" id="phone" [(ngModel)]="formData.phone" name="phone" placeholder="(555) 000-0000">
+                <input type="tel" id="phone" #phoneField="ngModel" [(ngModel)]="formData.phone" name="phone" placeholder="Your phone number" required>
+                @if (phoneField.invalid && phoneField.touched) {
+                  <div class="field-error">Phone number is required</div>
+                }
               </div>
               <div class="form-group">
                 <label for="subject">Subject</label>
-                <select id="subject" [(ngModel)]="formData.subject" name="subject" required>
+                <select id="subject" #subjectField="ngModel" [(ngModel)]="formData.subject" name="subject" required>
                   <option value="">Select a subject</option>
                   <option value="general">General Inquiry</option>
                   <option value="order">Order Status</option>
@@ -72,19 +78,25 @@
                   <option value="feedback">Feedback</option>
                   <option value="other">Other</option>
                 </select>
+                @if (subjectField.invalid && subjectField.touched) {
+                  <div class="field-error">Please select a subject</div>
+                }
               </div>
             </div>
 
             <div class="form-group">
               <label for="message">Your Message</label>
-              <textarea id="message" [(ngModel)]="formData.message" name="message" rows="5" required placeholder="How can we help you?"></textarea>
+              <textarea id="message" #messageField="ngModel" [(ngModel)]="formData.message" name="message" rows="5" required placeholder="How can we help you?"></textarea>
+              @if (messageField.invalid && messageField.touched) {
+                <div class="field-error">Message is required</div>
+              }
             </div>
 
             @if (errorMessage()) {
               <div class="error-msg">{{ errorMessage() }}</div>
             }
 
-            <button type="submit" class="btn-submit" [disabled]="loading()">
+            <button type="submit" class="btn-submit" [disabled]="loading() || contactForm.invalid">
               @if (!loading()) {
                 <i class="bi bi-send"></i>
               }

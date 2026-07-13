@@ -77,6 +77,8 @@
       margin: 0;
       font-size: 0.83rem;
       line-height: 1.6;
+
+      a { color: inherit; text-decoration: none; &:hover { text-decoration: underline; } }
     }
 
     .social-links {
@@ -176,6 +178,12 @@
       }
     }
 
+    .field-error {
+      font-size: 0.75rem;
+      color: #e53e3e;
+      margin-top: 4px;
+    }
+
     .btn-submit {
       display: flex;
       align-items: center;
@@ -192,8 +200,13 @@
       cursor: pointer;
       transition: opacity 0.15s ease;
 
-      &:hover {
+      &:hover:not(:disabled) {
         opacity: 0.85;
+      }
+
+      &:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
       }
     }
   }
