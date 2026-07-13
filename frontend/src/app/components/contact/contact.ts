@@ -26,7 +26,7 @@ export class Contact {
   constructor(private http: HttpClient) {}
 
   submitForm(form: NgForm): void {
-    if (form.invalid) { form.form.markAllAsTouched(); return; }
+    if (form.invalid) return;
     this.loading.set(true);
     this.errorMessage.set('');
 

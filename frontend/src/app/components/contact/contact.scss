@@ -200,8 +200,13 @@
       cursor: pointer;
       transition: opacity 0.15s ease;
 
-      &:hover {
+      &:hover:not(:disabled) {
         opacity: 0.85;
+      }
+
+      &:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
       }
     }
   }
