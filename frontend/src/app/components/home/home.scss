@@ -544,8 +544,10 @@
     }
 
     .product-grid {
-      display: flex;
-      flex-direction: row;
+      display: grid;
+      grid-template-rows: repeat(2, 340px);
+      grid-auto-flow: column;
+      grid-auto-columns: 220px;
       gap: 1.25rem;
       overflow-x: auto;
       scroll-snap-type: x mandatory;
@@ -558,18 +560,21 @@
       &::-webkit-scrollbar-thumb { background: #d12052; border-radius: 4px; }
       scrollbar-width: thin;
       scrollbar-color: #d12052 var(--border);
+
+      @media (max-width: 600px) {
+        grid-template-rows: repeat(2, 230px);
+        grid-auto-columns: 160px;
+        gap: 0.75rem;
+      }
     }
 
     // Product Card
     .product-card {
       cursor: pointer;
-      height: 340px;
       position: relative;
-      flex-shrink: 0;
-      width: 220px;
       scroll-snap-align: start;
 
-      @media (max-width: 600px) { height: 230px; width: 160px; }
+      @media (max-width: 600px) { height: 230px; }
 
       .wishlist-btn {
         position: absolute;
