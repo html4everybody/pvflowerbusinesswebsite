@@ -515,14 +515,49 @@
     }
 
     // Product Grid
-    .product-grid {
-      display: grid;
-      grid-template-columns: repeat(5, minmax(0, 1fr));
-      gap: 1.25rem;
+    .product-grid-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
 
-      @media (max-width: 1200px) { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-      @media (max-width: 900px)  { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-      @media (max-width: 600px)  { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.75rem; }
+    .grid-scroll-btn {
+      flex-shrink: 0;
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      color: var(--text);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+      transition: background 0.15s, box-shadow 0.15s;
+      z-index: 2;
+
+      &:hover { background: var(--bg-raised); box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+
+      @media (max-width: 600px) { display: none; }
+    }
+
+    .product-grid {
+      display: flex;
+      flex-direction: row;
+      gap: 1.25rem;
+      overflow-x: auto;
+      scroll-snap-type: x mandatory;
+      scroll-behavior: smooth;
+      padding-bottom: 0.75rem;
+      flex: 1;
+
+      &::-webkit-scrollbar { height: 4px; }
+      &::-webkit-scrollbar-track { background: var(--border); border-radius: 4px; }
+      &::-webkit-scrollbar-thumb { background: #d12052; border-radius: 4px; }
+      scrollbar-width: thin;
+      scrollbar-color: #d12052 var(--border);
     }
 
     // Product Card
@@ -530,9 +565,11 @@
       cursor: pointer;
       height: 340px;
       position: relative;
-      min-width: 0;
+      flex-shrink: 0;
+      width: 220px;
+      scroll-snap-align: start;
 
-      @media (max-width: 600px) { height: 230px; }
+      @media (max-width: 600px) { height: 230px; width: 160px; }
 
       .wishlist-btn {
         position: absolute;

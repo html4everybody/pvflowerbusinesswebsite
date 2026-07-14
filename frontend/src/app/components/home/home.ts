@@ -21,6 +21,7 @@ import { FadeInDirective } from '../../directives/fade-in';
 })
 export class Home implements OnInit, AfterViewInit {
   @ViewChild('heroVideo') heroVideoRef!: ElementRef<HTMLVideoElement>;
+  @ViewChild('productGrid') productGridRef!: ElementRef<HTMLElement>;
   products: Product[] = [];
   categories: string[] = [];
   cartQuantities: { [productId: number]: number } = {};
@@ -203,6 +204,11 @@ export class Home implements OnInit, AfterViewInit {
     const wasWishlisted = this.wishlistService.has(product.id);
     this.wishlistService.toggle(product);
     this.showToast(product.name, wasWishlisted ? 'wish-removed' : 'wish-added');
+  }
+
+  scrollProducts(dir: 'left' | 'right'): void {
+    const el = this.productGridRef?.nativeElement;
+    if (el) el.scrollBy({ left: dir === 'left' ? -480 : 480, behavior: 'smooth' });
   }
 
   addToCart(product: Product): void {
