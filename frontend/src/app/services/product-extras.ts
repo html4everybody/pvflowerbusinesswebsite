@@ -113,9 +113,10 @@ export class ProductExtrasService {
     const compCategory = this.compMap[product.category] ?? 'Bouquets';
     const compList = all.filter(p => p.category === compCategory);
 
+    const n = parseInt(product.id.split('-')[1] || '0', 10);
     const result: Product[] = [];
-    if (sameList.length > 0) result.push(sameList[(product.id * 3) % sameList.length]);
-    if (compList.length > 0) result.push(compList[(product.id * 7) % compList.length]);
+    if (sameList.length > 0) result.push(sameList[(n * 3) % sameList.length]);
+    if (compList.length > 0) result.push(compList[(n * 7) % compList.length]);
     return result;
   }
 }
