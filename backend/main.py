@@ -700,11 +700,11 @@ def _row_to_product(r: dict) -> dict:
 
 def load_products():
     """Refresh the in-memory PRODUCTS cache from Supabase.
-    Falls back to the hardcoded seed list if the table is missing/empty."""
+    Falls back to the hardcoded seed list only if the table itself is unreachable."""
     global PRODUCTS
     try:
         rows = supabase.table("products").select("*").order("id").execute().data or []
-        PRODUCTS = [_row_to_product(r) for r in rows] if rows else list(_SEED_PRODUCTS)
+        PRODUCTS = [_row_to_product(r) for r in rows]
     except Exception as e:
         print(f"[Products] Could not load from DB — using seed list: {e}", flush=True)
         PRODUCTS = list(_SEED_PRODUCTS)
@@ -1125,7 +1125,6 @@ def _has_column(table: str, column: str) -> bool:
 
 load_products()
 load_subscription_plans()
-seed_products()           # seeds 46 house products into Supabase if not already there
 seed_dummy_merchants()
 _ensure_florists_choice_product()
 load_products()
