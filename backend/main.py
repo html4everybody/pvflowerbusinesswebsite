@@ -533,7 +533,7 @@ def _row_to_product(r: dict) -> dict:
         "image": r.get("image", ""),
         "category": r.get("category", ""),
         "inStock": r.get("in_stock", True),
-        "product_code": r.get("product_code", ""),
+        "product_code": r.get("id", ""),
     }
 
 def load_products():
@@ -907,13 +907,13 @@ def _load_house_merchant():
         print(f"[House merchant] Could not load: {e}", flush=True)
 
 def _next_product_code() -> str:
-    """Generate the next available PRODUCT-XXX code."""
-    rows = supabase.table("products").select("product_code").like("product_code", "PRODUCT-%").execute().data or []
+    """Generate the next available PRODUCT-XXX id."""
+    rows = supabase.table("products").select("id").like("id", "PRODUCT-%").execute().data or []
     nums = []
     for r in rows:
-        code = r.get("product_code") or ""
+        pid = r.get("id") or ""
         try:
-            nums.append(int(code.split("-")[1]))
+            nums.append(int(pid.split("-")[1]))
         except Exception:
             pass
     next_num = max(nums, default=0) + 1
@@ -952,18 +952,17 @@ def _ensure_florists_choice_product() -> Optional[int]:
         if existing:
             FLORISTS_CHOICE_PRODUCT_ID = existing[0]["id"]
             return FLORISTS_CHOICE_PRODUCT_ID
-        rows = supabase.table("products").select("id").order("id", desc=True).limit(1).execute().data
-        next_id = (rows[0]["id"] + 1) if rows else 1
+        new_id = _next_product_code()
         supabase.table("products").insert({
-            "id": next_id, "name": FLORISTS_CHOICE_NAME,
+            "id": new_id, "name": FLORISTS_CHOICE_NAME,
             "description": "Internal placeholder for Bloom Plan 'Florist's Choice' deliveries — do not delete.",
             "price": 0, "merchant_price": 0, "discount_percent": 0,
             "image": "", "category": "Internal", "in_stock": True,
             "merchant_id": HOUSE_MERCHANT_ID, "status": "rejected",
             "reject_reason": "Internal use only — not a real listing.",
         }).execute()
-        FLORISTS_CHOICE_PRODUCT_ID = next_id
-        return next_id
+        FLORISTS_CHOICE_PRODUCT_ID = new_id
+        return new_id
     except Exception as e:
         print(f"[Bloom Plan] could not set up Florist's Choice placeholder: {e}", flush=True)
         return None
@@ -1104,7 +1103,7 @@ class BundleDealCreate(BaseModel):
 
 class CartItemRequest(BaseModel):
     user_id: str
-    product_id: int
+    product_id: str
     quantity: int
 
 class SubscriptionRequest(BaseModel):
@@ -1157,7 +1156,7 @@ def get_categories():
     return sorted(list(set(p["category"] for p in PRODUCTS if _is_live(p))))
 
 @app.get("/api/products/{product_id}")
-def get_product(product_id: int):
+def get_product(product_id: str):
     product = next((p for p in PRODUCTS if p["id"] == product_id and _is_live(p)), None)
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
@@ -1182,21 +1181,19 @@ def admin_list_products(token: str):
 @app.post("/api/admin/products")
 def create_product(req: ProductCreate, token: str):
     require_admin(token)
-    rows = supabase.table("products").select("id").order("id", desc=True).limit(1).execute().data
-    next_id = (rows[0]["id"] + 1) if rows else 1
+    new_id = _next_product_code()
     # House-store products are live immediately with no markup (merchant_price = price).
     supabase.table("products").insert({
-        "id": next_id, "name": req.name, "description": req.description,
+        "id": new_id, "name": req.name, "description": req.description,
         "price": float(req.price), "merchant_price": float(req.price),
         "image": req.image, "category": req.category, "in_stock": req.inStock,
         "merchant_id": HOUSE_MERCHANT_ID, "status": "approved",
-        "product_code": _next_product_code(),
     }).execute()
     load_products()
-    return next(p for p in PRODUCTS if p["id"] == next_id)
+    return next(p for p in PRODUCTS if p["id"] == new_id)
 
 @app.put("/api/admin/products/{product_id}")
-def update_product(product_id: int, req: ProductUpdate, token: str):
+def update_product(product_id: str, req: ProductUpdate, token: str):
     require_admin(token)
     # Admin controls the selling price + discount (their markup lives here).
     col_map = {"name": "name", "description": "description", "price": "price",
@@ -1233,7 +1230,7 @@ class ProductRejectRequest(BaseModel):
 
 
 @app.patch("/api/admin/products/{product_id}/approve")
-def approve_product(product_id: int, req: ProductApproveRequest):
+def approve_product(product_id: str, req: ProductApproveRequest):
     require_admin(req.token)
     supabase.table("products").update({
         "price": float(req.price),
@@ -1253,7 +1250,7 @@ def approve_product(product_id: int, req: ProductApproveRequest):
 
 
 @app.patch("/api/admin/products/{product_id}/reject")
-def reject_product(product_id: int, req: ProductRejectRequest):
+def reject_product(product_id: str, req: ProductRejectRequest):
     require_admin(req.token)
     reason = req.reason or "Not accepted at this time."
     supabase.table("products").update({
@@ -1271,7 +1268,7 @@ def reject_product(product_id: int, req: ProductRejectRequest):
     return {"status": "rejected"}
 
 @app.delete("/api/admin/products/{product_id}")
-def delete_product(product_id: int, token: str):
+def delete_product(product_id: str, token: str):
     require_admin(token)
     existing = supabase.table("products").select("id").eq("id", product_id).execute()
     if not existing.data:
@@ -1352,17 +1349,14 @@ def admin_create_catalog_product(req: CatalogProductCreate):
     }).execute()
     catalog_id = cat.data[0]["id"]
 
-    rows = supabase.table("products").select("id").order("id", desc=True).limit(1).execute().data
-    next_id = (rows[0]["id"] + 1) if rows else 1
     inserts = []
     for mid in set(req.merchant_ids):
         inserts.append({
-            "id": next_id, "name": req.name.strip(), "description": req.description,
+            "id": _next_product_code(), "name": req.name.strip(), "description": req.description,
             "price": price, "merchant_price": merchant_price, "discount_percent": discount,
             "image": req.image, "category": req.category.strip(), "in_stock": True,
             "merchant_id": mid, "status": "approved", "catalog_id": catalog_id,
         })
-        next_id += 1
     supabase.table("products").insert(inserts).execute()
     load_products()
     return {"status": "ok", "catalog_id": catalog_id, "assigned": len(inserts)}
@@ -1406,18 +1400,15 @@ def admin_update_catalog_product(catalog_id: str, req: CatalogProductUpdate):
         master = supabase.table("catalog_products").select("*").eq("id", catalog_id).execute().data[0]
         new_ids = wanted_ids - current_ids
         if new_ids:
-            rows = supabase.table("products").select("id").order("id", desc=True).limit(1).execute().data
-            next_id = (rows[0]["id"] + 1) if rows else 1
             inserts = []
             for mid in new_ids:
                 inserts.append({
-                    "id": next_id, "name": master["name"], "description": master["description"],
+                    "id": _next_product_code(), "name": master["name"], "description": master["description"],
                     "price": master["price"], "merchant_price": master["merchant_price"],
                     "discount_percent": master["discount_percent"], "image": master["image"],
                     "category": master["category"], "in_stock": True,
                     "merchant_id": mid, "status": "approved", "catalog_id": catalog_id,
                 })
-                next_id += 1
             supabase.table("products").insert(inserts).execute()
 
     load_products()
@@ -2071,7 +2062,7 @@ class MerchantProductUpdate(BaseModel):
     inStock: Optional[bool] = None
 
 
-def _merchant_owns_product(product_id: int, merchant_id):
+def _merchant_owns_product(product_id: str, merchant_id):
     r = supabase.table("products").select("*").eq("id", product_id).execute().data
     return r[0] if (r and r[0].get("merchant_id") == merchant_id) else None
 
@@ -2097,23 +2088,21 @@ def merchant_list_products(token: str):
 @app.post("/api/merchant/products")
 def merchant_create_product(req: MerchantProductCreate):
     m = require_merchant(req.token)
-    rows = supabase.table("products").select("id").order("id", desc=True).limit(1).execute().data
-    next_id = (rows[0]["id"] + 1) if rows else 1
+    new_id = _next_product_code()
     mp = max(0.0, float(req.merchant_price))
     # New products start PENDING; selling price seeded to merchant price until admin sets it.
     supabase.table("products").insert({
-        "id": next_id, "name": req.name, "description": req.description,
+        "id": new_id, "name": req.name, "description": req.description,
         "price": mp, "merchant_price": mp, "discount_percent": 0,
         "image": req.image, "category": req.category, "in_stock": req.inStock,
         "merchant_id": m["id"], "status": "pending",
-        "product_code": _next_product_code(),
     }).execute()
     load_products()
-    return {"status": "pending", "id": next_id}
+    return {"status": "pending", "id": new_id}
 
 
 @app.put("/api/merchant/products/{product_id}")
-def merchant_update_product(product_id: int, req: MerchantProductUpdate):
+def merchant_update_product(product_id: str, req: MerchantProductUpdate):
     m = require_merchant(req.token)
     existing = _merchant_owns_product(product_id, m["id"])
     if not existing:
@@ -2152,7 +2141,7 @@ def merchant_update_product(product_id: int, req: MerchantProductUpdate):
 
 
 @app.delete("/api/merchant/products/{product_id}")
-def merchant_delete_product(product_id: int, token: str):
+def merchant_delete_product(product_id: str, token: str):
     m = require_merchant(token)
     existing = _merchant_owns_product(product_id, m["id"])
     if not existing:
@@ -2774,7 +2763,7 @@ class StockUpdate(BaseModel):
     stock: int
 
 @app.patch("/api/admin/inventory/{product_id}")
-def update_stock(product_id: int, req: StockUpdate, token: str):
+def update_stock(product_id: str, req: StockUpdate, token: str):
     require_admin(token)
     existing = supabase.table("product_stock").select("product_id").eq("product_id", product_id).execute()
     if existing.data:
@@ -3245,7 +3234,7 @@ def upsert_cart_item(req: CartItemRequest):
     return {"status": "ok"}
 
 @app.delete("/api/cart/item/{product_id}")
-def remove_cart_item(product_id: int, user_id: str):
+def remove_cart_item(product_id: str, user_id: str):
     supabase.table("cart_items").delete().eq("user_id", user_id).eq("product_id", product_id).execute()
     return {"status": "ok"}
 
@@ -4727,7 +4716,7 @@ def get_recommendations(email: str = ""):
 # ── Product Reviews ──────────────────────────────────────────────────────────────
 
 class ReviewCreate(BaseModel):
-    product_id: int
+    product_id: str
     user_email: str
     author_name: str
     rating: int
@@ -4735,7 +4724,7 @@ class ReviewCreate(BaseModel):
     photo_b64_list: list[str] = []
 
 @app.get("/api/reviews")
-def get_reviews(product_id: int):
+def get_reviews(product_id: str):
     try:
         reviews = (supabase.table("product_reviews").select("*")
                    .eq("product_id", product_id)
@@ -4745,7 +4734,7 @@ def get_reviews(product_id: int):
         return []
 
 @app.get("/api/reviews/can-review")
-def can_review_check(product_id: int, email: str = ""):
+def can_review_check(product_id: str, email: str = ""):
     if not email:
         return {"can_review": False, "has_purchased": False, "already_reviewed": False}
     try:

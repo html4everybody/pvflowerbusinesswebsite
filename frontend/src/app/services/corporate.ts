@@ -4,7 +4,7 @@ import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 
 export interface CorporateItem {
-  product_id: number;
+  product_id: string;
   product_name: string;
   unit_price: number;
   quantity: number;
@@ -18,7 +18,7 @@ export interface CorporateOrder {
   contact_name: string;
   contact_email: string;
   items?: CorporateItem[];
-  product_id: number;
+  product_id: string;
   product_name: string;
   quantity: number;
   unit_price: number;

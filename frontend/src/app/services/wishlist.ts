@@ -8,7 +8,7 @@ const KEY = 'viva_wishlist';
 
 @Injectable({ providedIn: 'root' })
 export class WishlistService {
-  private _ids = signal<number[]>([]);
+  private _ids = signal<string[]>([]);
   readonly count = computed(() => this._ids().length);
   private router = inject(Router);
   private toast = inject(ToastService);
@@ -24,7 +24,7 @@ export class WishlistService {
     });
   }
 
-  has(id: number): boolean { return this._ids().includes(id); }
+  has(id: string): boolean { return this._ids().includes(id); }
 
   toggle(product: Product): boolean {
     if (!this.authService.user()) {
@@ -39,12 +39,12 @@ export class WishlistService {
     return true;
   }
 
-  remove(id: number): void {
+  remove(id: string): void {
     this._ids.update(ids => ids.filter(i => i !== id));
     this.save();
   }
 
-  getIds(): number[] { return this._ids(); }
+  getIds(): string[] { return this._ids(); }
 
   clear(): void { this._ids.set([]); this.save(); }
 
@@ -52,7 +52,7 @@ export class WishlistService {
     return `${window.location.origin}/wishlist?ids=${this._ids().join(',')}`;
   }
 
-  private load(): number[] {
+  private load(): string[] {
     try { return JSON.parse(localStorage.getItem(KEY) ?? '[]'); } catch { return []; }
   }
 
