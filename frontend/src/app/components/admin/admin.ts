@@ -1,7 +1,8 @@
 import { Component, OnInit, signal, computed, effect } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
-import { retry } from 'rxjs/operators';
+import { Subject, Subscription } from 'rxjs';
+import { retry, takeUntil } from 'rxjs/operators';
 import { FormsModule } from '@angular/forms';
 import { TitleCasePipe, DecimalPipe } from '@angular/common';
 import { AuthService } from '../../services/auth';
@@ -93,6 +94,7 @@ export class Admin implements OnInit {
   // ── Products ───────────────────────────────────────────────────────────────
   products = signal<any[]>([]);
   loadingProducts = signal(true);
+  private cancelProducts$ = new Subject<void>();
   productSearch = signal('');
   filteredProducts = computed(() => {
     const q = this.productSearch().toLowerCase();
@@ -433,10 +435,10 @@ export class Admin implements OnInit {
 
   // ── Products ──────────────────────────────────────────────────────────────
   loadProducts(): void {
+    this.cancelProducts$.next(); // cancel any in-flight request
     this.loadingProducts.set(true);
-    // Admin endpoint returns ALL products (every status) with shop names + profit.
     this.http.get<any[]>(`${environment.apiUrl}/api/admin/products?token=${this.token}`)
-      .pipe(retry({ count: 5, delay: 5000 }))
+      .pipe(takeUntil(this.cancelProducts$))
       .subscribe({
         next: (data) => { this.products.set(data || []); this.loadingProducts.set(false); },
         error: () => this.loadingProducts.set(false)
