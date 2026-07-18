@@ -1273,9 +1273,10 @@ def reject_product(product_id: int, req: ProductRejectRequest):
 @app.delete("/api/admin/products/{product_id}")
 def delete_product(product_id: int, token: str):
     require_admin(token)
-    result = supabase.table("products").delete().eq("id", product_id).execute()
-    if not result.data:
+    existing = supabase.table("products").select("id").eq("id", product_id).execute()
+    if not existing.data:
         raise HTTPException(status_code=404, detail="Product not found")
+    supabase.table("products").delete().eq("id", product_id).execute()
     supabase.table("product_stock").delete().eq("product_id", product_id).execute()
     load_products()
     return {"status": "ok"}
