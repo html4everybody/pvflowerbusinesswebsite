@@ -124,7 +124,7 @@ export class BouquetService {
     const d = this.design();
     const flowerSummary = d.flowers.map(f => `${f.count}x ${f.name}`).join(', ');
     return {
-      id: Date.now(),
+      id: 'custom-bouquet',
       name: `Custom ${d.style.charAt(0).toUpperCase() + d.style.slice(1)} Bouquet`,
       description: `${d.size.charAt(0).toUpperCase() + d.size.slice(1)} bouquet: ${flowerSummary}. Wrapped in ${d.wrappingName}.`,
       price: this.totalPrice(),

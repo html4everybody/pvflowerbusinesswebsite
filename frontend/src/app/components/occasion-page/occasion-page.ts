@@ -20,7 +20,7 @@ export interface OccasionConfig {
   heroImage: string;
   gradient: string;
   accentColor: string;
-  productIds: number[];
+  productIds: string[];
 }
 
 @Component({
@@ -35,7 +35,7 @@ export class OccasionPage implements OnInit {
   products: Product[] = [];
   isIndex = false;
   loading = signal(true);
-  cartQuantities: { [id: number]: number } = {};
+  cartQuantities: { [id: string]: number } = {};
 
   constructor(
     private route: ActivatedRoute,
@@ -48,7 +48,7 @@ export class OccasionPage implements OnInit {
     public wishlistService: WishlistService,
   ) {}
 
-  goToProduct(id: number): void {
+  goToProduct(id: string): void {
     this.router.navigate(['/products', id]);
   }
 

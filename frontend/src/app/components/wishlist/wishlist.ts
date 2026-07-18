@@ -17,7 +17,7 @@ import { Product } from '../../models/product.model';
 })
 export class Wishlist implements OnInit {
   isSharedView = false;
-  sharedIds: number[] = [];
+  sharedIds: string[] = [];
   shareVisible = signal(false);
   toastVisible = signal(false);
   toastProductName = signal('');
@@ -40,15 +40,15 @@ export class Wishlist implements OnInit {
       if (params['ids']) {
         this.sharedIds = (params['ids'] as string)
           .split(',')
-          .map(Number)
-          .filter(n => !isNaN(n) && n > 0);
+          .map(s => s.trim())
+          .filter(s => s.length > 0);
         this.isSharedView = this.sharedIds.length > 0;
 
         // Auto-complete a pending save that was interrupted by the signin flow
         const pending = sessionStorage.getItem('wishlist_pending_save');
         if (pending && this.authService.isLoggedIn()) {
           sessionStorage.removeItem('wishlist_pending_save');
-          const pendingIds = JSON.parse(pending) as number[];
+          const pendingIds = JSON.parse(pending) as string[];
           pendingIds.forEach(id => {
             const product = this.productService.getProductById(id);
             if (product && !this.wishlistService.has(id)) this.wishlistService.toggle(product);
@@ -118,11 +118,11 @@ export class Wishlist implements OnInit {
     if (!this.wishlistService.has(product.id)) this.wishlistService.toggle(product);
   }
 
-  goToProduct(id: number): void {
+  goToProduct(id: string): void {
     this.router.navigate(['/products', id]);
   }
 
-  getQuantity(id: number): number {
+  getQuantity(id: string): number {
     return this.cartService.items().find(i => i.product.id === id)?.quantity ?? 0;
   }
 

@@ -30,7 +30,7 @@ export class ProductDetail implements OnInit {
   careTips: CareTip[] = [];
   reviews: Review[] = [];
   fbt: Product[] = [];
-  fbtChecked = new Set<number>();
+  fbtChecked = new Set<string>();
 
   // ── Review state ────────────────────────────────────────────────────────────
   loadingReviews  = signal(true);
@@ -60,7 +60,7 @@ export class ProductDetail implements OnInit {
 
   ngOnInit(): void {
     this.route.params.subscribe(params => {
-      const id = +params['id'];
+      const id = params['id'] as string;
       this.product = this.productService.getProductById(id);
 
       if (!this.product) {

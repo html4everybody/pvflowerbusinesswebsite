@@ -14,7 +14,7 @@ export interface StoreOccasion {
   hero_image: string;
   gradient: string;
   accent_color: string;
-  product_ids: number[];
+  product_ids: string[];
   active: boolean;
   sort_order: number;
 }
