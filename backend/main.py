@@ -894,17 +894,18 @@ def _load_house_merchant():
     try:
         rows = supabase.table("merchants").select("id").eq("id", "VIVAPETALS").limit(1).execute().data
         if rows:
+            print("[House merchant] VIVAPETALS already exists", flush=True)
             return
+        # Minimal insert — no is_house column (set dynamically in _row_to_product)
         supabase.table("merchants").insert({
             "id": "VIVAPETALS",
             "shop_name": "VivaPetals", "slug": "vivapetals",
             "email": "orderhere@vivapetals.com",
             "status": "approved", "commission_rate": 0,
-            "is_house": True,
         }).execute()
         print("[House merchant] Created VIVAPETALS", flush=True)
     except Exception as e:
-        print(f"[House merchant] Could not load: {e}", flush=True)
+        print(f"[House merchant] ERROR — could not create VIVAPETALS: {e}", flush=True)
 
 def _next_product_code() -> str:
     """Generate the next available PRODUCT-XXX id."""
