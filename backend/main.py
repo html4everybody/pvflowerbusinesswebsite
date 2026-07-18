@@ -768,8 +768,14 @@ def admin_delete_occasion(occ_id: str, token: str):
     return {"status": "ok"}
 
 # ── Image upload (admin) — stores in the public "Products" storage bucket ────────
+def _category_folder(category: str) -> str:
+    """Convert a category name to a safe folder name, e.g. 'Garlands' → 'garlands'."""
+    import re
+    folder = re.sub(r"[^a-z0-9]+", "-", (category or "uploads").lower()).strip("-")
+    return folder or "uploads"
+
 @app.post("/api/admin/upload")
-async def admin_upload_image(token: str, file: UploadFile = File(...)):
+async def admin_upload_image(token: str, file: UploadFile = File(...), category: str = "uploads"):
     require_admin(token)
     contents = await file.read()
     if len(contents) > 8 * 1024 * 1024:
@@ -777,7 +783,7 @@ async def admin_upload_image(token: str, file: UploadFile = File(...)):
     ext = os.path.splitext(file.filename or "")[1].lower()
     if ext not in (".png", ".jpg", ".jpeg", ".webp", ".gif", ".avif"):
         ext = ".png"
-    path = f"uploads/{uuid.uuid4().hex}{ext}"
+    path = f"{_category_folder(category)}/{uuid.uuid4().hex}{ext}"
     content_type = file.content_type or "image/png"
     try:
         up = _httpx.post(
@@ -792,7 +798,7 @@ async def admin_upload_image(token: str, file: UploadFile = File(...)):
     return {"url": f"{SUPABASE_URL}/storage/v1/object/public/Products/{path}"}
 
 @app.post("/api/merchant/upload")
-async def merchant_upload_image(token: str, file: UploadFile = File(...)):
+async def merchant_upload_image(token: str, file: UploadFile = File(...), category: str = "uploads"):
     """Merchant product-image upload → Supabase Storage (same bucket as admin)."""
     require_merchant(token)
     contents = await file.read()
@@ -801,7 +807,7 @@ async def merchant_upload_image(token: str, file: UploadFile = File(...)):
     ext = os.path.splitext(file.filename or "")[1].lower()
     if ext not in (".png", ".jpg", ".jpeg", ".webp", ".gif", ".avif"):
         ext = ".png"
-    path = f"uploads/{uuid.uuid4().hex}{ext}"
+    path = f"{_category_folder(category)}/{uuid.uuid4().hex}{ext}"
     content_type = file.content_type or "image/png"
     try:
         up = _httpx.post(
