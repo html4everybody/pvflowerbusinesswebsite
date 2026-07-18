@@ -12,14 +12,14 @@ import { FeedbackService } from '../../services/feedback';
 export class Cart {
   constructor(public cartService: CartService, private feedbackService: FeedbackService) {}
 
-  updateQuantity(productId: number, change: number): void {
+  updateQuantity(productId: string, change: number): void {
     const item = this.cartService.getCartItems().find(i => i.product.id === productId);
     if (item) {
       this.cartService.updateQuantity(productId, item.quantity + change);
     }
   }
 
-  removeItem(productId: number): void {
+  removeItem(productId: string): void {
     this.cartService.removeFromCart(productId);
     this.feedbackService.removeFromCartFeedback();
   }

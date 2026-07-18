@@ -120,11 +120,11 @@ export class BouquetBuilder implements OnInit {
     return 10 + mid - Math.abs(index - mid);
   }
 
-  isInBouquet(productId: number): boolean {
+  isInBouquet(productId: string): boolean {
     return this.bouquet.design().flowers.some(f => f.productId === productId);
   }
 
-  getProductCount(productId: number): number {
+  getProductCount(productId: string): number {
     return this.bouquet.design().flowers.find(f => f.productId === productId)?.count ?? 0;
   }
 
