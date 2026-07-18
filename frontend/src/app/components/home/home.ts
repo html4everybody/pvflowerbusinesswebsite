@@ -80,7 +80,6 @@ export class Home implements OnInit, AfterViewInit {
     // The home page owns those sections, so it scrolls once they've rendered.
     this.route.queryParams.subscribe(params => {
       if (params['scrollTo']) this.scrollToSection(params['scrollTo']);
-      if (params['category']) this.selectCategory(params['category']);
     });
   }
 
