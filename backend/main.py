@@ -653,18 +653,26 @@ def load_products():
         PRODUCTS = list(_SEED_PRODUCTS)
 
 def seed_products():
-    """Populate the products table with the seed list if it's empty."""
+    """Seed the house-store catalog into Supabase if no house products exist yet.
+    Uses upsert so it is safe to re-run; idempotent on the 46 built-in listings."""
+    _HOUSE = "00000000-0000-0000-0000-000000000001"
     try:
-        existing = supabase.table("products").select("id").limit(1).execute()
-        if not existing.data:
-            supabase.table("products").insert([{
-                "id": p["id"], "name": p["name"], "description": p["description"],
-                "price": p["price"], "image": p["image"], "category": p["category"],
-                "in_stock": p["inStock"],
-            } for p in _SEED_PRODUCTS]).execute()
-            print("[Seed] Inserted default products", flush=True)
+        existing = (supabase.table("products").select("id")
+                    .eq("merchant_id", _HOUSE).limit(1).execute())
+        if existing.data:
+            print("[Seed] House products already in Supabase — skipping seed", flush=True)
+            return
+        supabase.table("products").upsert([{
+            "id": p["id"], "name": p["name"], "description": p["description"],
+            "price": p["price"], "merchant_price": p["price"],
+            "discount_percent": 0,
+            "image": p["image"], "category": p["category"],
+            "in_stock": p["inStock"],
+            "merchant_id": _HOUSE, "status": "approved",
+        } for p in _SEED_PRODUCTS]).execute()
+        print(f"[Seed] Inserted {len(_SEED_PRODUCTS)} default products into Supabase", flush=True)
     except Exception as e:
-        print(f"[Seed] Products seeding skipped (table may not exist — run supabase_migration.sql): {e}", flush=True)
+        print(f"[Seed] Products seeding skipped: {e}", flush=True)
 
 # ── Subscription plans (DB-backed config) ────────────────────────────────────────
 # Plan cadence + discount live in the `subscription_plans` table so the discount
@@ -1058,9 +1066,9 @@ def _has_column(table: str, column: str) -> bool:
     return _COLUMN_EXISTS_CACHE[key]
 
 
-# Seeding disabled — the database is the source of truth. We only load caches.
 load_products()
 load_subscription_plans()
+seed_products()           # seeds 46 house products into Supabase if not already there
 seed_dummy_merchants()
 _ensure_florists_choice_product()
 load_products()
