@@ -533,6 +533,7 @@ def _row_to_product(r: dict) -> dict:
         "image": r.get("image", ""),
         "category": r.get("category", ""),
         "inStock": r.get("in_stock", True),
+        "product_code": r.get("product_code", ""),
     }
 
 def load_products():
@@ -902,6 +903,19 @@ def _load_house_merchant():
     except Exception as e:
         print(f"[House merchant] Could not load: {e}", flush=True)
 
+def _next_product_code() -> str:
+    """Generate the next available PRODUCT-XXX code."""
+    rows = supabase.table("products").select("product_code").like("product_code", "PRODUCT-%").execute().data or []
+    nums = []
+    for r in rows:
+        code = r.get("product_code") or ""
+        try:
+            nums.append(int(code.split("-")[1]))
+        except Exception:
+            pass
+    next_num = max(nums, default=0) + 1
+    return f"PRODUCT-{next_num:03d}"
+
 def _next_merchant_code() -> str:
     """Generate the next available MERCH-XXX code."""
     rows = supabase.table("merchants").select("merchant_code").like("merchant_code", "MERCH-%").execute().data or []
@@ -977,9 +991,6 @@ def _has_column(table: str, column: str) -> bool:
 _load_house_merchant()
 load_products()
 load_subscription_plans()
-seed_dummy_merchants()
-_ensure_florists_choice_product()
-load_products()
 
 # ── Order Status ───────────────────────────────────────────────────────────────
 STATUS_MESSAGES = {
@@ -1176,6 +1187,7 @@ def create_product(req: ProductCreate, token: str):
         "price": float(req.price), "merchant_price": float(req.price),
         "image": req.image, "category": req.category, "in_stock": req.inStock,
         "merchant_id": HOUSE_MERCHANT_ID, "status": "approved",
+        "product_code": _next_product_code(),
     }).execute()
     load_products()
     return next(p for p in PRODUCTS if p["id"] == next_id)
@@ -2090,6 +2102,7 @@ def merchant_create_product(req: MerchantProductCreate):
         "price": mp, "merchant_price": mp, "discount_percent": 0,
         "image": req.image, "category": req.category, "in_stock": req.inStock,
         "merchant_id": m["id"], "status": "pending",
+        "product_code": _next_product_code(),
     }).execute()
     load_products()
     return {"status": "pending", "id": next_id}
