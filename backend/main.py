@@ -1007,11 +1007,13 @@ def seed_dummy_merchants():
     Logins: merchant1@vivapetals.com / merchant2@vivapetals.com — pw: Merchant@123."""
     demo_img = "https://images.unsplash.com/photo-1490750967868-88aa4486c946?w=600"
     demos = [
-        {"id": "00000000-0000-0000-0000-000000000101", "email": "merchant1@vivapetals.com",
+        {"id": "00000000-0000-0000-0000-000000000101", "code": "MERCH-101",
+         "email": "merchant1@vivapetals.com",
          "shop": "Rose & Bloom Studio", "slug": "rose-bloom", "phone": "+91 90000 00001",
          "products": [("Velvet Red Roses", "A dozen deep-red roses, hand-tied", 400, "Bouquets"),
                       ("Blush Peony Bunch", "Soft pink peonies for a gentle gift", 550, "Bouquets")]},
-        {"id": "00000000-0000-0000-0000-000000000102", "email": "merchant2@vivapetals.com",
+        {"id": "00000000-0000-0000-0000-000000000102", "code": "MERCH-102",
+         "email": "merchant2@vivapetals.com",
          "shop": "Petal Cart", "slug": "petal-cart", "phone": "+91 90000 00002",
          "products": [("Sunny Marigold Garland", "Fresh marigold garland for festivities", 150, "Garlands"),
                       ("Mixed Daisy Jar", "Cheerful daisies in a rustic jar", 300, "Flowers")]},
@@ -1033,6 +1035,7 @@ def seed_dummy_merchants():
                 supabase.table("merchants").insert({
                     "id": d["id"], "user_id": user_id, "shop_name": d["shop"], "slug": d["slug"],
                     "phone": d["phone"], "email": d["email"], "status": "approved", "commission_rate": 0,
+                    "merchant_code": d["code"],
                 }).execute()
             else:
                 supabase.table("merchants").update({"user_id": user_id}).eq("id", d["id"]).execute()
@@ -1063,6 +1066,19 @@ def seed_dummy_merchants():
 # Florist's Choice bootstrap right below needs it at MODULE-LOAD time, before
 # the rest of the file (where it's normally referenced) has even executed.
 HOUSE_MERCHANT_ID = "00000000-0000-0000-0000-000000000001"
+
+def _next_merchant_code() -> str:
+    """Generate the next available MERCH-XXX code."""
+    rows = supabase.table("merchants").select("merchant_code").like("merchant_code", "MERCH-%").execute().data or []
+    nums = []
+    for r in rows:
+        code = r.get("merchant_code") or ""
+        try:
+            nums.append(int(code.split("-")[1]))
+        except Exception:
+            pass
+    next_num = max(nums, default=1) + 1
+    return f"MERCH-{next_num:03d}"
 
 FLORISTS_CHOICE_NAME = "Florist's Choice (Bloom Plan)"
 FLORISTS_CHOICE_PRODUCT_ID: Optional[int] = None
@@ -2124,6 +2140,7 @@ def merchant_apply(req: MerchantApplyRequest):
         "email": email,
         "status": "pending",
         "commission_rate": 15,
+        "merchant_code": _next_merchant_code(),
     }).execute()
     _notify_all_admins(
         "🏪 New merchant application",
@@ -2143,7 +2160,8 @@ def merchant_me(token: str):
     if not m:
         return {"merchant": None}
     return {"merchant": {
-        "id": m["id"], "shop_name": m.get("shop_name", ""), "slug": m.get("slug"),
+        "id": m["id"], "merchant_code": m.get("merchant_code", ""),
+        "shop_name": m.get("shop_name", ""), "slug": m.get("slug"),
         "description": m.get("description", ""), "phone": m.get("phone", ""),
         "logo": m.get("logo", ""), "status": m.get("status", "pending"),
         "commission_rate": m.get("commission_rate", 15),
@@ -2717,6 +2735,7 @@ def admin_create_merchant(req: AdminCreateMerchantRequest):
         "email": email,
         "status": "approved",
         "commission_rate": 0,
+        "merchant_code": _next_merchant_code(),
     }).execute()
     return {"status": "ok", "email": email, "shop_name": req.shop_name.strip(),
             "merchant": m.data[0] if m.data else None}

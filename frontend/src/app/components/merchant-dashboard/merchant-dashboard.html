@@ -4,6 +4,9 @@
     <div class="merch-brand">
       <i class="bi bi-shop"></i>
       <span>{{ stats()?.shop_name || auth.merchant()?.shop_name || 'My Shop' }}</span>
+      @if (auth.merchant()?.merchant_code) {
+        <span class="merch-id-badge">{{ auth.merchant()?.merchant_code }}</span>
+      }
     </div>
     <nav class="merch-nav">
       <button class="nav-item" [class.active]="activeSection() === 'overview'" (click)="go('overview')">
