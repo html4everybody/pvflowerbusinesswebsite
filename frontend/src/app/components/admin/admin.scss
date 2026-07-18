@@ -1304,6 +1304,13 @@
   font-family: monospace;
 }
 
+.prod-code {
+  font-size: 0.65rem; font-weight: 700; letter-spacing: 0.04em;
+  padding: 0.15rem 0.45rem; border-radius: var(--radius-full);
+  background: rgba(79,70,229,0.1); color: #4f46e5;
+  font-family: monospace;
+}
+
 .mc-comm {
   display: flex; align-items: center; gap: 0.4rem;
   font-size: 0.78rem; font-weight: 600; color: var(--text-muted);
