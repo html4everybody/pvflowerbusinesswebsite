@@ -1181,16 +1181,23 @@ def admin_list_products(token: str):
 @app.post("/api/admin/products")
 def create_product(req: ProductCreate, token: str):
     require_admin(token)
+    _load_house_merchant()
     new_id = _next_product_code()
     # House-store products are live immediately with no markup (merchant_price = price).
-    supabase.table("products").insert({
-        "id": new_id, "name": req.name, "description": req.description,
-        "price": float(req.price), "merchant_price": float(req.price),
-        "image": req.image, "category": req.category, "in_stock": req.inStock,
-        "merchant_id": HOUSE_MERCHANT_ID, "status": "approved",
-    }).execute()
+    try:
+        supabase.table("products").insert({
+            "id": new_id, "name": req.name, "description": req.description,
+            "price": float(req.price), "merchant_price": float(req.price),
+            "image": req.image, "category": req.category, "in_stock": req.inStock,
+            "merchant_id": HOUSE_MERCHANT_ID, "status": "approved",
+        }).execute()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to insert product: {e}")
     load_products()
-    return next(p for p in PRODUCTS if p["id"] == new_id)
+    result = next((p for p in PRODUCTS if p["id"] == new_id), None)
+    if not result:
+        raise HTTPException(status_code=500, detail="Product saved but could not be retrieved")
+    return result
 
 @app.put("/api/admin/products/{product_id}")
 def update_product(product_id: str, req: ProductUpdate, token: str):
