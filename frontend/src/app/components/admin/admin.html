@@ -313,6 +313,7 @@
                     <span class="mc-name">
                       {{ m.shop_name }}
                       <span class="mc-badge" [class]="m.status">{{ m.status }}</span>
+                      @if (m.merchant_code) { <span class="mc-code">{{ m.merchant_code }}</span> }
                     </span>
                     <span class="mc-sub"><i class="bi bi-envelope"></i> {{ m.email || '—' }}</span>
                     @if (m.phone) { <span class="mc-sub"><i class="bi bi-telephone"></i> {{ m.phone }}</span> }

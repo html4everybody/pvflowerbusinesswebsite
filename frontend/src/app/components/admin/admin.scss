@@ -1297,6 +1297,13 @@
   &.suspended { background: rgba(220,38,38,0.14);  color: var(--error); }
 }
 
+.mc-code {
+  font-size: 0.68rem; font-weight: 700; letter-spacing: 0.05em;
+  padding: 0.18rem 0.55rem; border-radius: var(--radius-full);
+  background: rgba(209,32,82,0.1); color: var(--accent);
+  font-family: monospace;
+}
+
 .mc-comm {
   display: flex; align-items: center; gap: 0.4rem;
   font-size: 0.78rem; font-weight: 600; color: var(--text-muted);
