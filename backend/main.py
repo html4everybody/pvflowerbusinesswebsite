@@ -881,25 +881,22 @@ def seed_dummy_merchants():
 # Defined here (not down near the other merchant helpers) because the
 # Florist's Choice bootstrap right below needs it at MODULE-LOAD time, before
 # the rest of the file (where it's normally referenced) has even executed.
-HOUSE_MERCHANT_ID: str = ""
+HOUSE_MERCHANT_ID: str = "VIVAPETALS"
 
 def _load_house_merchant():
-    """Load (or create) the house merchant and set HOUSE_MERCHANT_ID."""
-    global HOUSE_MERCHANT_ID
+    """Ensure the VIVAPETALS house merchant row exists."""
     try:
-        rows = supabase.table("merchants").select("id").eq("is_house", True).limit(1).execute().data
+        rows = supabase.table("merchants").select("id").eq("id", "VIVAPETALS").limit(1).execute().data
         if rows:
-            HOUSE_MERCHANT_ID = rows[0]["id"]
             return
-        # First run: create the house merchant with an auto-generated UUID
-        res = supabase.table("merchants").insert({
+        supabase.table("merchants").insert({
+            "id": "VIVAPETALS",
             "shop_name": "VivaPetals", "slug": "vivapetals",
             "email": "orderhere@vivapetals.com",
             "status": "approved", "commission_rate": 0,
-            "merchant_code": "MERCH-001", "is_house": True,
+            "is_house": True,
         }).execute()
-        HOUSE_MERCHANT_ID = res.data[0]["id"] if res.data else ""
-        print(f"[House merchant] Created with ID {HOUSE_MERCHANT_ID}", flush=True)
+        print("[House merchant] Created VIVAPETALS", flush=True)
     except Exception as e:
         print(f"[House merchant] Could not load: {e}", flush=True)
 
@@ -917,16 +914,16 @@ def _next_product_code() -> str:
     return f"PRODUCT-{next_num:03d}"
 
 def _next_merchant_code() -> str:
-    """Generate the next available MERCH-XXX code."""
-    rows = supabase.table("merchants").select("merchant_code").like("merchant_code", "MERCH-%").execute().data or []
+    """Generate the next available MERCH-XXX id."""
+    rows = supabase.table("merchants").select("id").like("id", "MERCH-%").execute().data or []
     nums = []
     for r in rows:
-        code = r.get("merchant_code") or ""
+        mid = r.get("id") or ""
         try:
-            nums.append(int(code.split("-")[1]))
+            nums.append(int(mid.split("-")[1]))
         except Exception:
             pass
-    next_num = max(nums, default=1) + 1
+    next_num = max(nums, default=0) + 1
     return f"MERCH-{next_num:03d}"
 
 FLORISTS_CHOICE_NAME = "Florist's Choice (Bloom Plan)"
@@ -1974,6 +1971,7 @@ def merchant_apply(req: MerchantApplyRequest):
         slug = f"{base}-{i}"
 
     supabase.table("merchants").insert({
+        "id": _next_merchant_code(),
         "user_id": user["id"],
         "shop_name": shop_name,
         "slug": slug,
@@ -1984,7 +1982,6 @@ def merchant_apply(req: MerchantApplyRequest):
         "email": email,
         "status": "pending",
         "commission_rate": 15,
-        "merchant_code": _next_merchant_code(),
     }).execute()
     _notify_all_admins(
         "🏪 New merchant application",
@@ -2004,7 +2001,7 @@ def merchant_me(token: str):
     if not m:
         return {"merchant": None}
     return {"merchant": {
-        "id": m["id"], "merchant_code": m.get("merchant_code", ""),
+        "id": m["id"], "merchant_code": m["id"],
         "shop_name": m.get("shop_name", ""), "slug": m.get("slug"),
         "description": m.get("description", ""), "phone": m.get("phone", ""),
         "logo": m.get("logo", ""), "status": m.get("status", "pending"),
@@ -2570,6 +2567,7 @@ def admin_create_merchant(req: AdminCreateMerchantRequest):
         i += 1
         slug = f"{base}-{i}"
     m = supabase.table("merchants").insert({
+        "id": _next_merchant_code(),
         "user_id": user_id,
         "shop_name": req.shop_name.strip(),
         "slug": slug,
@@ -2580,7 +2578,6 @@ def admin_create_merchant(req: AdminCreateMerchantRequest):
         "email": email,
         "status": "approved",
         "commission_rate": 0,
-        "merchant_code": _next_merchant_code(),
     }).execute()
     return {"status": "ok", "email": email, "shop_name": req.shop_name.strip(),
             "merchant": m.data[0] if m.data else None}
