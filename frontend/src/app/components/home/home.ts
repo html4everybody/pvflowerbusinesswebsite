@@ -21,8 +21,8 @@ import { FadeInDirective } from '../../directives/fade-in';
 })
 export class Home implements OnInit, AfterViewInit {
   @ViewChild('heroVideo') heroVideoRef!: ElementRef<HTMLVideoElement>;
-  products: Product[] = [];
-  categories: string[] = [];
+  products = signal<Product[]>([]);
+  categories = signal<string[]>([]);
   cartQuantities: { [productId: number]: number } = {};
 
   // Category is a single source of truth shared with the search facet, so
@@ -59,8 +59,10 @@ export class Home implements OnInit, AfterViewInit {
   occasions = signal<StoreOccasion[]>([]);
 
   ngOnInit(): void {
-    this.products = this.productService.getProducts();
-    this.categories = this.productService.getCategories();
+    this.productService.loadProducts().then(() => {
+      this.products.set(this.productService.getProducts());
+      this.categories.set(this.productService.getCategories());
+    });
     this.promoService.getOffers(this.authService.user()?.email).subscribe({ next: d => this.offers.set(d), error: () => {} });
     this.occasionService.getAll().subscribe({ next: d => this.occasions.set(d), error: () => {} });
 
@@ -150,7 +152,7 @@ export class Home implements OnInit, AfterViewInit {
 
   get filteredProducts(): Product[] {
     // Category, query, occasion, colour and price are all handled by the service.
-    return this.searchService.filterProducts(this.products);
+    return this.searchService.filterProducts(this.products());
   }
 
   scrollToCollection(): void {

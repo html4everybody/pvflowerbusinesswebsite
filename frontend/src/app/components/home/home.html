@@ -82,7 +82,7 @@
       <!-- Category Filters -->
       <div class="category-filters" appFadeIn [fadeDelay]="100">
         <button class="filter-pill" [class.active]="selectedCategory === 'All'" (click)="selectCategory('All')"><i class="bi bi-flower1"></i> All</button>
-        @for (cat of categories; track cat) {
+        @for (cat of categories(); track cat) {
           <button class="filter-pill" [class.active]="selectedCategory === cat" (click)="selectCategory(cat)">{{ cat }}</button>
         }
       </div>
