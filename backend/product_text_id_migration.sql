@@ -32,8 +32,8 @@ ALTER TABLE product_stock ADD CONSTRAINT product_stock_product_id_fkey
 ALTER TABLE cart_items ADD CONSTRAINT cart_items_product_id_fkey
   FOREIGN KEY (product_id) REFERENCES products(id);
 
--- 6. Also change reviews.product_id if it exists (no FK, just type)
-ALTER TABLE reviews ALTER COLUMN product_id TYPE TEXT USING product_id::TEXT;
+-- 6. Also change product_reviews.product_id if the table exists (no FK, just type)
+ALTER TABLE IF EXISTS product_reviews ALTER COLUMN product_id TYPE TEXT USING product_id::TEXT;
 
 -- After running this, restart your backend on Render.
 -- The backend will generate PRODUCT-001, PRODUCT-002 etc. as actual IDs.
