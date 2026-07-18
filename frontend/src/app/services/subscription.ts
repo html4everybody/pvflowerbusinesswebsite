@@ -9,7 +9,7 @@ export interface Subscription {
   customer_name: string;
   plan: 'weekly' | 'biweekly' | 'monthly';
   style: 'seasonal' | 'fixed';
-  fixed_product_id?: number;
+  fixed_product_id?: string;
   fixed_product_name?: string;
   status: 'active' | 'paused' | 'cancelled';
   next_delivery: string;
@@ -20,7 +20,7 @@ export interface Subscription {
 }
 
 export interface SubscriptionItem {
-  product_id: number;
+  product_id: string;
   product_name: string;
   category: string;
   weight_kg?: number;

@@ -9,7 +9,7 @@ import { FadeInDirective } from '../../directives/fade-in';
 import { environment } from '../../../environments/environment';
 
 interface RecoProduct {
-  id: number;
+  id: string;
   name: string;
   price: number;
   image: string;
@@ -78,7 +78,7 @@ export class RecommendationsSection implements OnInit {
     setTimeout(() => this.addingId.set(null), 800);
   }
 
-  goToProduct(id: number): void {
+  goToProduct(id: string): void {
     this.router.navigate(['/products', id]);
   }
 }

@@ -107,7 +107,7 @@ export class ProductDetail implements OnInit {
     this.activeImageIdx.set(i);
   }
 
-  toggleFbt(id: number): void {
+  toggleFbt(id: string): void {
     if (this.fbtChecked.has(id)) {
       this.fbtChecked.delete(id);
     } else {
@@ -150,7 +150,7 @@ export class ProductDetail implements OnInit {
   }
 
   // ── Review methods ───────────────────────────────────────────────────────────
-  loadReviews(productId: number): void {
+  loadReviews(productId: string): void {
     this.loadingReviews.set(true);
     this.http.get<any[]>(`${environment.apiUrl}/api/reviews?product_id=${productId}`).subscribe({
       next: (data) => {
@@ -173,7 +173,7 @@ export class ProductDetail implements OnInit {
     });
   }
 
-  loadCanReview(productId: number): void {
+  loadCanReview(productId: string): void {
     const email = this.authService.user()?.email;
     if (!email) return;
     this.http.get<any>(`${environment.apiUrl}/api/reviews/can-review?product_id=${productId}&email=${encodeURIComponent(email)}`).subscribe({

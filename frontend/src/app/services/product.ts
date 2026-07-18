@@ -28,7 +28,7 @@ export class ProductService {
     return this.productsSignal();
   }
 
-  getProductById(id: number): Product | undefined {
+  getProductById(id: string): Product | undefined {
     return this.productsSignal().find(p => p.id === id);
   }
 

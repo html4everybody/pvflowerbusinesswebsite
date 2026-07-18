@@ -23,7 +23,7 @@ export class Home implements OnInit, AfterViewInit {
   @ViewChild('heroVideo') heroVideoRef!: ElementRef<HTMLVideoElement>;
   products = signal<Product[]>([]);
   categories = signal<string[]>([]);
-  cartQuantities: { [productId: number]: number } = {};
+  cartQuantities: { [productId: string]: number } = {};
 
   // Category is a single source of truth shared with the search facet, so
   // picking a category in search reflects in the collection tabs (and vice-versa).
@@ -93,7 +93,7 @@ export class Home implements OnInit, AfterViewInit {
     }
   }
 
-  goToProduct(productId: number): void {
+  goToProduct(productId: string): void {
     this.router.navigate(['/products', productId]);
   }
 
@@ -177,16 +177,18 @@ export class Home implements OnInit, AfterViewInit {
     this.searchService.selectedCategory.set(category === 'All' ? '' : category);
   }
 
-  getQuantity(productId: number): number {
+  getQuantity(productId: string): number {
     return this.cartQuantities[productId] || 0;
   }
 
-  isLowStock(productId: number): boolean {
-    return productId % 7 === 0 || productId % 10 === 3;
+  isLowStock(productId: string): boolean {
+    const n = parseInt(productId.split('-')[1] || '0', 10);
+    return n % 7 === 0 || n % 10 === 3;
   }
 
-  lowStockCount(productId: number): number {
-    return (productId % 4) + 2;
+  lowStockCount(productId: string): number {
+    const n = parseInt(productId.split('-')[1] || '0', 10);
+    return (n % 4) + 2;
   }
 
   private showToast(name: string, type: 'added' | 'removed' | 'wish-added' | 'wish-removed'): void {

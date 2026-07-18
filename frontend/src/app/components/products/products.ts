@@ -18,7 +18,7 @@ export class Products implements OnInit {
   selectedCategory: string = 'All';
   sortBy: string = 'name';
   searchQuery: string = '';
-  cartQuantities: { [productId: number]: number } = {};
+  cartQuantities: { [productId: string]: number } = {};
 
   constructor(
     private productService: ProductService,
@@ -90,7 +90,7 @@ export class Products implements OnInit {
     }
   }
 
-  getQuantity(productId: number): number {
+  getQuantity(productId: string): number {
     return this.cartQuantities[productId] || 0;
   }
 
