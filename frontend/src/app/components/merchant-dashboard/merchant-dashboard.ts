@@ -203,7 +203,7 @@ export class MerchantDashboard implements OnInit {
     this.uploadingImage.set(true);
     const form = new FormData();
     form.append('file', file);
-    this.http.post<{ url: string }>(`${this.api}/api/merchant/upload?token=${this.token}`, form).subscribe({
+    this.http.post<{ url: string }>(`${this.api}/api/merchant/upload?token=${this.token}&category=${encodeURIComponent(this.productForm.category || 'uploads')}`, form).subscribe({
       next: (res) => { this.productForm.image = res.url; this.uploadingImage.set(false); },
       error: (err) => { this.uploadingImage.set(false); this.toast.show(err?.error?.detail || 'Upload failed', 'error'); },
     });
