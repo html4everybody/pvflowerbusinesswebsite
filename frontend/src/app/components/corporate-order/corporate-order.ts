@@ -65,7 +65,7 @@ export class CorporateOrder implements OnInit {
 
   total = computed(() => +(this.subtotal() - this.savings()).toFixed(2));
 
-  isSelected(id: number): boolean { return this.selectedItems().some(it => it.product.id === id); }
+  isSelected(id: string): boolean { return this.selectedItems().some(it => it.product.id === id); }
 
   toggleProduct(product: Product): void {
     this.selectedItems.update(list =>
@@ -74,18 +74,18 @@ export class CorporateOrder implements OnInit {
         : [...list, { product, quantity: 10 }]);
   }
 
-  removeItem(id: number): void {
+  removeItem(id: string): void {
     this.selectedItems.update(list => list.filter(it => it.product.id !== id));
   }
 
-  itemQty(id: number): number { return this.selectedItems().find(it => it.product.id === id)?.quantity ?? 0; }
+  itemQty(id: string): number { return this.selectedItems().find(it => it.product.id === id)?.quantity ?? 0; }
 
-  setItemQty(id: number, val: number): void {
+  setItemQty(id: string, val: number): void {
     const q = Math.max(1, Math.min(this.MAX_UNITS, Math.round(val || 0)));
     this.selectedItems.update(list => list.map(it => it.product.id === id ? { ...it, quantity: q } : it));
   }
 
-  adjustItemQty(id: number, delta: number): void { this.setItemQty(id, this.itemQty(id) + delta); }
+  adjustItemQty(id: string, delta: number): void { this.setItemQty(id, this.itemQty(id) + delta); }
 
   get isStep1Valid(): boolean {
     return this.eventType().trim().length > 0 &&

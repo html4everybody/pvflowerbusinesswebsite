@@ -26,7 +26,7 @@ export interface SeasonalOffer {
 }
 
 export interface BundleProduct {
-  id: number;
+  id: string;
   name: string;
   description: string;
   price: number;
@@ -40,7 +40,7 @@ export interface BundleDeal {
   name: string;
   description: string;
   emoji: string;
-  product_ids: number[];
+  product_ids: string[];
   promo_code: string;
   savings_pct: number;
   products: BundleProduct[];

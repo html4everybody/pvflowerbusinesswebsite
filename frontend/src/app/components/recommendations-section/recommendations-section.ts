@@ -34,7 +34,7 @@ interface RecommendationsResponse {
 export class RecommendationsSection implements OnInit {
   loading   = signal(true);
   data      = signal<RecommendationsResponse | null>(null);
-  addingId  = signal<number | null>(null);
+  addingId  = signal<string | null>(null);
 
   constructor(
     private http: HttpClient,
