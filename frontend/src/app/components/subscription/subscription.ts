@@ -102,11 +102,11 @@ export class Subscription implements OnInit {
     return this.allProducts.filter(p => p.category === this.activeCategory());
   }
 
-  isProductSelected(productId: number): boolean {
+  isProductSelected(productId: string): boolean {
     return this.selections().some(s => s.product.id === productId);
   }
 
-  getSelection(productId: number): ProductSelection | undefined {
+  getSelection(productId: string): ProductSelection | undefined {
     return this.selections().find(s => s.product.id === productId);
   }
 
@@ -264,19 +264,19 @@ export class Subscription implements OnInit {
     }
   }
 
-  updateWeight(productId: number, weight: number): void {
+  updateWeight(productId: string, weight: number): void {
     this.selections.update(list =>
       list.map(s => s.product.id === productId ? { ...s, weight } : s)
     );
   }
 
-  updateSize(productId: number, size: string): void {
+  updateSize(productId: string, size: string): void {
     this.selections.update(list =>
       list.map(s => s.product.id === productId ? { ...s, size } : s)
     );
   }
 
-  updateQuantity(productId: number, qty: number): void {
+  updateQuantity(productId: string, qty: number): void {
     if (qty < 1) qty = 1;
     if (qty > 50) qty = 50;
     this.selections.update(list =>

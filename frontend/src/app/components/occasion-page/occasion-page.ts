@@ -91,7 +91,7 @@ export class OccasionPage implements OnInit {
       .slice(0, 12);
   }
 
-  getQuantity(productId: number): number {
+  getQuantity(productId: string): number {
     return this.cartQuantities[productId] || 0;
   }
 

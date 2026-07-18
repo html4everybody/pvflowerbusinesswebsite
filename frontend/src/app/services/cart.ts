@@ -121,7 +121,7 @@ export class CartService {
     setTimeout(() => this.cartBounce.set(false), 600);
   }
 
-  removeFromCart(productId: number): void {
+  removeFromCart(productId: string): void {
     this.cartItems.set(this.cartItems().filter(item => item.product.id !== productId));
 
     const user = this.authService.user();
@@ -132,7 +132,7 @@ export class CartService {
     }
   }
 
-  updateQuantity(productId: number, quantity: number): void {
+  updateQuantity(productId: string, quantity: number): void {
     if (quantity <= 0) {
       this.removeFromCart(productId);
       return;
@@ -162,7 +162,7 @@ export class CartService {
 
   // ── Internal ────────────────────────────────────────────────────────────────
 
-  private persist(productId: number, quantity: number): void {
+  private persist(productId: string, quantity: number): void {
     const user = this.authService.user();
     if (user) {
       this.http.post(`${environment.apiUrl}/api/cart/item`, {

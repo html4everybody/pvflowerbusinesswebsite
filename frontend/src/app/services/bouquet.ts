@@ -72,14 +72,14 @@ export class BouquetService {
     });
   }
 
-  removeFlower(productId: number): void {
+  removeFlower(productId: string): void {
     this.design.update(d => ({
       ...d,
       flowers: d.flowers.filter(f => f.productId !== productId)
     }));
   }
 
-  updateCount(productId: number, delta: number): void {
+  updateCount(productId: string, delta: number): void {
     this.design.update(d => ({
       ...d,
       flowers: d.flowers
