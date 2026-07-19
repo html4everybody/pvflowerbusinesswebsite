@@ -16,6 +16,7 @@ from dotenv import load_dotenv
 from supabase import create_client, Client
 import bcrypt
 import threading
+import time
 from twilio.rest import Client as TwilioClient
 from apscheduler.schedulers.background import BackgroundScheduler
 
@@ -512,36 +513,55 @@ def send_sms_whatsapp_reminder(order: dict, days_before: int, is_recurrence: boo
 # In-memory cache — loaded from Supabase on startup and after every admin change.
 PRODUCTS: list = []
 
+# ── DB retry helper ───────────────────────────────────────────────────────────
+_db_lock = threading.Lock()
+
+def _db_fetch(fn, label: str, retries: int = 5, delay: float = 1.0):
+    """Run fn() up to `retries` times, sleeping `delay` seconds between attempts.
+    Returns the result or None on total failure. Thread-safe via _db_lock."""
+    with _db_lock:
+        for attempt in range(retries):
+            try:
+                result = fn()
+                if attempt > 0:
+                    print(f"[{label}] Succeeded on attempt {attempt + 1}", flush=True)
+                return result
+            except Exception as e:
+                print(f"[{label}] Attempt {attempt + 1}/{retries} failed: {e}", flush=True)
+                if attempt < retries - 1:
+                    time.sleep(delay)
+        return None
+
 # ── Categories (DB-backed, admin-managed) ─────────────────────────────────────
 CATEGORIES: list[str] = ["Flowers", "Bouquets", "Garlands", "Gifts", "Decoration"]
 
 def load_categories():
     global CATEGORIES
-    try:
-        rows = supabase.table("categories").select("name").order("sort_order").execute().data or []
-        if rows:
-            CATEGORIES = [r["name"] for r in rows]
-    except Exception as e:
-        print(f"[Categories] Could not load from DB (using defaults): {e}", flush=True)
+    rows = _db_fetch(
+        lambda: supabase.table("categories").select("name").order("sort_order").execute().data or [],
+        "Categories"
+    )
+    if rows:
+        CATEGORIES = [r["name"] for r in rows]
 
 def _row_to_product(r: dict) -> dict:
-    base = float(r.get("price", 0))                     # admin-set selling price
-    disc = float(r.get("discount_percent", 0) or 0)     # admin-set discount
-    merch = float(r.get("merchant_price", 0) or 0)      # what the merchant earns
+    base = float(r.get("price", 0))
+    disc = float(r.get("discount_percent", 0) or 0)
+    merch = float(r.get("merchant_price", 0) or 0)
     final = round(base * (1 - disc / 100), 2) if disc > 0 else base
     return {
         "id": r["id"],
         "name": r.get("name", ""),
         "description": r.get("description", ""),
-        "price": base,                       # selling price (admin-set)
-        "merchant_price": merch,             # merchant's take per unit
-        "discount_percent": disc,            # admin-set discount
-        "final_price": final,                # effective price customers pay
-        "profit": round(final - merch, 2),   # platform margin per unit
-        "status": r.get("status", "approved"),          # pending | approved | rejected
+        "price": base,
+        "merchant_price": merch,
+        "discount_percent": disc,
+        "final_price": final,
+        "profit": round(final - merch, 2),
+        "status": r.get("status", "approved"),
         "reject_reason": r.get("reject_reason"),
         "merchant_id": r.get("merchant_id"),
-        "catalog_id": r.get("catalog_id"),   # set when this row is an admin-assigned shared listing
+        "catalog_id": r.get("catalog_id"),
         "image": r.get("image", ""),
         "category": r.get("category", ""),
         "inStock": r.get("in_stock", True),
@@ -549,13 +569,15 @@ def _row_to_product(r: dict) -> dict:
     }
 
 def load_products():
-    """Refresh the in-memory PRODUCTS cache from Supabase."""
+    """Refresh the in-memory PRODUCTS cache from Supabase (with retry)."""
     global PRODUCTS
-    try:
-        rows = supabase.table("products").select("*").order("id").execute().data or []
+    rows = _db_fetch(
+        lambda: supabase.table("products").select("*").order("id").execute().data or [],
+        "Products"
+    )
+    if rows is not None:
         PRODUCTS = [_row_to_product(r) for r in rows]
-    except Exception as e:
-        print(f"[Products] Could not load from DB: {e}", flush=True)
+        print(f"[Products] Loaded {len(PRODUCTS)} products", flush=True)
 
 # ── Subscription plans (DB-backed config) ────────────────────────────────────────
 # Plan cadence + discount live in the `subscription_plans` table so the discount
@@ -1160,14 +1182,24 @@ def _dedupe_catalog(products: list) -> list:
 
 @app.get("/api/products")
 def get_products(category: Optional[str] = None):
-    live = _dedupe_catalog([p for p in PRODUCTS if _is_live(p)])
+    try:
+        rows = supabase.table("products").select("*").order("id").execute().data or []
+        products = [_row_to_product(r) for r in rows]
+        PRODUCTS[:] = products  # keep cache in sync
+    except Exception:
+        products = list(PRODUCTS)  # fallback to cache if Supabase unreachable
+    live = _dedupe_catalog([p for p in products if _is_live(p)])
     if category:
         return [p for p in live if p["category"] == category]
     return live
 
 @app.get("/api/products/categories")
 def get_categories():
-    product_cats = set(p["category"] for p in PRODUCTS if _is_live(p) and p.get("category"))
+    try:
+        rows = supabase.table("products").select("id,category").execute().data or []
+        product_cats = set(r["category"] for r in rows if r.get("category"))
+    except Exception:
+        product_cats = set(p["category"] for p in PRODUCTS if p.get("category"))
     all_cats = list(set(CATEGORIES) | product_cats)
     return sorted(all_cats)
 
@@ -1214,6 +1246,7 @@ def get_product(product_id: str):
 def admin_list_products(token: str):
     """All products (every status) with shop names — for admin management/approvals."""
     require_admin(token)
+    load_products()  # always fresh — Render free tier restarts clear the cache
     merchants = supabase.table("merchants").select("id, shop_name").execute().data or []
     shop_by_id = {m["id"]: m["shop_name"] for m in merchants}
     out = []
