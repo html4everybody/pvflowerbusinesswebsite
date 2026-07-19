@@ -41,15 +41,13 @@
           }
 
           <div class="add-to-cart-section">
-            @if (unitType === 'weight') {
-              <div class="weight-presets">
-                @for (p of weightPresets; track p.qty) {
-                  <button class="weight-btn" [class.active]="quantity === p.qty" (click)="setWeightQty(p.qty)">
-                    {{ p.label }}
-                  </button>
-                }
-              </div>
-            }
+            <div class="unit-presets">
+              @for (p of presets; track p.qty) {
+                <button class="preset-btn" [class.active]="quantity === p.qty" (click)="setWeightQty(p.qty)">
+                  {{ p.label }}
+                </button>
+              }
+            </div>
 
             <div class="quantity-selector">
               <button (click)="decreaseQuantity()" [disabled]="quantity <= minQty">−</button>

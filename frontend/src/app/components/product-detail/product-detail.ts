@@ -95,11 +95,28 @@ export class ProductDetail implements OnInit {
     return this.product?.min_quantity || 1;
   }
 
-  get weightPresets(): { qty: number; label: string }[] {
-    const minQ = this.product?.min_quantity || 100;
-    return [1, 5, 10].map(m => ({
-      qty: m,
-      label: (m * minQ) >= 1000 ? `${(m * minQ) / 1000}kg` : `${m * minQ}g`
+  get presets(): { qty: number; label: string }[] {
+    if (!this.product) return [];
+    const type = this.product.unit_type || 'stem';
+    const minQ = this.product.min_quantity || 1;
+
+    if (type === 'weight') {
+      // 100g, 500g, 1kg, 2kg, 5kg
+      return [1, 5, 10, 20, 50].map(m => ({
+        qty: m,
+        label: formatQty(m, this.product!)
+      }));
+    }
+    if (type === 'pair') {
+      return [1, 2, 5, 10].map(m => ({
+        qty: m,
+        label: formatQty(m, this.product!)
+      }));
+    }
+    // stem — multiples of min_quantity
+    return [1, 2, 5, 10].map(m => ({
+      qty: m * minQ,
+      label: formatQty(m * minQ, this.product!)
     }));
   }
 
