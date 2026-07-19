@@ -744,14 +744,18 @@ class OccasionAdmin(BaseModel):
 
 @app.get("/api/store-occasions")
 def get_store_occasions():
-    try:
-        return supabase.table("occasions").select("*").eq("active", True).order("sort_order").execute().data or []
-    except Exception:
-        return []
+    rows = _db_fetch(
+        lambda: supabase.table("occasions").select("*").eq("active", True).order("sort_order").execute().data or [],
+        "store-occasions"
+    )
+    return rows if rows is not None else []
 
 @app.get("/api/store-occasions/{slug}")
 def get_store_occasion(slug: str):
-    rows = supabase.table("occasions").select("*").eq("slug", slug).execute().data or []
+    rows = _db_fetch(
+        lambda: supabase.table("occasions").select("*").eq("slug", slug).execute().data or [],
+        f"store-occasion/{slug}"
+    )
     if not rows:
         raise HTTPException(status_code=404, detail="Occasion not found")
     return rows[0]
@@ -759,7 +763,11 @@ def get_store_occasion(slug: str):
 @app.get("/api/admin/occasions")
 def admin_list_occasions(token: str):
     require_admin(token)
-    return supabase.table("occasions").select("*").order("sort_order").execute().data or []
+    rows = _db_fetch(
+        lambda: supabase.table("occasions").select("*").order("sort_order").execute().data or [],
+        "admin-occasions"
+    )
+    return rows if rows is not None else []
 
 @app.post("/api/admin/occasions")
 def admin_create_occasion(req: OccasionAdmin, token: str):
@@ -2714,39 +2722,43 @@ def admin_stats(token: str):
 @app.get("/api/admin/orders")
 def admin_orders(token: str, status: str = None):
     require_admin(token)
-    query = supabase.table("orders").select("*").order("created_at", desc=True)
-    if status:
-        query = query.eq("status", status)
-    orders = query.execute().data
-    if not orders:
-        return []
-    order_ids = [o["id"] for o in orders]
-    items_result = supabase.table("order_items").select("*").in_("order_id", order_ids).execute()
-    items_by_order: dict = {}
-    for item in items_result.data:
-        product = next((p for p in PRODUCTS if p["id"] == item["product_id"]), None)
-        item["image"] = product["image"] if product else ""
-        items_by_order.setdefault(item["order_id"], []).append(item)
+    try:
+        query = supabase.table("orders").select("*").order("created_at", desc=True)
+        if status:
+            query = query.eq("status", status)
+        orders = query.execute().data
+        if not orders:
+            return []
+        order_ids = [o["id"] for o in orders]
+        items_result = supabase.table("order_items").select("*").in_("order_id", order_ids).execute()
+        items_by_order: dict = {}
+        for item in items_result.data:
+            product = next((p for p in PRODUCTS if p["id"] == item["product_id"]), None)
+            item["image"] = product["image"] if product else ""
+            items_by_order.setdefault(item["order_id"], []).append(item)
 
-    # Which merchant(s) are actually fulfilling each order — admin needs to
-    # see this even though customers never do (see _resolve_order_merchants).
-    parts = supabase.table("order_merchant_parts").select("*").in_("order_id", order_ids).execute().data or []
-    merchant_rows = supabase.table("merchants").select("id, shop_name").execute().data or []
-    shop_by_id = {m["id"]: m["shop_name"] for m in merchant_rows}
-    parts_by_order: dict = {}
-    for p in parts:
-        parts_by_order.setdefault(p["order_id"], []).append({
-            "merchant_id": p["merchant_id"],
-            "shop_name": "VivaPetals (in-house)" if p["merchant_id"] == HOUSE_MERCHANT_ID else shop_by_id.get(p["merchant_id"], "Unknown seller"),
-            "status": p.get("status"),
-            "payout_status": p.get("payout_status", "unpaid"),
-            "payout": p.get("payout", 0),
-        })
+        # Which merchant(s) are actually fulfilling each order — admin needs to
+        # see this even though customers never do (see _resolve_order_merchants).
+        parts = supabase.table("order_merchant_parts").select("*").in_("order_id", order_ids).execute().data or []
+        merchant_rows = supabase.table("merchants").select("id, shop_name").execute().data or []
+        shop_by_id = {m["id"]: m["shop_name"] for m in merchant_rows}
+        parts_by_order: dict = {}
+        for p in parts:
+            parts_by_order.setdefault(p["order_id"], []).append({
+                "merchant_id": p["merchant_id"],
+                "shop_name": "VivaPetals (in-house)" if p["merchant_id"] == HOUSE_MERCHANT_ID else shop_by_id.get(p["merchant_id"], "Unknown seller"),
+                "status": p.get("status"),
+                "payout_status": p.get("payout_status", "unpaid"),
+                "payout": p.get("payout", 0),
+            })
 
-    for order in orders:
-        order["items"] = items_by_order.get(order["id"], [])
-        order["merchants"] = parts_by_order.get(order["id"], [])
-    return orders
+        for order in orders:
+            order["items"] = items_by_order.get(order["id"], [])
+            order["merchants"] = parts_by_order.get(order["id"], [])
+        return orders
+    except Exception as e:
+        print(f"[admin-orders] DB error: {e}", flush=True)
+        raise HTTPException(status_code=503, detail="Could not load orders, please retry")
 
 @app.get("/api/admin/customers")
 def admin_customers(token: str):

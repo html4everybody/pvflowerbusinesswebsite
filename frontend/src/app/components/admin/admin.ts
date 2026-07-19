@@ -760,10 +760,12 @@ export class Admin implements OnInit {
 
   loadOccasions(): void {
     this.loadingOccasions.set(true);
-    this.http.get<any[]>(`${environment.apiUrl}/api/admin/occasions?token=${this.token}`).subscribe({
-      next: (data) => { this.occasions.set(data || []); this.loadingOccasions.set(false); },
-      error: () => this.loadingOccasions.set(false)
-    });
+    this.http.get<any[]>(`${environment.apiUrl}/api/admin/occasions?token=${this.token}`)
+      .pipe(retry({ count: 5, delay: 5000 }))
+      .subscribe({
+        next: (data) => { this.occasions.set(data || []); this.loadingOccasions.set(false); },
+        error: () => this.loadingOccasions.set(false)
+      });
   }
 
   occProducts = computed(() => {
