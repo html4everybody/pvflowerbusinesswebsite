@@ -173,12 +173,12 @@
       }
     }
 
-    .weight-presets {
+    .unit-presets {
       display: flex;
       gap: 0.5rem;
       flex-wrap: wrap;
 
-      .weight-btn {
+      .preset-btn {
         padding: 0.4rem 0.9rem;
         border: 1.5px solid var(--border);
         border-radius: var(--radius-full);

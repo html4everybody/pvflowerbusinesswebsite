@@ -582,6 +582,14 @@ export class Admin implements OnInit {
     });
   }
 
+  onUnitTypeChange(): void {
+    if (this.productForm.unit_type === 'weight' && this.productForm.min_quantity < 100) {
+      this.productForm.min_quantity = 100;
+    } else if (this.productForm.unit_type !== 'weight' && this.productForm.min_quantity === 100) {
+      this.productForm.min_quantity = 1;
+    }
+  }
+
   closeProductForm(): void { this.showProductForm.set(false); this.editingProduct.set(null); }
 
   saveProduct(): void {

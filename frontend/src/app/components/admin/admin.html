@@ -678,10 +678,9 @@
                 </label>
                 <div class="form-row">
                   <label class="form-label">Sold by
-                    <select class="form-input" [(ngModel)]="productForm.unit_type">
+                    <select class="form-input" [(ngModel)]="productForm.unit_type" (ngModelChange)="onUnitTypeChange()">
                       <option value="stem">Stem / Piece</option>
                       <option value="weight">Weight (grams)</option>
-                      <option value="bunch">Bunch</option>
                       <option value="pair">Pair (garlands)</option>
                     </select>
                   </label>
