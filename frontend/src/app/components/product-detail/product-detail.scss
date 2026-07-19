@@ -142,6 +142,14 @@
       font-weight: 700;
       color: var(--text);
       margin: 0 0 1.25rem;
+
+      .price-unit-label {
+        font-size: 0.9rem;
+        font-weight: 500;
+        color: var(--text-muted);
+        margin-left: 0.3rem;
+        vertical-align: middle;
+      }
     }
 
     .features {
@@ -162,6 +170,31 @@
         font-size: 0.85rem;
 
         .icon { font-size: 1.1rem; }
+      }
+    }
+
+    .weight-presets {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+
+      .weight-btn {
+        padding: 0.4rem 0.9rem;
+        border: 1.5px solid var(--border);
+        border-radius: var(--radius-full);
+        background: var(--bg-card);
+        color: var(--text);
+        font-size: 0.85rem;
+        font-weight: 600;
+        cursor: pointer;
+        font-family: inherit;
+        transition: border-color 0.15s, background 0.15s, color 0.15s;
+
+        &.active, &:hover {
+          border-color: var(--accent);
+          background: var(--accent-light);
+          color: var(--accent);
+        }
       }
     }
 

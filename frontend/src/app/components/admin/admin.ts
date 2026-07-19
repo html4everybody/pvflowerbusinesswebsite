@@ -111,7 +111,7 @@ export class Admin implements OnInit {
   showProductForm = signal(false);
   editingProduct = signal<any | null>(null);
   savingProduct = signal(false);
-  productForm: any = { name: '', description: '', price: 0, discount_percent: 0, image: '', category: 'Flowers', inStock: true, merchant_price: 0, merchant_ids: [] as string[] };
+  productForm: any = { name: '', description: '', price: 0, discount_percent: 0, image: '', category: 'Flowers', inStock: true, merchant_price: 0, merchant_ids: [] as string[], unit_type: 'stem', min_quantity: 1 };
 
   // ── Subscription Plans ───────────────────────────────────────────────────────
   subPlans = signal<any[]>([]);
@@ -497,17 +497,20 @@ export class Admin implements OnInit {
         discount_percent: product.discount_percent || 0, image: product.image || '', category: product.category,
         inStock: product.inStock !== false, merchant_price: product.merchant_price || 0,
         merchant_ids: siblings.map(p => p.merchant_id),
+        unit_type: product.unit_type || 'stem', min_quantity: product.min_quantity || 1,
       };
     } else if (product) {
       this.productForm = {
         name: product.name, description: product.description || '', price: product.price,
         discount_percent: product.discount_percent || 0, image: product.image || '', category: product.category,
         inStock: product.inStock !== false, merchant_price: product.merchant_price || 0, merchant_ids: [],
+        unit_type: product.unit_type || 'stem', min_quantity: product.min_quantity || 1,
       };
     } else {
       this.productForm = {
         name: '', description: '', price: 0, discount_percent: 0, image: '',
         category: this.productCategories()[0] || 'Flowers', inStock: true, merchant_price: 0, merchant_ids: [],
+        unit_type: 'stem', min_quantity: 1,
       };
     }
     this.showProductForm.set(true);

@@ -566,6 +566,8 @@ def _row_to_product(r: dict) -> dict:
         "category": r.get("category", ""),
         "inStock": r.get("in_stock", True),
         "product_code": r.get("id", ""),
+        "unit_type": r.get("unit_type", "stem"),
+        "min_quantity": int(r.get("min_quantity") or 1),
     }
 
 def load_products():
@@ -1120,6 +1122,8 @@ class ProductCreate(BaseModel):
     image: str = ""
     category: str
     inStock: bool = True
+    unit_type: str = "stem"
+    min_quantity: int = 1
 
 class ProductUpdate(BaseModel):
     name: Optional[str] = None
@@ -1129,6 +1133,8 @@ class ProductUpdate(BaseModel):
     image: Optional[str] = None
     category: Optional[str] = None
     inStock: Optional[bool] = None
+    unit_type: Optional[str] = None
+    min_quantity: Optional[int] = None
 
 class SeasonalOfferCreate(BaseModel):
     emoji: str
@@ -1277,6 +1283,7 @@ def create_product(req: ProductCreate, token: str):
             "price": float(req.price), "merchant_price": float(req.price),
             "image": req.image, "category": req.category, "in_stock": req.inStock,
             "merchant_id": HOUSE_MERCHANT_ID, "status": "approved",
+            "unit_type": req.unit_type, "min_quantity": req.min_quantity,
         }).execute()
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to insert product: {e}")
@@ -1292,7 +1299,8 @@ def update_product(product_id: str, req: ProductUpdate, token: str):
     # Admin controls the selling price + discount (their markup lives here).
     col_map = {"name": "name", "description": "description", "price": "price",
                "discount_percent": "discount_percent", "image": "image",
-               "category": "category", "inStock": "in_stock"}
+               "category": "category", "inStock": "in_stock",
+               "unit_type": "unit_type", "min_quantity": "min_quantity"}
     data = {}
     for field, col in col_map.items():
         val = getattr(req, field)
@@ -1392,6 +1400,8 @@ class CatalogProductCreate(BaseModel):
     merchant_price: float        # what EACH assigned merchant earns per unit
     discount_percent: float = 0
     merchant_ids: list[str]
+    unit_type: str = "stem"
+    min_quantity: int = 1
 
 
 class CatalogProductUpdate(BaseModel):
@@ -1404,6 +1414,8 @@ class CatalogProductUpdate(BaseModel):
     merchant_price: Optional[float] = None
     discount_percent: Optional[float] = None
     merchant_ids: Optional[list[str]] = None   # full desired assignment list, if provided
+    unit_type: Optional[str] = None
+    min_quantity: Optional[int] = None
 
 
 @app.get("/api/admin/catalog-products")
@@ -1440,6 +1452,7 @@ def admin_create_catalog_product(req: CatalogProductCreate):
         "name": req.name.strip(), "description": req.description, "image": req.image,
         "category": req.category.strip(), "price": price, "merchant_price": merchant_price,
         "discount_percent": discount, "status": "active",
+        "unit_type": req.unit_type, "min_quantity": req.min_quantity,
     }).execute()
     catalog_id = cat.data[0]["id"]
 
@@ -1450,6 +1463,7 @@ def admin_create_catalog_product(req: CatalogProductCreate):
             "price": price, "merchant_price": merchant_price, "discount_percent": discount,
             "image": req.image, "category": req.category.strip(), "in_stock": True,
             "merchant_id": mid, "status": "approved", "catalog_id": catalog_id,
+            "unit_type": req.unit_type, "min_quantity": req.min_quantity,
         })
     supabase.table("products").insert(inserts).execute()
     load_products()
@@ -1472,6 +1486,10 @@ def admin_update_catalog_product(catalog_id: str, req: CatalogProductUpdate):
         val = getattr(req, field)
         if val is not None:
             data[field] = float(val) if field in numeric_fields else val
+    if req.unit_type is not None:
+        data["unit_type"] = req.unit_type
+    if req.min_quantity is not None:
+        data["min_quantity"] = int(req.min_quantity)
 
     if data:
         supabase.table("catalog_products").update(data).eq("id", catalog_id).execute()
@@ -1502,6 +1520,8 @@ def admin_update_catalog_product(catalog_id: str, req: CatalogProductUpdate):
                     "discount_percent": master["discount_percent"], "image": master["image"],
                     "category": master["category"], "in_stock": True,
                     "merchant_id": mid, "status": "approved", "catalog_id": catalog_id,
+                    "unit_type": master.get("unit_type", "stem"),
+                    "min_quantity": master.get("min_quantity", 1),
                 })
             supabase.table("products").insert(inserts).execute()
 
