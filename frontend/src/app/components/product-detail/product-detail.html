@@ -41,18 +41,28 @@
           }
 
           <div class="add-to-cart-section">
-            <div class="unit-presets">
-              @for (p of presets; track p.qty) {
-                <button class="preset-btn" [class.active]="quantity === p.qty" (click)="setWeightQty(p.qty)">
-                  {{ p.label }}
-                </button>
-              }
-            </div>
+            @if (unitType !== 'weight') {
+              <div class="unit-presets">
+                @for (p of presets; track p.qty) {
+                  <button class="preset-btn" [class.active]="quantity === p.qty" (click)="setPresetQty(p.qty)">
+                    {{ p.label }}
+                  </button>
+                }
+              </div>
+            }
 
-            <div class="quantity-selector">
-              <button (click)="decreaseQuantity()" [disabled]="quantity <= minQty">−</button>
-              <span>{{ formatCurrentQty() }}</span>
-              <button (click)="increaseQuantity()">+</button>
+            <div class="quantity-row">
+              <div class="quantity-selector">
+                <button (click)="decreaseQuantity()" [disabled]="quantity <= minQty">−</button>
+                <span>{{ stepperValue }}</span>
+                <button (click)="increaseQuantity()">+</button>
+              </div>
+              @if (unitType === 'weight') {
+                <select class="weight-unit-select" [ngModel]="weightUnit()" (ngModelChange)="setWeightUnit($event)">
+                  <option value="grams">Grams</option>
+                  <option value="kgs">KGs</option>
+                </select>
+              }
             </div>
 
             <div class="cart-action-row">
