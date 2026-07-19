@@ -819,7 +819,7 @@
 
 .modal-body {
   padding: 1.1rem 1.4rem; display: flex; flex-direction: column; gap: 0.8rem;
-  overflow-y: auto;
+  overflow-y: auto; flex: 1; min-height: 0;
 }
 
 .form-label {
