@@ -126,8 +126,7 @@ export class ProductDetail implements OnInit {
     if (unit === 'kgs') {
       this.quantity = Math.max(1, Math.round(this.quantity));
     } else {
-      // switching to grams — snap to nearest 100g step
-      this.quantity = Math.max(0.1, Math.round(this.quantity * 10) / 10);
+      this.quantity = 0.1; // default to 100g when switching to grams
     }
     this.weightUnit.set(unit);
   }
