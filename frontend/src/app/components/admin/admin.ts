@@ -774,6 +774,8 @@ export class Admin implements OnInit {
     return q ? list.filter(p => p.name.toLowerCase().includes(q) || p.category.toLowerCase().includes(q)) : list;
   });
 
+  taggedProductCount = computed(() => this.occProducts().filter(p => this.isOccProduct(p.id)).length);
+
   openOccForm(occ?: any): void {
     if (!this.products().length) this.loadProducts();
     this.occProductSearch.set('');
