@@ -101,7 +101,7 @@ export class Admin implements OnInit {
     return q ? this.products().filter(p => p.name.toLowerCase().includes(q) || p.category.toLowerCase().includes(q)) : this.products();
   });
   // ── Categories ─────────────────────────────────────────────────────────────
-  categories = signal<string[]>(['Flowers', 'Bouquets', 'Garlands', 'Gifts', 'Decoration']);
+  categories = signal<string[]>([]);
   newCategoryName = signal('');
   savingCategory = signal(false);
   productCategories = computed(() => {
