@@ -680,14 +680,15 @@
                   <label class="form-label">Sold by
                     <select class="form-input" [(ngModel)]="productForm.unit_type" (ngModelChange)="onUnitTypeChange()">
                       <option value="stem">Stem / Piece</option>
-                      <option value="weight">Weight (grams)</option>
+                      <option value="weight">Weight (kg)</option>
                       <option value="pair">Pair (garlands)</option>
                     </select>
                   </label>
-                  <label class="form-label">
-                    {{ productForm.unit_type === 'weight' ? 'Grams per unit (e.g. 100)' : 'Min. quantity' }}
-                    <input type="number" class="form-input" [(ngModel)]="productForm.min_quantity" min="1" step="1">
-                  </label>
+                  @if (productForm.unit_type !== 'weight') {
+                    <label class="form-label">Min. quantity
+                      <input type="number" class="form-input" [(ngModel)]="productForm.min_quantity" min="1" step="1">
+                    </label>
+                  }
                 </div>
                 <label class="form-label">Image
                   <input type="text" class="form-input" [(ngModel)]="productForm.image" placeholder="Paste an image URL, or upload below">
