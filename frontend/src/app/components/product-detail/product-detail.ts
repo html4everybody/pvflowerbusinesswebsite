@@ -25,7 +25,7 @@ export class ProductDetail implements OnInit {
 
   activeTab = signal<'description' | 'care' | 'reviews'>('description');
   activeImageIdx = signal(0);
-  weightUnit = signal<'grams' | 'kgs'>('grams');
+  weightUnit = signal<'grams' | 'kgs'>('kgs');
 
   gallery: string[] = [];
   careTips: CareTip[] = [];
@@ -85,8 +85,8 @@ export class ProductDetail implements OnInit {
       this.activeImageIdx.set(0);
       this.activeTab.set('description');
       const type = this.product.unit_type || 'stem';
-      this.quantity = type === 'weight' ? 0.1 : (this.product.min_quantity || 1);
-      this.weightUnit.set('grams');
+      this.quantity = type === 'weight' ? 1 : (this.product.min_quantity || 1);
+      this.weightUnit.set('kgs');
     });
   }
 
