@@ -512,6 +512,18 @@ def send_sms_whatsapp_reminder(order: dict, days_before: int, is_recurrence: boo
 # In-memory cache — loaded from Supabase on startup and after every admin change.
 PRODUCTS: list = []
 
+# ── Categories (DB-backed, admin-managed) ─────────────────────────────────────
+CATEGORIES: list[str] = ["Flowers", "Bouquets", "Garlands", "Gifts", "Decoration"]
+
+def load_categories():
+    global CATEGORIES
+    try:
+        rows = supabase.table("categories").select("name").order("sort_order").execute().data or []
+        if rows:
+            CATEGORIES = [r["name"] for r in rows]
+    except Exception as e:
+        print(f"[Categories] Could not load from DB (using defaults): {e}", flush=True)
+
 def _row_to_product(r: dict) -> dict:
     base = float(r.get("price", 0))                     # admin-set selling price
     disc = float(r.get("discount_percent", 0) or 0)     # admin-set discount
@@ -994,6 +1006,7 @@ def _has_column(table: str, column: str) -> bool:
 _load_house_merchant()
 load_products()
 load_subscription_plans()
+load_categories()
 
 # ── Order Status ───────────────────────────────────────────────────────────────
 STATUS_MESSAGES = {
@@ -1154,7 +1167,39 @@ def get_products(category: Optional[str] = None):
 
 @app.get("/api/products/categories")
 def get_categories():
-    return sorted(list(set(p["category"] for p in PRODUCTS if _is_live(p))))
+    product_cats = set(p["category"] for p in PRODUCTS if _is_live(p) and p.get("category"))
+    all_cats = list(set(CATEGORIES) | product_cats)
+    return sorted(all_cats)
+
+@app.get("/api/admin/categories")
+def admin_list_categories(token: str):
+    require_admin(token)
+    return CATEGORIES
+
+@app.post("/api/admin/categories")
+def admin_add_category(token: str, body: dict):
+    require_admin(token)
+    name = (body.get("name") or "").strip()
+    if not name:
+        raise HTTPException(status_code=400, detail="Category name is required")
+    if name in CATEGORIES:
+        raise HTTPException(status_code=409, detail="Category already exists")
+    try:
+        supabase.table("categories").insert({"name": name, "sort_order": len(CATEGORIES)}).execute()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to save category: {e}")
+    load_categories()
+    return {"name": name}
+
+@app.delete("/api/admin/categories/{name}")
+def admin_delete_category(name: str, token: str):
+    require_admin(token)
+    try:
+        supabase.table("categories").delete().eq("name", name).execute()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to delete category: {e}")
+    load_categories()
+    return {"deleted": name}
 
 @app.get("/api/products/{product_id}")
 def get_product(product_id: str):
