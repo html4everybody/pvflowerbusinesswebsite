@@ -15,7 +15,7 @@ export class Cart {
 
   minQty(item: CartItem): number {
     const type = item.product.unit_type || 'stem';
-    if (type === 'weight') return 1;
+    if (type === 'weight') return 0.1;
     return item.product.min_quantity || 1;
   }
 
@@ -29,11 +29,11 @@ export class Cart {
 
   updateQuantity(productId: string, change: number): void {
     const item = this.cartService.getCartItems().find(i => i.product.id === productId);
-    if (item) {
-      const newQty = item.quantity + change;
-      if (newQty >= this.minQty(item)) {
-        this.cartService.updateQuantity(productId, newQty);
-      }
+    if (!item) return;
+    const step = (item.product.unit_type === 'weight') ? 0.1 * change : change;
+    const newQty = Math.round((item.quantity + step) * 1000) / 1000;
+    if (newQty >= this.minQty(item)) {
+      this.cartService.updateQuantity(productId, newQty);
     }
   }
 

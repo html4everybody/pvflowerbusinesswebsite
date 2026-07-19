@@ -25,6 +25,7 @@ export class ProductDetail implements OnInit {
 
   activeTab = signal<'description' | 'care' | 'reviews'>('description');
   activeImageIdx = signal(0);
+  weightUnit = signal<'grams' | 'kgs'>('grams');
 
   gallery: string[] = [];
   careTips: CareTip[] = [];
@@ -83,60 +84,74 @@ export class ProductDetail implements OnInit {
       this.fbtChecked = new Set(this.fbt.map(p => p.id));
       this.activeImageIdx.set(0);
       this.activeTab.set('description');
-      // set initial quantity to minimum allowed for this product
       const type = this.product.unit_type || 'stem';
-      this.quantity = type === 'weight' ? 1 : (this.product.min_quantity || 1);
+      this.quantity = type === 'weight' ? 0.1 : (this.product.min_quantity || 1);
+      this.weightUnit.set('grams');
     });
   }
 
   get unitType(): string { return this.product?.unit_type || 'stem'; }
+
   get minQty(): number {
-    if (this.unitType === 'weight') return 1;
+    if (this.unitType === 'weight') return this.weightUnit() === 'grams' ? 0.1 : 1;
     return this.product?.min_quantity || 1;
+  }
+
+  // Stepper display value: raw grams (100, 200…) in grams mode, raw kg (1, 2…) in kg mode
+  get stepperValue(): number {
+    if (this.unitType === 'weight') {
+      return this.weightUnit() === 'grams'
+        ? Math.round(this.quantity * 1000)
+        : this.quantity;
+    }
+    return this.quantity;
   }
 
   get presets(): { qty: number; label: string }[] {
     if (!this.product) return [];
     const type = this.product.unit_type || 'stem';
     const minQ = this.product.min_quantity || 1;
-
-    if (type === 'weight') {
-      // 100g, 500g, 1kg, 2kg, 5kg
-      return [1, 5, 10, 20, 50].map(m => ({
-        qty: m,
-        label: formatQty(m, this.product!)
-      }));
-    }
     if (type === 'pair') {
-      return [1, 2, 5, 10].map(m => ({
-        qty: m,
-        label: formatQty(m, this.product!)
-      }));
+      return [1, 2, 5, 10].map(m => ({ qty: m, label: formatQty(m, this.product!) }));
     }
     // stem — multiples of min_quantity
-    return [1, 2, 5, 10].map(m => ({
-      qty: m * minQ,
-      label: formatQty(m * minQ, this.product!)
-    }));
+    return [1, 2, 5, 10].map(m => ({ qty: m * minQ, label: formatQty(m * minQ, this.product!) }));
   }
 
   get priceUnitLabel(): string {
     return this.product ? unitPriceLabel(this.product) : '';
   }
 
-  formatCurrentQty(): string {
-    return this.product ? formatQty(this.quantity, this.product) : `${this.quantity}`;
+  setWeightUnit(unit: 'grams' | 'kgs'): void {
+    if (unit === 'kgs') {
+      this.quantity = Math.max(1, Math.round(this.quantity));
+    } else {
+      // switching to grams — snap to nearest 100g step
+      this.quantity = Math.max(0.1, Math.round(this.quantity * 10) / 10);
+    }
+    this.weightUnit.set(unit);
   }
 
   decreaseQuantity(): void {
-    if (this.quantity > this.minQty) this.quantity--;
+    if (this.unitType === 'weight') {
+      const step = this.weightUnit() === 'grams' ? 0.1 : 1;
+      const next = Math.round((this.quantity - step) * 1000) / 1000;
+      if (next >= this.minQty) this.quantity = next;
+    } else {
+      if (this.quantity > this.minQty) this.quantity--;
+    }
   }
 
   increaseQuantity(): void {
-    this.quantity++;
+    if (this.unitType === 'weight') {
+      const step = this.weightUnit() === 'grams' ? 0.1 : 1;
+      this.quantity = Math.round((this.quantity + step) * 1000) / 1000;
+    } else {
+      this.quantity++;
+    }
   }
 
-  setWeightQty(qty: number): void {
+  setPresetQty(qty: number): void {
     this.quantity = qty;
   }
 

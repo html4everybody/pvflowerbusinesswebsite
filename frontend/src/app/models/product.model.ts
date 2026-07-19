@@ -27,23 +27,21 @@ export function sellPrice(p: Product): number {
  * For weight: qty × min_quantity grams (e.g. qty=5, minQ=100 → "500g")
  * For others: qty stems / bunches / pairs
  */
+/** qty for weight products is in kg (0.1 = 100g, 1.5 = 1.5kg). */
 export function formatQty(qty: number, product: Product): string {
   const type = product.unit_type || 'stem';
   if (type === 'weight') {
-    const grams = qty * (product.min_quantity || 100);
-    return grams >= 1000 ? `${grams / 1000}kg` : `${grams}g`;
+    const grams = Math.round(qty * 1000);
+    return grams < 1000 ? `${grams}g` : `${qty}kg`;
   }
   if (type === 'pair') return `${qty} pair${qty !== 1 ? 's' : ''}`;
   return `${qty} stem${qty !== 1 ? 's' : ''}`;
 }
 
-/** Short price-per-unit suffix shown next to the price (e.g. "/ 100g", "/ stem"). */
+/** Short price-per-unit suffix shown next to the price. */
 export function unitPriceLabel(product: Product): string {
   const type = product.unit_type || 'stem';
-  if (type === 'weight') {
-    const g = product.min_quantity || 100;
-    return `/ ${g >= 1000 ? `${g / 1000}kg` : `${g}g`}`;
-  }
+  if (type === 'weight') return '/ kg';
   if (type === 'pair') return '/ pair';
   return '/ stem';
 }
