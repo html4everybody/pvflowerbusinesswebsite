@@ -16,11 +16,6 @@ ALTER TABLE products ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'appr
 -- reason shown to the merchant when a product is rejected
 ALTER TABLE products ADD COLUMN IF NOT EXISTS reject_reason TEXT;
 
--- Backfill existing catalogue: they are the house store's own products, already
--- live, with no markup (merchant_price = selling price → zero profit).
-UPDATE products SET merchant_price = price WHERE merchant_price = 0 OR merchant_price IS NULL;
-UPDATE products SET status = 'approved' WHERE status IS NULL OR status = '';
-
 CREATE INDEX IF NOT EXISTS idx_products_status ON products(status);
 
 -- Note: two dummy merchant accounts + sample products are seeded automatically

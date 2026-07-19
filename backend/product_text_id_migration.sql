@@ -7,13 +7,7 @@ ALTER TABLE order_items     DROP CONSTRAINT IF EXISTS order_items_product_id_fke
 ALTER TABLE product_stock   DROP CONSTRAINT IF EXISTS product_stock_product_id_fkey;
 ALTER TABLE cart_items      DROP CONSTRAINT IF EXISTS cart_items_product_id_fkey;
 
--- 2. Clear dependent tables (fresh start)
-DELETE FROM cart_items;
-DELETE FROM product_stock;
-DELETE FROM order_items;
-DELETE FROM products;
-
--- 3. Change products.id to TEXT primary key
+-- 2. Change products.id to TEXT primary key
 ALTER TABLE products DROP CONSTRAINT IF EXISTS products_pkey;
 ALTER TABLE products ALTER COLUMN id DROP DEFAULT;
 ALTER TABLE products ALTER COLUMN id TYPE TEXT USING id::TEXT;

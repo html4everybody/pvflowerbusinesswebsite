@@ -5,7 +5,6 @@
 
 -- 1. Roles on users ----------------------------------------------------------
 ALTER TABLE users ADD COLUMN IF NOT EXISTS role TEXT NOT NULL DEFAULT 'customer';
-UPDATE users SET role = 'admin' WHERE is_admin = TRUE AND role <> 'admin';
 
 -- 2. Merchants (shop) table --------------------------------------------------
 CREATE TABLE IF NOT EXISTS merchants (
@@ -32,11 +31,9 @@ ON CONFLICT (id) DO NOTHING;
 -- 4. Product ownership + merchant-set discount -------------------------------
 ALTER TABLE products ADD COLUMN IF NOT EXISTS merchant_id      UUID REFERENCES merchants(id);
 ALTER TABLE products ADD COLUMN IF NOT EXISTS discount_percent NUMERIC NOT NULL DEFAULT 0;
-UPDATE products SET merchant_id = '00000000-0000-0000-0000-000000000001' WHERE merchant_id IS NULL;
 
 -- 5. Stamp each order line with its merchant ---------------------------------
 ALTER TABLE order_items ADD COLUMN IF NOT EXISTS merchant_id UUID REFERENCES merchants(id);
-UPDATE order_items SET merchant_id = '00000000-0000-0000-0000-000000000001' WHERE merchant_id IS NULL;
 
 -- 6. Per-merchant fulfillment part of an order (own status + delivery date) ---
 CREATE TABLE IF NOT EXISTS order_merchant_parts (
