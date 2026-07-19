@@ -1160,6 +1160,8 @@ def _dedupe_catalog(products: list) -> list:
 
 @app.get("/api/products")
 def get_products(category: Optional[str] = None):
+    if not PRODUCTS:
+        load_products()  # lazy reload if startup DB fetch failed (e.g. Render cold-start)
     live = _dedupe_catalog([p for p in PRODUCTS if _is_live(p)])
     if category:
         return [p for p in live if p["category"] == category]
@@ -1167,6 +1169,8 @@ def get_products(category: Optional[str] = None):
 
 @app.get("/api/products/categories")
 def get_categories():
+    if not PRODUCTS:
+        load_products()
     product_cats = set(p["category"] for p in PRODUCTS if _is_live(p) and p.get("category"))
     all_cats = list(set(CATEGORIES) | product_cats)
     return sorted(all_cats)
@@ -1214,6 +1218,8 @@ def get_product(product_id: str):
 def admin_list_products(token: str):
     """All products (every status) with shop names — for admin management/approvals."""
     require_admin(token)
+    if not PRODUCTS:
+        load_products()
     merchants = supabase.table("merchants").select("id, shop_name").execute().data or []
     shop_by_id = {m["id"]: m["shop_name"] for m in merchants}
     out = []
