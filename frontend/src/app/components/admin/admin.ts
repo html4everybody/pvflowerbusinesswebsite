@@ -13,7 +13,7 @@ import { environment } from '../../../environments/environment';
 import { DatePicker } from '../date-picker/date-picker';
 import { LocationPicker, PickedLocation } from '../location-picker/location-picker';
 
-export type AdminSection = 'overview' | 'orders' | 'products' | 'inventory' | 'customers' | 'analytics' | 'zones' | 'deals' | 'bundles' | 'plans' | 'subscriptions' | 'studio' | 'occasions' | 'merchants' | 'payouts';
+export type AdminSection = 'overview' | 'orders' | 'products' | 'categories' | 'inventory' | 'customers' | 'analytics' | 'zones' | 'deals' | 'bundles' | 'plans' | 'subscriptions' | 'studio' | 'occasions' | 'merchants' | 'payouts';
 
 @Component({
   selector: 'app-admin',
@@ -100,10 +100,13 @@ export class Admin implements OnInit {
     const q = this.productSearch().toLowerCase();
     return q ? this.products().filter(p => p.name.toLowerCase().includes(q) || p.category.toLowerCase().includes(q)) : this.products();
   });
-  readonly PRODUCT_CATEGORIES = ['Flowers', 'Bouquets', 'Garlands', 'Gifts', 'Decoration'];
+  // ── Categories ─────────────────────────────────────────────────────────────
+  categories = signal<string[]>(['Flowers', 'Bouquets', 'Garlands', 'Gifts', 'Decoration']);
+  newCategoryName = signal('');
+  savingCategory = signal(false);
   productCategories = computed(() => {
     const fromData = Array.from(new Set(this.products().map(p => p.category).filter(Boolean)));
-    return Array.from(new Set([...this.PRODUCT_CATEGORIES, ...fromData]));
+    return Array.from(new Set([...this.categories(), ...fromData]));
   });
   showProductForm = signal(false);
   editingProduct = signal<any | null>(null);
@@ -233,6 +236,7 @@ export class Admin implements OnInit {
     // the pending-approval badge is accurate from login, and the "assign to
     // merchants" checklist in the product form always has data ready.
     this.loadProducts();
+    this.loadCategories();
     this.loadMerchants();
     this.loadPayouts();
     // If restored section needs lazy-loaded data, trigger it
@@ -431,6 +435,31 @@ export class Admin implements OnInit {
       },
       error: () => { this.updatingId.set(null); this.toastService.show('Could not update status.'); }
     });
+  }
+
+  // ── Categories ─────────────────────────────────────────────────────────────
+  loadCategories(): void {
+    this.http.get<string[]>(`${environment.apiUrl}/api/admin/categories?token=${this.token}`)
+      .subscribe({ next: (data) => { if (data?.length) this.categories.set(data); } });
+  }
+
+  addCategory(): void {
+    const name = this.newCategoryName().trim();
+    if (!name || this.categories().includes(name)) return;
+    this.savingCategory.set(true);
+    this.http.post<any>(`${environment.apiUrl}/api/admin/categories?token=${this.token}`, { name })
+      .subscribe({
+        next: () => { this.newCategoryName.set(''); this.loadCategories(); this.savingCategory.set(false); this.toastService.show(`Category "${name}" added`); },
+        error: (err) => { this.savingCategory.set(false); this.toastService.show(err.error?.detail || 'Failed to add category', 'error'); }
+      });
+  }
+
+  deleteCategory(name: string): void {
+    this.http.delete(`${environment.apiUrl}/api/admin/categories/${encodeURIComponent(name)}?token=${this.token}`)
+      .subscribe({
+        next: () => { this.loadCategories(); this.toastService.show(`Category "${name}" removed`); },
+        error: (err) => { this.toastService.show(err.error?.detail || 'Failed to remove category', 'error'); }
+      });
   }
 
   // ── Products ──────────────────────────────────────────────────────────────

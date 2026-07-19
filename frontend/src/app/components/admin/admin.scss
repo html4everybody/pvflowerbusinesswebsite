@@ -801,7 +801,7 @@
 
   // Forms with more fields (e.g. the product form's merchant-assignment
   // section) get extra breathing room so nothing wraps awkwardly.
-  &.wide { max-width: 560px; }
+  &.wide { max-width: 560px; height: 85vh; }
 }
 
 .modal-header {
@@ -1186,7 +1186,7 @@
   .occ-admin-meta { font-size: 0.8rem; color: var(--text-muted); margin: 0.6rem 0 0.2rem; }
 }
 
-.occ-modal { max-width: 640px; }
+.occ-modal { max-width: 640px; height: 85vh; }
 .form-check {
   display: flex; align-items: center; gap: 0.5rem;
   font-size: 0.85rem; font-weight: 600; color: var(--text); margin: 0.4rem 0;
@@ -1499,4 +1499,71 @@
     .notif-item-msg { margin: 0.2rem 0 0; font-size: 0.78rem; color: var(--text-muted); line-height: 1.45; }
     .unread-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--accent); flex-shrink: 0; }
   }
+}
+
+// ── Categories ─────────────────────────────────────────────────────────────
+.categories-panel {
+  max-width: 560px;
+}
+
+.categories-add-row {
+  display: flex;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+
+  .form-input {
+    flex: 1;
+    min-width: 0;
+  }
+}
+
+.categories-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.category-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.65rem 1rem;
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+
+  .category-name {
+    font-size: 0.9rem;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+
+    i { color: var(--accent); }
+  }
+}
+
+.btn-danger-sm {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: #e74c3c;
+  cursor: pointer;
+  transition: background 0.15s;
+
+  &:hover { background: rgba(231, 76, 60, 0.1); }
+  i { font-size: 0.85rem; }
+}
+
+.categories-hint {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-top: 0.5rem;
+  line-height: 1.5;
 }
