@@ -1736,6 +1736,8 @@
                         <span class="occ-pick-cat">{{ p.category }}</span>
                         <span class="occ-pick-price">₹{{ p.price }}</span>
                       </label>
+                    } @empty {
+                      <p class="occ-picker-empty">No products yet — add products first, then assign them here.</p>
                     }
                   </div>
                 </div>

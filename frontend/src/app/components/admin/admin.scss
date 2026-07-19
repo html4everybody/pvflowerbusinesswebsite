@@ -1186,7 +1186,19 @@
   .occ-admin-meta { font-size: 0.8rem; color: var(--text-muted); margin: 0.6rem 0 0.2rem; }
 }
 
-.occ-modal { max-width: 640px; height: 85vh; }
+.occ-modal {
+  max-width: 640px;
+  height: 85vh;
+  overflow-y: auto; // scroll the whole box — flex body scroll was unreliable
+
+  .modal-header {
+    position: sticky; top: 0; z-index: 2;
+    background: var(--bg-card);
+  }
+  .modal-footer {
+    position: sticky; bottom: 0; z-index: 2;
+  }
+}
 .form-check {
   display: flex; align-items: center; gap: 0.5rem;
   font-size: 0.85rem; font-weight: 600; color: var(--text); margin: 0.4rem 0;
@@ -1207,6 +1219,11 @@
     .occ-search { max-width: 220px; }
   }
   .occ-picker-list { max-height: 300px; overflow-y: auto; }
+
+  .occ-picker-empty {
+    padding: 1.2rem 0.75rem; text-align: center;
+    font-size: 0.82rem; color: var(--text-muted); margin: 0;
+  }
 
   .occ-pick-row {
     display: flex; align-items: center; gap: 0.65rem;
