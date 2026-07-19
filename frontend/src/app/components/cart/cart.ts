@@ -23,6 +23,11 @@ export class Cart {
     return formatQty(item.quantity, item.product);
   }
 
+  stepperDisplay(item: CartItem): number {
+    if (item.product.unit_type === 'weight') return Math.round(item.quantity * 1000);
+    return item.quantity;
+  }
+
   itemPriceLabel(item: CartItem): string {
     return unitPriceLabel(item.product);
   }

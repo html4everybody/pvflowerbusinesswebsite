@@ -17,7 +17,7 @@
 
               <div class="item-quantity">
                 <button (click)="updateQuantity(item.product.id, -1)" [disabled]="item.quantity <= minQty(item)">−</button>
-                <span>{{ itemQtyLabel(item) }}</span>
+                <span>{{ stepperDisplay(item) }}</span>
                 <button (click)="updateQuantity(item.product.id, 1)">+</button>
               </div>
 
