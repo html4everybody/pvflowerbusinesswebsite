@@ -801,7 +801,7 @@
 
   // Forms with more fields (e.g. the product form's merchant-assignment
   // section) get extra breathing room so nothing wraps awkwardly.
-  &.wide { max-width: 560px; }
+  &.wide { max-width: 560px; height: 85vh; }
 }
 
 .modal-header {
@@ -1186,7 +1186,7 @@
   .occ-admin-meta { font-size: 0.8rem; color: var(--text-muted); margin: 0.6rem 0 0.2rem; }
 }
 
-.occ-modal { max-width: 640px; }
+.occ-modal { max-width: 640px; height: 85vh; }
 .form-check {
   display: flex; align-items: center; gap: 0.5rem;
   font-size: 0.85rem; font-weight: 600; color: var(--text); margin: 0.4rem 0;
