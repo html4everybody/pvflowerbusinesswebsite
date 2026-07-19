@@ -30,38 +30,51 @@
 
           @if (product.discount_percent) {
             <p class="price">₹{{ (product.final_price ?? product.price).toFixed(2) }}
+              <span class="price-unit-label">{{ priceUnitLabel }}</span>
               <span class="price-base">₹{{ product.price.toFixed(2) }}</span>
               <span class="price-off">-{{ product.discount_percent }}%</span>
             </p>
           } @else {
-            <p class="price">₹{{ product.price.toFixed(2) }}</p>
+            <p class="price">₹{{ product.price.toFixed(2) }}
+              <span class="price-unit-label">{{ priceUnitLabel }}</span>
+            </p>
           }
 
           <div class="add-to-cart-section">
+            @if (unitType === 'weight') {
+              <div class="weight-presets">
+                @for (p of weightPresets; track p.qty) {
+                  <button class="weight-btn" [class.active]="quantity === p.qty" (click)="setWeightQty(p.qty)">
+                    {{ p.label }}
+                  </button>
+                }
+              </div>
+            }
+
             <div class="quantity-selector">
-              <button (click)="decreaseQuantity()" [disabled]="quantity <= 1">−</button>
-              <span>{{ quantity }}</span>
+              <button (click)="decreaseQuantity()" [disabled]="quantity <= minQty">−</button>
+              <span>{{ formatCurrentQty() }}</span>
               <button (click)="increaseQuantity()">+</button>
             </div>
 
             <div class="cart-action-row">
-            <button class="btn-add-to-cart" (click)="addToCart()">
-              <i class="bi bi-bag"></i>
-              Add
-            </button>
+              <button class="btn-add-to-cart" (click)="addToCart()">
+                <i class="bi bi-bag"></i>
+                Add
+              </button>
 
-            <button class="btn-wishlist"
-                    [class.active]="wishlistService.has(product.id)"
-                    (click)="wishlistService.toggle(product)"
-                    [title]="wishlistService.has(product.id) ? 'Remove from wishlist' : 'Save to wishlist'">
-              @if (wishlistService.has(product.id)) {
-                <i class="bi bi-heart-fill"></i>
-                Saved
-              } @else {
-                <i class="bi bi-heart"></i>
-                Save
-              }
-            </button>
+              <button class="btn-wishlist"
+                      [class.active]="wishlistService.has(product.id)"
+                      (click)="wishlistService.toggle(product)"
+                      [title]="wishlistService.has(product.id) ? 'Remove from wishlist' : 'Save to wishlist'">
+                @if (wishlistService.has(product.id)) {
+                  <i class="bi bi-heart-fill"></i>
+                  Saved
+                } @else {
+                  <i class="bi bi-heart"></i>
+                  Save
+                }
+              </button>
             </div>
           </div>
 

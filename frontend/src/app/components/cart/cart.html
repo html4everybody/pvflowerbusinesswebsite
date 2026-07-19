@@ -12,12 +12,12 @@
               <div class="item-details">
                 <h3>{{ item.product.name }}</h3>
                 <p class="item-category">{{ item.product.category }}</p>
-                <p class="item-price">₹{{ item.product.price.toFixed(2) }} each</p>
+                <p class="item-price">₹{{ (item.product.final_price ?? item.product.price).toFixed(2) }} {{ itemPriceLabel(item) }}</p>
               </div>
 
               <div class="item-quantity">
-                <button (click)="updateQuantity(item.product.id, -1)" [disabled]="item.quantity <= 1">−</button>
-                <span>{{ item.quantity }}</span>
+                <button (click)="updateQuantity(item.product.id, -1)" [disabled]="item.quantity <= minQty(item)">−</button>
+                <span>{{ itemQtyLabel(item) }}</span>
                 <button (click)="updateQuantity(item.product.id, 1)">+</button>
               </div>
 

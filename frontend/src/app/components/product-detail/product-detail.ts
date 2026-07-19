@@ -8,7 +8,7 @@ import { FeedbackService } from '../../services/feedback';
 import { ToastService } from '../../services/toast';
 import { WishlistService } from '../../services/wishlist';
 import { AuthService } from '../../services/auth';
-import { Product } from '../../models/product.model';
+import { Product, formatQty, unitPriceLabel } from '../../models/product.model';
 import { ProductExtrasService, CareTip, Review } from '../../services/product-extras';
 import { environment } from '../../../environments/environment';
 
@@ -83,15 +83,44 @@ export class ProductDetail implements OnInit {
       this.fbtChecked = new Set(this.fbt.map(p => p.id));
       this.activeImageIdx.set(0);
       this.activeTab.set('description');
+      // set initial quantity to minimum allowed for this product
+      const type = this.product.unit_type || 'stem';
+      this.quantity = type === 'weight' ? 1 : (this.product.min_quantity || 1);
     });
   }
 
+  get unitType(): string { return this.product?.unit_type || 'stem'; }
+  get minQty(): number {
+    if (this.unitType === 'weight') return 1;
+    return this.product?.min_quantity || 1;
+  }
+
+  get weightPresets(): { qty: number; label: string }[] {
+    const minQ = this.product?.min_quantity || 100;
+    return [1, 5, 10].map(m => ({
+      qty: m,
+      label: (m * minQ) >= 1000 ? `${(m * minQ) / 1000}kg` : `${m * minQ}g`
+    }));
+  }
+
+  get priceUnitLabel(): string {
+    return this.product ? unitPriceLabel(this.product) : '';
+  }
+
+  formatCurrentQty(): string {
+    return this.product ? formatQty(this.quantity, this.product) : `${this.quantity}`;
+  }
+
   decreaseQuantity(): void {
-    if (this.quantity > 1) this.quantity--;
+    if (this.quantity > this.minQty) this.quantity--;
   }
 
   increaseQuantity(): void {
     this.quantity++;
+  }
+
+  setWeightQty(qty: number): void {
+    this.quantity = qty;
   }
 
   addToCart(): void {
@@ -99,7 +128,7 @@ export class ProductDetail implements OnInit {
       this.cartService.addToCart(this.product, this.quantity);
       this.feedbackService.addToCartFeedback();
       this.toastService.show(`${this.product.name} added to cart!`);
-      this.quantity = 1;
+      this.quantity = this.minQty;
     }
   }
 
