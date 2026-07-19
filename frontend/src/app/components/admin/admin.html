@@ -1726,7 +1726,7 @@
 
                 <div class="occ-picker">
                   <div class="occ-picker-head">
-                    <span>Products in this occasion <strong>({{ occForm.product_ids.length }})</strong></span>
+                    <span>Products in this occasion <strong>({{ occProducts().filter(p => isOccProduct(p.id)).length }})</strong></span>
                     <input type="text" class="form-input occ-search" placeholder="Search products..." [value]="occProductSearch()" (input)="occProductSearch.set($any($event.target).value)">
                   </div>
                   <div class="occ-picker-list">

@@ -738,7 +738,7 @@ class OccasionAdmin(BaseModel):
     hero_image: Optional[str] = ""
     gradient: Optional[str] = ""
     accent_color: Optional[str] = "#c84b7a"
-    product_ids: list[int] = []
+    product_ids: list[str] = []
     active: bool = True
     sort_order: Optional[int] = 100
 
