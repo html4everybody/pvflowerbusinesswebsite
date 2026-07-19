@@ -447,18 +447,29 @@ export class Admin implements OnInit {
     const name = this.newCategoryName().trim();
     if (!name || this.categories().includes(name)) return;
     this.savingCategory.set(true);
+    this.categories.set([...this.categories(), name]); // optimistic add
+    this.newCategoryName.set('');
     this.http.post<any>(`${environment.apiUrl}/api/admin/categories?token=${this.token}`, { name })
       .subscribe({
-        next: () => { this.newCategoryName.set(''); this.loadCategories(); this.savingCategory.set(false); this.toastService.show(`Category "${name}" added`); },
-        error: (err) => { this.savingCategory.set(false); this.toastService.show(err.error?.detail || 'Failed to add category', 'error'); }
+        next: () => { this.savingCategory.set(false); this.toastService.show(`Category "${name}" added`); this.loadCategories(); },
+        error: (err) => {
+          this.categories.set(this.categories().filter(c => c !== name)); // revert
+          this.newCategoryName.set(name);
+          this.savingCategory.set(false);
+          this.toastService.show(err.error?.detail || 'Failed to add category', 'error');
+        }
       });
   }
 
   deleteCategory(name: string): void {
+    this.categories.set(this.categories().filter(c => c !== name)); // optimistic remove
     this.http.delete(`${environment.apiUrl}/api/admin/categories/${encodeURIComponent(name)}?token=${this.token}`)
       .subscribe({
-        next: () => { this.loadCategories(); this.toastService.show(`Category "${name}" removed`); },
-        error: (err) => { this.toastService.show(err.error?.detail || 'Failed to remove category', 'error'); }
+        next: () => { this.toastService.show(`Category "${name}" removed`); this.loadCategories(); },
+        error: (err) => {
+          this.loadCategories(); // revert by reloading
+          this.toastService.show(err.error?.detail || 'Failed to remove category', 'error');
+        }
       });
   }
 
