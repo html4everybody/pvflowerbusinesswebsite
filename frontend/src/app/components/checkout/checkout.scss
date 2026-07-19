@@ -57,7 +57,10 @@
   @media (max-width: 900px) {
     grid-template-columns: 1fr;
 
-    .order-summary { order: -1; }
+    .order-summary {
+      position: static;
+      order: 1; // show summary below the form on mobile
+    }
   }
 }
 
