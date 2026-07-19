@@ -1182,18 +1182,24 @@ def _dedupe_catalog(products: list) -> list:
 
 @app.get("/api/products")
 def get_products(category: Optional[str] = None):
-    if not PRODUCTS:
-        load_products()  # lazy reload if startup DB fetch failed (e.g. Render cold-start)
-    live = _dedupe_catalog([p for p in PRODUCTS if _is_live(p)])
+    try:
+        rows = supabase.table("products").select("*").order("id").execute().data or []
+        products = [_row_to_product(r) for r in rows]
+        PRODUCTS[:] = products  # keep cache in sync
+    except Exception:
+        products = list(PRODUCTS)  # fallback to cache if Supabase unreachable
+    live = _dedupe_catalog([p for p in products if _is_live(p)])
     if category:
         return [p for p in live if p["category"] == category]
     return live
 
 @app.get("/api/products/categories")
 def get_categories():
-    if not PRODUCTS:
-        load_products()
-    product_cats = set(p["category"] for p in PRODUCTS if _is_live(p) and p.get("category"))
+    try:
+        rows = supabase.table("products").select("id,category").execute().data or []
+        product_cats = set(r["category"] for r in rows if r.get("category"))
+    except Exception:
+        product_cats = set(p["category"] for p in PRODUCTS if p.get("category"))
     all_cats = list(set(CATEGORIES) | product_cats)
     return sorted(all_cats)
 
@@ -1240,8 +1246,7 @@ def get_product(product_id: str):
 def admin_list_products(token: str):
     """All products (every status) with shop names — for admin management/approvals."""
     require_admin(token)
-    if not PRODUCTS:
-        load_products()
+    load_products()  # always fresh — Render free tier restarts clear the cache
     merchants = supabase.table("merchants").select("id, shop_name").execute().data or []
     shop_by_id = {m["id"]: m["shop_name"] for m in merchants}
     out = []
