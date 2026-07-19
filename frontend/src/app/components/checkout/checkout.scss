@@ -59,9 +59,18 @@
 
     .order-summary {
       position: static;
-      order: 1; // show summary below the form on mobile
+      order: 1; // after form fields
+    }
+
+    .checkout-actions {
+      order: 2; // after summary
     }
   }
+}
+
+// Desktop: actions (button + trust) stay in column 1 below the form
+.checkout-actions {
+  grid-column: 1;
 }
 
 /* ── Form Sections ───────────────────────────────────────── */
