@@ -1,4 +1,4 @@
-export type UnitType = 'stem' | 'weight' | 'bunch' | 'pair';
+export type UnitType = 'stem' | 'weight' | 'pair';
 
 export interface Product {
   id: string;
@@ -33,8 +33,7 @@ export function formatQty(qty: number, product: Product): string {
     const grams = qty * (product.min_quantity || 100);
     return grams >= 1000 ? `${grams / 1000}kg` : `${grams}g`;
   }
-  if (type === 'pair')  return `${qty} pair${qty !== 1 ? 's' : ''}`;
-  if (type === 'bunch') return `${qty} bunch${qty !== 1 ? 'es' : ''}`;
+  if (type === 'pair') return `${qty} pair${qty !== 1 ? 's' : ''}`;
   return `${qty} stem${qty !== 1 ? 's' : ''}`;
 }
 
@@ -45,8 +44,7 @@ export function unitPriceLabel(product: Product): string {
     const g = product.min_quantity || 100;
     return `/ ${g >= 1000 ? `${g / 1000}kg` : `${g}g`}`;
   }
-  if (type === 'pair')  return '/ pair';
-  if (type === 'bunch') return '/ bunch';
+  if (type === 'pair') return '/ pair';
   return '/ stem';
 }
 
