@@ -1188,15 +1188,13 @@
 
 .occ-modal {
   max-width: 640px;
-  height: 85vh;
-  overflow-y: auto; // scroll the whole box — flex body scroll was unreliable
 
-  .modal-header {
-    position: sticky; top: 0; z-index: 2;
-    background: var(--bg-card);
-  }
-  .modal-footer {
-    position: sticky; bottom: 0; z-index: 2;
+  // Give the body an explicit height cap so overflow-y can actually scroll.
+  // header ≈ 60px + footer ≈ 70px + breathing room = 140px
+  .modal-body {
+    max-height: calc(85vh - 140px);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
 }
 .form-check {
