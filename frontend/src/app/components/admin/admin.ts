@@ -746,10 +746,10 @@ export class Admin implements OnInit {
   }
   closeOccForm(): void { this.showOccForm.set(false); this.editingOcc.set(null); }
 
-  isOccProduct(id: number): boolean { return this.occForm.product_ids.includes(id); }
-  toggleOccProduct(id: number): void {
+  isOccProduct(id: string): boolean { return this.occForm.product_ids.includes(id); }
+  toggleOccProduct(id: string): void {
     this.occForm.product_ids = this.isOccProduct(id)
-      ? this.occForm.product_ids.filter((x: number) => x !== id)
+      ? this.occForm.product_ids.filter((x: string) => x !== id)
       : [...this.occForm.product_ids, id];
   }
 
@@ -1254,7 +1254,7 @@ export class Admin implements OnInit {
   saveBundle(): void {
     if (!this.bundleForm.name.trim()) return;
     this.savingBundle.set(true);
-    const ids = this.bundleForm.product_ids.split(',').map(s => parseInt(s.trim(), 10)).filter(n => !isNaN(n));
+    const ids = this.bundleForm.product_ids.split(',').map(s => s.trim()).filter(s => s.length > 0);
     const payload = { ...this.bundleForm, product_ids: ids };
     const editing = this.editingBundle();
     const url = editing
