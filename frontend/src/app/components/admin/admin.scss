@@ -1188,11 +1188,9 @@
 
 .occ-modal {
   max-width: 640px;
+  height: 85vh; // fixed height forces flex children to fill + scroll (same as .wide)
 
-  // Give the body an explicit height cap so overflow-y can actually scroll.
-  // header ≈ 60px + footer ≈ 70px + breathing room = 140px
   .modal-body {
-    max-height: calc(85vh - 140px);
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
   }
