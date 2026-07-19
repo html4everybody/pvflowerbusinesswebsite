@@ -1187,12 +1187,60 @@
 }
 
 .occ-modal {
-  max-width: 640px;
-  height: 85vh; // fixed height forces flex children to fill + scroll (same as .wide)
+  max-width: 920px;
+  height: 80vh;
 
+  // 2-column layout: form fields left, product picker right — both always visible
   .modal-body {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    padding: 0;
+    gap: 0;
+    overflow: hidden;
+    min-height: 0;
+  }
+
+  .occ-fields {
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+    padding: 1.1rem 1.2rem;
     overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
+    min-height: 0;
+    border-right: 1px solid var(--border);
+  }
+
+  .occ-picker {
+    margin-top: 0;
+    border: none;
+    border-radius: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    min-height: 0;
+
+    .occ-picker-head { border-bottom: 1px solid var(--border); }
+    .occ-picker-list { flex: 1; min-height: 0; overflow-y: auto; max-height: none; }
+  }
+
+  @media (max-width: 700px) {
+    max-width: 98vw;
+    height: 90vh;
+
+    .modal-body {
+      grid-template-columns: 1fr;
+      overflow-y: auto;
+    }
+
+    .occ-fields {
+      border-right: none;
+      border-bottom: 1px solid var(--border);
+      overflow-y: visible;
+    }
+
+    .occ-picker {
+      .occ-picker-list { max-height: 240px; }
+    }
   }
 }
 .form-check {
