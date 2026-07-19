@@ -802,7 +802,9 @@ export class Admin implements OnInit {
     const url = editing
       ? `${environment.apiUrl}/api/admin/occasions/${editing.id}?token=${this.token}`
       : `${environment.apiUrl}/api/admin/occasions?token=${this.token}`;
-    const req = editing ? this.http.put<any>(url, this.occForm) : this.http.post<any>(url, this.occForm);
+    const validIds = new Set(this.products().map((p: any) => p.id));
+    const body = { ...this.occForm, product_ids: this.occForm.product_ids.filter((id: any) => validIds.has(id)) };
+    const req = editing ? this.http.put<any>(url, body) : this.http.post<any>(url, body);
     req.subscribe({
       next: (saved) => {
         this.occasions.update(list => editing ? list.map(o => o.id === editing.id ? saved : o) : [...list, saved]);
@@ -810,7 +812,11 @@ export class Admin implements OnInit {
         this.closeOccForm();
         this.toastService.show(editing ? 'Occasion updated' : 'Occasion created');
       },
-      error: (err) => { this.savingOcc.set(false); this.toastService.show(err.error?.detail || 'Failed to save', 'error'); }
+      error: (err) => {
+        this.savingOcc.set(false);
+        const detail = err.error?.detail;
+        this.toastService.show(typeof detail === 'string' ? detail : 'Failed to save occasion', 'error');
+      }
     });
   }
 
