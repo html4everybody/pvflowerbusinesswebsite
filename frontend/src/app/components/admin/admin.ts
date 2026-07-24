@@ -680,20 +680,23 @@ export class Admin implements OnInit {
     });
   }
 
-  async deleteOrder(order: any): Promise<void> {
+  async cancelOrderFromList(order: any): Promise<void> {
     const res = await this.confirmService.askReason({
-      title: 'Delete order?',
-      message: `Order ${order.id} will be permanently removed. The customer will be notified in their account.`,
+      title: 'Cancel order?',
+      message: `Order ${order.id} will be cancelled — any redeemed loyalty points are refunded, the customer is notified (SMS/email/in-app), and any assigned merchant is told to stop preparing it.`,
       promptLabel: 'Reason for the customer (optional)',
       promptPlaceholder: "e.g. Item out of stock — we've issued a full refund",
-      confirmText: 'Delete',
+      confirmText: 'Cancel order',
       danger: true,
     });
     if (!res.ok) return;
     const rp = res.reason ? `&reason=${encodeURIComponent(res.reason)}` : '';
-    this.http.delete(`${environment.apiUrl}/api/admin/orders/${order.id}?token=${this.token}${rp}`).subscribe({
-      next: () => { this.orders.update(list => list.filter(o => o.id !== order.id)); this.toastService.show('Order deleted'); },
-      error: (err) => this.toastService.show(err.error?.detail || 'Failed to delete order', 'error')
+    this.http.delete<{ status: string }>(`${environment.apiUrl}/api/admin/orders/${order.id}?token=${this.token}${rp}`).subscribe({
+      next: (res) => {
+        this.orders.update(list => list.map(o => o.id === order.id ? { ...o, status: res.status } : o));
+        this.toastService.show('Order cancelled');
+      },
+      error: (err) => this.toastService.show(err.error?.detail || 'Failed to cancel order', 'error')
     });
   }
 

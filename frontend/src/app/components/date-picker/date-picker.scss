@@ -44,6 +44,15 @@
   box-shadow: var(--shadow-lg);
   animation: cal-pop 0.16s cubic-bezier(0.22, 1, 0.36, 1);
 
+  // When the trigger sits too close to the right edge of the viewport for
+  // a left-anchored popup to fit, .ts flips this on — anchor to the
+  // trigger's right edge instead so nothing (like the "next month" button)
+  // renders off-screen.
+  &.align-right {
+    left: auto;
+    right: 0;
+  }
+
   .cal-head {
     display: flex;
     align-items: center;

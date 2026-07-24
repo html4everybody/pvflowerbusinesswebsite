@@ -545,10 +545,12 @@
                   }
                 </div>
                 <span class="order-status" [class]="order.status">{{ STATUS_LABELS[order.status] || order.status }}</span>
-                <button class="order-delete" title="Delete order" aria-label="Delete order"
-                        (click)="$event.preventDefault(); $event.stopPropagation(); deleteOrder(order)">
-                  <i class="bi bi-trash3"></i>
-                </button>
+                @if (order.status !== 'cancelled') {
+                  <button class="order-delete" title="Cancel order" aria-label="Cancel order"
+                          (click)="$event.preventDefault(); $event.stopPropagation(); cancelOrderFromList(order)">
+                    <i class="bi bi-x-circle"></i>
+                  </button>
+                }
               </a>
             }
           </div>

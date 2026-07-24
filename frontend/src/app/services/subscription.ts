@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
+import { AuthService } from './auth';
 
 export interface Subscription {
   id: string;
@@ -46,10 +47,12 @@ export interface CreateSubscriptionRequest {
 export class SubscriptionService {
   private base = environment.apiUrl;
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient, private auth: AuthService) {}
 
   getAll(email: string): Observable<Subscription[]> {
-    return this.http.get<Subscription[]>(`${this.base}/api/subscriptions?email=${encodeURIComponent(email)}`);
+    // email kept as a param for callers' convenience, but ownership is
+    // actually enforced server-side by the token — see _require_subscription_owner.
+    return this.http.get<Subscription[]>(`${this.base}/api/subscriptions?token=${encodeURIComponent(this.auth.getToken())}`);
   }
 
   create(req: CreateSubscriptionRequest): Observable<{ id: string; status: string; next_delivery: string }> {
@@ -57,18 +60,18 @@ export class SubscriptionService {
   }
 
   pause(id: string): Observable<any> {
-    return this.http.patch(`${this.base}/api/subscriptions/${id}/pause`, {});
+    return this.http.patch(`${this.base}/api/subscriptions/${id}/pause`, { token: this.auth.getToken() });
   }
 
   resume(id: string): Observable<any> {
-    return this.http.patch(`${this.base}/api/subscriptions/${id}/resume`, {});
+    return this.http.patch(`${this.base}/api/subscriptions/${id}/resume`, { token: this.auth.getToken() });
   }
 
   skip(id: string): Observable<{ status: string; next_delivery: string }> {
-    return this.http.patch<any>(`${this.base}/api/subscriptions/${id}/skip`, {});
+    return this.http.patch<any>(`${this.base}/api/subscriptions/${id}/skip`, { token: this.auth.getToken() });
   }
 
   cancel(id: string): Observable<any> {
-    return this.http.patch(`${this.base}/api/subscriptions/${id}/cancel`, {});
+    return this.http.patch(`${this.base}/api/subscriptions/${id}/cancel`, { token: this.auth.getToken() });
   }
 }

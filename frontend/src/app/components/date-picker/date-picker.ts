@@ -30,6 +30,12 @@ export class DatePicker implements ControlValueAccessor {
   disabled = signal(false);
   open = signal(false);
   viewMonth = signal(new Date());
+  // Popup normally opens anchored to the trigger's left edge. When the
+  // trigger sits close enough to the right edge of the viewport that a
+  // left-anchored popup would run off-screen (e.g. admin's Orders date
+  // filter, which sits at the far right of its search bar), the "next
+  // month" button ends up unreachable. Flip to right-anchored instead.
+  alignRight = signal(false);
 
   readonly weekdayLabels = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
 
@@ -107,8 +113,14 @@ export class DatePicker implements ControlValueAccessor {
     if (this.disabled()) return;
     const next = !this.open();
     this.open.set(next);
-    if (next) this.viewMonth.set(this.value() ? new Date(this.value()) : new Date());
-    else this.onTouched();
+    if (next) {
+      this.viewMonth.set(this.value() ? new Date(this.value()) : new Date());
+      const rect = this.host.nativeElement.getBoundingClientRect();
+      const popupWidth = Math.min(312, window.innerWidth * 0.92);
+      this.alignRight.set(rect.left + popupWidth > window.innerWidth - 8);
+    } else {
+      this.onTouched();
+    }
   }
 
   prevMonth(): void {

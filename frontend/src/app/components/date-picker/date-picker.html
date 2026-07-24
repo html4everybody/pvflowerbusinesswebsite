@@ -7,7 +7,7 @@
 
   @if (open()) {
     <div class="cal-backdrop" (click)="close()"></div>
-    <div class="calendar-pop" role="dialog" aria-label="Choose date">
+    <div class="calendar-pop" [class.align-right]="alignRight()" role="dialog" aria-label="Choose date">
       <div class="cal-head">
         <button type="button" class="cal-nav" [disabled]="!canGoPrev" (click)="prevMonth()" aria-label="Previous month">
           <i class="bi bi-chevron-left"></i>

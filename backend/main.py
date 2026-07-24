@@ -42,6 +42,68 @@ app = FastAPI(title="VivaPetals API")
 def ping():
     return {"status": "ok"}
 
+# ── Geocoding (OpenStreetMap Nominatim — free, no API key/card required) ─────
+# Proxied through our own backend rather than called directly from the
+# browser: lets us set a proper identifying User-Agent (Nominatim's usage
+# policy asks for one; browsers won't let JS override that header), and
+# gives us one place to centralize the "max ~1 req/sec" courtesy limit their
+# free service asks for, instead of every visitor's browser hitting it raw.
+#
+# NOTE: this block was accidentally deleted whole by a later, unrelated
+# commit (36aa4ed, "remove hardcoded merchant UUIDs") that rewrote this same
+# region of the file — restored 2026-07-25. If it goes missing again, check
+# whether a broad edit/rewrite touched the lines right after /api/ping.
+_NOMINATIM_BASE = "https://nominatim.openstreetmap.org"
+_NOMINATIM_HEADERS = {"User-Agent": "VivaPetals-FlowerDelivery/1.0 (contact via vivapetals.com)"}
+
+def _parse_nominatim_address(item: dict) -> dict:
+    addr = item.get("address", {}) or {}
+    line1 = ", ".join(filter(None, [addr.get("house_number"), addr.get("road") or addr.get("pedestrian"), addr.get("suburb")]))
+    city = addr.get("city") or addr.get("town") or addr.get("village") or addr.get("municipality") or addr.get("county") or ""
+    return {
+        "display_name": item.get("display_name", ""),
+        "address": line1 or item.get("display_name", "").split(",")[0],
+        "city": city,
+        "state": addr.get("state", ""),
+        "pincode": addr.get("postcode", ""),
+        "latitude": float(item["lat"]) if item.get("lat") else None,
+        "longitude": float(item["lon"]) if item.get("lon") else None,
+    }
+
+@app.get("/api/geocode/search")
+def geocode_search(q: str):
+    q = (q or "").strip()
+    if len(q) < 3:
+        return []
+    try:
+        with _httpx.Client(timeout=6) as client:
+            resp = client.get(f"{_NOMINATIM_BASE}/search", headers=_NOMINATIM_HEADERS, params={
+                "format": "jsonv2", "addressdetails": 1, "limit": 6, "countrycodes": "in", "q": q,
+            })
+        resp.raise_for_status()
+        return [_parse_nominatim_address(item) for item in resp.json()]
+    except Exception as e:
+        print(f"[Geocode] search failed: {e}", flush=True)
+        raise HTTPException(status_code=502, detail="Location search is temporarily unavailable.")
+
+@app.get("/api/geocode/reverse")
+def geocode_reverse(lat: float, lon: float):
+    try:
+        with _httpx.Client(timeout=6) as client:
+            resp = client.get(f"{_NOMINATIM_BASE}/reverse", headers=_NOMINATIM_HEADERS, params={
+                "format": "jsonv2", "addressdetails": 1, "lat": lat, "lon": lon,
+            })
+        resp.raise_for_status()
+        data = resp.json()
+        if "error" in data:
+            raise HTTPException(status_code=404, detail="No address found for this location.")
+        return _parse_nominatim_address(data)
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"[Geocode] reverse failed: {e}", flush=True)
+        raise HTTPException(status_code=502, detail="Location lookup is temporarily unavailable.")
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -1076,7 +1138,7 @@ class ContactRequest(BaseModel):
     message: str
 
 class OrderItem(BaseModel):
-    productId: int
+    productId: str
     name: str
     price: float
     quantity: int
@@ -1147,7 +1209,7 @@ class BundleDealCreate(BaseModel):
     name: str
     description: str
     emoji: str
-    product_ids: list[int]
+    product_ids: list[str]
     promo_code: str
     savings_pct: float = 15
 
@@ -1600,6 +1662,27 @@ def register(req: RegisterRequest):
     return { "message": "Account created! Please check your email to verify your account." }
 
 
+def _parse_iso_ts(ts: str) -> datetime:
+    """Robustly parse a Postgres/Supabase ISO timestamp regardless of
+    fractional-second precision. Python 3.10's datetime.fromisoformat only
+    accepts exactly 3 or 6 fractional digits (this got relaxed in 3.11+,
+    but this app runs 3.10) — Postgres trims trailing zeros off the
+    fraction, so most real timestamps (e.g. '...33.17779+00:00', 5 digits)
+    raised ValueError here, 500-crashing email verification, password
+    reset, and email-change confirmation essentially at random. Pad/
+    truncate the fractional part to exactly 6 digits before parsing."""
+    s = ts.replace("Z", "+00:00")
+    if "." in s:
+        head, frac_and_tz = s.split(".", 1)
+        for i, ch in enumerate(frac_and_tz):
+            if ch in "+-":
+                frac, tz = frac_and_tz[:i], frac_and_tz[i:]
+                break
+        else:
+            frac, tz = frac_and_tz, ""
+        s = f"{head}.{(frac + '000000')[:6]}{tz}"
+    return datetime.fromisoformat(s)
+
 @app.get("/api/auth/verify-email")
 def verify_email(token: str):
     result = supabase.table("users").select("*").eq("verification_token", token).execute()
@@ -1610,7 +1693,7 @@ def verify_email(token: str):
 
     expires_at = user.get("verification_token_expires_at")
     if expires_at:
-        expiry = datetime.fromisoformat(expires_at.replace("Z", "+00:00"))
+        expiry = _parse_iso_ts(expires_at)
         if datetime.now(timezone.utc) > expiry:
             raise HTTPException(status_code=400, detail="Verification link has expired. Please request a new one.")
 
@@ -1823,7 +1906,7 @@ def confirm_email(token: str):
     user = result.data[0]
     expires_at = user.get("email_change_token_expires_at")
     if expires_at:
-        expiry = datetime.fromisoformat(expires_at.replace("Z", "+00:00"))
+        expiry = _parse_iso_ts(expires_at)
         if datetime.now(timezone.utc) > expiry:
             raise HTTPException(status_code=400, detail="Confirmation link has expired. Please request a new one.")
     new_email = user.get("pending_email")
@@ -1868,7 +1951,7 @@ def reset_password(req: ResetPasswordRequest):
     user = result.data[0]
     expires_at = user.get("reset_token_expires_at")
     if expires_at:
-        expiry = datetime.fromisoformat(expires_at.replace("Z", "+00:00"))
+        expiry = _parse_iso_ts(expires_at)
         if datetime.now(timezone.utc) > expiry:
             raise HTTPException(status_code=400, detail="Reset link has expired. Please request a new one.")
 
@@ -2318,7 +2401,7 @@ def _recompute_order_status_from_parts(order_id: str):
     send_notifications(order_id, new_status, order[0].get("customer_phone") or "")
     if new_status in ORDER_STATUS_NOTICE:
         title, phrase = ORDER_STATUS_NOTICE[new_status]
-        create_user_notice(order[0].get("customer_email"), title, f"Your order #{order_id} {phrase}.", "order", order_id)
+        create_user_notice(order[0].get("customer_email"), title, _end_sentence(f"Your order #{order_id} {phrase}"), "order", order_id)
 
     if order[0].get("source") == "corporate":
         _sync_corporate_booking_status(order_id, new_status)
@@ -2348,7 +2431,7 @@ def _sync_corporate_booking_status(linked_order_id: str, order_status: str):
     if mapped in BOOKING_STATUS_NOTICE:
         title, phrase = BOOKING_STATUS_NOTICE[mapped]
         create_user_notice(booking[0].get("contact_email"), title,
-                            f"Your Petal Studio booking #{booking[0]['id']} {phrase}.", "booking", booking[0]["id"])
+                            _end_sentence(f"Your Petal Studio booking #{booking[0]['id']} {phrase}"), "booking", booking[0]["id"])
 
 
 def _merchant_email(merchant_id) -> Optional[str]:
@@ -2412,13 +2495,31 @@ def merchant_update_order_status(order_id: str, req: MerchantOrderStatusUpdate):
     m = require_merchant(req.token)
     if req.status not in ("confirmed", "preparing", "out_for_delivery", "delivered", "cancelled"):
         raise HTTPException(status_code=400, detail="Invalid status")
+    existing = (supabase.table("order_merchant_parts").select("status")
+                .eq("order_id", order_id).eq("merchant_id", m["id"]).execute().data)
+    if not existing:
+        raise HTTPException(status_code=404, detail="Order part not found")
+    current = existing[0]["status"]
+    # MERCHANT_STATUS_FLOW was only ever used to build the UI's suggested
+    # next-step buttons — nothing enforced it server-side, so a direct API
+    # call could move a part backward (e.g. delivered -> confirmed) even
+    # though the dashboard never offers that button. Harmless for the
+    # ledger (award/refund are idempotent) but it flapped the customer-
+    # facing order status and could double-send "delivered" notifications.
+    # "cancelled" is deliberately NOT part of MERCHANT_STATUS_FLOW's forward
+    # -progress lists (it's not a "next step", it's an escape hatch — same
+    # reason the admin/customer VALID_STATUS_TRANSITIONS treats it as
+    # reachable from every non-terminal status), so it needs its own check
+    # rather than being folded into the flow-graph lookup below.
+    if req.status == "cancelled":
+        if current in ("delivered", "cancelled"):
+            raise HTTPException(status_code=400, detail=f"Cannot cancel — this part is already '{current}'")
+    elif req.status != current and req.status not in MERCHANT_STATUS_FLOW.get(current, []):
+        raise HTTPException(status_code=400, detail=f"Cannot move from '{current}' to '{req.status}'")
     data = {"status": req.status, "updated_at": datetime.now(timezone.utc).isoformat()}
     if req.delivery_date is not None:
         data["delivery_date"] = req.delivery_date
-    r = (supabase.table("order_merchant_parts").update(data)
-         .eq("order_id", order_id).eq("merchant_id", m["id"]).execute())
-    if not r.data:
-        raise HTTPException(status_code=404, detail="Order part not found")
+    supabase.table("order_merchant_parts").update(data).eq("order_id", order_id).eq("merchant_id", m["id"]).execute()
     _recompute_order_status_from_parts(order_id)
     return {"status": req.status}
 
@@ -2709,7 +2810,7 @@ IST = timezone(timedelta(hours=5, minutes=30))
 def _ist_dt(ts):
     """Parse a stored (UTC) timestamp and convert to IST; None if unparseable."""
     try:
-        dt = datetime.fromisoformat((ts or "").replace("Z", "+00:00"))
+        dt = _parse_iso_ts(ts or "")
         if dt.tzinfo is None:
             dt = dt.replace(tzinfo=timezone.utc)
         return dt.astimezone(IST)
@@ -3427,7 +3528,7 @@ def get_user_orders(email: str, token: str = None):
     return orders
 
 @app.get("/api/orders/{order_id}")
-def get_order(order_id: str):
+def get_order(order_id: str, token: Optional[str] = None):
     result = supabase.table("orders").select("*").eq("id", order_id).execute()
     if not result.data:
         raise HTTPException(status_code=404, detail="Order not found")
@@ -3443,6 +3544,33 @@ def get_order(order_id: str):
         order["notifications"] = [{"id": n["id"], "channel": n["channel"], "status": n["status"], "sent_at": n["sent_at"]} for n in notifs_result.data]
     except Exception:
         order["notifications"] = []
+
+    # This endpoint serves two very different callers with the same URL:
+    # the logged-in owner's own order-detail page, and the public "Track
+    # Order" guest page (by design, no login — that's the whole point of
+    # guest tracking). Previously anyone with the order ID got full name +
+    # phone + exact delivery address, no matter who they were. A logged-in
+    # customer viewing a stranger's order has zero legitimate justification
+    # (closed outright below); a true guest tracking by ID alone is the
+    # product's intended use, so we keep it working but withhold the most
+    # sensitive fields — exact address and phone — rather than break the
+    # feature or bolt on a new verification step without a design call.
+    is_owner_or_admin = False
+    if token:
+        caller_email = resolve_token(token)
+        if caller_email:
+            if caller_email == order.get("customer_email"):
+                is_owner_or_admin = True
+            else:
+                caller = get_user_by_email(caller_email)
+                if caller and caller.get("is_admin"):
+                    is_owner_or_admin = True
+    if not is_owner_or_admin:
+        order["customer_name"] = (order.get("customer_name") or "").split(" ")[0] or "Guest"
+        order.pop("customer_address", None)
+        order.pop("customer_phone", None)
+        order.pop("customer_email", None)
+        order["limited_view"] = True
     return order
 
 @app.patch("/api/orders/{order_id}/delivery")
@@ -3523,7 +3651,7 @@ def update_order_status(order_id: str, req: StatusUpdateRequest):
     if req.status in ORDER_STATUS_NOTICE:
         title, phrase = ORDER_STATUS_NOTICE[req.status]
         create_user_notice(order.get("customer_email"), title,
-                            f"Your order #{order_id} {phrase}.", "order", order_id)
+                            _end_sentence(f"Your order #{order_id} {phrase}"), "order", order_id)
     return {"status": req.status}
 
 # ── User notices (messages the customer sees in their account) ──────────────────
@@ -3558,6 +3686,12 @@ def booking_items_summary(items) -> str:
         f"{it.get('product_name')} x{it.get('quantity')}"
         for it in (items or [])
     )
+
+def _end_sentence(phrase: str) -> str:
+    """Append a period unless the phrase already ends in sentence
+    punctuation — the *_STATUS_NOTICE phrases below are plugged into a
+    template that always used to add its own '.', producing 'love it!.'"""
+    return phrase if phrase.endswith((".", "!", "?")) else phrase + "."
 
 # Friendly status → notice text
 ORDER_STATUS_NOTICE = {
@@ -3615,18 +3749,33 @@ def delete_notice(notice_id: str, email: str):
 
 @app.delete("/api/admin/orders/{order_id}")
 def admin_delete_order(order_id: str, token: str, reason: Optional[str] = None):
+    """Despite the URL, this is a CANCEL, not a hard delete — it used to
+    actually DROP the order + order_items rows, which meant: no loyalty
+    point refund, no SMS/email (only an in-app notice), no merchant
+    notification (order_merchant_parts silently vanished via FK cascade),
+    and the order permanently disappeared from the customer's history —
+    it wouldn't even show up under the Cancelled tab, since there was no
+    row left to show. That's indistinguishable from "my order vanished
+    and nobody told me" from the customer's side. Now mirrors the same
+    full cancellation used by update_order_status/cancel_order, just with
+    an admin-supplied reason folded into the customer notice."""
     require_admin(token)
-    existing = supabase.table("orders").select("customer_email").eq("id", order_id).execute().data
-    email = existing[0]["customer_email"] if existing else None
-    supabase.table("order_items").delete().eq("order_id", order_id).execute()
-    result = supabase.table("orders").delete().eq("id", order_id).execute()
-    if not result.data:
+    result = supabase.table("orders").select("*").eq("id", order_id).execute().data
+    if not result:
         raise HTTPException(status_code=404, detail="Order not found")
-    msg = f"Your order #{order_id} was cancelled and removed by our team."
+    order = result[0]
+    if order["status"] == "cancelled":
+        raise HTTPException(status_code=400, detail="Order is already cancelled")
+    supabase.table("orders").update({"status": "cancelled"}).eq("id", order_id).execute()
+    _cascade_status_to_parts(order_id, "cancelled")
+    refund_redeemed_points(order)
+    send_notifications(order_id, "cancelled", order.get("customer_phone") or "")
+    send_order_cancellation_email(order)
+    msg = f"Your order #{order_id} was cancelled by our team."
     if reason:
         msg += f" Reason: {reason}"
-    create_user_notice(email, "Order removed", msg, "order", order_id)
-    return {"status": "ok"}
+    create_user_notice(order.get("customer_email"), "Order cancelled", msg, "order", order_id)
+    return {"status": "cancelled"}
 
 
 # ── Order → merchant routing (consolidation) ─────────────────────────────────
@@ -3777,6 +3926,19 @@ def _place_order_items(order_id: str, items: list, delivery_datetime: Optional[s
 def create_order(req: OrderRequest):
     order_id = "FLR" + str(uuid.uuid4())[:8].upper()
     customer_email = req.customer.get("email", "")
+
+    # Redemption used to be silently ignored (order placed as normal, no
+    # points deducted) whenever the requested amount exceeded the balance —
+    # safe against a negative balance, but if the client had already
+    # discounted `req.total` assuming the redemption would go through, the
+    # customer got that discount for free with their points balance
+    # untouched. Reject up front instead, before anything is written.
+    points_redeemed_requested = req.points_redeemed or 0
+    if points_redeemed_requested > 0 and customer_email:
+        acct = supabase.table("loyalty_accounts").select("points_balance").eq("user_email", customer_email).execute()
+        balance = acct.data[0]["points_balance"] if acct.data else 0
+        if balance < points_redeemed_requested:
+            raise HTTPException(status_code=400, detail=f"You only have {balance} points available to redeem.")
 
     next_recurrence_date = None
     if req.is_recurring and req.recurrence_type == "annual" and req.delivery_datetime:
@@ -4044,8 +4206,26 @@ def admin_update_subscription_plan(plan_id: str, req: SubscriptionPlanUpdate, to
 #   status text, next_delivery text, address text,
 #   skipped_count int4 default 0, created_at timestamptz default now()
 
+def _require_subscription_owner(token: str, sub_id: str) -> dict:
+    """Resolve token -> email and 404 unless the subscription belongs to
+    that email. pause/resume/skip/cancel (and the list endpoint above them)
+    used to take no auth at all — anyone who knew or guessed a sub_id (or
+    just someone else's email, for the list endpoint) could view or act on
+    a Bloom Plan that wasn't theirs. 404 rather than 403 on a mismatch so
+    this doesn't confirm/deny that a given sub_id exists to a stranger."""
+    email = resolve_token(token)
+    if not email:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    result = supabase.table("subscriptions").select("*").eq("id", sub_id).execute().data
+    if not result or result[0].get("customer_email") != email:
+        raise HTTPException(status_code=404, detail="Subscription not found")
+    return result[0]
+
 @app.get("/api/subscriptions")
-def get_subscriptions(email: str):
+def get_subscriptions(token: str):
+    email = resolve_token(token)
+    if not email:
+        raise HTTPException(status_code=401, detail="Not authenticated")
     result = supabase.table("subscriptions").select("*").eq("customer_email", email).order("created_at", desc=True).execute()
     return result.data
 
@@ -4105,7 +4285,7 @@ def admin_update_subscription(sub_id: str, req: AdminSubscriptionUpdate, token: 
 
     if req.status and req.status != prev_status and req.status in SUB_STATUS_NOTICE:
         title, phrase = SUB_STATUS_NOTICE[req.status]
-        msg = f"Your Bloom Plan #{sub_id} {phrase}."
+        msg = _end_sentence(f"Your Bloom Plan #{sub_id} {phrase}")
         if req.status == "cancelled" and req.admin_message:
             msg += f" Reason: {req.admin_message}"
         create_user_notice(email, title, msg, "subscription", sub_id)
@@ -4152,39 +4332,35 @@ def create_subscription(req: SubscriptionRequest):
     }).execute()
     return {"id": sub_id, "status": "active", "next_delivery": next_delivery_date(req.plan)}
 
+class SubscriptionActionRequest(BaseModel):
+    token: str
+
 @app.patch("/api/subscriptions/{sub_id}/pause")
-def pause_subscription(sub_id: str):
-    result = supabase.table("subscriptions").select("id").eq("id", sub_id).execute()
-    if not result.data:
-        raise HTTPException(status_code=404, detail="Subscription not found")
+def pause_subscription(sub_id: str, req: SubscriptionActionRequest):
+    _require_subscription_owner(req.token, sub_id)
     supabase.table("subscriptions").update({"status": "paused"}).eq("id", sub_id).execute()
     return {"status": "paused"}
 
 @app.patch("/api/subscriptions/{sub_id}/resume")
-def resume_subscription(sub_id: str):
-    result = supabase.table("subscriptions").select("id").eq("id", sub_id).execute()
-    if not result.data:
-        raise HTTPException(status_code=404, detail="Subscription not found")
+def resume_subscription(sub_id: str, req: SubscriptionActionRequest):
+    _require_subscription_owner(req.token, sub_id)
     supabase.table("subscriptions").update({"status": "active"}).eq("id", sub_id).execute()
     return {"status": "active"}
 
 @app.patch("/api/subscriptions/{sub_id}/skip")
-def skip_subscription(sub_id: str):
-    result = supabase.table("subscriptions").select("*").eq("id", sub_id).execute()
-    if not result.data:
-        raise HTTPException(status_code=404, detail="Subscription not found")
-    sub = result.data[0]
+def skip_subscription(sub_id: str, req: SubscriptionActionRequest):
+    sub = _require_subscription_owner(req.token, sub_id)
     new_date = advance_delivery_date(sub["plan"], sub["next_delivery"])
     new_count = (sub.get("skipped_count") or 0) + 1
     supabase.table("subscriptions").update({"next_delivery": new_date, "skipped_count": new_count}).eq("id", sub_id).execute()
     return {"status": "skipped", "next_delivery": new_date}
 
 @app.patch("/api/subscriptions/{sub_id}/cancel")
-def cancel_subscription(sub_id: str):
-    result = supabase.table("subscriptions").select("id").eq("id", sub_id).execute()
-    if not result.data:
-        raise HTTPException(status_code=404, detail="Subscription not found")
+def cancel_subscription(sub_id: str, req: SubscriptionActionRequest):
+    sub = _require_subscription_owner(req.token, sub_id)
     supabase.table("subscriptions").update({"status": "cancelled"}).eq("id", sub_id).execute()
+    title, phrase = SUB_STATUS_NOTICE["cancelled"]
+    create_user_notice(sub.get("customer_email"), title, _end_sentence(f"Your Bloom Plan #{sub_id} {phrase}"), "subscription", sub_id)
     return {"status": "cancelled"}
 
 
@@ -4655,7 +4831,7 @@ def admin_update_corporate_status(order_id: str, req: CorporateStatusUpdate, tok
 
     if req.status in BOOKING_STATUS_NOTICE:
         title, phrase = BOOKING_STATUS_NOTICE[req.status]
-        msg = f"Your Petal Studio booking #{order_id} {phrase}."
+        msg = _end_sentence(f"Your Petal Studio booking #{order_id} {phrase}")
         if req.status == "cancelled" and req.admin_message:
             msg += f" Reason: {req.admin_message}"
         create_user_notice(email, title, msg, "booking", order_id)

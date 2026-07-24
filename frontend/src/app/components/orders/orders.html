@@ -34,8 +34,13 @@
       <div class="empty-state">
         <i class="bi bi-file-earmark-text empty-icon"></i>
         @if (activeTab() === 'active') {
-          <h2>No orders yet</h2>
-          <p>Your order history will appear here once you place an order.</p>
+          @if (cancelledOrders().length > 0) {
+            <h2>No active orders right now</h2>
+            <p>All {{ cancelledOrders().length === 1 ? 'your order was' : 'your orders were' }} cancelled. Check the <strong>Cancelled</strong> tab above, or place a new order.</p>
+          } @else {
+            <h2>No orders yet</h2>
+            <p>Your order history will appear here once you place an order.</p>
+          }
           <a routerLink="/" class="btn-shop">Browse Flowers</a>
         } @else {
           <h2>No cancelled orders</h2>

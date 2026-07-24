@@ -81,7 +81,8 @@ export class OrderDetail implements OnInit {
       return;
     }
     const id = this.route.snapshot.paramMap.get('id');
-    this.http.get<any>(`${environment.apiUrl}/api/orders/${id}`).subscribe({
+    const token = this.authService.getToken();
+    this.http.get<any>(`${environment.apiUrl}/api/orders/${id}?token=${encodeURIComponent(token)}`).subscribe({
       next: (data) => { this.order.set(data); this.loading.set(false); },
       error: () => { this.loading.set(false); this.notFound.set(true); }
     });
