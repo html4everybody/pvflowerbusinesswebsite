@@ -206,16 +206,9 @@
   .delivery-check-box {
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 1.5rem;
     flex-wrap: wrap;
-    // Without a cap this row stretches across the full 1400px .container —
-    // .dc-text (flex: 1) then absorbs all of that leftover width, so on
-    // any normal-to-wide screen the icon+heading sit pinned to the left
-    // edge and the search field is flung to the right with a large dead
-    // gap between them. Centering a narrower card keeps the two groups
-    // visually related instead of looking like two unrelated widgets.
-    max-width: 900px;
-    margin: 0 auto;
     padding: 1.5rem 1.75rem;
     background: var(--accent-light);
     border: 1px solid var(--border-focus);
@@ -239,7 +232,14 @@
     }
 
     .dc-text {
-      flex: 1;
+      // No flex-grow: without this, .dc-text used to absorb 100% of the
+      // section's leftover width on wide screens, pinning the heading to
+      // the far left and flinging .dc-form to the far right with a large
+      // dead gap between them. Capping the box itself instead just traded
+      // that for a different problem — a small card floating in a big
+      // void of near-black page background in dark mode. Keeping the box
+      // full-width but the CONTENT a fixed, centered group fixes both.
+      flex: 0 1 360px;
       min-width: 200px;
 
       h3 {
@@ -299,12 +299,13 @@
   .dc-result {
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 0.6rem;
-    max-width: 900px;
-    margin: 0.85rem auto 0;
+    margin-top: 0.85rem;
     padding: 0.85rem 1.1rem;
     border-radius: var(--radius-sm);
     font-size: 0.85rem;
+    text-align: center;
 
     a { color: inherit; text-decoration: underline; font-weight: 600; }
 
@@ -326,8 +327,11 @@
   @media (max-width: 600px) {
     .delivery-check-box {
       flex-direction: column;
+      flex-wrap: nowrap;
       align-items: flex-start;
+      justify-content: flex-start;
 
+      .dc-text { flex-basis: auto; max-width: none; }
       .dc-form { width: 100%; input { width: 100%; } button { flex-shrink: 0; } }
     }
   }
