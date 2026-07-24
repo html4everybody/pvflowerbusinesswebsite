@@ -1,0 +1,99 @@
+<main class="subpage">
+  <div class="subpage-inner">
+    <a routerLink="/account" class="back-btn">
+      <i class="bi bi-arrow-left"></i>
+      Back to Account
+    </a>
+
+    <h1 class="subpage-title">Addresses</h1>
+
+    @if (!showForm()) {
+      @if (loading()) {
+        <div class="addr-loading"><i class="bi bi-arrow-repeat vp-spin"></i> Loading your addresses…</div>
+      } @else if (addresses().length === 0) {
+        <div class="addr-empty">
+          <i class="bi bi-geo-alt"></i>
+          <p>No saved addresses yet.</p>
+          <span>Save a Home or Office address so you don't have to retype it every order.</span>
+        </div>
+      } @else {
+        <div class="addr-list">
+          @for (a of addresses(); track a.id) {
+            <div class="addr-card">
+              <div class="addr-card-top">
+                <span class="addr-label">
+                  <i class="bi bi-geo-alt-fill"></i> {{ a.label }}
+                  @if (a.is_default) { <span class="addr-default-badge">Default</span> }
+                </span>
+                <div class="addr-actions">
+                  @if (!a.is_default) {
+                    <button type="button" class="addr-link-btn" (click)="makeDefault(a)">Set default</button>
+                  }
+                  <button type="button" class="addr-icon-btn" (click)="openEdit(a)" title="Edit"><i class="bi bi-pencil"></i></button>
+                  <button type="button" class="addr-icon-btn danger" (click)="remove(a)" [disabled]="deletingId() === a.id" title="Remove">
+                    @if (deletingId() === a.id) { <i class="bi bi-arrow-repeat vp-spin"></i> } @else { <i class="bi bi-trash3"></i> }
+                  </button>
+                </div>
+              </div>
+              <p class="addr-text">{{ a.address }}</p>
+              @if (a.city || a.state || a.pincode) {
+                <p class="addr-subtext">{{ [a.city, a.state, a.pincode].join(', ') }}</p>
+              }
+            </div>
+          }
+        </div>
+      }
+
+      <button type="button" class="btn-add-address" (click)="openAdd()">
+        <i class="bi bi-plus-lg"></i> Add new address
+      </button>
+    } @else {
+      <div class="form-card">
+        <h2 class="addr-form-title">{{ editingId() ? 'Edit address' : 'Add a new address' }}</h2>
+
+        <div class="field-group">
+          <label>Label</label>
+          <input type="text" [(ngModel)]="form.label" name="label" placeholder="e.g. Home, Office" maxlength="30">
+        </div>
+
+        <div class="field-group">
+          <label>Location <span class="opt">(search, pin on map, or use my location)</span></label>
+          <app-location-picker height="220px" [initialLat]="form.latitude" [initialLng]="form.longitude" (locationPicked)="onLocationPicked($event)"></app-location-picker>
+        </div>
+
+        <div class="field-group">
+          <label>Street Address</label>
+          <input type="text" [(ngModel)]="form.address" name="address" placeholder="House / flat no., street, area">
+        </div>
+
+        <div class="field-row">
+          <div class="field-group">
+            <label>City</label>
+            <input type="text" [(ngModel)]="form.city" name="city">
+          </div>
+          <div class="field-group">
+            <label>State</label>
+            <input type="text" [(ngModel)]="form.state" name="state">
+          </div>
+        </div>
+
+        <div class="field-group">
+          <label>Pincode</label>
+          <input type="text" [(ngModel)]="form.pincode" name="pincode" maxlength="10">
+        </div>
+
+        <label class="addr-default-check">
+          <input type="checkbox" [(ngModel)]="form.is_default" name="isDefault">
+          Set as default delivery address
+        </label>
+
+        <div class="addr-form-actions">
+          <button type="button" class="btn-cancel-address" (click)="closeForm()">Cancel</button>
+          <button type="button" class="btn-save" [disabled]="saving()" (click)="save()">
+            {{ saving() ? 'Saving…' : 'Save address' }}
+          </button>
+        </div>
+      </div>
+    }
+  </div>
+</main>

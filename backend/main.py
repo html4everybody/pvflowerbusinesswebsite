@@ -520,6 +520,162 @@ def send_order_cancellation_email(order: dict) -> bool:
         return False
 
 
+def build_abandoned_cart_email_html(first_name: str, items: list, cart_value: float) -> str:
+    name = first_name or "there"
+    rows = "".join(f"""
+        <tr>
+          <td style="padding:0.6rem 0;border-bottom:1px solid #f0f0f0;color:#333;font-size:0.9rem;">{it['name']} × {it['quantity']}</td>
+          <td style="padding:0.6rem 0;border-bottom:1px solid #f0f0f0;color:#333;font-size:0.9rem;text-align:right;">₹{it['price'] * it['quantity']:.2f}</td>
+        </tr>""" for it in items)
+    return f"""<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"></head>
+<body style="margin:0;padding:0;background:#f4f4f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
+  <div style="max-width:560px;margin:2rem auto;border-radius:12px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
+    <div style="background:#1a1a1a;padding:1.5rem 2rem;display:flex;align-items:center;gap:0.75rem;">
+      <span style="font-size:1.4rem;">🌸</span>
+      <span style="color:white;font-size:1.05rem;font-weight:700;letter-spacing:0.01em;">VivaPetals</span>
+    </div>
+    <div style="background:white;padding:2rem;">
+      <h1 style="font-size:1.3rem;font-weight:700;color:#111;margin:0 0 0.5rem;">Hi {name}, you left something behind 🌸</h1>
+      <p style="color:#666;font-size:0.95rem;line-height:1.6;margin:0 0 1.5rem;">
+        Your cart is still saved — complete your order before these run out.
+      </p>
+      <table style="width:100%;border-collapse:collapse;margin-bottom:1rem;">{rows}</table>
+      <div style="display:flex;justify-content:space-between;font-weight:700;color:#111;padding-top:0.5rem;border-top:2px solid #111;margin-bottom:1.5rem;">
+        <span>Cart total</span><span>₹{cart_value:.2f}</span>
+      </div>
+      <a href="https://vivapetals.com/cart" style="display:inline-block;background:#2563eb;color:white;text-decoration:none;padding:0.75rem 1.5rem;border-radius:8px;font-weight:700;font-size:0.9rem;">
+        Complete your order
+      </a>
+      <p style="color:#aaa;font-size:0.78rem;margin:1.5rem 0 0;">Thank you for choosing VivaPetals 🌸</p>
+    </div>
+  </div>
+</body>
+</html>"""
+
+
+def send_abandoned_cart_email(to_email: str, first_name: str, items: list, cart_value: float) -> bool:
+    if not RESEND_API_KEY or not to_email:
+        return False
+    try:
+        with _httpx.Client() as client:
+            resp = client.post(
+                "https://api.resend.com/emails",
+                headers={"Authorization": f"Bearer {RESEND_API_KEY}", "Content-Type": "application/json"},
+                json={"from": "VivaPetals <orderhere@vivapetals.com>", "to": [to_email], "subject": "You left something in your cart 🌸", "html": build_abandoned_cart_email_html(first_name, items, cart_value)},
+                timeout=10
+            )
+        print(f"[Email] Abandoned cart email response {resp.status_code}: {resp.text}", flush=True)
+        return resp.status_code in (200, 201)
+    except Exception as e:
+        print(f"[Email] Failed to send abandoned cart email: {e}", flush=True)
+        return False
+
+
+def build_winback_email_html(first_name: str, message: str) -> str:
+    name = first_name or "there"
+    return f"""<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"></head>
+<body style="margin:0;padding:0;background:#f4f4f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
+  <div style="max-width:560px;margin:2rem auto;border-radius:12px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
+    <div style="background:#1a1a1a;padding:1.5rem 2rem;display:flex;align-items:center;gap:0.75rem;">
+      <span style="font-size:1.4rem;">🌸</span>
+      <span style="color:white;font-size:1.05rem;font-weight:700;letter-spacing:0.01em;">VivaPetals</span>
+    </div>
+    <div style="background:white;padding:2rem;">
+      <h1 style="font-size:1.3rem;font-weight:700;color:#111;margin:0 0 0.75rem;">Hi {name} 🌸</h1>
+      <p style="color:#555;font-size:0.95rem;line-height:1.7;margin:0 0 1.5rem;">{message}</p>
+      <a href="https://vivapetals.com" style="display:inline-block;background:#2563eb;color:white;text-decoration:none;padding:0.75rem 1.5rem;border-radius:8px;font-weight:700;font-size:0.9rem;">
+        Shop VivaPetals
+      </a>
+      <p style="color:#aaa;font-size:0.78rem;margin:1.5rem 0 0;">Thank you for choosing VivaPetals 🌸</p>
+    </div>
+  </div>
+</body>
+</html>"""
+
+
+def send_winback_email(to_email: str, first_name: str, message: str) -> bool:
+    if not RESEND_API_KEY or not to_email:
+        return False
+    try:
+        with _httpx.Client() as client:
+            resp = client.post(
+                "https://api.resend.com/emails",
+                headers={"Authorization": f"Bearer {RESEND_API_KEY}", "Content-Type": "application/json"},
+                json={"from": "VivaPetals <orderhere@vivapetals.com>", "to": [to_email], "subject": "We miss you at VivaPetals 🌸", "html": build_winback_email_html(first_name, message)},
+                timeout=10
+            )
+        print(f"[Email] Winback email response {resp.status_code}: {resp.text}", flush=True)
+        return resp.status_code in (200, 201)
+    except Exception as e:
+        print(f"[Email] Failed to send winback email: {e}", flush=True)
+        return False
+
+
+def _run_abandoned_cart_check() -> int:
+    """Nudge customers whose cart has sat untouched for roughly 24-48h with
+    no order placed since. The 24-48h window (rather than a 'reminded' flag
+    needing a schema migration) makes each abandonment fire exactly once:
+    the next day's run finds the same items >48h old and skips them."""
+    now = datetime.now(timezone.utc)
+    lo = (now - timedelta(hours=48)).isoformat()
+    hi = (now - timedelta(hours=24)).isoformat()
+    stale_items = (supabase.table("cart_items").select("*")
+                   .gte("created_at", lo).lte("created_at", hi).execute().data or [])
+    if not stale_items:
+        return 0
+
+    by_user: dict = {}
+    for it in stale_items:
+        by_user.setdefault(it["user_id"], []).append(it)
+
+    reminded = 0
+    for user_id, cart_rows in by_user.items():
+        try:
+            user = supabase.table("users").select("email, first_name").eq("id", user_id).execute().data
+            if not user or not user[0].get("email"):
+                continue
+            email, first_name = user[0]["email"], user[0].get("first_name", "")
+
+            oldest_ts = min(r["created_at"] for r in cart_rows)
+            recent_orders = (supabase.table("orders").select("id")
+                              .eq("customer_email", email).gte("created_at", oldest_ts)
+                              .limit(1).execute().data)
+            if recent_orders:
+                continue  # they already checked out since — nothing to recover
+
+            already_reminded = (supabase.table("user_notices").select("id")
+                                 .eq("customer_email", email).eq("ref_type", "cart_reminder")
+                                 .gte("created_at", oldest_ts).limit(1).execute().data)
+            if already_reminded:
+                continue  # already nudged for this cart — avoid spamming on re-runs
+
+            line_items, cart_value = [], 0.0
+            for row in cart_rows:
+                product = next((p for p in PRODUCTS if p["id"] == row["product_id"]), None)
+                if not product:
+                    continue
+                qty = row.get("quantity", 1)
+                line_items.append({"name": product["name"], "quantity": qty, "price": float(product["price"])})
+                cart_value += float(product["price"]) * qty
+            if not line_items:
+                continue
+
+            create_user_notice(
+                email, "🌸 You left something in your cart",
+                f"{len(line_items)} item(s) worth ₹{cart_value:.0f} are waiting in your cart. Complete your order before they sell out!",
+                "cart_reminder", user_id,
+            )
+            send_abandoned_cart_email(email, first_name, line_items, cart_value)
+            reminded += 1
+        except Exception as e:
+            print(f"[AbandonedCart] failed for user {user_id}: {e}", flush=True)
+    return reminded
+
+
 def send_email_reminder(order: dict, days_before: int, is_recurrence: bool = False) -> bool:
     if not _resend_api_key or not order.get("customer_email"):
         return False
@@ -1096,6 +1252,34 @@ def _has_column(table: str, column: str) -> bool:
             print(f"[Schema] {table}.{column} not found — related features will degrade until the migration is run.", flush=True)
     return _COLUMN_EXISTS_CACHE[key]
 
+_TABLE_EXISTS_CACHE: dict = {}
+
+def _has_table(table: str) -> bool:
+    if table not in _TABLE_EXISTS_CACHE:
+        try:
+            supabase.table(table).select("*").limit(1).execute()
+            _TABLE_EXISTS_CACHE[table] = True
+        except Exception:
+            _TABLE_EXISTS_CACHE[table] = False
+            print(f"[Schema] table '{table}' not found — related features will degrade until the migration is run.", flush=True)
+    return _TABLE_EXISTS_CACHE[table]
+
+
+def _log_admin_action(admin_email: str, action: str, target_type: str = "", target_id: str = "", details: str = "") -> None:
+    """Best-effort accountability trail for admin actions (merchant status
+    changes, payout settlements, order cancellations, etc). Requires
+    backend/audit_log_migration.sql — a no-op until then, and any logging
+    failure is swallowed so it can never block the real action it records."""
+    if not _has_table("audit_log"):
+        return
+    try:
+        supabase.table("audit_log").insert({
+            "id": str(uuid.uuid4()), "admin_email": admin_email, "action": action,
+            "target_type": target_type, "target_id": target_id, "details": details,
+        }).execute()
+    except Exception as e:
+        print(f"[AuditLog] failed to record '{action}': {e}", flush=True)
+
 
 _load_house_merchant()
 load_products()
@@ -1395,7 +1579,7 @@ class ProductRejectRequest(BaseModel):
 
 @app.patch("/api/admin/products/{product_id}/approve")
 def approve_product(product_id: str, req: ProductApproveRequest):
-    require_admin(req.token)
+    admin_email = require_admin(req.token)
     supabase.table("products").update({
         "price": float(req.price),
         "discount_percent": max(0.0, min(100.0, float(req.discount_percent or 0))),
@@ -1410,12 +1594,13 @@ def approve_product(product_id: str, req: ProductApproveRequest):
             f"\"{p['name']}\" is now live on VivaPetals at ₹{p['price']}.",
             "merchant_product", str(product_id),
         )
+    _log_admin_action(admin_email, "product_approved", "product", str(product_id), f"{p['name']} @ ₹{req.price}" if p else "")
     return p or {"status": "approved"}
 
 
 @app.patch("/api/admin/products/{product_id}/reject")
 def reject_product(product_id: str, req: ProductRejectRequest):
-    require_admin(req.token)
+    admin_email = require_admin(req.token)
     reason = req.reason or "Not accepted at this time."
     supabase.table("products").update({
         "status": "rejected",
@@ -1429,6 +1614,7 @@ def reject_product(product_id: str, req: ProductRejectRequest):
             f"\"{p['name']}\" was not approved. Reason: {reason}",
             "merchant_product", str(product_id),
         )
+    _log_admin_action(admin_email, "product_rejected", "product", str(product_id), f"{p['name']}: {reason}" if p else reason)
     return {"status": "rejected"}
 
 @app.delete("/api/admin/products/{product_id}")
@@ -2195,6 +2381,16 @@ def merchant_me(token: str):
     m = get_merchant_for_user(user["id"]) if user else None
     if not m:
         return {"merchant": None}
+    payout = {}
+    if _has_column("merchants", "payout_method"):
+        payout = {
+            "payout_method": m.get("payout_method"),
+            "payout_upi_id": m.get("payout_upi_id", ""),
+            "payout_bank_account_name": m.get("payout_bank_account_name", ""),
+            "payout_bank_account_number": m.get("payout_bank_account_number", ""),
+            "payout_bank_ifsc": m.get("payout_bank_ifsc", ""),
+            "payout_verified": m.get("payout_verified", False),
+        }
     return {"merchant": {
         "id": m["id"], "merchant_code": m["id"],
         "shop_name": m.get("shop_name", ""), "slug": m.get("slug"),
@@ -2204,6 +2400,7 @@ def merchant_me(token: str):
         "address": m.get("address", ""), "city": m.get("city", ""),
         "state": m.get("state", ""), "pincode": m.get("pincode", ""),
         "latitude": m.get("latitude"), "longitude": m.get("longitude"),
+        **payout,
     }}
 
 
@@ -2233,6 +2430,44 @@ def merchant_update_shop(req: MerchantShopUpdate):
             data[field] = val
     if not data:
         raise HTTPException(status_code=400, detail="No fields to update")
+    supabase.table("merchants").update(data).eq("id", m["id"]).execute()
+    return {"status": "ok", **data}
+
+
+# ── Merchant: payout details ─────────────────────────────────────────────────
+# Requires backend/merchant_payout_migration.sql to have been run — see
+# _has_column() below for graceful degradation before then. Any change to
+# payout details resets payout_verified to False so admin re-checks before
+# the next transfer (prevents money being sent to a just-edited, unverified
+# account).
+
+class MerchantPayoutUpdate(BaseModel):
+    token: str
+    payout_method: str  # 'upi' | 'bank'
+    upi_id: Optional[str] = None
+    bank_account_name: Optional[str] = None
+    bank_account_number: Optional[str] = None
+    bank_ifsc: Optional[str] = None
+
+
+@app.put("/api/merchant/payout")
+def merchant_update_payout(req: MerchantPayoutUpdate):
+    m = require_merchant(req.token)
+    if not _has_column("merchants", "payout_method"):
+        raise HTTPException(status_code=503, detail="Payout details aren't set up yet — please contact support.")
+    if req.payout_method not in ("upi", "bank"):
+        raise HTTPException(status_code=422, detail="Payout method must be 'upi' or 'bank'")
+    data: dict = {"payout_method": req.payout_method, "payout_verified": False}
+    if req.payout_method == "upi":
+        if not (req.upi_id or "").strip():
+            raise HTTPException(status_code=422, detail="UPI ID is required")
+        data["payout_upi_id"] = req.upi_id.strip()
+    else:
+        if not (req.bank_account_name or "").strip() or not (req.bank_account_number or "").strip() or not (req.bank_ifsc or "").strip():
+            raise HTTPException(status_code=422, detail="Account holder name, account number and IFSC code are all required")
+        data["payout_bank_account_name"] = req.bank_account_name.strip()
+        data["payout_bank_account_number"] = req.bank_account_number.strip()
+        data["payout_bank_ifsc"] = req.bank_ifsc.strip().upper()
     supabase.table("merchants").update(data).eq("id", m["id"]).execute()
     return {"status": "ok", **data}
 
@@ -2557,6 +2792,66 @@ def merchant_stats(token: str):
     }
 
 
+@app.get("/api/merchant/analytics")
+def merchant_analytics(token: str, days: int = 30):
+    """Trends over time for the merchant's own shop: a daily revenue/order
+    series plus a this-week-vs-last-week comparison, built entirely from
+    order_merchant_parts.created_at — no schema migration required."""
+    m = require_merchant(token)
+    days = max(7, min(days, 90))
+    since = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
+    parts = (supabase.table("order_merchant_parts").select("*")
+             .eq("merchant_id", m["id"]).gte("created_at", since).execute().data or [])
+    active = [p for p in parts if p.get("status") != "cancelled"]
+
+    daily: dict = {}
+    for p in active:
+        day = (p.get("created_at") or "")[:10]
+        if not day:
+            continue
+        row = daily.setdefault(day, {"date": day, "orders": 0, "revenue": 0.0, "commission": 0.0})
+        row["orders"] += 1
+        row["revenue"] += float(p.get("payout", 0) or 0)
+        row["commission"] += float(p.get("commission", 0) or 0)
+    for row in daily.values():
+        row["revenue"] = round(row["revenue"], 2)
+        row["commission"] = round(row["commission"], 2)
+    series = sorted(daily.values(), key=lambda r: r["date"])
+
+    def totals_between(start: str, end: str):
+        o, r = 0, 0.0
+        for p in active:
+            day = (p.get("created_at") or "")[:10]
+            if day and start <= day <= end:
+                o += 1
+                r += float(p.get("payout", 0) or 0)
+        return o, round(r, 2)
+
+    today = datetime.now(timezone.utc).date()
+    this_orders, this_revenue = totals_between((today - timedelta(days=6)).isoformat(), today.isoformat())
+    prev_orders, prev_revenue = totals_between((today - timedelta(days=13)).isoformat(), (today - timedelta(days=7)).isoformat())
+
+    def pct_change(cur, prev):
+        if prev == 0:
+            return None if cur == 0 else 100.0
+        return round((cur - prev) / prev * 100, 1)
+
+    best_day = max(series, key=lambda r: r["revenue"], default=None)
+
+    return {
+        "days": days,
+        "series": series,
+        "total_orders": sum(r["orders"] for r in series),
+        "total_revenue": round(sum(r["revenue"] for r in series), 2),
+        "total_commission": round(sum(r["commission"] for r in series), 2),
+        "this_week": {"orders": this_orders, "revenue": this_revenue},
+        "prev_week": {"orders": prev_orders, "revenue": prev_revenue},
+        "orders_change_pct": pct_change(this_orders, prev_orders),
+        "revenue_change_pct": pct_change(this_revenue, prev_revenue),
+        "best_day": best_day,
+    }
+
+
 # ── Admin: merchant management ───────────────────────────────────────────────
 
 class MerchantStatusRequest(BaseModel):
@@ -2588,12 +2883,13 @@ def admin_list_merchants(token: str):
 # (after actually paying the merchant, e.g. bank transfer) and records that
 # here — individually per order, or in one bulk "pay all" action per shop.
 
-def _aggregate_payouts(parts: list, shop_by_id: dict) -> dict:
+def _aggregate_payouts(parts: list, shop_by_id: dict, payout_info_by_id: Optional[dict] = None) -> dict:
     """Pure aggregation over order_merchant_parts rows into the admin payout
     summary: per-merchant pending/paid totals + platform-wide totals.
     Cancelled parts never owe anything. A part only counts toward "pending"
     once its fulfillment status is 'delivered' — see module docstring above
     admin_payouts_summary for why."""
+    payout_info_by_id = payout_info_by_id or {}
     by_merchant: dict = {}
     total_pending = total_paid = total_commission = 0.0
     for p in parts:
@@ -2603,6 +2899,7 @@ def _aggregate_payouts(parts: list, shop_by_id: dict) -> dict:
         row = by_merchant.setdefault(mid, {
             "merchant_id": mid, "shop_name": shop_by_id.get(mid, "Unknown"),
             "pending_amount": 0.0, "pending_count": 0, "paid_amount": 0.0, "paid_count": 0,
+            **payout_info_by_id.get(mid, {}),
         })
         payout = float(p.get("payout", 0) or 0)
         total_commission += float(p.get("commission", 0) or 0)
@@ -2632,9 +2929,20 @@ def _aggregate_payouts(parts: list, shop_by_id: dict) -> dict:
 def admin_payouts_summary(token: str):
     require_admin(token)
     parts = supabase.table("order_merchant_parts").select("*").execute().data or []
-    merchants = supabase.table("merchants").select("id, shop_name").execute().data or []
+    merchants = supabase.table("merchants").select("*").execute().data or []
     shop_by_id = {m["id"]: m["shop_name"] for m in merchants}
-    return _aggregate_payouts(parts, shop_by_id)
+    payout_info_by_id = {}
+    if _has_column("merchants", "payout_method"):
+        for m in merchants:
+            payout_info_by_id[m["id"]] = {
+                "payout_method": m.get("payout_method"),
+                "payout_upi_id": m.get("payout_upi_id"),
+                "payout_bank_account_name": m.get("payout_bank_account_name"),
+                "payout_bank_account_number": m.get("payout_bank_account_number"),
+                "payout_bank_ifsc": m.get("payout_bank_ifsc"),
+                "payout_verified": m.get("payout_verified", False),
+            }
+    return _aggregate_payouts(parts, shop_by_id, payout_info_by_id)
 
 
 @app.get("/api/admin/payouts/{merchant_id}")
@@ -2646,6 +2954,21 @@ def admin_payouts_for_merchant(merchant_id: str, token: str):
     return parts
 
 
+@app.patch("/api/admin/merchants/{merchant_id}/payout-verify")
+def admin_verify_merchant_payout(merchant_id: str, token: str):
+    admin_email = require_admin(token)
+    if not _has_column("merchants", "payout_method"):
+        raise HTTPException(status_code=503, detail="Payout details aren't set up yet — please contact support.")
+    result = supabase.table("merchants").select("id, payout_method, shop_name").eq("id", merchant_id).execute().data
+    if not result:
+        raise HTTPException(status_code=404, detail="Merchant not found")
+    if not result[0].get("payout_method"):
+        raise HTTPException(status_code=400, detail="This merchant hasn't added payout details yet")
+    supabase.table("merchants").update({"payout_verified": True}).eq("id", merchant_id).execute()
+    _log_admin_action(admin_email, "merchant_payout_verified", "merchant", merchant_id, result[0].get("shop_name", merchant_id))
+    return {"status": "ok", "payout_verified": True}
+
+
 class PayoutMarkPaidRequest(BaseModel):
     token: str
     note: Optional[str] = ""
@@ -2653,7 +2976,7 @@ class PayoutMarkPaidRequest(BaseModel):
 
 @app.patch("/api/admin/payouts/{part_id}/pay")
 def admin_mark_payout_paid(part_id: str, req: PayoutMarkPaidRequest):
-    require_admin(req.token)
+    admin_email = require_admin(req.token)
     existing = supabase.table("order_merchant_parts").select("status, payout_status, merchant_id, payout, order_id").eq("id", part_id).execute().data
     if not existing:
         raise HTTPException(status_code=404, detail="Payout not found")
@@ -2669,12 +2992,14 @@ def admin_mark_payout_paid(part_id: str, req: PayoutMarkPaidRequest):
         f"₹{existing[0].get('payout')} for order #{existing[0].get('order_id')} has been paid to you.",
         "merchant_payout", part_id,
     )
+    _log_admin_action(admin_email, "payout_marked_paid", "order_merchant_part", part_id,
+                       f"₹{existing[0].get('payout')} for order #{existing[0].get('order_id')}" + (f" — {req.note}" if req.note else ""))
     return {"status": "paid"}
 
 
 @app.post("/api/admin/payouts/{merchant_id}/pay-all")
 def admin_pay_all_for_merchant(merchant_id: str, req: PayoutMarkPaidRequest):
-    require_admin(req.token)
+    admin_email = require_admin(req.token)
     due = (supabase.table("order_merchant_parts").select("id, payout")
            .eq("merchant_id", merchant_id).eq("status", "delivered").eq("payout_status", "unpaid")
            .execute().data or [])
@@ -2690,6 +3015,8 @@ def admin_pay_all_for_merchant(merchant_id: str, req: PayoutMarkPaidRequest):
         f"{len(ids)} order(s) totalling ₹{total} have been paid to you.",
         "merchant_payout", merchant_id,
     )
+    _log_admin_action(admin_email, "payout_pay_all", "merchant", merchant_id,
+                       f"{len(ids)} order(s) — ₹{total}" + (f" — {req.note}" if req.note else ""))
     return {"status": "ok", "paid_count": len(ids), "paid_amount": total}
 
 
@@ -2705,13 +3032,17 @@ def _sync_user_role(user_id, status):
 
 @app.patch("/api/admin/merchants/{merchant_id}/status")
 def admin_set_merchant_status(merchant_id: str, req: MerchantStatusRequest):
-    require_admin(req.token)
+    admin_email = require_admin(req.token)
     if req.status not in ("pending", "approved", "suspended"):
         raise HTTPException(status_code=400, detail="Invalid status")
+    before = supabase.table("merchants").select("status, shop_name").eq("id", merchant_id).execute().data
     r = supabase.table("merchants").update({"status": req.status}).eq("id", merchant_id).execute()
     if not r.data:
         raise HTTPException(status_code=404, detail="Merchant not found")
     _sync_user_role(r.data[0].get("user_id"), req.status)
+    old_status = before[0].get("status") if before else "unknown"
+    shop_name = r.data[0].get("shop_name", merchant_id)
+    _log_admin_action(admin_email, "merchant_status_change", "merchant", merchant_id, f"{shop_name}: {old_status} → {req.status}")
     email = r.data[0].get("email")
     if req.status == "approved":
         create_user_notice(email, "🎉 Shop approved!",
@@ -2726,11 +3057,15 @@ def admin_set_merchant_status(merchant_id: str, req: MerchantStatusRequest):
 
 @app.patch("/api/admin/merchants/{merchant_id}/commission")
 def admin_set_merchant_commission(merchant_id: str, req: MerchantCommissionRequest):
-    require_admin(req.token)
+    admin_email = require_admin(req.token)
     rate = max(0.0, min(100.0, float(req.commission_rate)))
+    before = supabase.table("merchants").select("commission_rate, shop_name").eq("id", merchant_id).execute().data
     r = supabase.table("merchants").update({"commission_rate": rate}).eq("id", merchant_id).execute()
     if not r.data:
         raise HTTPException(status_code=404, detail="Merchant not found")
+    old_rate = before[0].get("commission_rate") if before else "?"
+    shop_name = r.data[0].get("shop_name", merchant_id)
+    _log_admin_action(admin_email, "merchant_commission_change", "merchant", merchant_id, f"{shop_name}: {old_rate}% → {rate}%")
     return {"commission_rate": rate}
 
 
@@ -2749,10 +3084,51 @@ class AdminCreateMerchantRequest(BaseModel):
     longitude: Optional[float] = None
 
 
+@app.get("/api/admin/abandoned-carts")
+def admin_abandoned_carts_summary(token: str):
+    """Live count of currently-idle carts (>=24h untouched) an admin can see
+    at a glance, independent of whether today's reminder run has fired yet."""
+    require_admin(token)
+    since = (datetime.now(timezone.utc) - timedelta(hours=24)).isoformat()
+    idle_items = supabase.table("cart_items").select("*").lte("created_at", since).execute().data or []
+    by_user: dict = {}
+    for it in idle_items:
+        by_user.setdefault(it["user_id"], []).append(it)
+    total_value = 0.0
+    for rows in by_user.values():
+        for row in rows:
+            product = next((p for p in PRODUCTS if p["id"] == row["product_id"]), None)
+            if product:
+                total_value += float(product["price"]) * row.get("quantity", 1)
+    return {"idle_cart_count": len(by_user), "idle_item_count": len(idle_items), "estimated_value": round(total_value, 2)}
+
+
+@app.post("/api/admin/abandoned-carts/run")
+def admin_run_abandoned_cart_check(token: str):
+    admin_email = require_admin(token)
+    count = _run_abandoned_cart_check()
+    _log_admin_action(admin_email, "abandoned_cart_check_run", "system", "", f"{count} reminder(s) sent")
+    return {"status": "ok", "reminders_sent": count}
+
+
+@app.get("/api/admin/audit-log")
+def admin_get_audit_log(token: str, limit: int = 100, action: Optional[str] = None, target_type: Optional[str] = None):
+    require_admin(token)
+    if not _has_table("audit_log"):
+        return []
+    limit = max(1, min(limit, 500))
+    q = supabase.table("audit_log").select("*").order("created_at", desc=True).limit(limit)
+    if action:
+        q = q.eq("action", action)
+    if target_type:
+        q = q.eq("target_type", target_type)
+    return q.execute().data or []
+
+
 @app.post("/api/admin/merchants/create")
 def admin_create_merchant(req: AdminCreateMerchantRequest):
     """Admin provisions a merchant: a verified login + an approved shop."""
-    require_admin(req.token)
+    admin_email = require_admin(req.token)
     email = req.email.lower().strip()
     if len(req.password) < 6:
         raise HTTPException(status_code=400, detail="Password must be at least 6 characters.")
@@ -2790,6 +3166,7 @@ def admin_create_merchant(req: AdminCreateMerchantRequest):
         "status": "approved",
         "commission_rate": 0,
     }).execute()
+    _log_admin_action(admin_email, "merchant_created", "merchant", m.data[0]["id"] if m.data else "", f"{req.shop_name.strip()} ({email})")
     return {"status": "ok", "email": email, "shop_name": req.shop_name.strip(),
             "merchant": m.data[0] if m.data else None}
 
@@ -2881,6 +3258,25 @@ def admin_orders(token: str, status: str = None):
         print(f"[admin-orders] DB error: {e}", flush=True)
         raise HTTPException(status_code=503, detail="Could not load orders, please retry")
 
+def _customer_segment(order_count: int, last_order: str) -> str:
+    """Lightweight recency/frequency segmentation — no ML, just thresholds a
+    business owner can reason about: never ordered, active regulars,
+    at-risk (cooling off), and lapsed (needs a win-back nudge)."""
+    if order_count == 0:
+        return "never_ordered"
+    if not last_order:
+        return "lapsed"
+    last_dt = _parse_iso_ts(last_order)
+    if last_dt.tzinfo is None:
+        last_dt = last_dt.replace(tzinfo=timezone.utc)
+    days_since = (datetime.now(timezone.utc) - last_dt).days
+    if days_since <= 60:
+        return "champion" if order_count >= 3 else "active"
+    if days_since <= 120:
+        return "at_risk"
+    return "lapsed"
+
+
 @app.get("/api/admin/customers")
 def admin_customers(token: str):
     require_admin(token)
@@ -2900,8 +3296,49 @@ def admin_customers(token: str):
     for u in users:
         em = u["email"]
         stats = order_map.get(em, {"count": 0, "total": 0.0, "last_order": ""})
-        result.append({**u, "order_count": stats["count"], "total_spent": round(stats["total"], 2), "last_order": stats["last_order"]})
+        result.append({
+            **u, "order_count": stats["count"], "total_spent": round(stats["total"], 2), "last_order": stats["last_order"],
+            "segment": _customer_segment(stats["count"], stats["last_order"]),
+        })
     return result
+
+
+@app.get("/api/admin/customers/segments/summary")
+def admin_customer_segments_summary(token: str):
+    """Counts + spend per segment, for an at-a-glance win-back dashboard."""
+    require_admin(token)
+    customers = admin_customers(token)
+    summary: dict = {}
+    for c in customers:
+        seg = c["segment"]
+        row = summary.setdefault(seg, {"segment": seg, "count": 0, "total_spent": 0.0})
+        row["count"] += 1
+        row["total_spent"] += c["total_spent"]
+    for row in summary.values():
+        row["total_spent"] = round(row["total_spent"], 2)
+    order = ["champion", "active", "at_risk", "lapsed", "never_ordered"]
+    return sorted(summary.values(), key=lambda r: order.index(r["segment"]) if r["segment"] in order else 99)
+
+
+class WinbackRequest(BaseModel):
+    token: str
+    message: str = ""
+
+
+@app.post("/api/admin/customers/{email}/winback")
+def admin_send_winback(email: str, req: WinbackRequest):
+    admin_email = require_admin(req.token)
+    user = get_user_by_email(email)
+    if not user:
+        raise HTTPException(status_code=404, detail="Customer not found")
+    first_name = user.get("first_name", "")
+    note = (req.message or "").strip()
+    default_msg = "We miss you at VivaPetals! Come take a look at what's new — fresh arrivals, seasonal bouquets and more."
+    body = note or default_msg
+    create_user_notice(email, "🌸 We miss you!", body, "winback", email)
+    send_winback_email(email, first_name, body)
+    _log_admin_action(admin_email, "customer_winback_sent", "customer", email, note or "(default message)")
+    return {"status": "ok"}
 
 @app.delete("/api/admin/customers/{email}")
 def admin_delete_customer(email: str, token: str):
@@ -3004,6 +3441,28 @@ class DeliveryZoneUpdate(BaseModel):
     delivery_charge: Optional[float] = None
     min_order: Optional[float] = None
     active: Optional[bool] = None
+
+@app.get("/api/delivery-zones/check")
+def check_delivery_coverage(query: str):
+    """Public, no login — lets a shopper check 'do you deliver to my area'
+    before they've built a cart, instead of only finding out at checkout.
+    `areas` is admin-entered free text (area names and/or pincodes,
+    comma-separated), so this is a simple case-insensitive substring match
+    against each active zone rather than a strict pincode lookup."""
+    q = (query or "").strip()
+    if not q:
+        return {"covered": False}
+    zones = (supabase.table("delivery_zones").select("*")
+             .eq("active", True).ilike("areas", f"%{q}%").limit(1).execute().data or [])
+    if not zones:
+        return {"covered": False}
+    z = zones[0]
+    return {
+        "covered": True,
+        "zone_name": z["zone_name"],
+        "delivery_charge": z["delivery_charge"],
+        "min_order": z["min_order"],
+    }
 
 @app.get("/api/admin/delivery-zones")
 def list_delivery_zones(token: str):
@@ -3303,6 +3762,87 @@ def refund_redeemed_points(order: dict):
     redeemed = sum(-int(t.get("points", 0) or 0) for t in txns)  # stored negative
     if redeemed > 0:
         award_points(email, redeemed, "refund_redeemed", f"Redeemed points refunded — order {oid} cancelled", oid)
+
+# ── Saved Addresses ────────────────────────────────────────────────────────────
+# Requires backend/saved_addresses_migration.sql to have been run — see
+# _has_table() below for graceful degradation before then.
+
+class SavedAddressCreate(BaseModel):
+    token: str
+    label: str = "Home"
+    address: str
+    city: Optional[str] = None
+    state: Optional[str] = None
+    pincode: Optional[str] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    is_default: bool = False
+
+class SavedAddressUpdate(BaseModel):
+    token: str
+    label: Optional[str] = None
+    address: Optional[str] = None
+    city: Optional[str] = None
+    state: Optional[str] = None
+    pincode: Optional[str] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    is_default: Optional[bool] = None
+
+def _require_address_owner(token: str, address_id: str) -> dict:
+    email = resolve_token(token)
+    if not email:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    result = supabase.table("saved_addresses").select("*").eq("id", address_id).execute().data
+    if not result or result[0].get("user_email") != email:
+        raise HTTPException(status_code=404, detail="Address not found")
+    return result[0]
+
+@app.get("/api/addresses")
+def list_addresses(token: str):
+    email = resolve_token(token)
+    if not email:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    if not _has_table("saved_addresses"):
+        return []
+    return (supabase.table("saved_addresses").select("*").eq("user_email", email)
+            .order("is_default", desc=True).order("created_at", desc=True).execute().data or [])
+
+@app.post("/api/addresses")
+def create_address(req: SavedAddressCreate):
+    email = resolve_token(req.token)
+    if not email:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    if not _has_table("saved_addresses"):
+        raise HTTPException(status_code=503, detail="Saved addresses aren't set up yet — please contact support.")
+    if not req.address.strip():
+        raise HTTPException(status_code=422, detail="Address is required")
+    address_id = str(uuid.uuid4())
+    if req.is_default:
+        supabase.table("saved_addresses").update({"is_default": False}).eq("user_email", email).execute()
+    supabase.table("saved_addresses").insert({
+        "id": address_id, "user_email": email, "label": (req.label or "Home").strip() or "Home",
+        "address": req.address.strip(), "city": req.city, "state": req.state, "pincode": req.pincode,
+        "latitude": req.latitude, "longitude": req.longitude, "is_default": req.is_default,
+    }).execute()
+    return supabase.table("saved_addresses").select("*").eq("id", address_id).execute().data[0]
+
+@app.put("/api/addresses/{address_id}")
+def update_address(address_id: str, req: SavedAddressUpdate):
+    _require_address_owner(req.token, address_id)
+    email = resolve_token(req.token)
+    data = {k: v for k, v in req.model_dump(exclude={"token"}).items() if v is not None}
+    if data.get("is_default"):
+        supabase.table("saved_addresses").update({"is_default": False}).eq("user_email", email).execute()
+    if data:
+        supabase.table("saved_addresses").update(data).eq("id", address_id).execute()
+    return supabase.table("saved_addresses").select("*").eq("id", address_id).execute().data[0]
+
+@app.delete("/api/addresses/{address_id}")
+def delete_address(address_id: str, token: str):
+    _require_address_owner(token, address_id)
+    supabase.table("saved_addresses").delete().eq("id", address_id).execute()
+    return {"status": "ok"}
 
 # ── Loyalty Routes ─────────────────────────────────────────────────────────────
 
@@ -3759,7 +4299,7 @@ def admin_delete_order(order_id: str, token: str, reason: Optional[str] = None):
     and nobody told me" from the customer's side. Now mirrors the same
     full cancellation used by update_order_status/cancel_order, just with
     an admin-supplied reason folded into the customer notice."""
-    require_admin(token)
+    admin_email = require_admin(token)
     result = supabase.table("orders").select("*").eq("id", order_id).execute().data
     if not result:
         raise HTTPException(status_code=404, detail="Order not found")
@@ -3775,6 +4315,7 @@ def admin_delete_order(order_id: str, token: str, reason: Optional[str] = None):
     if reason:
         msg += f" Reason: {reason}"
     create_user_notice(order.get("customer_email"), "Order cancelled", msg, "order", order_id)
+    _log_admin_action(admin_email, "order_cancelled", "order", order_id, reason or "No reason given")
     return {"status": "cancelled"}
 
 
@@ -5134,10 +5675,20 @@ def _run_daily_reminders():
     except Exception as e:
         print(f"[scheduler] order reminders error: {e}")
 
+def _run_abandoned_cart_job():
+    try:
+        count = _run_abandoned_cart_check()
+        print(f"[scheduler] abandoned cart check sent {count} reminder(s)")
+    except Exception as e:
+        print(f"[scheduler] abandoned cart check error: {e}")
+
+
 @app.on_event("startup")
 def start_scheduler():
     scheduler = BackgroundScheduler(timezone="Asia/Kolkata")
     # Run every day at 8:00 AM IST
     scheduler.add_job(_run_daily_reminders, "cron", hour=8, minute=0)
+    # Cart nudge at a different time of day than the delivery reminders above
+    scheduler.add_job(_run_abandoned_cart_job, "cron", hour=11, minute=0)
     scheduler.start()
-    print("[scheduler] Daily reminder job scheduled at 08:00 IST")
+    print("[scheduler] Daily reminder job scheduled at 08:00 IST, abandoned cart check at 11:00 IST")

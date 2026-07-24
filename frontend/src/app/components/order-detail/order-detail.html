@@ -395,6 +395,19 @@
 
         </div><!-- /detail-four-grid -->
 
+        <!-- Reorder -->
+        @if (!isAdmin) {
+          <div class="actions-section">
+            <button class="btn-reorder-detail" (click)="reorder()" [disabled]="reordering()">
+              @if (reordering()) {
+                <i class="bi bi-arrow-repeat vp-spin"></i> Adding to cart…
+              } @else {
+                <i class="bi bi-arrow-repeat"></i> Order these again
+              }
+            </button>
+          </div>
+        }
+
         <!-- Cancel Order (bottom right) -->
         @if (!isAdmin && o.status !== 'cancelled' && o.status !== 'delivered') {
           <div class="actions-section">

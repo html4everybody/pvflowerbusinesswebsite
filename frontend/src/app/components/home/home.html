@@ -20,6 +20,42 @@
     </div>
   </section>
 
+  <!-- ── Delivery Coverage Checker ─────────────────────────────────────────── -->
+  <section class="delivery-check-section">
+    <div class="container">
+      <div class="delivery-check-box" appFadeIn>
+        <div class="dc-icon"><i class="bi bi-geo-alt"></i></div>
+        <div class="dc-text">
+          <h3>Do we deliver to you?</h3>
+          <p>Enter your pincode or area to check delivery coverage before you shop.</p>
+        </div>
+        <div class="dc-form">
+          <input type="text" placeholder="e.g. 500033 or Jubilee Hills" [(ngModel)]="deliveryQuery" name="deliveryQuery"
+                 (keydown.enter)="checkDelivery()">
+          <button type="button" (click)="checkDelivery()" [disabled]="!deliveryQuery().trim() || checkingDelivery()">
+            @if (checkingDelivery()) { <i class="bi bi-arrow-repeat vp-spin"></i> } @else { Check }
+          </button>
+        </div>
+      </div>
+      @if (deliveryResult(); as dr) {
+        @if (dr.covered) {
+          <div class="dc-result dc-yes" appFadeIn>
+            <i class="bi bi-check-circle-fill"></i>
+            <span>Good news — we deliver to <strong>{{ dr.zone_name }}</strong>.
+              @if (dr.delivery_charge === 0) { Free delivery. } @else { Delivery charge: ₹{{ dr.delivery_charge }}. }
+              @if (dr.min_order) { Minimum order ₹{{ dr.min_order }}. }
+            </span>
+          </div>
+        } @else {
+          <div class="dc-result dc-no" appFadeIn>
+            <i class="bi bi-info-circle-fill"></i>
+            <span>We don't have that area covered yet — <a routerLink="/contact">reach out</a> and we'll let you know as soon as we do.</span>
+          </div>
+        }
+      }
+    </div>
+  </section>
+
   <!-- ── Features Strip ─────────────────────────────────────────────────────── -->
   <section class="features">
     <div class="container">

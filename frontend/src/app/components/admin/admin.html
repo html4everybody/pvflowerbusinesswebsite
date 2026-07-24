@@ -58,6 +58,10 @@
           <span class="nav-badge">₹{{ payoutsSummary().total_pending | number:'1.0-0' }}</span>
         }
       </button>
+      <button class="nav-item" [class.active]="activeSection() === 'audit'" (click)="navigateTo('audit')">
+        <i class="bi bi-shield-check" style="font-size:16px"></i>
+        Audit Log
+      </button>
       <button class="nav-item" [class.active]="activeSection() === 'analytics'" (click)="navigateTo('analytics')">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/>
@@ -200,6 +204,16 @@
               </div>
               <div class="stat-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg></div>
             </div>
+            @if (abandonedCarts(); as ac) {
+              <div class="stat-card pending">
+                <div class="stat-body">
+                  <span class="stat-label">Idle Carts (24h+)</span>
+                  <span class="stat-value">{{ ac.idle_cart_count }}</span>
+                  <span class="stat-sub">~₹{{ ac.estimated_value | number:'1.0-0' }} recoverable</span>
+                </div>
+                <div class="stat-icon"><i class="bi bi-cart-x"></i></div>
+              </div>
+            }
           </div>
         } @else if (loadError()) {
           <div class="loading-state"><p>{{ loadError() }}</p></div>
@@ -228,6 +242,10 @@
             <button class="quick-card" (click)="navigateTo('customers')">
               <span class="quick-icon"><i class="bi bi-people"></i></span>
               <span class="quick-label">View Customers</span>
+            </button>
+            <button class="quick-card" [disabled]="runningCartCheck()" (click)="runAbandonedCartCheck()">
+              <span class="quick-icon"><i class="bi" [class.bi-envelope-heart]="!runningCartCheck()" [class.bi-arrow-repeat]="runningCartCheck()" [class.vp-spin]="runningCartCheck()"></i></span>
+              <span class="quick-label">{{ runningCartCheck() ? 'Sending…' : 'Send Cart Reminders' }}</span>
             </button>
           </div>
         </div>
@@ -416,6 +434,28 @@
                     <span class="payout-figure pending"><strong>₹{{ m.pending_amount | number:'1.0-0' }}</strong> pending ({{ m.pending_count }})</span>
                     <span class="payout-figure paid"><strong>₹{{ m.paid_amount | number:'1.0-0' }}</strong> paid ({{ m.paid_count }})</span>
                   </button>
+
+                  @if (m.payout_method) {
+                    <div class="payout-method-row">
+                      @if (m.payout_method === 'upi') {
+                        <span class="payout-method-info"><i class="bi bi-qr-code"></i> UPI: <span class="mono">{{ m.payout_upi_id }}</span></span>
+                      } @else {
+                        <span class="payout-method-info"><i class="bi bi-bank"></i> {{ m.payout_bank_account_name }} · <span class="mono">{{ m.payout_bank_account_number }}</span> · {{ m.payout_bank_ifsc }}</span>
+                      }
+                      @if (m.payout_verified) {
+                        <span class="mc-badge approved"><i class="bi bi-check-circle-fill"></i> Verified</span>
+                      } @else {
+                        <button class="btn-edit-small" [disabled]="verifyingPayout() === m.merchant_id" (click)="verifyMerchantPayout(m)">
+                          @if (verifyingPayout() === m.merchant_id) { Verifying… } @else { Verify }
+                        </button>
+                      }
+                    </div>
+                  } @else {
+                    <div class="payout-method-row">
+                      <span class="payout-method-info payout-method-missing"><i class="bi bi-exclamation-triangle"></i> No payout details on file yet</span>
+                    </div>
+                  }
+
                   <div class="payout-actions">
                     <button class="btn-approve" [disabled]="!m.pending_count || payingAll() === m.merchant_id" (click)="payAllForMerchant(m)">
                       @if (payingAll() === m.merchant_id) { <i class="bi bi-arrow-repeat vp-spin"></i> Settling… }
@@ -470,6 +510,58 @@
               }
             </div>
           }
+        }
+      </div>
+    }
+
+    <!-- ── Audit Log (accountability trail for admin actions) ──────────────── -->
+    @if (activeSection() === 'audit') {
+      <div class="section-wrap">
+        <div class="section-header">
+          <h1>Audit Log</h1>
+          <div class="section-header-actions">
+            <select class="form-input" style="width:auto" [value]="auditFilter()" (change)="setAuditFilter($any($event.target).value)">
+              <option value="all">All actions</option>
+              <option value="merchant_status_change">Merchant status changed</option>
+              <option value="merchant_commission_change">Commission changed</option>
+              <option value="merchant_payout_verified">Payout verified</option>
+              <option value="merchant_created">Merchant created</option>
+              <option value="order_cancelled">Order cancelled</option>
+              <option value="payout_marked_paid">Payout settled</option>
+              <option value="payout_pay_all">Bulk payout settled</option>
+              <option value="product_approved">Product approved</option>
+              <option value="product_rejected">Product rejected</option>
+            </select>
+            <button class="btn-refresh" (click)="loadAuditLog()" [disabled]="loadingAuditLog()">
+              <i class="bi bi-arrow-repeat"></i> Refresh
+            </button>
+          </div>
+        </div>
+        <p class="modal-hint" style="margin-bottom:1.25rem;">
+          <i class="bi bi-info-circle"></i> A record of who did what, when — merchant approvals, commission changes,
+          order cancellations and payout settlements. Nothing here can be edited or deleted.
+        </p>
+
+        @if (loadingAuditLog() && !auditLog().length) {
+          <div class="loading-state"><div class="spinner"></div><p>Loading audit log...</p></div>
+        } @else if (!auditLog().length) {
+          <div class="empty-state"><p>No admin actions recorded yet.</p></div>
+        } @else {
+          <div class="audit-list">
+            @for (e of auditLog(); track e.id) {
+              <div class="audit-row">
+                <span class="audit-icon"><i class="bi" [class]="AUDIT_ACTION_LABELS[e.action]?.icon || 'bi-info-circle'"></i></span>
+                <div class="audit-body">
+                  <div class="audit-top">
+                    <span class="audit-action">{{ AUDIT_ACTION_LABELS[e.action]?.label || e.action }}</span>
+                    <span class="audit-time">{{ formatDate(e.created_at) }} · {{ formatTime(e.created_at) }}</span>
+                  </div>
+                  <p class="audit-detail">{{ e.details }}</p>
+                  <span class="audit-admin"><i class="bi bi-person-badge"></i> {{ e.admin_email }}</span>
+                </div>
+              </div>
+            }
+          </div>
         }
       </div>
     }
@@ -862,6 +954,21 @@
           <span class="section-meta">{{ customers().length }} registered</span>
         </div>
 
+        @if (segmentSummary().length) {
+          <div class="segment-pills">
+            <button class="segment-pill" [class.active]="customerSegmentFilter() === 'all'" (click)="setCustomerSegmentFilter('all')">
+              All <span class="segment-pill-count">{{ customers().length }}</span>
+            </button>
+            @for (s of segmentSummary(); track s.segment) {
+              <button class="segment-pill" [class]="SEGMENT_INFO[s.segment]?.cls" [class.active]="customerSegmentFilter() === s.segment" (click)="setCustomerSegmentFilter(s.segment)">
+                <i class="bi" [class]="SEGMENT_INFO[s.segment]?.icon"></i>
+                {{ SEGMENT_INFO[s.segment]?.label || s.segment }}
+                <span class="segment-pill-count">{{ s.count }}</span>
+              </button>
+            }
+          </div>
+        }
+
         <div class="search-bar-simple">
           <i class="bi bi-search"></i>
           <input type="text" placeholder="Search by name or email..." [value]="customerSearch()" (input)="customerSearch.set($any($event.target).value)">
@@ -877,7 +984,12 @@
               <div class="customer-card">
                 <div class="cust-avatar">{{ (c.first_name?.[0] || '?').toUpperCase() }}</div>
                 <div class="cust-info">
-                  <span class="cust-name">{{ c.first_name }} {{ c.last_name }}</span>
+                  <span class="cust-name">
+                    {{ c.first_name }} {{ c.last_name }}
+                    @if (SEGMENT_INFO[c.segment]) {
+                      <span class="segment-badge" [class]="SEGMENT_INFO[c.segment].cls"><i class="bi" [class]="SEGMENT_INFO[c.segment].icon"></i> {{ SEGMENT_INFO[c.segment].label }}</span>
+                    }
+                  </span>
                   <span class="cust-email">{{ c.email }}</span>
                   <span class="cust-since">Joined {{ formatDate(c.created_at) }}</span>
                 </div>
@@ -899,6 +1011,11 @@
                 </div>
                 @if (!c.is_verified) {
                   <span class="unverified-badge">Unverified</span>
+                }
+                @if (c.segment === 'at_risk' || c.segment === 'lapsed') {
+                  <button class="cust-winback" [disabled]="sendingWinback() === c.email" (click)="sendWinback(c)" title="Send a win-back message">
+                    @if (sendingWinback() === c.email) { <i class="bi bi-arrow-repeat vp-spin"></i> } @else { <i class="bi bi-envelope-heart"></i> Win back }
+                  </button>
                 }
                 <button class="cust-delete" title="Delete customer" aria-label="Delete customer" (click)="deleteCustomer(c)">
                   <i class="bi bi-trash3"></i>

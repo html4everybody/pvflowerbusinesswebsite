@@ -5,6 +5,8 @@ import { HttpClient } from '@angular/common/http';
 import { AuthService } from '../../services/auth';
 import { ToastService } from '../../services/toast';
 import { ConfirmService } from '../../services/confirm';
+import { CartService } from '../../services/cart';
+import { ProductService } from '../../services/product';
 import { environment } from '../../../environments/environment';
 import { FormsModule } from '@angular/forms';
 import { DatePicker } from '../date-picker/date-picker';
@@ -63,6 +65,8 @@ export class OrderDetail implements OnInit {
 
   minDate = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date());
 
+  reordering = signal(false);
+
   constructor(
     private route: ActivatedRoute,
     private router: Router,
@@ -70,8 +74,47 @@ export class OrderDetail implements OnInit {
     private http: HttpClient,
     private authService: AuthService,
     private toastService: ToastService,
-    private confirmService: ConfirmService
+    private confirmService: ConfirmService,
+    private cartService: CartService,
+    private productService: ProductService
   ) {}
+
+  async reorder(): Promise<void> {
+    const order = this.order();
+    if (!order || this.reordering()) return;
+    this.reordering.set(true);
+
+    if (this.productService.getProducts().length === 0) {
+      await this.productService.loadProducts();
+    }
+
+    let added = 0;
+    const unavailable: string[] = [];
+    for (const item of (order.items || [])) {
+      const product = this.productService.getProductById(item.product_id);
+      if (product && product.inStock) {
+        this.cartService.addToCart(product, item.quantity);
+        added++;
+      } else {
+        unavailable.push(item.name);
+      }
+    }
+
+    this.reordering.set(false);
+
+    if (added === 0) {
+      this.toastService.show('None of these items are available anymore.', 'error');
+      return;
+    }
+    if (unavailable.length > 0) {
+      this.toastService.show(
+        `Added ${added} item${added !== 1 ? 's' : ''} to cart. Not available: ${unavailable.join(', ')}`, 'error'
+      );
+    } else {
+      this.toastService.show(`${added} item${added !== 1 ? 's' : ''} added to cart!`);
+    }
+    this.router.navigate(['/cart']);
+  }
 
   goBack(): void { this.location.back(); }
 

@@ -28,6 +28,20 @@
           <span class="category-badge">{{ product.category }}</span>
           <h1>{{ product.name }}</h1>
 
+          <div class="rating-row">
+            <span class="stars">
+              @for (n of [1,2,3,4,5]; track n) {
+                <span [class.filled]="n <= (reviews.length ? round(avgRating) : 0)">★</span>
+              }
+            </span>
+            @if (reviews.length > 0) {
+              <span class="rating-text">{{ avgRating.toFixed(1) }} ({{ reviews.length }} review{{ reviews.length !== 1 ? 's' : '' }})</span>
+              <span class="reviews-link" (click)="activeTab.set('reviews')">See reviews</span>
+            } @else if (!loadingReviews()) {
+              <span class="reviews-link" (click)="activeTab.set('reviews')">Be the first to review</span>
+            }
+          </div>
+
           @if (product.discount_percent) {
             <p class="price">₹{{ (product.final_price ?? product.price).toFixed(2) }}
               <span class="price-unit-label">{{ priceUnitLabel }}</span>
@@ -78,6 +92,159 @@
 
         </div>
       </div>
+
+      <!-- Description / Care / Reviews -->
+      <section class="product-tabs">
+        <div class="tabs-nav">
+          <button type="button" [class.active]="activeTab() === 'description'" (click)="activeTab.set('description')">Description</button>
+          <button type="button" [class.active]="activeTab() === 'care'" (click)="activeTab.set('care')">Care Tips</button>
+          <button type="button" [class.active]="activeTab() === 'reviews'" (click)="activeTab.set('reviews')">
+            Reviews
+            @if (reviews.length > 0) { <span class="tab-count">{{ reviews.length }}</span> }
+          </button>
+        </div>
+
+        <div class="tab-pane">
+          @if (activeTab() === 'description') {
+            <div class="tab-description">
+              <p>{{ product.description }}</p>
+            </div>
+          } @else if (activeTab() === 'care') {
+            <div class="care-grid">
+              @for (tip of careTips; track tip.title) {
+                <div class="care-card">
+                  <span class="care-icon">{{ tip.icon }}</span>
+                  <h4>{{ tip.title }}</h4>
+                  <p>{{ tip.detail }}</p>
+                </div>
+              }
+            </div>
+          } @else {
+            <!-- Reviews -->
+            @if (reviews.length > 0) {
+              <div class="rating-summary">
+                <div class="avg-block">
+                  <span class="avg-score">{{ avgRating.toFixed(1) }}</span>
+                  <span class="avg-stars">
+                    @for (n of [1,2,3,4,5]; track n) {
+                      <span [class.filled]="n <= (reviews.length ? round(avgRating) : 0)">★</span>
+                    }
+                  </span>
+                  <span class="avg-label">{{ reviews.length }} review{{ reviews.length !== 1 ? 's' : '' }}</span>
+                </div>
+                <div class="bar-chart">
+                  @for (star of [5,4,3,2,1]; track star) {
+                    <div class="bar-row">
+                      <span class="bar-label">{{ star }}★</span>
+                      <span class="bar-track">
+                        <span class="bar-fill" [style.width.%]="reviews.length ? (ratingCounts[5 - star] / reviews.length * 100) : 0"></span>
+                      </span>
+                      <span class="bar-count">{{ ratingCounts[5 - star] }}</span>
+                    </div>
+                  }
+                </div>
+              </div>
+
+              <div class="reviews-list">
+                @for (review of reviews; track review.id) {
+                  <div class="review-card">
+                    <div class="rev-header">
+                      <img [src]="review.avatar" [alt]="review.author" class="rev-avatar">
+                      <div class="rev-meta">
+                        <div class="rev-name-row">
+                          <span class="rev-author">{{ review.author }}</span>
+                          @if (review.verified) { <span class="rev-verified"><i class="bi bi-patch-check-fill"></i> Verified purchase</span> }
+                        </div>
+                        <span class="rev-stars">
+                          @for (n of [1,2,3,4,5]; track n) {
+                            <span [class.filled]="n <= review.rating">★</span>
+                          }
+                          <span class="rev-date">{{ review.date }}</span>
+                        </span>
+                      </div>
+                    </div>
+                    <p class="rev-text">{{ review.text }}</p>
+                    @if (review.photos && review.photos.length) {
+                      <div class="rev-photos">
+                        @for (photo of review.photos; track photo) {
+                          <img [src]="photo" alt="Review photo" class="rev-photo">
+                        }
+                      </div>
+                    }
+                  </div>
+                }
+              </div>
+            } @else if (loadingReviews()) {
+              <p class="rev-text">Loading reviews…</p>
+            } @else {
+              <p class="rev-text">No reviews yet — be the first to share what you thought.</p>
+            }
+
+            <!-- Write a review -->
+            <div class="write-review-section">
+              @if (!authService.user()) {
+                <div class="review-signin-prompt">
+                  <i class="bi bi-info-circle"></i>
+                  <span><a routerLink="/signin" class="review-signin-link">Sign in</a> to write a review.</span>
+                </div>
+              } @else if (reviewSubmitted() || canReviewStatus()?.already_reviewed) {
+                <div class="review-done-msg">
+                  <i class="bi bi-check-circle-fill"></i>
+                  Thanks — your review has been posted.
+                </div>
+              } @else if (canReviewStatus()?.can_review) {
+                <div class="write-review-form">
+                  <h3 class="wr-title">Write a review</h3>
+                  @if (canReviewStatus()?.has_purchased) {
+                    <div class="verified-banner"><i class="bi bi-patch-check-fill"></i> You purchased this product</div>
+                  }
+                  <div class="wr-field">
+                    <label class="wr-label">Your rating<span class="req">*</span></label>
+                    <div class="star-selector">
+                      @for (n of [1,2,3,4,5]; track n) {
+                        <button type="button" class="star-btn" [class.filled]="n <= (hoverRating() || reviewForm.rating)"
+                                (click)="setReviewRating(n)" (mouseenter)="hoverRating.set(n)" (mouseleave)="hoverRating.set(0)">★</button>
+                      }
+                      <span class="star-label">{{ reviewForm.rating }} / 5</span>
+                    </div>
+                  </div>
+                  <div class="wr-field">
+                    <label class="wr-label">Your review<span class="req">*</span></label>
+                    <textarea class="wr-textarea" rows="4" maxlength="600" placeholder="What did you think of the quality, freshness, and delivery?"
+                              [(ngModel)]="reviewForm.text" name="reviewText"></textarea>
+                    <span class="wr-char-count">{{ reviewForm.text.length }}/600</span>
+                  </div>
+                  <div class="wr-field">
+                    <label class="wr-label">Photos <span class="wr-optional">(optional, up to 3)</span></label>
+                    <div class="photo-upload-area">
+                      @for (photo of reviewForm.photos; track $index; let i = $index) {
+                        <div class="photo-thumb">
+                          <img [src]="photo.preview" alt="Upload preview">
+                          <button type="button" class="photo-remove" (click)="removePhoto(i)"><i class="bi bi-x"></i></button>
+                        </div>
+                      }
+                      @if (reviewForm.photos.length < 3) {
+                        <label class="photo-add-btn">
+                          <i class="bi bi-camera"></i>
+                          Add photo
+                          <input type="file" accept="image/*" multiple hidden (change)="onPhotoSelected($event)">
+                        </label>
+                      }
+                    </div>
+                  </div>
+                  <button type="button" class="btn-submit-review" [disabled]="!reviewForm.text.trim() || submittingReview()" (click)="submitReview()">
+                    @if (submittingReview()) {
+                      <i class="bi bi-arrow-repeat"></i> Submitting…
+                    } @else {
+                      <i class="bi bi-send"></i> Submit review
+                    }
+                  </button>
+                </div>
+              }
+            </div>
+          }
+        </div>
+      </section>
 
       <!-- Related Products -->
       @if (relatedProducts.length > 0) {

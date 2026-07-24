@@ -18,6 +18,9 @@
       <button class="nav-item" [class.active]="activeSection() === 'orders'" (click)="go('orders')">
         <i class="bi bi-bag-check"></i> Orders
       </button>
+      <button class="nav-item" [class.active]="activeSection() === 'analytics'" (click)="go('analytics')">
+        <i class="bi bi-graph-up-arrow"></i> Analytics
+      </button>
       <button class="nav-item" [class.active]="activeSection() === 'settings'" (click)="go('settings')">
         <i class="bi bi-gear"></i> Shop Settings
       </button>
@@ -235,6 +238,68 @@
       </div>
     }
 
+    <!-- ── Analytics ────────────────────────────────────────────────────── -->
+    @if (activeSection() === 'analytics') {
+      <div class="sec">
+        <div class="sec-head">
+          <h1>Analytics</h1>
+          <div class="range-toggle">
+            <button [class.active]="analyticsRange() === 7" (click)="setAnalyticsRange(7)">7d</button>
+            <button [class.active]="analyticsRange() === 30" (click)="setAnalyticsRange(30)">30d</button>
+            <button [class.active]="analyticsRange() === 90" (click)="setAnalyticsRange(90)">90d</button>
+          </div>
+        </div>
+
+        @if (loadingAnalytics() && !analytics()) {
+          <div class="loading"><i class="bi bi-arrow-repeat vp-spin"></i><p>Loading analytics…</p></div>
+        } @else if (analytics(); as a) {
+          <div class="stat-grid">
+            <div class="stat-tile"><span class="st-icon blue"><i class="bi bi-bag-check"></i></span><div><span class="st-val">{{ a.total_orders }}</span><span class="st-label">Orders (last {{ a.days }}d)</span></div></div>
+            <div class="stat-tile"><span class="st-icon green"><i class="bi bi-cash-coin"></i></span><div><span class="st-val">₹{{ a.total_revenue | number:'1.0-0' }}</span><span class="st-label">Your earnings</span></div></div>
+            <div class="stat-tile">
+              <span class="st-icon" [class.green]="(a.orders_change_pct ?? 0) >= 0" [class.amber]="(a.orders_change_pct ?? 0) < 0">
+                <i class="bi" [class.bi-arrow-up-right]="(a.orders_change_pct ?? 0) >= 0" [class.bi-arrow-down-right]="(a.orders_change_pct ?? 0) < 0"></i>
+              </span>
+              <div>
+                <span class="st-val">{{ a.orders_change_pct == null ? '—' : (a.orders_change_pct > 0 ? '+' : '') + a.orders_change_pct + '%' }}</span>
+                <span class="st-label">Orders vs prior week</span>
+              </div>
+            </div>
+            <div class="stat-tile">
+              <span class="st-icon" [class.green]="(a.revenue_change_pct ?? 0) >= 0" [class.amber]="(a.revenue_change_pct ?? 0) < 0">
+                <i class="bi" [class.bi-arrow-up-right]="(a.revenue_change_pct ?? 0) >= 0" [class.bi-arrow-down-right]="(a.revenue_change_pct ?? 0) < 0"></i>
+              </span>
+              <div>
+                <span class="st-val">{{ a.revenue_change_pct == null ? '—' : (a.revenue_change_pct > 0 ? '+' : '') + a.revenue_change_pct + '%' }}</span>
+                <span class="st-label">Earnings vs prior week</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="chart-card">
+            <div class="chart-head">
+              <h2>Daily earnings</h2>
+              @if (a.best_day) {
+                <span class="chart-best"><i class="bi bi-star-fill"></i> Best day: {{ a.best_day.date }} — ₹{{ a.best_day.revenue | number:'1.0-0' }}</span>
+              }
+            </div>
+            @if (!chartBars().length) {
+              <p class="chart-empty">No orders in this period yet.</p>
+            } @else {
+              <div class="chart-bars">
+                @for (b of chartBars(); track b.date) {
+                  <div class="chart-bar-col" [title]="b.label + ': ₹' + b.revenue">
+                    <div class="chart-bar" [style.height.%]="b.heightPct"></div>
+                    <span class="chart-bar-label">{{ b.label }}</span>
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        }
+      </div>
+    }
+
     <!-- ── Settings ─────────────────────────────────────────────────────── -->
     @if (activeSection() === 'settings') {
       <div class="sec">
@@ -286,6 +351,50 @@
           <button type="submit" class="btn-primary" [disabled]="savingShop()">
             @if (savingShop()) { <i class="bi bi-arrow-repeat vp-spin"></i> Saving… }
             @else { <i class="bi bi-check-lg"></i> Save changes }
+          </button>
+        </form>
+      </div>
+
+      <div class="sec">
+        <div class="sec-head">
+          <h1>Payout Details</h1>
+          @if (payoutVerified()) {
+            <span class="payout-badge approved"><i class="bi bi-check-circle-fill"></i> Verified</span>
+          } @else if (payout.upi_id || payout.bank_account_number) {
+            <span class="payout-badge pending"><i class="bi bi-hourglass-split"></i> Pending verification</span>
+          }
+        </div>
+        <p class="field-hint"><i class="bi bi-info-circle"></i> This is how we'll send your order payouts. Changing it requires admin re-verification before your next settlement.</p>
+        <form class="shop-form" (ngSubmit)="savePayout()">
+          <div class="field">
+            <label>Payout method</label>
+            <select [(ngModel)]="payout.payout_method" name="payout_method">
+              <option value="upi">UPI</option>
+              <option value="bank">Bank transfer</option>
+            </select>
+          </div>
+          @if (payout.payout_method === 'upi') {
+            <div class="field">
+              <label>UPI ID <span class="req">*</span></label>
+              <input type="text" [(ngModel)]="payout.upi_id" name="upi_id" placeholder="yourname@bank" maxlength="60">
+            </div>
+          } @else {
+            <div class="field">
+              <label>Account holder name <span class="req">*</span></label>
+              <input type="text" [(ngModel)]="payout.bank_account_name" name="bank_account_name" maxlength="80">
+            </div>
+            <div class="field">
+              <label>Account number <span class="req">*</span></label>
+              <input type="text" [(ngModel)]="payout.bank_account_number" name="bank_account_number" maxlength="30">
+            </div>
+            <div class="field">
+              <label>IFSC code <span class="req">*</span></label>
+              <input type="text" [(ngModel)]="payout.bank_ifsc" name="bank_ifsc" maxlength="11" style="text-transform:uppercase">
+            </div>
+          }
+          <button type="submit" class="btn-primary" [disabled]="savingPayout()">
+            @if (savingPayout()) { <i class="bi bi-arrow-repeat vp-spin"></i> Saving… }
+            @else { <i class="bi bi-check-lg"></i> Save payout details }
           </button>
         </form>
       </div>

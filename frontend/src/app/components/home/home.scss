@@ -197,6 +197,128 @@
     }
   }
 
+  // ── Delivery Coverage Checker ────────────────────────────────────────────────
+  .delivery-check-section {
+    padding: 2rem 0 0;
+    background: var(--bg);
+  }
+
+  .delivery-check-box {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+    padding: 1.5rem 1.75rem;
+    background: var(--accent-light);
+    border: 1px solid var(--border-focus);
+    border-radius: var(--radius-md);
+
+    .dc-icon {
+      width: 48px;
+      height: 48px;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--bg-card);
+      border-radius: 50%;
+      font-size: 1.3rem;
+      color: var(--accent);
+    }
+
+    .dc-text {
+      flex: 1;
+      min-width: 200px;
+
+      h3 {
+        font-family: 'Inter', sans-serif;
+        font-size: 0.98rem;
+        font-weight: 700;
+        color: var(--text);
+        margin: 0 0 0.15rem;
+      }
+
+      p {
+        font-size: 0.82rem;
+        color: var(--text-muted);
+        margin: 0;
+      }
+    }
+
+    .dc-form {
+      display: flex;
+      gap: 0.5rem;
+      flex-shrink: 0;
+
+      input {
+        width: 220px;
+        max-width: 100%;
+        padding: 0.65rem 0.9rem;
+        border: 1.5px solid var(--border);
+        border-radius: var(--radius-full);
+        background: var(--bg-card);
+        color: var(--text);
+        font-size: 0.88rem;
+        font-family: inherit;
+
+        &:focus { outline: none; border-color: var(--accent); }
+        &::placeholder { color: var(--text-subtle); }
+      }
+
+      button {
+        padding: 0.65rem 1.4rem;
+        border: none;
+        border-radius: var(--radius-full);
+        background: var(--accent);
+        color: #fff;
+        font-size: 0.88rem;
+        font-weight: 600;
+        font-family: inherit;
+        cursor: pointer;
+        transition: background 0.15s ease;
+        white-space: nowrap;
+
+        &:hover:not(:disabled) { background: var(--accent-dark); }
+        &:disabled { opacity: 0.55; cursor: default; }
+      }
+    }
+  }
+
+  .dc-result {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-top: 0.85rem;
+    padding: 0.85rem 1.1rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.85rem;
+
+    a { color: inherit; text-decoration: underline; font-weight: 600; }
+
+    &.dc-yes {
+      background: rgba(5, 150, 105, 0.1);
+      border: 1px solid rgba(5, 150, 105, 0.3);
+      color: var(--success);
+      i { font-size: 1.1rem; flex-shrink: 0; }
+    }
+
+    &.dc-no {
+      background: var(--bg-raised);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      i { font-size: 1.1rem; flex-shrink: 0; color: var(--text-subtle); }
+    }
+  }
+
+  @media (max-width: 600px) {
+    .delivery-check-box {
+      flex-direction: column;
+      align-items: flex-start;
+
+      .dc-form { width: 100%; input { width: 100%; } button { flex-shrink: 0; } }
+    }
+  }
+
   // ── Features Strip ─────────────────────────────────────────────────────────
   .features {
     padding: 2.5rem 0;
@@ -1646,3 +1768,6 @@ html[data-theme="dark"] {
 // Merchant discount — struck-through base price + % off badge
 .price-base { text-decoration: line-through; color: var(--text-subtle); font-size: 0.82em; margin-left: 0.4rem; font-weight: 500; }
 .price-off { display: inline-block; background: var(--accent); color: #fff; font-size: 0.72rem; font-weight: 700; padding: 0.1rem 0.45rem; border-radius: var(--radius-full); margin-left: 0.5rem; vertical-align: middle; }
+
+.vp-spin { display: inline-block; animation: vp-spin 0.9s linear infinite; }
+@keyframes vp-spin { to { transform: rotate(360deg); } }

@@ -193,6 +193,10 @@ export class ProductDetail implements OnInit {
     return this.reviews.reduce((sum, r) => sum + r.rating, 0) / this.reviews.length;
   }
 
+  round(n: number): number {
+    return Math.round(n);
+  }
+
   get ratingCounts(): number[] {
     const counts = [0, 0, 0, 0, 0]; // index 0 = 5★, index 4 = 1★
     for (const r of this.reviews) {

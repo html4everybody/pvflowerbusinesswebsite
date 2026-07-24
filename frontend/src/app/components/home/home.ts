@@ -1,6 +1,9 @@
 import { Component, OnInit, AfterViewInit, ViewChild, ElementRef, signal } from '@angular/core';
 import { DecimalPipe, Location } from '@angular/common';
 import { Router, RouterLink, ActivatedRoute } from '@angular/router';
+import { HttpClient } from '@angular/common/http';
+import { FormsModule } from '@angular/forms';
+import { environment } from '../../../environments/environment';
 import { ProductService } from '../../services/product';
 import { CartService } from '../../services/cart';
 import { FeedbackService } from '../../services/feedback';
@@ -15,7 +18,7 @@ import { FadeInDirective } from '../../directives/fade-in';
 
 @Component({
   selector: 'app-home',
-  imports: [RouterLink, FadeInDirective, DecimalPipe],
+  imports: [RouterLink, FadeInDirective, DecimalPipe, FormsModule],
   templateUrl: './home.html',
   styleUrl: './home.scss'
 })
@@ -40,6 +43,11 @@ export class Home implements OnInit, AfterViewInit {
   private copiedTimer: any;
   private appliedTimer: any;
 
+  // ── Delivery coverage checker ────────────────────────────────────────────
+  deliveryQuery = signal('');
+  checkingDelivery = signal(false);
+  deliveryResult = signal<{ covered: boolean; zone_name?: string; delivery_charge?: number; min_order?: number } | null>(null);
+
   constructor(
     private productService: ProductService,
     private cartService: CartService,
@@ -52,8 +60,20 @@ export class Home implements OnInit, AfterViewInit {
     private occasionService: OccasionService,
     private router: Router,
     private route: ActivatedRoute,
-    private location: Location
+    private location: Location,
+    private http: HttpClient
   ) {}
+
+  checkDelivery(): void {
+    const q = this.deliveryQuery().trim();
+    if (!q) return;
+    this.checkingDelivery.set(true);
+    this.deliveryResult.set(null);
+    this.http.get<any>(`${environment.apiUrl}/api/delivery-zones/check`, { params: { query: q } }).subscribe({
+      next: (res) => { this.deliveryResult.set(res); this.checkingDelivery.set(false); },
+      error: () => { this.deliveryResult.set({ covered: false }); this.checkingDelivery.set(false); }
+    });
+  }
 
   subDeliveryToday = signal(false);
   occasions = signal<StoreOccasion[]>([]);

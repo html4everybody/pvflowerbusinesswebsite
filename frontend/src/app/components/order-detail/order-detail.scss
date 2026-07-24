@@ -801,8 +801,30 @@
       &:hover:not(:disabled) { background: #e53e3e; color: white; }
       &:disabled { opacity: 0.6; cursor: not-allowed; }
     }
+
+    .btn-reorder-detail {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      background: none;
+      border: 1.5px solid var(--accent);
+      color: var(--accent);
+      font-size: 0.9rem;
+      font-weight: 600;
+      font-family: inherit;
+      padding: 0.6rem 1.25rem;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.15s ease, color 0.15s ease;
+
+      &:hover:not(:disabled) { background: var(--accent); color: white; }
+      &:disabled { opacity: 0.6; cursor: not-allowed; }
+    }
   }
 }
+
+.vp-spin { display: inline-block; animation: vp-spin 0.9s linear infinite; }
+@keyframes vp-spin { to { transform: rotate(360deg); } }
 
 @media (max-width: 700px) {
   .order-detail-page {

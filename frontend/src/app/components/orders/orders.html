@@ -82,7 +82,18 @@
             }
             <div class="card-footer">
               <span class="order-items-count">{{ itemCount(order) }} item{{ itemCount(order) !== 1 ? 's' : '' }}</span>
-              <span class="order-total">₹{{ order.total.toFixed(2) }}</span>
+              <div class="card-footer-right">
+                @if (order.status !== 'cancelled' && order.items && order.items.length > 0) {
+                  <button type="button" class="btn-reorder" [disabled]="reorderingId() === order.id" (click)="reorder(order, $event)">
+                    @if (reorderingId() === order.id) {
+                      <i class="bi bi-arrow-repeat vp-spin"></i>
+                    } @else {
+                      <i class="bi bi-arrow-repeat"></i> Reorder
+                    }
+                  </button>
+                }
+                <span class="order-total">₹{{ order.total.toFixed(2) }}</span>
+              </div>
             </div>
           </a>
         }

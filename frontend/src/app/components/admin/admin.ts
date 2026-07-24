@@ -13,7 +13,7 @@ import { environment } from '../../../environments/environment';
 import { DatePicker } from '../date-picker/date-picker';
 import { LocationPicker, PickedLocation } from '../location-picker/location-picker';
 
-export type AdminSection = 'overview' | 'orders' | 'products' | 'categories' | 'inventory' | 'customers' | 'analytics' | 'zones' | 'deals' | 'bundles' | 'plans' | 'subscriptions' | 'studio' | 'occasions' | 'merchants' | 'payouts';
+export type AdminSection = 'overview' | 'orders' | 'products' | 'categories' | 'inventory' | 'customers' | 'analytics' | 'zones' | 'deals' | 'bundles' | 'plans' | 'subscriptions' | 'studio' | 'occasions' | 'merchants' | 'payouts' | 'audit';
 
 @Component({
   selector: 'app-admin',
@@ -165,12 +165,27 @@ export class Admin implements OnInit {
   customers = signal<any[]>([]);
   loadingCustomers = signal(true);
   customerSearch = signal('');
+  customerSegmentFilter = signal<string>('all');
+  segmentSummary = signal<any[]>([]);
+  sendingWinback = signal<string | null>(null);
+
+  readonly SEGMENT_INFO: Record<string, { label: string; cls: string; icon: string }> = {
+    champion:      { label: 'Champions',      cls: 'champion',      icon: 'bi-trophy' },
+    active:        { label: 'Active',         cls: 'seg-active',    icon: 'bi-check-circle' },
+    at_risk:       { label: 'At risk',        cls: 'at-risk',       icon: 'bi-exclamation-triangle' },
+    lapsed:        { label: 'Lapsed',         cls: 'lapsed',        icon: 'bi-moon' },
+    never_ordered: { label: 'Never ordered',  cls: 'never-ordered', icon: 'bi-person-plus' },
+  };
+
   filteredCustomers = computed(() => {
     const q = this.customerSearch().toLowerCase();
-    return q ? this.customers().filter(c =>
+    const seg = this.customerSegmentFilter();
+    let list = this.customers();
+    if (seg !== 'all') list = list.filter(c => c.segment === seg);
+    return q ? list.filter(c =>
       (c.first_name + ' ' + c.last_name).toLowerCase().includes(q) ||
       (c.email || '').toLowerCase().includes(q)
-    ) : this.customers();
+    ) : list;
   });
 
   // ── Analytics ─────────────────────────────────────────────────────────────
@@ -239,6 +254,7 @@ export class Admin implements OnInit {
     this.loadCategories();
     this.loadMerchants();
     this.loadPayouts();
+    this.loadAbandonedCarts();
     // If restored section needs lazy-loaded data, trigger it
     const section = this.activeSection();
     if (section === 'inventory' && !this.inventory().length) this.loadInventory();
@@ -252,6 +268,7 @@ export class Admin implements OnInit {
     if (section === 'studio' && !this.studioBookings().length) this.loadStudio();
     if (section === 'occasions' && !this.occasions().length) this.loadOccasions();
     if (section === 'payouts') this.loadPayouts();
+    if (section === 'audit' && !this.auditLog().length) this.loadAuditLog();
   }
 
   get token(): string { return this.authService.getToken(); }
@@ -273,6 +290,7 @@ export class Admin implements OnInit {
     if (section === 'occasions' && !this.occasions().length) this.loadOccasions();
     if (section === 'merchants') this.loadMerchants();
     if (section === 'payouts') this.loadPayouts();
+    if (section === 'audit') this.loadAuditLog();
   }
 
   // ── Merchants (marketplace sellers) ───────────────────────────────────────
@@ -316,6 +334,7 @@ export class Admin implements OnInit {
   loadingPayoutDetail = signal(false);
   payingAll = signal<string | null>(null);
   payingPartId = signal<string | null>(null);
+  verifyingPayout = signal<string | null>(null);
 
   loadPayouts(): void {
     this.loadingPayouts.set(true);
@@ -383,6 +402,68 @@ export class Admin implements OnInit {
     });
   }
 
+  // ── Abandoned cart recovery ──────────────────────────────────────────────
+  abandonedCarts = signal<any>(null);
+  runningCartCheck = signal(false);
+
+  loadAbandonedCarts(): void {
+    this.http.get<any>(`${environment.apiUrl}/api/admin/abandoned-carts?token=${this.token}`).subscribe({
+      next: (data) => this.abandonedCarts.set(data),
+      error: () => {},
+    });
+  }
+
+  runAbandonedCartCheck(): void {
+    this.runningCartCheck.set(true);
+    this.http.post<any>(`${environment.apiUrl}/api/admin/abandoned-carts/run?token=${this.token}`, {}).subscribe({
+      next: (res) => {
+        this.runningCartCheck.set(false);
+        this.toastService.show(res.reminders_sent > 0 ? `Sent ${res.reminders_sent} cart reminder(s)` : 'No idle carts due for a reminder right now');
+        this.loadAbandonedCarts();
+      },
+      error: (err) => { this.runningCartCheck.set(false); this.toastService.show(err.error?.detail || 'Failed to run cart check', 'error'); },
+    });
+  }
+
+  // ── Audit log (accountability trail for admin actions) ─────────────────────
+  auditLog = signal<any[]>([]);
+  loadingAuditLog = signal(false);
+  auditFilter = signal<string>('all');
+
+  readonly AUDIT_ACTION_LABELS: Record<string, { label: string; icon: string }> = {
+    merchant_status_change:     { label: 'Merchant status changed', icon: 'bi-shop' },
+    merchant_commission_change: { label: 'Commission changed',      icon: 'bi-percent' },
+    merchant_payout_verified:   { label: 'Payout details verified', icon: 'bi-patch-check' },
+    merchant_created:           { label: 'Merchant created',        icon: 'bi-shop-window' },
+    order_cancelled:            { label: 'Order cancelled',         icon: 'bi-x-circle' },
+    payout_marked_paid:         { label: 'Payout settled',          icon: 'bi-cash-coin' },
+    payout_pay_all:             { label: 'Bulk payout settled',     icon: 'bi-cash-stack' },
+    product_approved:           { label: 'Product approved',        icon: 'bi-check-circle' },
+    product_rejected:           { label: 'Product rejected',        icon: 'bi-x-octagon' },
+  };
+
+  loadAuditLog(): void {
+    this.loadingAuditLog.set(true);
+    const action = this.auditFilter() === 'all' ? '' : `&action=${this.auditFilter()}`;
+    this.http.get<any[]>(`${environment.apiUrl}/api/admin/audit-log?token=${this.token}&limit=200${action}`).subscribe({
+      next: (data) => { this.auditLog.set(data || []); this.loadingAuditLog.set(false); },
+      error: () => { this.loadingAuditLog.set(false); },
+    });
+  }
+
+  setAuditFilter(action: string): void {
+    this.auditFilter.set(action);
+    this.loadAuditLog();
+  }
+
+  verifyMerchantPayout(m: any): void {
+    this.verifyingPayout.set(m.merchant_id);
+    this.http.patch<any>(`${environment.apiUrl}/api/admin/merchants/${m.merchant_id}/payout-verify?token=${this.token}`, {}).subscribe({
+      next: () => { this.verifyingPayout.set(null); m.payout_verified = true; this.toastService.show(`${m.shop_name}'s payout details verified`); },
+      error: (err) => { this.verifyingPayout.set(null); this.toastService.show(err.error?.detail || 'Verification failed', 'error'); },
+    });
+  }
+
   // Merchant assignment (folded into the Products "Add/Edit" modal below) —
   // e.g. "Red Roses": one price, assigned to N merchants; each gets their own
   // stock-tracked row (a "catalog product"). Leave unassigned = plain admin
@@ -423,6 +504,7 @@ export class Admin implements OnInit {
 
   refresh(): void {
     this.loadOrders();
+    this.loadAbandonedCarts();
   }
 
   updateStatus(order: any, newStatus: string): void {
@@ -1066,6 +1148,30 @@ export class Admin implements OnInit {
     this.http.get<any[]>(`${environment.apiUrl}/api/admin/customers?token=${this.token}`).subscribe({
       next: (data) => { this.customers.set(data || []); this.loadingCustomers.set(false); },
       error: () => this.loadingCustomers.set(false)
+    });
+    this.http.get<any[]>(`${environment.apiUrl}/api/admin/customers/segments/summary?token=${this.token}`).subscribe({
+      next: (data) => this.segmentSummary.set(data || []),
+      error: () => {},
+    });
+  }
+
+  setCustomerSegmentFilter(seg: string): void {
+    this.customerSegmentFilter.set(seg);
+  }
+
+  async sendWinback(customer: any): Promise<void> {
+    const res = await this.confirmService.askReason({
+      title: `Send a win-back message to ${customer.first_name || customer.email}?`,
+      message: `They'll get an in-app notice and an email. Leave the note blank to use our default "we miss you" message.`,
+      promptLabel: 'Custom message (optional)',
+      promptPlaceholder: "e.g. Here's 10% off your next order — come see what's new!",
+      confirmText: 'Send',
+    });
+    if (!res.ok) return;
+    this.sendingWinback.set(customer.email);
+    this.http.post(`${environment.apiUrl}/api/admin/customers/${encodeURIComponent(customer.email)}/winback`, { token: this.token, message: res.reason || '' }).subscribe({
+      next: () => { this.sendingWinback.set(null); this.toastService.show(`Win-back message sent to ${customer.first_name || customer.email}`); },
+      error: (err) => { this.sendingWinback.set(null); this.toastService.show(err.error?.detail || 'Failed to send', 'error'); },
     });
   }
 

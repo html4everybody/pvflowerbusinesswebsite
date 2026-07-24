@@ -26,6 +26,7 @@ import { Account } from './components/account/account';
 import { AccountProfile } from './components/account-profile/account-profile';
 import { AccountPassword } from './components/account-password/account-password';
 import { AccountEmail } from './components/account-email/account-email';
+import { AccountAddresses } from './components/account-addresses/account-addresses';
 import { ConfirmEmail } from './components/confirm-email/confirm-email';
 import { BecomeSeller } from './components/become-seller/become-seller';
 import { MerchantDashboard } from './components/merchant-dashboard/merchant-dashboard';
@@ -68,6 +69,7 @@ export const routes: Routes = [
   { path: 'account/profile', component: AccountProfile, canActivate: [authGuard] },
   { path: 'account/password', component: AccountPassword, canActivate: [authGuard] },
   { path: 'account/email', component: AccountEmail, canActivate: [authGuard] },
+  { path: 'account/addresses', component: AccountAddresses, canActivate: [authGuard] },
   { path: 'orders', component: Orders, canActivate: [authGuard] },
   { path: 'orders/:id', component: OrderDetail, canActivate: [authGuard] },
   { path: 'my-subscriptions', component: MySubscriptions, canActivate: [authGuard] },

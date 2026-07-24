@@ -12,7 +12,7 @@ import { environment } from '../../../environments/environment';
 import { DatePicker } from '../date-picker/date-picker';
 import { LocationPicker, PickedLocation } from '../location-picker/location-picker';
 
-type MerchantSection = 'overview' | 'products' | 'orders' | 'settings';
+type MerchantSection = 'overview' | 'products' | 'orders' | 'analytics' | 'settings';
 
 @Component({
   selector: 'app-merchant-dashboard',
@@ -54,6 +54,20 @@ export class MerchantDashboard implements OnInit {
   savingShop = signal(false);
   loadingShop = signal(false);
   shopLoaded = signal(false);
+
+  // payout details
+  payout = {
+    payout_method: 'upi' as 'upi' | 'bank',
+    upi_id: '', bank_account_name: '', bank_account_number: '', bank_ifsc: '',
+  };
+  payoutVerified = signal(false);
+  savingPayout = signal(false);
+
+  // analytics
+  analytics = signal<any>(null);
+  loadingAnalytics = signal(false);
+  analyticsRange = signal(30);
+  chartBars = signal<{ date: string; label: string; revenue: number; heightPct: number }[]>([]);
 
   onShopLocationPicked(loc: PickedLocation): void {
     this.shop.latitude = loc.latitude;
@@ -105,6 +119,31 @@ export class MerchantDashboard implements OnInit {
     this.activeSection.set(section);
     if (section === 'orders' && !this.orders().length) this.loadOrders();
     if (section === 'settings') this.loadShop();
+    if (section === 'analytics') this.loadAnalytics();
+  }
+
+  loadAnalytics(): void {
+    this.loadingAnalytics.set(true);
+    this.http.get<any>(`${this.api}/api/merchant/analytics?token=${this.token}&days=${this.analyticsRange()}`).subscribe({
+      next: (data) => {
+        this.analytics.set(data);
+        this.loadingAnalytics.set(false);
+        const series: any[] = data?.series || [];
+        const maxRevenue = Math.max(1, ...series.map((r) => r.revenue));
+        this.chartBars.set(series.map((r) => ({
+          date: r.date,
+          label: new Date(r.date + 'T00:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }),
+          revenue: r.revenue,
+          heightPct: Math.max(4, Math.round((r.revenue / maxRevenue) * 100)),
+        })));
+      },
+      error: () => { this.loadingAnalytics.set(false); },
+    });
+  }
+
+  setAnalyticsRange(days: number): void {
+    this.analyticsRange.set(days);
+    this.loadAnalytics();
   }
 
   // ── Data ────────────────────────────────────────────────────────────────
@@ -144,15 +183,39 @@ export class MerchantDashboard implements OnInit {
     this.http.get<any>(`${this.api}/api/merchant/me?token=${this.token}`).subscribe({
       next: (res) => {
         const m = res?.merchant;
-        if (m) this.shop = {
-          shop_name: m.shop_name || '', description: m.description || '', phone: m.phone || '', logo: m.logo || '',
-          address: m.address || '', city: m.city || '', state: m.state || '', pincode: m.pincode || '',
-          latitude: m.latitude ?? null, longitude: m.longitude ?? null,
-        };
+        if (m) {
+          this.shop = {
+            shop_name: m.shop_name || '', description: m.description || '', phone: m.phone || '', logo: m.logo || '',
+            address: m.address || '', city: m.city || '', state: m.state || '', pincode: m.pincode || '',
+            latitude: m.latitude ?? null, longitude: m.longitude ?? null,
+          };
+          this.payout = {
+            payout_method: m.payout_method || 'upi',
+            upi_id: m.payout_upi_id || '', bank_account_name: m.payout_bank_account_name || '',
+            bank_account_number: m.payout_bank_account_number || '', bank_ifsc: m.payout_bank_ifsc || '',
+          };
+          this.payoutVerified.set(!!m.payout_verified);
+        }
         this.loadingShop.set(false);
         this.shopLoaded.set(true);
       },
       error: () => { this.loadingShop.set(false); this.shopLoaded.set(true); },
+    });
+  }
+
+  savePayout(): void {
+    if (this.payout.payout_method === 'upi' && !this.payout.upi_id.trim()) {
+      this.toast.show('Please enter your UPI ID', 'error');
+      return;
+    }
+    if (this.payout.payout_method === 'bank' && (!this.payout.bank_account_name.trim() || !this.payout.bank_account_number.trim() || !this.payout.bank_ifsc.trim())) {
+      this.toast.show('Account holder name, account number and IFSC code are all required', 'error');
+      return;
+    }
+    this.savingPayout.set(true);
+    this.http.put<any>(`${this.api}/api/merchant/payout`, { token: this.token, ...this.payout }).subscribe({
+      next: () => { this.savingPayout.set(false); this.payoutVerified.set(false); this.toast.show('Payout details saved — pending admin verification', 'success'); },
+      error: (err) => { this.savingPayout.set(false); this.toast.show(err?.error?.detail || 'Save failed', 'error'); },
     });
   }
 
