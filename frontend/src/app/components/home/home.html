@@ -42,7 +42,7 @@
           <div class="dc-result dc-yes" appFadeIn>
             <i class="bi bi-check-circle-fill"></i>
             <span>Good news — we deliver to <strong>{{ dr.zone_name }}</strong>.
-              @if (dr.delivery_charge === 0) { Free delivery. } @else { Delivery charge: ₹{{ dr.delivery_charge }}. }
+              Your exact delivery fee is calculated by distance at checkout.
               @if (dr.min_order) { Minimum order ₹{{ dr.min_order }}. }
             </span>
           </div>

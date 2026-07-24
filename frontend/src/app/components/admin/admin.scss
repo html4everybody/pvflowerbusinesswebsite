@@ -806,6 +806,32 @@
 }
 
 // ── Delivery Zones ────────────────────────────────────────────────────────────
+.pricing-card {
+  background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px;
+  padding: 1.1rem 1.25rem; margin-bottom: 1.25rem;
+}
+.pricing-card-head {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 0.75rem; flex-wrap: wrap;
+  margin-bottom: 0.5rem;
+}
+.pricing-card-title { font-weight: 700; font-size: 0.95rem; color: var(--text); display: inline-flex; align-items: center; gap: 0.4rem; }
+.pricing-card-meta { font-size: 0.74rem; color: var(--text-subtle); }
+.pricing-not-configured {
+  display: flex; align-items: center; gap: 0.4rem;
+  font-size: 0.82rem; color: #d97706; background: rgba(217,119,6,0.1);
+  border-radius: 8px; padding: 0.55rem 0.8rem; margin: 0 0 1rem;
+}
+.pricing-card-form { display: flex; align-items: center; gap: 0.85rem; flex-wrap: wrap; }
+.pricing-rate-input {
+  display: inline-flex; align-items: center; gap: 0.3rem;
+  font-weight: 700; color: var(--text); font-size: 0.95rem;
+  border: 1px solid var(--border); border-radius: 8px; padding: 0.5rem 0.85rem; background: var(--bg);
+  input {
+    border: none; background: none; font-family: inherit; font-size: 0.95rem; font-weight: 700;
+    color: var(--text); width: 70px; outline: none;
+  }
+}
+
 .zones-list { display: flex; flex-direction: column; gap: 0.6rem; }
 
 .zone-card {

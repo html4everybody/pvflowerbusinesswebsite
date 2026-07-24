@@ -5,6 +5,7 @@ from pydantic import BaseModel, EmailStr
 from typing import Optional
 import uuid
 import base64 as _base64
+import math
 import os
 import secrets
 import hmac
@@ -3431,7 +3432,11 @@ def update_stock(product_id: str, req: StockUpdate, token: str):
 class DeliveryZoneCreate(BaseModel):
     zone_name: str
     areas: str
-    delivery_charge: float
+    # Legacy — real delivery pricing is now distance-based (see
+    # delivery_pricing / _calculate_delivery_fee). Kept only so existing
+    # zone rows still validate; no longer shown in the admin form or used
+    # to charge anything.
+    delivery_charge: float = 0
     min_order: float = 0
     active: bool = True
 
@@ -4332,6 +4337,137 @@ def admin_delete_order(order_id: str, token: str, reason: Optional[str] = None):
     return {"status": "cancelled"}
 
 
+# ── Distance-based delivery pricing ──────────────────────────────────────────
+# Requires backend/delivery_pricing_migration.sql to have been run — see
+# _has_table() below for graceful degradation (falls back to a flat fee)
+# before then.
+
+_FLAT_FALLBACK_DELIVERY_FEE = 49.0  # used only when a distance can't be computed
+_DELIVERY_PRICING_CACHE: dict = {}
+
+
+def _haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+    R = 6371.0
+    p1, p2 = math.radians(lat1), math.radians(lat2)
+    dphi = math.radians(lat2 - lat1)
+    dlambda = math.radians(lon2 - lon1)
+    a = math.sin(dphi / 2) ** 2 + math.cos(p1) * math.cos(p2) * math.sin(dlambda / 2) ** 2
+    return R * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+
+
+def _get_delivery_pricing_config() -> Optional[dict]:
+    """None means 'not configured yet' — callers should fall back to a flat fee."""
+    if not _has_table("delivery_pricing"):
+        return None
+    row = supabase.table("delivery_pricing").select("*").eq("id", 1).execute().data
+    if not row:
+        return None
+    try:
+        return {
+            "per_km_rate": float(row[0]["per_km_rate"]),
+            "free_delivery_min_order": float(row[0].get("free_delivery_min_order") or 0),
+            "updated_at": row[0].get("updated_at"),
+        }
+    except (TypeError, ValueError):
+        return None
+
+
+def _calculate_delivery_fee(customer_lat, customer_lng, merchant_ids: set, order_subtotal: float = 0.0) -> dict:
+    """Sums (distance × per-km rate) across every distinct shop assigned to
+    the order — each one genuinely needs its own trip to the customer.
+    Free once order_subtotal clears the admin's free-delivery threshold.
+    Falls back to a flat fee if the rate isn't configured yet, or if we're
+    missing coordinates for the customer or every assigned shop (e.g. a
+    merchant who hasn't set their shop location on the map yet)."""
+    config = _get_delivery_pricing_config()
+    rate = config["per_km_rate"] if config else None
+    free_threshold = config["free_delivery_min_order"] if config else 0
+
+    if free_threshold > 0 and order_subtotal >= free_threshold:
+        return {"fee": 0.0, "per_km_rate": rate, "breakdown": [], "fallback": False, "free_delivery": True}
+
+    if rate is None or customer_lat is None or customer_lng is None or not merchant_ids:
+        return {"fee": round(_FLAT_FALLBACK_DELIVERY_FEE, 2), "per_km_rate": rate, "breakdown": [], "fallback": True, "free_delivery": False}
+
+    merchants = (supabase.table("merchants").select("id, shop_name, latitude, longitude")
+                 .in_("id", list(merchant_ids)).execute().data or [])
+    breakdown = []
+    total = 0.0
+    for m in merchants:
+        if m.get("latitude") is None or m.get("longitude") is None:
+            continue
+        dist = _haversine_km(float(customer_lat), float(customer_lng), float(m["latitude"]), float(m["longitude"]))
+        leg_fee = round(dist * rate, 2)
+        breakdown.append({"merchant_id": m["id"], "shop_name": m.get("shop_name", ""), "distance_km": round(dist, 1), "fee": leg_fee})
+        total += leg_fee
+
+    if not breakdown:
+        return {"fee": round(_FLAT_FALLBACK_DELIVERY_FEE, 2), "per_km_rate": rate, "breakdown": [], "fallback": True, "free_delivery": False}
+    return {"fee": round(total, 2), "per_km_rate": rate, "breakdown": breakdown, "fallback": False, "free_delivery": False}
+
+
+class DeliveryPricingUpdate(BaseModel):
+    token: str
+    per_km_rate: float
+    free_delivery_min_order: float = 0
+
+
+@app.get("/api/admin/delivery-pricing")
+def admin_get_delivery_pricing(token: str):
+    require_admin(token)
+    config = _get_delivery_pricing_config()
+    if not config:
+        return {"per_km_rate": None, "free_delivery_min_order": 0, "updated_at": None, "configured": False}
+    return {**config, "configured": True}
+
+
+@app.put("/api/admin/delivery-pricing")
+def admin_set_delivery_pricing(req: DeliveryPricingUpdate):
+    admin_email = require_admin(req.token)
+    if not _has_table("delivery_pricing"):
+        raise HTTPException(status_code=503, detail="Delivery pricing isn't set up yet — please contact support.")
+    if req.per_km_rate <= 0:
+        raise HTTPException(status_code=422, detail="Per-km rate must be greater than 0")
+    if req.free_delivery_min_order < 0:
+        raise HTTPException(status_code=422, detail="Free-delivery minimum can't be negative")
+    before = supabase.table("delivery_pricing").select("per_km_rate, free_delivery_min_order").eq("id", 1).execute().data
+    old = before[0] if before else None
+    supabase.table("delivery_pricing").upsert({
+        "id": 1, "per_km_rate": req.per_km_rate, "free_delivery_min_order": req.free_delivery_min_order,
+        "updated_at": datetime.now(timezone.utc).isoformat(), "updated_by": admin_email,
+    }).execute()
+    detail = f"₹{old['per_km_rate']}/km → ₹{req.per_km_rate}/km" if old else f"Set to ₹{req.per_km_rate}/km"
+    if req.free_delivery_min_order > 0:
+        detail += f"; free delivery over ₹{req.free_delivery_min_order}"
+    _log_admin_action(admin_email, "delivery_rate_change", "delivery_pricing", "1", detail)
+    return {"status": "ok", "per_km_rate": req.per_km_rate, "free_delivery_min_order": req.free_delivery_min_order}
+
+
+class DeliveryEstimateItem(BaseModel):
+    productId: str
+    quantity: int
+    price: float = 0
+
+
+class DeliveryEstimateRequest(BaseModel):
+    items: list[DeliveryEstimateItem]
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+
+
+@app.post("/api/checkout/delivery-estimate")
+def checkout_delivery_estimate(req: DeliveryEstimateRequest):
+    """Public, no login — lets checkout show a live distance-based delivery
+    fee as soon as the shopper picks their location, before placing the
+    order. create_order() recomputes this same way server-side; this is a
+    preview only and is never trusted as the charged amount."""
+    resolved = _resolve_order_merchants(req.items)
+    merchant_ids = {mid for mid, _ in resolved.values()}
+    subtotal = sum(item.price * item.quantity for item in req.items)
+    result = _calculate_delivery_fee(req.latitude, req.longitude, merchant_ids, subtotal)
+    return {"delivery_fee": result["fee"], "per_km_rate": result["per_km_rate"], "breakdown": result["breakdown"], "free_delivery": result["free_delivery"]}
+
+
 # ── Order → merchant routing (consolidation) ─────────────────────────────────
 # Goal: a customer's order should land at as FEW merchants as possible. A
 # merchant's own unique product pins the order to that merchant with no
@@ -4513,7 +4649,12 @@ def create_order(req: OrderRequest):
                 user_id = u.data[0]["id"]
 
     items_subtotal = sum(float(item.price) * int(item.quantity) for item in (req.items or []))
-    shipping_fee = 0.0 if items_subtotal >= 50 else 9.99
+    customer_lat = req.customer.get("latitude")
+    customer_lng = req.customer.get("longitude")
+    resolved_merchants = _resolve_order_merchants(req.items)
+    merchant_ids = {mid for mid, _ in resolved_merchants.values()}
+    delivery_result = _calculate_delivery_fee(customer_lat, customer_lng, merchant_ids, items_subtotal)
+    shipping_fee = delivery_result["fee"]
     discount_amount = round(max(0.0, items_subtotal + shipping_fee - req.total), 2)
 
     order_row = {
@@ -4528,6 +4669,8 @@ def create_order(req: OrderRequest):
             req.customer.get("state", ""),
             req.customer.get("zip", ""),
         ])),
+        "latitude": customer_lat,
+        "longitude": customer_lng,
         "total": req.total,
         "status": "confirmed",
         "delivery_type": req.delivery_type,

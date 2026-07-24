@@ -1388,6 +1388,35 @@
           </button>
         </div>
 
+        <div class="pricing-card">
+          <div class="pricing-card-head">
+            <span class="pricing-card-title"><i class="bi bi-speedometer2"></i> Per-km Delivery Rate</span>
+            @if (deliveryPricing()?.updated_at) {
+              <span class="pricing-card-meta">Updated {{ formatDate(deliveryPricing().updated_at) }} · {{ formatTime(deliveryPricing().updated_at) }}</span>
+            }
+          </div>
+          <p class="modal-hint" style="margin-bottom:1rem;">
+            <i class="bi bi-info-circle"></i> Every order's delivery fee is (distance from the fulfilling shop to the
+            customer) × this rate. Change it anytime — e.g. raise it during peak hours or bad weather — new orders
+            use the new rate immediately. Orders at or above the free-delivery minimum skip the fee entirely.
+          </p>
+          @if (!deliveryPricing()?.configured && !loadingDeliveryPricing()) {
+            <p class="pricing-not-configured"><i class="bi bi-exclamation-triangle"></i> Not set up yet — orders are using a flat ₹49 fallback fee until you set a rate.</p>
+          }
+          <div class="pricing-card-form">
+            <label class="pricing-rate-input">
+              ₹<input type="number" min="0.01" step="0.5" [ngModel]="perKmRateInput()" (ngModelChange)="perKmRateInput.set($event)"> / km
+            </label>
+            <label class="pricing-rate-input">
+              Free delivery over ₹<input type="number" min="0" step="50" [ngModel]="freeDeliveryMinInput()" (ngModelChange)="freeDeliveryMinInput.set($event)">
+            </label>
+            <button class="btn-primary" [disabled]="savingDeliveryPricing()" (click)="saveDeliveryPricing()">
+              @if (savingDeliveryPricing()) { <i class="bi bi-arrow-repeat vp-spin"></i> Saving… }
+              @else { <i class="bi bi-check-lg"></i> Update rate }
+            </button>
+          </div>
+        </div>
+
         @if (loadingZones()) {
           <div class="loading-state"><div class="spinner"></div><p>Loading zones...</p></div>
         } @else if (zones().length === 0) {
@@ -1437,14 +1466,13 @@
               <label class="form-label">Areas (comma-separated)
                 <input type="text" class="form-input" [(ngModel)]="zoneForm.areas" placeholder="e.g. Hebbal, Yelahanka, Banaswadi">
               </label>
-              <div class="form-row">
-                <label class="form-label">Delivery Charge (₹)
-                  <input type="number" class="form-input" [(ngModel)]="zoneForm.delivery_charge" min="0">
-                </label>
-                <label class="form-label">Min Order (₹)
-                  <input type="number" class="form-input" [(ngModel)]="zoneForm.min_order" min="0">
-                </label>
-              </div>
+              <label class="form-label">Minimum order for this area (₹) <span class="opt">(optional)</span>
+                <input type="number" class="form-input" [(ngModel)]="zoneForm.min_order" min="0">
+              </label>
+              <p class="modal-hint" style="margin:0 0 1rem;">
+                <i class="bi bi-info-circle"></i> Delivery fee itself is now calculated by distance — set the per-km
+                rate in the card above, not here.
+              </p>
               <label class="toggle-label">
                 <input type="checkbox" [(ngModel)]="zoneForm.active">
                 Active

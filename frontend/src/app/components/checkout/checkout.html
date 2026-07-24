@@ -497,11 +497,23 @@
               <span>₹{{ cartService.cartTotal().toFixed(2) }}</span>
             </div>
             <div class="summary-row">
-              <span>Shipping</span>
-              <span class="shipping-val">{{ getShipping() === 0 ? 'FREE' : '₹' + getShipping().toFixed(2) }}</span>
+              <span>Delivery</span>
+              @if (loadingDeliveryFee()) {
+                <span class="shipping-val"><i class="bi bi-arrow-repeat vp-spin"></i> Calculating…</span>
+              } @else {
+                <span class="shipping-val" [class.free]="getShipping() === 0">{{ getShipping() === 0 ? 'FREE' : '₹' + getShipping().toFixed(2) }}</span>
+              }
             </div>
-            @if (getShipping() === 0) {
-              <div class="free-shipping-badge"><i class="bi bi-truck"></i> You qualify for free shipping!</div>
+            @if (!loadingDeliveryFee() && freeDeliveryApplied()) {
+              <div class="free-shipping-badge"><i class="bi bi-truck"></i> Your order qualifies for free delivery!</div>
+            } @else if (!loadingDeliveryFee() && deliveryFeeBreakdown().length > 0) {
+              <div class="delivery-breakdown">
+                @for (b of deliveryFeeBreakdown(); track b.shop_name) {
+                  <span class="delivery-breakdown-row">{{ b.shop_name }} · {{ b.distance_km }} km — ₹{{ b.fee.toFixed(2) }}</span>
+                }
+              </div>
+            } @else if (!loadingDeliveryFee() && !formData.latitude) {
+              <p class="delivery-hint"><i class="bi bi-info-circle"></i> Pin your delivery location above for an exact delivery fee.</p>
             }
             @if (loyaltyEnabled() && pointsDiscountAmount() > 0) {
               <div class="summary-row points-discount-row">

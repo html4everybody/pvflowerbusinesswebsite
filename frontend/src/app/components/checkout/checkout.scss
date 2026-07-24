@@ -668,6 +668,25 @@
       padding: 0.35rem 0.6rem;
       margin: 0.25rem 0 0.5rem;
     }
+
+    .delivery-breakdown {
+      display: flex;
+      flex-direction: column;
+      gap: 0.15rem;
+      margin: 0.1rem 0 0.5rem;
+    }
+    .delivery-breakdown-row {
+      font-size: 0.74rem;
+      color: var(--text-muted);
+    }
+    .delivery-hint {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.35rem;
+      font-size: 0.76rem;
+      color: var(--text-muted);
+      margin: 0.1rem 0 0.5rem;
+    }
   }
 
   /* ── Promo Panel ───────────────────────────────── */
@@ -1302,3 +1321,6 @@ html[data-theme="dark"] {
     color: #a5b4fc;
   }
 }
+
+.vp-spin { display: inline-block; animation: vp-spin 0.9s linear infinite; }
+@keyframes vp-spin { to { transform: rotate(360deg); } }

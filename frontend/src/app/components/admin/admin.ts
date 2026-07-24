@@ -1231,6 +1231,49 @@ export class Admin implements OnInit {
       next: (data) => { this.zones.set(data || []); this.loadingZones.set(false); },
       error: () => this.loadingZones.set(false)
     });
+    this.loadDeliveryPricing();
+  }
+
+  // ── Distance-based delivery pricing (per-km rate, editable anytime) ────────
+  deliveryPricing = signal<any>(null);
+  loadingDeliveryPricing = signal(false);
+  savingDeliveryPricing = signal(false);
+  perKmRateInput = signal<number | null>(null);
+  freeDeliveryMinInput = signal<number>(0);
+
+  loadDeliveryPricing(): void {
+    this.loadingDeliveryPricing.set(true);
+    this.http.get<any>(`${environment.apiUrl}/api/admin/delivery-pricing?token=${this.token}`).subscribe({
+      next: (data) => {
+        this.deliveryPricing.set(data);
+        this.perKmRateInput.set(data.per_km_rate);
+        this.freeDeliveryMinInput.set(data.free_delivery_min_order || 0);
+        this.loadingDeliveryPricing.set(false);
+      },
+      error: () => this.loadingDeliveryPricing.set(false),
+    });
+  }
+
+  saveDeliveryPricing(): void {
+    const rate = this.perKmRateInput();
+    if (rate == null || rate <= 0) {
+      this.toastService.show('Enter a rate greater than 0', 'error');
+      return;
+    }
+    const freeMin = this.freeDeliveryMinInput() || 0;
+    if (freeMin < 0) {
+      this.toastService.show('Free-delivery minimum can\'t be negative', 'error');
+      return;
+    }
+    this.savingDeliveryPricing.set(true);
+    this.http.put<any>(`${environment.apiUrl}/api/admin/delivery-pricing`, { token: this.token, per_km_rate: rate, free_delivery_min_order: freeMin }).subscribe({
+      next: () => {
+        this.savingDeliveryPricing.set(false);
+        this.toastService.show(`Delivery rate set to ₹${rate}/km` + (freeMin > 0 ? `, free over ₹${freeMin}` : ''));
+        this.loadDeliveryPricing();
+      },
+      error: (err) => { this.savingDeliveryPricing.set(false); this.toastService.show(err.error?.detail || 'Failed to update rate', 'error'); },
+    });
   }
 
   openZoneForm(zone: any = null): void {

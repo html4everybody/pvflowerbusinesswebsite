@@ -184,6 +184,37 @@ export class Checkout {
     if (loc.city) this.formData.city = loc.city;
     if (loc.state) this.formData.state = loc.state;
     if (loc.pincode) this.formData.zip = loc.pincode;
+    this.refreshDeliveryFee();
+  }
+
+  // ── Distance-based delivery fee ─────────────────────────────────────────
+  // Starts at the same flat fallback the backend uses when it can't compute
+  // a real distance (e.g. the shopper types their address instead of using
+  // the map picker) — never silently ₹0 before a location is picked.
+  deliveryFee = signal<number>(49);
+  deliveryFeeBreakdown = signal<{ shop_name: string; distance_km: number; fee: number }[]>([]);
+  freeDeliveryApplied = signal(false);
+  loadingDeliveryFee = signal(false);
+
+  refreshDeliveryFee(): void {
+    if (this.formData.latitude == null || this.formData.longitude == null) return;
+    this.loadingDeliveryFee.set(true);
+    const body = {
+      items: this.cartService.getCartItems().map(item => ({
+        productId: item.product.id, quantity: item.quantity, price: item.product.final_price ?? item.product.price,
+      })),
+      latitude: this.formData.latitude,
+      longitude: this.formData.longitude,
+    };
+    this.http.post<{ delivery_fee: number; per_km_rate: number | null; breakdown: any[]; free_delivery: boolean }>(`${environment.apiUrl}/api/checkout/delivery-estimate`, body).subscribe({
+      next: (res) => {
+        this.deliveryFee.set(res.delivery_fee);
+        this.deliveryFeeBreakdown.set(res.breakdown || []);
+        this.freeDeliveryApplied.set(res.free_delivery);
+        this.loadingDeliveryFee.set(false);
+      },
+      error: () => { this.loadingDeliveryFee.set(false); },
+    });
   }
 
   formData = {
@@ -276,7 +307,7 @@ export class Checkout {
   }
 
   getShipping(): number {
-    return this.cartService.cartTotal() >= 50 ? 0 : 9.99;
+    return this.deliveryFee();
   }
 
   getTotal(): number {
