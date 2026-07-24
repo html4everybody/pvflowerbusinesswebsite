@@ -51,10 +51,13 @@
           <input type="tel" [(ngModel)]="form.phone" name="phone" placeholder="For order coordination" maxlength="20">
         </div>
         <div class="field">
-          <label>Shop location <span class="opt">(optional, helps us route orders to you)</span></label>
+          <label>Shop location <span class="req">*</span> <span class="opt">(search, pin on map, or use current location)</span></label>
           <app-location-picker height="240px" (locationPicked)="onLocationPicked($event)"></app-location-picker>
+          @if (form.latitude == null) {
+            <p class="field-hint"><i class="bi bi-exclamation-triangle"></i> Required — this is how we calculate your delivery fees and route orders to you.</p>
+          }
         </div>
-        <button type="submit" class="btn-primary btn-block" [disabled]="submitting()">
+        <button type="submit" class="btn-primary btn-block" [disabled]="submitting() || form.latitude == null">
           @if (submitting()) { <i class="bi bi-arrow-repeat vp-spin"></i> Submitting… }
           @else { <i class="bi bi-send"></i> Submit application }
         </button>

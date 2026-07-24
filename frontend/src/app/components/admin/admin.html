@@ -290,9 +290,12 @@
                 <label class="form-label">Phone
                   <input type="tel" class="form-input" [(ngModel)]="merchantForm.phone" placeholder="Optional">
                 </label>
-                <label class="form-label">Shop location
+                <label class="form-label">Shop location <span class="req">*</span> <span class="opt">(search, pin on map, or use current location)</span>
                   <app-location-picker height="240px" (locationPicked)="onMerchantLocationPicked($event)"></app-location-picker>
                 </label>
+                @if (merchantForm.latitude == null) {
+                  <p class="pricing-not-configured"><i class="bi bi-exclamation-triangle"></i> Required — delivery fees are calculated by distance from this point, so every shop needs one.</p>
+                }
                 <div class="form-row">
                   <label class="form-label">Shop address
                     <input type="text" class="form-input" [(ngModel)]="merchantForm.address" placeholder="Street / area">
@@ -309,11 +312,11 @@
                 <label class="form-label">Pincode
                   <input type="text" class="form-input" [(ngModel)]="merchantForm.pincode" placeholder="Optional" maxlength="10">
                 </label>
-                <p class="modal-hint"><i class="bi bi-geo-alt"></i> Used to route orders to the merchant closest to each customer.</p>
+                <p class="modal-hint"><i class="bi bi-geo-alt"></i> Used to route orders to the merchant closest to each customer, and to calculate their delivery fee.</p>
               </div>
               <div class="modal-footer">
                 <button class="btn-cancel" (click)="closeMerchantForm()">Cancel</button>
-                <button class="btn-primary" [disabled]="creatingMerchant()" (click)="createMerchant()">
+                <button class="btn-primary" [disabled]="creatingMerchant() || merchantForm.latitude == null" (click)="createMerchant()">
                   @if (creatingMerchant()) { Creating… } @else { Create merchant }
                 </button>
               </div>

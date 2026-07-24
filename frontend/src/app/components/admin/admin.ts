@@ -652,6 +652,9 @@ export class Admin implements OnInit {
     if (!f.email.trim() || !f.password.trim() || !f.shop_name.trim()) {
       this.toastService.show('Email, password and shop name are required', 'error'); return;
     }
+    if (f.latitude == null || f.longitude == null) {
+      this.toastService.show('Pin the shop\'s location on the map — delivery fees are calculated from it', 'error'); return;
+    }
     this.creatingMerchant.set(true);
     this.http.post(`${environment.apiUrl}/api/admin/merchants/create`, { token: this.token, ...f }).subscribe({
       next: () => {

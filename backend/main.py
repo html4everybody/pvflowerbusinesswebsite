@@ -2328,6 +2328,8 @@ class MerchantApplyRequest(BaseModel):
     city: Optional[str] = ""
     state: Optional[str] = ""
     pincode: Optional[str] = ""
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
 
 
 @app.post("/api/merchant/apply")
@@ -2345,6 +2347,8 @@ def merchant_apply(req: MerchantApplyRequest):
     shop_name = (req.shop_name or "").strip()
     if not shop_name:
         raise HTTPException(status_code=400, detail="Shop name is required")
+    if req.latitude is None or req.longitude is None:
+        raise HTTPException(status_code=400, detail="Shop location is required — search for your address, pin it on the map, or use your current location.")
 
     base = slugify(shop_name)
     slug, i = base, 1
@@ -2361,6 +2365,7 @@ def merchant_apply(req: MerchantApplyRequest):
         "phone": req.phone or "",
         "address": req.address or "", "city": req.city or "",
         "state": req.state or "", "pincode": req.pincode or "",
+        "latitude": req.latitude, "longitude": req.longitude,
         "email": email,
         "status": "pending",
         "commission_rate": 15,
@@ -3135,6 +3140,8 @@ def admin_create_merchant(req: AdminCreateMerchantRequest):
         raise HTTPException(status_code=400, detail="Password must be at least 6 characters.")
     if not req.shop_name.strip():
         raise HTTPException(status_code=400, detail="Shop name is required.")
+    if req.latitude is None or req.longitude is None:
+        raise HTTPException(status_code=400, detail="Shop location is required — pin it on the map so delivery fees can be calculated from it.")
     if supabase.table("users").select("id").eq("email", email).execute().data:
         raise HTTPException(status_code=400, detail="A user with this email already exists.")
 

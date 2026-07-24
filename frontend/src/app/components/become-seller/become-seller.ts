@@ -58,6 +58,10 @@ export class BecomeSeller implements OnInit {
 
   submit(): void {
     if (!this.form.shop_name.trim()) { this.toast.show('Please enter a shop name', 'error'); return; }
+    if (this.form.latitude == null || this.form.longitude == null) {
+      this.toast.show('Please pin your shop location — search, drop a pin, or use your current location', 'error');
+      return;
+    }
     this.submitting.set(true);
     this.http.post<any>(`${environment.apiUrl}/api/merchant/apply`, { token: this.token, ...this.form }).subscribe({
       next: (res) => {

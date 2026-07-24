@@ -172,6 +172,15 @@ export class Checkout {
     if (match) {
       this.formData.city = match.city;
       this.formData.state = match.state;
+      // Typing a PIN code is the far more common path than dragging the map
+      // pin, so this needs to feed the same delivery-fee calculation — a
+      // PIN's centroid is coarser than an exact pin, but still gets a real
+      // distance-based fee instead of silently falling back to a flat rate.
+      if (match.latitude != null && match.longitude != null) {
+        this.formData.latitude = match.latitude;
+        this.formData.longitude = match.longitude;
+        this.refreshDeliveryFee();
+      }
     } else {
       this.zipLookupError.set('Pincode not found');
     }
