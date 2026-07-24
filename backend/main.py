@@ -3446,22 +3446,35 @@ class DeliveryZoneUpdate(BaseModel):
 def check_delivery_coverage(query: str):
     """Public, no login — lets a shopper check 'do you deliver to my area'
     before they've built a cart, instead of only finding out at checkout.
-    `areas` is admin-entered free text (area names and/or pincodes,
-    comma-separated), so this is a simple case-insensitive substring match
-    against each active zone rather than a strict pincode lookup."""
+    `areas` is admin-entered free text (comma-separated area names and/or
+    pincodes). A 6-digit query is treated as a pincode: it matches any
+    all-digit token in a zone's `areas` as a PREFIX (so a zone can just say
+    "500" to cover all of Hyderabad's 500xxx codes instead of an admin
+    having to enumerate every individual pincode, which real directories
+    disagree on anyway). Anything else falls back to a substring match
+    against area names."""
     q = (query or "").strip()
     if not q:
         return {"covered": False}
-    zones = (supabase.table("delivery_zones").select("*")
-             .eq("active", True).ilike("areas", f"%{q}%").limit(1).execute().data or [])
-    if not zones:
+    is_pincode = q.isdigit() and len(q) == 6
+    zones = supabase.table("delivery_zones").select("*").eq("active", True).execute().data or []
+    match = None
+    for z in zones:
+        tokens = [t.strip() for t in (z.get("areas") or "").split(",") if t.strip()]
+        if is_pincode:
+            if any(tok.isdigit() and q.startswith(tok) for tok in tokens):
+                match = z
+                break
+        elif q.lower() in (z.get("areas") or "").lower():
+            match = z
+            break
+    if not match:
         return {"covered": False}
-    z = zones[0]
     return {
         "covered": True,
-        "zone_name": z["zone_name"],
-        "delivery_charge": z["delivery_charge"],
-        "min_order": z["min_order"],
+        "zone_name": match["zone_name"],
+        "delivery_charge": match["delivery_charge"],
+        "min_order": match["min_order"],
     }
 
 @app.get("/api/admin/delivery-zones")
