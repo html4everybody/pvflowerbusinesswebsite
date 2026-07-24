@@ -59,7 +59,7 @@ export const routes: Routes = [
   // ── Guest-accessible routes (gate on action, not page load) ───────────────
   { path: 'cart', component: Cart, canActivate: [notMerchantGuard] },
   { path: 'checkout', component: Checkout, canActivate: [notMerchantGuard] },
-  { path: 'wishlist', component: Wishlist, canActivate: [notMerchantGuard] },
+  { path: 'wishlist', component: Wishlist, canActivate: [authGuard, notMerchantGuard] },
   { path: 'subscribe', component: Subscription, canActivate: [notMerchantGuard] },
 
   // ── Login-required routes ──────────────────────────────────────────────────
