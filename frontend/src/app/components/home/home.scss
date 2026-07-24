@@ -220,7 +220,11 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      background: var(--bg-card);
+      // --bg (not --bg-card): identical to --bg-card in light mode, but
+      // much darker in dark mode, where --bg-card sits almost on top of
+      // this box's own --accent-light background (8/255 apart per channel)
+      // and the chip would otherwise all but disappear into the box.
+      background: var(--bg);
       border-radius: 50%;
       font-size: 1.3rem;
       color: var(--accent);
@@ -256,7 +260,7 @@
         padding: 0.65rem 0.9rem;
         border: 1.5px solid var(--border);
         border-radius: var(--radius-full);
-        background: var(--bg-card);
+        background: var(--bg); // see .dc-icon above — same contrast fix
         color: var(--text);
         font-size: 0.88rem;
         font-family: inherit;
