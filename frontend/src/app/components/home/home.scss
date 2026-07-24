@@ -208,6 +208,14 @@
     align-items: center;
     gap: 1.5rem;
     flex-wrap: wrap;
+    // Without a cap this row stretches across the full 1400px .container —
+    // .dc-text (flex: 1) then absorbs all of that leftover width, so on
+    // any normal-to-wide screen the icon+heading sit pinned to the left
+    // edge and the search field is flung to the right with a large dead
+    // gap between them. Centering a narrower card keeps the two groups
+    // visually related instead of looking like two unrelated widgets.
+    max-width: 900px;
+    margin: 0 auto;
     padding: 1.5rem 1.75rem;
     background: var(--accent-light);
     border: 1px solid var(--border-focus);
@@ -292,7 +300,8 @@
     display: flex;
     align-items: center;
     gap: 0.6rem;
-    margin-top: 0.85rem;
+    max-width: 900px;
+    margin: 0.85rem auto 0;
     padding: 0.85rem 1.1rem;
     border-radius: var(--radius-sm);
     font-size: 0.85rem;
