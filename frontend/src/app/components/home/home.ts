@@ -47,7 +47,7 @@ export class Home implements OnInit, AfterViewInit {
     public searchService: SearchService,
     public wishlistService: WishlistService,
     private promoService: PromoService,
-    private authService: AuthService,
+    public authService: AuthService,
     private subscriptionService: SubscriptionService,
     private occasionService: OccasionService,
     private router: Router,

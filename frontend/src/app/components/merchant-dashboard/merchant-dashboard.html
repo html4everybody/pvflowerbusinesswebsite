@@ -108,10 +108,6 @@
             <div class="stat-tile"><span class="st-icon green"><i class="bi bi-check-circle"></i></span><div><span class="st-val">{{ s.live_products }}</span><span class="st-label">Live</span></div></div>
             <div class="stat-tile"><span class="st-icon amber"><i class="bi bi-hourglass-split"></i></span><div><span class="st-val">{{ s.pending_products }}</span><span class="st-label">Awaiting approval</span></div></div>
           </div>
-          <div class="quick-row">
-            <button class="btn-primary" (click)="go('products'); newProduct()"><i class="bi bi-plus-lg"></i> Add product</button>
-            <button class="btn-secondary" (click)="go('orders')"><i class="bi bi-bag-check"></i> View orders</button>
-          </div>
         } @else if (loadingStats()) {
           <div class="loading"><i class="bi bi-arrow-repeat vp-spin"></i> Loading…</div>
         } @else if (statsError()) {

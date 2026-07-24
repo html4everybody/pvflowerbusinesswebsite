@@ -17,7 +17,7 @@ export class App implements OnInit, OnDestroy {
   showFooter = signal(true);
   private scrollTimer: ReturnType<typeof setTimeout> | null = null;
 
-  private readonly NO_FOOTER_ROUTES = ['/signin', '/verify-email', '/forgot-password', '/reset-password', '/confirm-email', '/admin'];
+  private readonly NO_FOOTER_ROUTES = ['/signin', '/verify-email', '/forgot-password', '/reset-password', '/confirm-email', '/admin', '/merchant'];
 
   constructor(private router: Router, private toastService: ToastService) {}
 

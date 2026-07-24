@@ -22,59 +22,61 @@
               <i class="bi bi-chevron-right hub-arrow"></i>
             </a>
 
-            <a routerLink="/subscribe" routerLinkActive="active" (click)="navStackOpen = false" class="hub-item" style="--c:#10b981;--c-bg:rgba(16,185,129,0.12)">
-              <span class="hub-icon"><i class="bi bi-arrow-repeat"></i></span>
-              <span class="hub-text">
-                <span class="hub-name">Bloom Plan</span>
-                <span class="hub-desc">Fresh flowers, delivered weekly</span>
-              </span>
-              <i class="bi bi-chevron-right hub-arrow"></i>
-            </a>
+            @if (!authService.isMerchant()) {
+              <a routerLink="/subscribe" routerLinkActive="active" (click)="navStackOpen = false" class="hub-item" style="--c:#10b981;--c-bg:rgba(16,185,129,0.12)">
+                <span class="hub-icon"><i class="bi bi-arrow-repeat"></i></span>
+                <span class="hub-text">
+                  <span class="hub-name">Bloom Plan</span>
+                  <span class="hub-desc">Fresh flowers, delivered weekly</span>
+                </span>
+                <i class="bi bi-chevron-right hub-arrow"></i>
+              </a>
 
-            <a routerLink="/petal-studio" routerLinkActive="active" (click)="navStackOpen = false" class="hub-item" style="--c:#6366f1;--c-bg:rgba(99,102,241,0.12)">
-              <span class="hub-icon"><i class="bi bi-bag-heart"></i></span>
-              <span class="hub-text">
-                <span class="hub-name">Petal Studio</span>
-                <span class="hub-desc">Events, décor &amp; bulk florals</span>
-              </span>
-              <i class="bi bi-chevron-right hub-arrow"></i>
-            </a>
+              <a routerLink="/petal-studio" routerLinkActive="active" (click)="navStackOpen = false" class="hub-item" style="--c:#6366f1;--c-bg:rgba(99,102,241,0.12)">
+                <span class="hub-icon"><i class="bi bi-bag-heart"></i></span>
+                <span class="hub-text">
+                  <span class="hub-name">Petal Studio</span>
+                  <span class="hub-desc">Events, décor &amp; bulk florals</span>
+                </span>
+                <i class="bi bi-chevron-right hub-arrow"></i>
+              </a>
 
-            <a routerLink="/my-loyalty" routerLinkActive="active" (click)="navStackOpen = false" class="hub-item" style="--c:#f59e0b;--c-bg:rgba(245,158,11,0.12)">
-              <span class="hub-icon"><i class="bi bi-star"></i></span>
-              <span class="hub-text">
-                <span class="hub-name">Petal Rewards</span>
-                <span class="hub-desc">Earn points · Refer &amp; save</span>
-              </span>
-              <i class="bi bi-chevron-right hub-arrow"></i>
-            </a>
+              <a routerLink="/my-loyalty" routerLinkActive="active" (click)="navStackOpen = false" class="hub-item" style="--c:#f59e0b;--c-bg:rgba(245,158,11,0.12)">
+                <span class="hub-icon"><i class="bi bi-star"></i></span>
+                <span class="hub-text">
+                  <span class="hub-name">Petal Rewards</span>
+                  <span class="hub-desc">Earn points · Refer &amp; save</span>
+                </span>
+                <i class="bi bi-chevron-right hub-arrow"></i>
+              </a>
 
-            <a routerLink="/reminders" routerLinkActive="active" (click)="navStackOpen = false" class="hub-item" style="--c:#f97316;--c-bg:rgba(249,115,22,0.12)">
-              <span class="hub-icon"><i class="bi bi-bell"></i></span>
-              <span class="hub-text">
-                <span class="hub-name">Reminders</span>
-                <span class="hub-desc">Never miss a special date</span>
-              </span>
-              <i class="bi bi-chevron-right hub-arrow"></i>
-            </a>
+              <a routerLink="/reminders" routerLinkActive="active" (click)="navStackOpen = false" class="hub-item" style="--c:#f97316;--c-bg:rgba(249,115,22,0.12)">
+                <span class="hub-icon"><i class="bi bi-bell"></i></span>
+                <span class="hub-text">
+                  <span class="hub-name">Reminders</span>
+                  <span class="hub-desc">Never miss a special date</span>
+                </span>
+                <i class="bi bi-chevron-right hub-arrow"></i>
+              </a>
 
-            <button class="hub-item" (click)="goToHomeSection('offers-section')" style="--c:#ec4899;--c-bg:rgba(236,72,153,0.12)">
-              <span class="hub-icon"><i class="bi bi-tag-fill"></i></span>
-              <span class="hub-text">
-                <span class="hub-name">Live Deals</span>
-                <span class="hub-desc">Today's active promo codes</span>
-              </span>
-              <i class="bi bi-chevron-right hub-arrow"></i>
-            </button>
+              <button class="hub-item" (click)="goToHomeSection('offers-section')" style="--c:#ec4899;--c-bg:rgba(236,72,153,0.12)">
+                <span class="hub-icon"><i class="bi bi-tag-fill"></i></span>
+                <span class="hub-text">
+                  <span class="hub-name">Live Deals</span>
+                  <span class="hub-desc">Today's active promo codes</span>
+                </span>
+                <i class="bi bi-chevron-right hub-arrow"></i>
+              </button>
 
-            <button class="hub-item" (click)="goToHomeSection('bundles-section')" style="--c:#8b5cf6;--c-bg:rgba(139,92,246,0.12)">
-              <span class="hub-icon"><i class="bi bi-box2-heart"></i></span>
-              <span class="hub-text">
-                <span class="hub-name">Bundle Offers</span>
-                <span class="hub-desc">Curated sets · Save 15%</span>
-              </span>
-              <i class="bi bi-chevron-right hub-arrow"></i>
-            </button>
+              <button class="hub-item" (click)="goToHomeSection('bundles-section')" style="--c:#8b5cf6;--c-bg:rgba(139,92,246,0.12)">
+                <span class="hub-icon"><i class="bi bi-box2-heart"></i></span>
+                <span class="hub-text">
+                  <span class="hub-name">Bundle Offers</span>
+                  <span class="hub-desc">Curated sets · Save 15%</span>
+                </span>
+                <i class="bi bi-chevron-right hub-arrow"></i>
+              </button>
+            }
 
           </div>
         </div>
@@ -121,23 +123,27 @@
           </a>
         }
 
-        <a routerLink="/wishlist" routerLinkActive="active" class="nav-wishlist-link" (click)="closeMenu()">
-          <i class="bi bi-heart"></i>
-          Wishlist
-          @if (wishlistService.count() > 0) {
-            <span class="nav-wishlist-count">{{ wishlistService.count() }}</span>
-          }
-        </a>
+        @if (!authService.isMerchant()) {
+          <a routerLink="/wishlist" routerLinkActive="active" class="nav-wishlist-link" (click)="closeMenu()">
+            <i class="bi bi-heart"></i>
+            Wishlist
+            @if (wishlistService.count() > 0) {
+              <span class="nav-wishlist-count">{{ wishlistService.count() }}</span>
+            }
+          </a>
+        }
 
         <!-- Hub options (same as desktop stack) -->
         <div class="nav-hub-divider">More</div>
         <a routerLink="/occasions" routerLinkActive="active" (click)="closeMenu()" class="nav-extra-link">Occasions</a>
-        <a routerLink="/subscribe" routerLinkActive="active" (click)="closeMenu()" class="nav-extra-link">Bloom Plan</a>
-        <a routerLink="/petal-studio" routerLinkActive="active" (click)="closeMenu()" class="nav-extra-link">Petal Studio</a>
-        <a routerLink="/my-loyalty" routerLinkActive="active" (click)="closeMenu()" class="nav-extra-link">Petal Rewards</a>
-        <a routerLink="/reminders" routerLinkActive="active" (click)="closeMenu()" class="nav-extra-link">Reminders</a>
-        <button class="nav-extra-link nav-extra-btn" (click)="goToHomeSection('offers-section')">Live Deals</button>
-        <button class="nav-extra-link nav-extra-btn" (click)="goToHomeSection('bundles-section')">Bundle Offers</button>
+        @if (!authService.isMerchant()) {
+          <a routerLink="/subscribe" routerLinkActive="active" (click)="closeMenu()" class="nav-extra-link">Bloom Plan</a>
+          <a routerLink="/petal-studio" routerLinkActive="active" (click)="closeMenu()" class="nav-extra-link">Petal Studio</a>
+          <a routerLink="/my-loyalty" routerLinkActive="active" (click)="closeMenu()" class="nav-extra-link">Petal Rewards</a>
+          <a routerLink="/reminders" routerLinkActive="active" (click)="closeMenu()" class="nav-extra-link">Reminders</a>
+          <button class="nav-extra-link nav-extra-btn" (click)="goToHomeSection('offers-section')">Live Deals</button>
+          <button class="nav-extra-link nav-extra-btn" (click)="goToHomeSection('bundles-section')">Bundle Offers</button>
+        }
 
         <button class="nav-theme-btn" (click)="themeService.toggle()">
           @if (themeService.isDark()) {
@@ -183,24 +189,26 @@
         </span>
       </button>
 
-      <!-- Wishlist Icon -->
-      <a routerLink="/wishlist" routerLinkActive="active" class="wishlist-icon" [class.has-items]="wishlistService.count() > 0" title="My Wishlist">
-        @if (wishlistService.count() > 0) {
-          <i class="bi bi-heart-fill"></i>
-        } @else {
-          <i class="bi bi-heart"></i>
-        }
-        @if (wishlistService.count() > 0) {
-          <span class="wishlist-badge">{{ wishlistService.count() }}</span>
-        }
-      </a>
+      @if (!authService.isMerchant()) {
+        <!-- Wishlist Icon -->
+        <a routerLink="/wishlist" routerLinkActive="active" class="wishlist-icon" [class.has-items]="wishlistService.count() > 0" title="My Wishlist">
+          @if (wishlistService.count() > 0) {
+            <i class="bi bi-heart-fill"></i>
+          } @else {
+            <i class="bi bi-heart"></i>
+          }
+          @if (wishlistService.count() > 0) {
+            <span class="wishlist-badge">{{ wishlistService.count() }}</span>
+          }
+        </a>
 
-      <a routerLink="/cart" routerLinkActive="active" class="cart-icon" [class.bounce]="cartService.cartBounce()">
-        <i class="bi bi-bag"></i>
-        @if (cartService.cartCount() > 0) {
-          <span class="cart-badge">{{ cartService.cartCount() }}</span>
-        }
-      </a>
+        <a routerLink="/cart" routerLinkActive="active" class="cart-icon" [class.bounce]="cartService.cartBounce()">
+          <i class="bi bi-bag"></i>
+          @if (cartService.cartCount() > 0) {
+            <span class="cart-badge">{{ cartService.cartCount() }}</span>
+          }
+        </a>
+      }
 
       <!-- Notifications bell (logged-in) -->
       @if (authService.user()) {

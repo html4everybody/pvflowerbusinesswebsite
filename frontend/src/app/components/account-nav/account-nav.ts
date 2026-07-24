@@ -1,6 +1,7 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { NoticeService } from '../../services/notice';
+import { AuthService } from '../../services/auth';
 
 @Component({
   selector: 'app-account-nav',
@@ -10,6 +11,7 @@ import { NoticeService } from '../../services/notice';
 })
 export class AccountNav implements OnInit {
   noticeService = inject(NoticeService);
+  authService = inject(AuthService);
 
   ngOnInit(): void {
     this.noticeService.load();

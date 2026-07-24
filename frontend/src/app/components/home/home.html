@@ -182,7 +182,7 @@
 
 
   <!-- ── Live Deals Section (Coupons) ───────────────────────────────────────── -->
-  @if (offers()?.seasonal_offers?.length) {
+  @if (offers()?.seasonal_offers?.length && !authService.isMerchant()) {
     <section class="offers-section" id="offers-section">
       <div class="container">
         <div class="section-header" appFadeIn>
@@ -225,7 +225,7 @@
   }
 
   <!-- ── Bundle Offers Section (Kits) ─────────────────────────────────────────── -->
-  @if (offers()?.bundle_deals?.length) {
+  @if (offers()?.bundle_deals?.length && !authService.isMerchant()) {
     <section class="bundles-section" id="bundles-section">
       <div class="container">
         <div class="section-header" appFadeIn>

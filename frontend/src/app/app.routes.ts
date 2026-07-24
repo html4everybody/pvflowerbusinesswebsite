@@ -33,6 +33,7 @@ import { Notifications } from './components/notifications/notifications';
 import { authGuard } from './guards/auth-guard';
 import { merchantGuard } from './guards/merchant-guard';
 import { notMerchantGuard } from './guards/not-merchant-guard';
+import { adminGuard } from './guards/admin-guard';
 
 export const routes: Routes = [
   // ── Public routes ──────────────────────────────────────────────────────────
@@ -75,7 +76,7 @@ export const routes: Routes = [
   { path: 'my-loyalty', component: MyLoyalty, canActivate: [authGuard] },
   { path: 'reminders', component: Reminders, canActivate: [authGuard] },
   { path: 'notifications', component: Notifications, canActivate: [authGuard] },
-  { path: 'admin', component: Admin, canActivate: [authGuard] },
+  { path: 'admin', component: Admin, canActivate: [adminGuard] },
   { path: 'merchant', component: MerchantDashboard, canActivate: [merchantGuard] },
 
   { path: '**', redirectTo: '' }

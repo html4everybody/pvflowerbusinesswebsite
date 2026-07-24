@@ -11,21 +11,23 @@
       <i class="bi bi-person"></i>
       Profile
     </a>
-    <a class="sidebar-item" routerLink="/account" [queryParams]="{ tab: 'orders' }"
-       routerLinkActive="active" [routerLinkActiveOptions]="{ paths: 'exact', queryParams: 'exact', matrixParams: 'ignored', fragment: 'ignored' }">
-      <i class="bi bi-bag"></i>
-      My Orders
-    </a>
-    <a class="sidebar-item" routerLink="/my-subscriptions"
-       routerLinkActive="active" [routerLinkActiveOptions]="{ paths: 'exact', queryParams: 'ignored', matrixParams: 'ignored', fragment: 'ignored' }">
-      <i class="bi bi-arrow-repeat"></i>
-      Bloom Plan
-    </a>
-    <a class="sidebar-item" routerLink="/my-studio"
-       routerLinkActive="active" [routerLinkActiveOptions]="{ paths: 'exact', queryParams: 'ignored', matrixParams: 'ignored', fragment: 'ignored' }">
-      <i class="bi bi-star"></i>
-      Petal Studio
-    </a>
+    @if (!authService.isMerchant()) {
+      <a class="sidebar-item" routerLink="/account" [queryParams]="{ tab: 'orders' }"
+         routerLinkActive="active" [routerLinkActiveOptions]="{ paths: 'exact', queryParams: 'exact', matrixParams: 'ignored', fragment: 'ignored' }">
+        <i class="bi bi-bag"></i>
+        My Orders
+      </a>
+      <a class="sidebar-item" routerLink="/my-subscriptions"
+         routerLinkActive="active" [routerLinkActiveOptions]="{ paths: 'exact', queryParams: 'ignored', matrixParams: 'ignored', fragment: 'ignored' }">
+        <i class="bi bi-arrow-repeat"></i>
+        Bloom Plan
+      </a>
+      <a class="sidebar-item" routerLink="/my-studio"
+         routerLinkActive="active" [routerLinkActiveOptions]="{ paths: 'exact', queryParams: 'ignored', matrixParams: 'ignored', fragment: 'ignored' }">
+        <i class="bi bi-star"></i>
+        Petal Studio
+      </a>
+    }
   </nav>
   </div>
 </aside>
