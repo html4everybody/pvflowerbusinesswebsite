@@ -263,8 +263,14 @@
     top: 0; border-right: none; border-bottom: 1px solid var(--border);
     .merch-brand { width: 100%; padding-bottom: 0.5rem; }
     .merch-nav { flex-direction: row; flex-wrap: wrap; }
+    // .nav-item defaults to width:100% for the vertical desktop sidebar —
+    // that forces every item onto its own full-width row even inside this
+    // row-flex/wrap layout, defeating the compact horizontal tab-bar look.
+    .nav-item { width: auto; }
     .merch-foot { border-top: none; }
   }
+
+  .field-row { grid-template-columns: 1fr; }
 }
 
 // Product approval status on merchant cards

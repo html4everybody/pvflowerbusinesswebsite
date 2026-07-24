@@ -322,6 +322,20 @@
 
       &:hover .index-card-overlay { opacity: 0.72; }
 
+      // Permanent dark scrim under the text, independent of whatever
+      // gradient/hero_image an occasion is configured with in admin — a
+      // light gradient or a missing hero_image (both admin-editable data,
+      // not something this template controls) would otherwise leave the
+      // hardcoded white title/text unreadable, as happened with "Sympathy
+      // & Comfort" (no hero_image + a pale gradient).
+      &::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(to top, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.28) 45%, transparent 72%);
+        pointer-events: none;
+      }
+
       .index-card-content {
         position: relative;
         z-index: 1;

@@ -142,26 +142,13 @@ $divider-tx:  #9c968a;
   flex: 1;
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  padding: 1.25rem clamp(1.75rem, 4vw, 3rem);
+  // flex-start (not center): the Customer form is visibly taller than the
+  // Merchant one (divider + social row + switch link vs. just one note
+  // line) — centering by total content height made the toggle/heading
+  // jump ~40px between the two modes. Anchoring to the top keeps it fixed.
+  justify-content: flex-start;
+  padding: clamp(2.5rem, 8vh, 4.5rem) clamp(1.75rem, 4vw, 3rem) 1.25rem;
   min-height: 0;
-}
-
-// ── Logo ──────────────────────────────────────────────────────────────────────
-.vp-logo {
-  display: flex;
-  align-items: center;
-  gap: 0.45rem;
-  margin-bottom: 0.9rem;
-
-  img { height: 42px; width: 42px; object-fit: contain; border-radius: 50%; }
-
-  span {
-    font-size: 1rem;
-    font-weight: 700;
-    color: $text-head;
-    letter-spacing: -0.01em;
-  }
 }
 
 // ── Heading ───────────────────────────────────────────────────────────────────
@@ -501,16 +488,6 @@ $divider-tx:  #9c968a;
     overflow: visible;
   }
 
-  .vp-mobile-top {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-    padding: 0.75rem 1.25rem;
-    img { height: 36px; width: 36px; object-fit: contain; }
-    span { font-size: 1rem; font-weight: 600; color: #1d2433; font-family: 'Inter', sans-serif; }
-  }
-
   .vp-card {
     flex-direction: column;
     width: 100%;
@@ -541,8 +518,6 @@ $divider-tx:  #9c968a;
     box-shadow: 0 -6px 24px rgba(0,0,0,0.08);
   }
 
-  .vp-logo { display: none; }
-
   .vp-card-footer { display: none; }
 
   .vp-form-wrap {
@@ -562,8 +537,6 @@ $divider-tx:  #9c968a;
 
   .vp-social { height: 48px; }
 }
-
-.vp-mobile-top { display: none; }
 
 // ── Customer / Merchant login toggle ────────────────────────────────────────
 .vp-loginmode {

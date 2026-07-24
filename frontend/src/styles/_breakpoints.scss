@@ -1,0 +1,24 @@
+// ── Shared responsive breakpoint scale ───────────────────────────────────────
+// One consistent scale for the whole app instead of ad-hoc numbers per
+// component (previously anything from 380px to 1200px, picked per-file).
+//
+// Usage in any component .scss:
+//   @use 'breakpoints' as bp;
+//   .card { display: flex; @include bp.tablet { flex-direction: column; } }
+//
+// Desktop-first (max-width) — matches the existing codebase convention.
+$phone:  480px;   // small phones
+$tablet: 768px;   // large phones / small tablets — the main mobile/desktop split
+$laptop: 1024px;  // tablets landscape / small laptops
+$desktop: 1280px; // laptops and up
+
+@mixin phone   { @media (max-width: $phone)   { @content; } }
+@mixin tablet  { @media (max-width: $tablet)  { @content; } }
+@mixin laptop  { @media (max-width: $laptop)  { @content; } }
+@mixin desktop { @media (max-width: $desktop) { @content; } }
+
+// Mobile-first counterparts, for the rarer case a rule should only apply
+// above a breakpoint rather than below it.
+@mixin tablet-up  { @media (min-width: #{$tablet + 1})  { @content; } }
+@mixin laptop-up  { @media (min-width: #{$laptop + 1})  { @content; } }
+@mixin desktop-up { @media (min-width: #{$desktop + 1}) { @content; } }

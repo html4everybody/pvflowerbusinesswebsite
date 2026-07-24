@@ -1,3 +1,5 @@
+@use 'breakpoints' as bp;
+
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
@@ -26,6 +28,10 @@
   text-align: center;
   box-shadow: 0 4px 24px rgba(0,0,0,0.08);
   animation: fadeInUp 0.4s ease both;
+
+  @include bp.phone {
+    padding: 1.85rem 1.25rem;
+  }
 
   .logo {
     display: flex;
@@ -142,6 +148,10 @@
   .resend-row {
     display: flex;
     gap: 0.5rem;
+
+    @include bp.phone {
+      flex-direction: column;
+    }
 
     input {
       flex: 1;

@@ -1,3 +1,5 @@
+@use 'breakpoints' as bp;
+
 .lp-wrap {
   display: flex;
   flex-direction: column;
@@ -8,6 +10,11 @@
   display: flex;
   gap: 10px;
   flex-wrap: wrap;
+  // No flex-direction:column override for phone: both children already
+  // use flex-grow (see .lp-search-box / .lp-locate-btn below), so wrapping
+  // alone makes them fill their own row at any width. A column override
+  // here would flip what "flex-basis: 260px" means from width to height,
+  // which is exactly what turned these into giant ovals on phone before.
 }
 
 .lp-search-box {
@@ -15,6 +22,7 @@
   flex: 1 1 260px;
   display: flex;
   align-items: center;
+  min-height: 44px;
   background: var(--bg-raised);
   border: 1px solid var(--border);
   border-radius: var(--radius-full);
@@ -49,7 +57,15 @@
 .lp-locate-btn {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
+  min-height: 44px;
+  // grow to share the row when there's room, but also fill its own line
+  // cleanly when flex-wrap drops it below the search box (any container
+  // narrower than ~410px, not just phone widths — e.g. checkout's ~420px
+  // form column) instead of sitting as an odd, left-aligned, content-sized
+  // button on its own row.
+  flex: 1 1 180px;
   padding: 0 18px;
   border-radius: var(--radius-full);
   border: 1px solid var(--border);

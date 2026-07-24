@@ -1,3 +1,5 @@
+@use 'breakpoints' as bp;
+
 .seller-page {
   min-height: calc(100vh - 80px);
   display: flex;
@@ -7,6 +9,10 @@
   background:
     radial-gradient(60% 50% at 50% 0%, var(--accent-light), transparent 70%),
     var(--bg);
+
+  @include bp.phone {
+    padding: 1.5rem 0.85rem 2.5rem;
+  }
 }
 
 .seller-card {
@@ -17,6 +23,11 @@
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-lg);
   padding: 2.5rem;
+
+  @include bp.phone {
+    padding: 1.5rem;
+    border-radius: var(--radius-md);
+  }
 }
 
 .seller-loading {
