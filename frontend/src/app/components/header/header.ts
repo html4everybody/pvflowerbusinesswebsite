@@ -25,6 +25,11 @@ export class Header implements OnInit {
   isScrolled = false;
   showSuggestions = false;
 
+  // Split once for the letter-by-letter intro reveal (runs on first paint —
+  // Header sits outside <router-outlet> in app.html and lives for the whole
+  // SPA session, so this only ever plays once per real page load).
+  readonly logoLetters = 'VivaPetals'.split('');
+
   @ViewChild('searchInput') searchInputRef?: ElementRef<HTMLInputElement>;
 
   // ── Premium search: recent, trending, popular, keyboard nav ────────────────

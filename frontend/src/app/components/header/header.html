@@ -84,8 +84,12 @@
     </div>
 
     <a routerLink="/" class="logo" (click)="scrollToTop()">
-      <img src="logo.svg" alt="VivaPetals logo" class="logo-img">
-      <span class="logo-text">VivaPetals</span>
+      <img src="logo.svg" alt="VivaPetals logo" class="logo-img logo-intro">
+      <span class="logo-text" aria-label="VivaPetals">
+        @for (letter of logoLetters; track $index) {
+          <span class="logo-letter" aria-hidden="true" [style.--i]="$index">{{ letter }}</span>
+        }
+      </span>
     </a>
 
     <div class="header-actions">

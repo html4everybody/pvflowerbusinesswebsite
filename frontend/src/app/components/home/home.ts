@@ -46,7 +46,7 @@ export class Home implements OnInit, AfterViewInit {
   // ── Delivery coverage checker ────────────────────────────────────────────
   deliveryQuery = signal('');
   checkingDelivery = signal(false);
-  deliveryResult = signal<{ covered: boolean; zone_name?: string; min_order?: number } | null>(null);
+  deliveryResult = signal<{ covered: boolean; zone_name?: string } | null>(null);
 
   constructor(
     private productService: ProductService,

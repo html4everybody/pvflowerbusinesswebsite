@@ -1431,10 +1431,7 @@
                     <span class="zone-areas">{{ zone.areas }}</span>
                   </div>
                   <div class="zone-meta">
-                    <span class="zone-charge">₹{{ zone.delivery_charge }} delivery</span>
-                    @if (zone.min_order > 0) {
-                      <span class="zone-min">Min order: ₹{{ zone.min_order }}</span>
-                    }
+                    <span class="zone-charge"><i class="bi bi-signpost-split"></i> Distance-priced delivery</span>
                   </div>
                 </div>
                 <div class="zone-actions">
@@ -1466,12 +1463,10 @@
               <label class="form-label">Areas (comma-separated)
                 <input type="text" class="form-input" [(ngModel)]="zoneForm.areas" placeholder="e.g. Hebbal, Yelahanka, Banaswadi">
               </label>
-              <label class="form-label">Minimum order for this area (₹) <span class="opt">(optional)</span>
-                <input type="number" class="form-input" [(ngModel)]="zoneForm.min_order" min="0">
-              </label>
               <p class="modal-hint" style="margin:0 0 1rem;">
-                <i class="bi bi-info-circle"></i> Delivery fee itself is now calculated by distance — set the per-km
-                rate in the card above, not here.
+                <i class="bi bi-info-circle"></i> A zone only controls which areas/pincodes we deliver to. Pricing —
+                including the free-delivery minimum order — is set once for the whole store in the Per-km Delivery
+                Rate card above, not per zone.
               </p>
               <label class="toggle-label">
                 <input type="checkbox" [(ngModel)]="zoneForm.active">

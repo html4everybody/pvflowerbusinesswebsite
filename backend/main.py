@@ -3475,12 +3475,10 @@ def check_delivery_coverage(query: str):
             break
     if not match:
         return {"covered": False}
-    return {
-        "covered": True,
-        "zone_name": match["zone_name"],
-        "delivery_charge": match["delivery_charge"],
-        "min_order": match["min_order"],
-    }
+    # Pricing (per-km rate, free-delivery minimum) is store-wide, not
+    # per-zone — see /api/checkout/delivery-estimate — so this only
+    # confirms coverage, nothing about price.
+    return {"covered": True, "zone_name": match["zone_name"]}
 
 @app.get("/api/admin/delivery-zones")
 def list_delivery_zones(token: str):
