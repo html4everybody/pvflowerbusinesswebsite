@@ -372,14 +372,26 @@
                     <input type="text" id="upiId" #upiIdField="ngModel" [(ngModel)]="formData.upiId"
                       name="upiId" placeholder="yourname&#64;upi"
                       pattern="^[\w.\-]+@[\w.\-]+$"
-                      [required]="paymentMethod() === 'upi'">
-                    <span class="upi-verify-btn">Verify</span>
+                      [required]="paymentMethod() === 'upi'"
+                      (ngModelChange)="onUpiInput()">
+                    @if (upiVerifying()) {
+                      <i class="bi bi-arrow-repeat upi-spin upi-status-icon"></i>
+                    } @else if (upiVerified()) {
+                      <i class="bi bi-check-circle-fill upi-status-icon upi-ok"></i>
+                    } @else if (upiError()) {
+                      <i class="bi bi-x-circle-fill upi-status-icon upi-fail"></i>
+                    }
                   </div>
+                  @if (upiVerified()) {
+                    <div class="upi-verified-msg"><i class="bi bi-check-circle-fill"></i> {{ upiVerifiedName() || 'UPI ID verified' }}</div>
+                  }
+                  @if (upiError()) {
+                    <div class="field-error"><i class="bi bi-x-circle"></i> {{ upiError() }}</div>
+                  }
                   @if (upiIdField.invalid && upiIdField.touched) {
                     <div class="field-error">Enter a valid UPI ID (e.g. name&#64;upi)</div>
                   }
                 </div>
-                <div class="upi-apps-label">Enter your UPI ID or choose an app</div>
                 <div class="upi-apps">
                   <div class="upi-app-chip">
                     <img src="upi/gpay.svg" class="upi-app-logo gpay-logo" alt="GPay">

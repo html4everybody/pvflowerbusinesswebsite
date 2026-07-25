@@ -113,6 +113,12 @@ export class Checkout {
 
   paymentMethod = signal<'card' | 'cod' | 'upi'>('cod');
 
+  upiVerifying = signal(false);
+  upiVerified = signal(false);
+  upiVerifiedName = signal('');
+  upiError = signal('');
+  private upiDebounceTimer: any;
+
   zipLookupLoading = signal(false);
   zipLookupError = signal('');
 
@@ -663,6 +669,37 @@ export class Checkout {
 
   @ViewChild('checkoutForm') checkoutForm?: NgForm;
 
+  onUpiInput(): void {
+    this.upiVerified.set(false);
+    this.upiError.set('');
+    this.upiVerifiedName.set('');
+    clearTimeout(this.upiDebounceTimer);
+    const vpa = this.formData.upiId?.trim();
+    if (!vpa || !vpa.includes('@')) return;
+    this.upiVerifying.set(true);
+    this.upiDebounceTimer = setTimeout(() => this.verifyUpi(), 600);
+  }
+
+  verifyUpi(): void {
+    const vpa = this.formData.upiId?.trim();
+    if (!vpa) return;
+    this.upiVerifying.set(true);
+    this.upiVerified.set(false);
+    this.upiError.set('');
+    this.upiVerifiedName.set('');
+    this.http.get<{ valid: boolean; name: string }>(`${environment.apiUrl}/api/payments/validate-upi?vpa=${encodeURIComponent(vpa)}`).subscribe({
+      next: (res) => {
+        this.upiVerifying.set(false);
+        this.upiVerified.set(true);
+        this.upiVerifiedName.set(res.name);
+      },
+      error: (err) => {
+        this.upiVerifying.set(false);
+        this.upiError.set(err?.error?.detail || 'Invalid UPI ID.');
+      }
+    });
+  }
+
   placeOrder(): void {
     // If required fields are missing, highlight them instead of silently doing nothing.
     if (this.checkoutForm && this.checkoutForm.invalid) {
@@ -716,6 +753,24 @@ export class Checkout {
       gift_message: this.formData.giftMessage?.trim() || undefined,
     };
 
+    // UPI → create Razorpay order first, then open modal
+    if (this.paymentMethod() === 'upi') {
+      this.http.post<{ order_id: string; amount: number; currency: string; key: string }>(
+        `${environment.apiUrl}/api/payments/create-order`,
+        { amount: this.getTotal(), currency: 'INR' }
+      ).subscribe({
+        next: (rzpOrder) => {
+          this.loading.set(false);
+          this.openRazorpayModal(rzpOrder, payload);
+        },
+        error: (err) => {
+          this.loading.set(false);
+          this.errorMessage.set(err?.error?.detail || 'Could not initiate payment. Please try again.');
+        }
+      });
+      return;
+    }
+
     this.http.post<{ orderId: string; status: string; points_pending?: number; new_balance?: number }>(`${environment.apiUrl}/api/orders`, payload).subscribe({
       next: (res) => {
         this.loading.set(false);
@@ -733,5 +788,60 @@ export class Checkout {
         this.errorMessage.set(err?.error?.detail ?? err?.message ?? 'Something went wrong. Please try again.');
       }
     });
+  }
+
+  private openRazorpayModal(rzpOrder: { order_id: string; amount: number; currency: string; key: string }, orderPayload: any): void {
+    const user = this.authService.user();
+    const options = {
+      key: rzpOrder.key,
+      amount: rzpOrder.amount,
+      currency: rzpOrder.currency,
+      name: 'VivaPetals',
+      description: 'Flower Order Payment',
+      order_id: rzpOrder.order_id,
+      prefill: {
+        name: orderPayload.customer.name,
+        email: orderPayload.customer.email,
+        contact: orderPayload.customer.phone,
+        vpa: this.formData.upiId || undefined,
+      },
+      method: { upi: true, card: false, netbanking: false, wallet: false, emi: false, paylater: false },
+      theme: { color: '#1a2236' },
+      handler: (response: any) => {
+        this.loading.set(true);
+        this.http.post<{ orderId: string; status: string; points_pending?: number; new_balance?: number }>(
+          `${environment.apiUrl}/api/payments/verify`,
+          {
+            razorpay_order_id: response.razorpay_order_id,
+            razorpay_payment_id: response.razorpay_payment_id,
+            razorpay_signature: response.razorpay_signature,
+            order_data: orderPayload,
+          }
+        ).subscribe({
+          next: (res) => {
+            this.loading.set(false);
+            this.orderNumber.set(res.orderId);
+            this.pointsEarned.set(res.points_pending ?? 0);
+            this.newLoyaltyBalance.set(res.new_balance ?? 0);
+            this.orderPlaced.set(true);
+            this.cartService.clearCart();
+            this.scroller.scrollToPosition([0, 0]);
+            setTimeout(() => this.confetti.burst(), 300);
+          },
+          error: (err) => {
+            this.loading.set(false);
+            this.errorMessage.set(err?.error?.detail || 'Payment verification failed. Please contact support.');
+          }
+        });
+      },
+      modal: {
+        ondismiss: () => {
+          this.errorMessage.set('Payment cancelled. Your order was not placed.');
+        }
+      }
+    };
+
+    const rzp = new (window as any).Razorpay(options);
+    rzp.open();
   }
 }

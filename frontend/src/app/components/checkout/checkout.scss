@@ -1537,6 +1537,24 @@
   }
 }
 
+.upi-verified-msg {
+  margin-top: 0.4rem;
+  font-size: 0.82rem;
+  color: #16a34a;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.upi-status-icon {
+  flex-shrink: 0;
+  margin-right: 0.5rem;
+  font-size: 1rem;
+}
+.upi-spin  { animation: spin 0.7s linear infinite; color: var(--text-muted); }
+.upi-ok    { color: #16a34a; }
+.upi-fail  { color: #dc2626; }
+
 .upi-apps-label {
   font-size: 0.8rem;
   color: var(--text-muted);

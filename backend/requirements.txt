@@ -10,3 +10,4 @@ httpx
 apscheduler
 
 python-multipart
+razorpay
