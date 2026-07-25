@@ -8,17 +8,19 @@
         [ngModel]="searchQuery()"
         (ngModelChange)="searchQuery.set($event)"
         (input)="onSearchInput()"
-        (focus)="showResults.set(results().length > 0)"
+        (focus)="showResults.set(suggestions().length > 0)"
+        (blur)="$event.relatedTarget || showResults.set(false)"
+        autocomplete="off"
       />
       @if (searching()) {
         <span class="lp-spinner"></span>
       }
-      @if (showResults() && results().length > 0) {
+      @if (showResults() && suggestions().length > 0) {
         <ul class="lp-results">
-          @for (r of results(); track r.display_name) {
-            <li (click)="pickResult(r)">
+          @for (s of suggestions(); track s.placeId) {
+            <li (mousedown)="pickSuggestion(s)">
               <i class="bi bi-geo-alt"></i>
-              <span>{{ r.display_name }}</span>
+              <span>{{ s.display_name }}</span>
             </li>
           }
         </ul>
