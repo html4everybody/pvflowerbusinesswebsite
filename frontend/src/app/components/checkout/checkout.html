@@ -167,7 +167,7 @@
               <div class="form-group">
                 <label for="state">State <span class="required-star">*</span></label>
                 <select id="state" #stateField="ngModel" [(ngModel)]="formData.state" name="state" required>
-                  <option value="">-- Select --</option>
+                  <option value="">Select state</option>
                   @for (s of indianStates; track s) {
                     <option [value]="s">{{ s }}</option>
                   }
@@ -493,64 +493,32 @@
               <p class="promo-msg promo-msg-success">{{ promoResult()!.description }}</p>
             }
 
-            @if (!promoResult() && availableOffers().length) {
-              <div class="promo-offers">
-                <span class="promo-offers-label">Available offers — tap to apply</span>
-                <div class="promo-offers-list">
-                  @for (o of availableOffers(); track o.id) {
-                    <button type="button" class="promo-offer"
-                            [class.locked]="!offerEligible(o)"
-                            [disabled]="!offerEligible(o) || promoLoading()"
-                            (click)="selectOffer(o)">
-                      <span class="po-emoji">{{ o.emoji }}</span>
-                      <span class="po-main">
-                        <span class="po-discount">{{ offerDiscountLabel(o) }}</span>
-                        <span class="po-code">{{ o.code }}</span>
-                      </span>
-                      <span class="po-cond">
-                        @if (offerEligible(o)) {
-                          {{ offerCondition(o) }}
-                        } @else {
-                          Add ₹{{ amountToUnlock(o) | number:'1.0-0' }} more
-                        }
-                      </span>
-                    </button>
-                  }
-                </div>
-              </div>
-            }
           </div>
 
-          @if (authService.user() && loyaltyBalance() > 0) {
-            <div class="points-panel">
-              <div class="points-panel-header">
-                <span class="points-icon"><i class="bi bi-star-fill"></i></span>
-                <div>
-                  <strong>{{ loyaltyBalance() }} Loyalty Points</strong>
-                  <span class="points-subtext">= ₹{{ (loyaltyBalance() / redemptionRate()).toFixed(2) }} possible discount</span>
-                </div>
-                <button class="pts-toggle-btn" [class.on]="loyaltyEnabled()" (click)="togglePoints()">
-                  <span class="pts-knob"></span>
-                </button>
-              </div>
-              @if (loyaltyEnabled()) {
-                <div class="points-input-row">
-                  <label>Points to use:</label>
-                  <input type="number" [min]="0" [max]="maxRedeemable"
-                         [value]="pointsToRedeem()"
-                         (input)="clampAndSetPoints(+$any($event).target.value)">
-                  <span class="pts-value">= ₹{{ pointsDiscountAmount().toFixed(2) }} off</span>
-                </div>
-                <p class="pts-cap-note">Max {{ maxRedeemable }} pts available</p>
-              }
-            </div>
-          }
 
           <div class="summary-details">
             <div class="summary-row">
               <span>Subtotal</span>
               <span>₹{{ cartService.cartTotal().toFixed(2) }}</span>
             </div>
+            @if (loyaltyEnabled() && pointsDiscountAmount() > 0) {
+              <div class="summary-row points-discount-row">
+                <span><i class="bi bi-star-fill"></i> Points Discount</span>
+                <span>− ₹{{ pointsDiscountAmount().toFixed(2) }}</span>
+              </div>
+            }
+            @if (promoResult()) {
+              <div class="summary-row promo-discount-row">
+                <span><i class="bi bi-tag"></i> {{ promoResult()!.code }}</span>
+                <span>− ₹{{ promoDiscountAmount().toFixed(2) }}</span>
+              </div>
+            }
+            @if (getTax() > 0) {
+              <div class="summary-row">
+                <span>GST ({{ taxConfig().rate }}%)</span>
+                <span>₹{{ getTax().toFixed(2) }}</span>
+              </div>
+            }
             <div class="summary-row">
               <span>Delivery</span>
               @if (loadingDeliveryFee()) {
@@ -570,24 +538,6 @@
             } @else if (!loadingDeliveryFee() && !formData.latitude) {
               <p class="delivery-hint"><i class="bi bi-info-circle"></i> Pin your delivery location above for an exact delivery fee.</p>
             }
-            @if (loyaltyEnabled() && pointsDiscountAmount() > 0) {
-              <div class="summary-row points-discount-row">
-                <span><i class="bi bi-star-fill"></i> Points Discount</span>
-                <span>− ₹{{ pointsDiscountAmount().toFixed(2) }}</span>
-              </div>
-            }
-            @if (promoResult()) {
-              <div class="summary-row promo-discount-row">
-                <span><i class="bi bi-tag"></i> {{ promoResult()!.code }}</span>
-                <span>− ₹{{ promoDiscountAmount().toFixed(2) }}</span>
-              </div>
-            }
-            @if (getTax() > 0) {
-              <div class="summary-row">
-                <span>GST ({{ taxConfig().rate }}%)</span>
-                <span>₹{{ getTax().toFixed(2) }}</span>
-              </div>
-            }
             <div class="summary-row total">
               <span>Total</span>
               <span>₹{{ getTotal().toFixed(2) }}</span>
@@ -602,6 +552,30 @@
 
         <!-- Place Order — lives outside <form> but submits it via form="checkout-form" -->
         <div class="checkout-actions">
+          @if (authService.user() && loyaltyBalance() > 0) {
+            <div class="points-panel">
+              <div class="points-panel-header">
+                <span class="points-icon"><i class="bi bi-star-fill"></i></span>
+                <div>
+                  <strong>{{ loyaltyBalance() }} Loyalty Points</strong>
+                  <span class="points-subtext">= ₹{{ (loyaltyBalance() / redemptionRate()).toFixed(2) }} possible discount</span>
+                </div>
+                <button type="button" class="pts-toggle-btn" [class.on]="loyaltyEnabled()" (click)="togglePoints()">
+                  <span class="pts-knob"></span>
+                </button>
+              </div>
+              @if (loyaltyEnabled()) {
+                <div class="points-input-row">
+                  <label>Points to use:</label>
+                  <input type="number" [min]="0" [max]="maxRedeemable"
+                         [value]="pointsToRedeem()"
+                         (input)="clampAndSetPoints(+$any($event).target.value)">
+                  <span class="pts-value">= ₹{{ pointsDiscountAmount().toFixed(2) }} off</span>
+                </div>
+                <p class="pts-cap-note">Max {{ maxRedeemable }} pts available</p>
+              }
+            </div>
+          }
           @if (errorMessage()) {
             <div class="error-msg">{{ errorMessage() }}</div>
           }

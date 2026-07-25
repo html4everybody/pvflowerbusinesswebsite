@@ -59,11 +59,11 @@
 
     .order-summary {
       position: static;
-      order: 1; // after form fields
+      order: 1;
     }
 
     .checkout-actions {
-      order: 2; // after summary
+      order: 2;
     }
   }
 }
@@ -887,116 +887,7 @@
     font-weight: 600;
   }
 
-  /* ── Points Panel ──────────────────────────────── */
-  .points-panel {
-    margin: 0 1.5rem 0;
-    padding: 1rem 1.25rem;
-    background: var(--bg);
-    border: 1.5px solid var(--border);
-    border-radius: 10px;
 
-    .points-panel-header {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-
-      .points-icon {
-        font-size: 1.4rem;
-        flex-shrink: 0;
-      }
-
-      div {
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-        gap: 0.1rem;
-
-        strong {
-          font-size: 0.88rem;
-          font-weight: 700;
-          color: var(--text);
-        }
-
-        .points-subtext {
-          font-size: 0.75rem;
-          color: var(--text-muted);
-        }
-      }
-
-      .pts-toggle-btn {
-        width: 42px;
-        height: 24px;
-        border-radius: 999px;
-        background: var(--border);
-        border: none;
-        cursor: pointer;
-        position: relative;
-        transition: background 0.2s ease;
-        flex-shrink: 0;
-        padding: 0;
-
-        &.on { background: #22c55e; }
-
-        .pts-knob {
-          position: absolute;
-          top: 3px;
-          left: 3px;
-          width: 18px;
-          height: 18px;
-          border-radius: 50%;
-          background: white;
-          box-shadow: 0 1px 3px rgba(0,0,0,0.2);
-          transition: transform 0.2s ease;
-        }
-
-        &.on .pts-knob {
-          transform: translateX(18px);
-        }
-      }
-    }
-
-    .points-input-row {
-      display: flex;
-      align-items: center;
-      gap: 0.6rem;
-      margin-top: 0.75rem;
-
-      label {
-        font-size: 0.8rem;
-        font-weight: 600;
-        color: var(--text-muted);
-        flex-shrink: 0;
-      }
-
-      input {
-        width: 90px;
-        padding: 0.35rem 0.6rem;
-        border: 1.5px solid var(--border);
-        border-radius: 6px;
-        font-size: 0.88rem;
-        background: var(--bg-card);
-        color: var(--text);
-        box-sizing: border-box;
-
-        &:focus {
-          outline: none;
-          border-color: var(--text-muted);
-        }
-      }
-
-      .pts-value {
-        font-size: 0.8rem;
-        font-weight: 600;
-        color: #22c55e;
-      }
-    }
-
-    .pts-cap-note {
-      font-size: 0.72rem;
-      color: var(--text-muted);
-      margin: 0.35rem 0 0;
-    }
-  }
 
   .points-discount-row {
     color: #16a34a !important;
@@ -1617,3 +1508,114 @@ html[data-theme="dark"] {
 
 .vp-spin { display: inline-block; animation: vp-spin 0.9s linear infinite; }
 @keyframes vp-spin { to { transform: rotate(360deg); } }
+
+/* ── Points Panel ─────────────────────────────────────────── */
+.points-panel {
+  margin: 0 0 1rem;
+  padding: 1rem 1.25rem;
+  background: var(--bg-card);
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+
+  .points-panel-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+
+    .points-icon {
+      font-size: 1.4rem;
+      flex-shrink: 0;
+      line-height: 1;
+    }
+
+    div {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 0.15rem;
+
+      strong {
+        font-size: 0.9rem;
+        font-weight: 700;
+        color: var(--text);
+        line-height: 1.2;
+      }
+
+      .points-subtext {
+        font-size: 0.76rem;
+        color: var(--text-muted);
+        line-height: 1.2;
+      }
+    }
+
+    .pts-toggle-btn {
+      width: 42px;
+      height: 24px;
+      border-radius: 999px;
+      background: var(--border);
+      border: none;
+      cursor: pointer;
+      position: relative;
+      transition: background 0.2s ease;
+      flex-shrink: 0;
+      padding: 0;
+      align-self: center;
+
+      &.on { background: #22c55e; }
+
+      .pts-knob {
+        position: absolute;
+        top: 3px;
+        left: 3px;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: white;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        transition: transform 0.2s ease;
+      }
+
+      &.on .pts-knob { transform: translateX(18px); }
+    }
+  }
+
+  .points-input-row {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-top: 0.75rem;
+
+    label {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      flex-shrink: 0;
+    }
+
+    input {
+      width: 90px;
+      padding: 0.35rem 0.6rem;
+      border: 1.5px solid var(--border);
+      border-radius: 6px;
+      font-size: 0.88rem;
+      background: var(--bg);
+      color: var(--text);
+      box-sizing: border-box;
+
+      &:focus { outline: none; border-color: var(--text-muted); }
+    }
+
+    .pts-value {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: #22c55e;
+    }
+  }
+
+  .pts-cap-note {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    margin: 0.35rem 0 0;
+  }
+}

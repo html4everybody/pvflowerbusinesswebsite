@@ -175,9 +175,20 @@ export class Checkout {
     this.zipLookupLoading.set(true);
     this.zipLookupError.set('');
     try {
+      // First check if we deliver to this pincode
+      const coverage = await this.http.get<{ covered: boolean; zone_name?: string }>(
+        `${environment.apiUrl}/api/delivery-zones/check`, { params: { query: zip } }
+      ).toPromise();
+
+      if (!coverage?.covered) {
+        this.zipLookupLoading.set(false);
+        this.zipLookupError.set('Sorry, we don\'t deliver to this pincode yet. We currently deliver within Hyderabad.');
+        return;
+      }
+
+      // Pincode is serviceable — autofill city/state via Google
       const { Geocoder } = await google.maps.importLibrary('geocoding');
-      const geocoder = new Geocoder();
-      const result = await geocoder.geocode({ address: zip + ', India' });
+      const result = await new Geocoder().geocode({ address: zip + ', India' });
       this.zipLookupLoading.set(false);
       if (result.results?.length) {
         const r = result.results[0];
@@ -187,10 +198,8 @@ export class Checkout {
         const state = get('administrative_area_level_1');
         if (city) this.formData.city = city;
         if (state) this.formData.state = state;
-        const lat = r.geometry.location.lat();
-        const lng = r.geometry.location.lng();
-        this.formData.latitude = lat;
-        this.formData.longitude = lng;
+        this.formData.latitude = r.geometry.location.lat();
+        this.formData.longitude = r.geometry.location.lng();
         this.refreshDeliveryFee();
       } else {
         this.zipLookupError.set('Pincode not found');
