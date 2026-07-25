@@ -267,10 +267,20 @@ export class OrderDetail implements OnInit {
 
   shippingFee(o: any): number {
     if (o.shipping_fee != null) return o.shipping_fee;
-    return this.itemsSubtotal(o) >= 50 ? 0 : 9.99;
+    // Fallback for very old orders predating the shipping_fee column — a
+    // USD-scale "$9.99 unless subtotal >= $50" rule that never matched this
+    // app's actual (₹, distance-based) pricing. Match the backend's own
+    // flat-fee fallback instead (_FLAT_FALLBACK_DELIVERY_FEE) rather than a
+    // made-up rule.
+    return 49;
   }
 
   pointsDiscountAmount(o: any): number {
+    // The redemption rate is admin-editable, so a hardcoded /10 drifts wrong
+    // for any order placed under a different rate. Orders placed after the
+    // points_discount_amount column existed carry the real value computed
+    // at the time; older orders fall back to the old estimate.
+    if (o.points_discount_amount != null) return o.points_discount_amount;
     return o.points_redeemed ? +((o.points_redeemed / 10).toFixed(2)) : 0;
   }
 

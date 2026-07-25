@@ -34,10 +34,11 @@ export class CartService {
     private http: HttpClient,
     private toastService: ToastService
   ) {
-    // Load cart on startup
-    this.fetchCart();
-
-    // Reload cart whenever auth state changes (login / logout)
+    // A separate direct fetchCart() call used to sit here alongside this
+    // effect (which already runs once on creation, then again on auth
+    // change) — both independently read the guest cart from localStorage
+    // before either's HTTP response landed, so a logged-in user's guest
+    // cart items could get merged into their server cart twice.
     effect(() => {
       this.authService.user(); // track signal
       this.cartItems.set([]);
@@ -136,7 +137,9 @@ export class CartService {
 
     const user = this.authService.user();
     if (user) {
-      this.http.delete(`${environment.apiUrl}/api/cart/item/${productId}?user_id=${user.id}`).subscribe();
+      this.http.delete(`${environment.apiUrl}/api/cart/item/${productId}?user_id=${user.id}`).subscribe({
+        error: () => this.toastService.show('Could not update your cart — please refresh and try again.', 'error'),
+      });
     } else {
       this.saveToLocalStorage();
     }
@@ -160,7 +163,9 @@ export class CartService {
 
     const user = this.authService.user();
     if (user) {
-      this.http.delete(`${environment.apiUrl}/api/cart/clear?user_id=${user.id}`).subscribe();
+      this.http.delete(`${environment.apiUrl}/api/cart/clear?user_id=${user.id}`).subscribe({
+        error: () => this.toastService.show('Could not clear your cart — please refresh and try again.', 'error'),
+      });
     } else {
       this.saveToLocalStorage();
     }
@@ -175,11 +180,17 @@ export class CartService {
   private persist(productId: string, quantity: number): void {
     const user = this.authService.user();
     if (user) {
+      // Optimistic — the UI already reflects the new quantity. On failure
+      // this used to leave local state silently diverged from the server
+      // with no notice at all; a toast at least tells the customer their
+      // change might not have actually saved.
       this.http.post(`${environment.apiUrl}/api/cart/item`, {
         user_id: user.id,
         product_id: productId,
         quantity
-      }).subscribe();
+      }).subscribe({
+        error: () => this.toastService.show('Could not update your cart — please refresh and try again.', 'error'),
+      });
     } else {
       this.saveToLocalStorage();
     }

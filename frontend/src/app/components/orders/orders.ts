@@ -46,7 +46,8 @@ export class Orders implements OnInit {
       return;
     }
     const user = this.authService.user();
-    this.http.get<any[]>(`${environment.apiUrl}/api/orders?email=${encodeURIComponent(user.email)}`).subscribe({
+    const token = this.authService.getToken();
+    this.http.get<any[]>(`${environment.apiUrl}/api/orders?email=${encodeURIComponent(user.email)}&token=${encodeURIComponent(token)}`).subscribe({
       next: (data) => { this.orders.set(data); this.loading.set(false); },
       error: () => { this.loading.set(false); }
     });

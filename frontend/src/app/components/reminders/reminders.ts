@@ -109,7 +109,8 @@ export class Reminders implements OnInit {
 
   private loadPastOrders(): void {
     const email = this.authService.user().email;
-    this.http.get<any[]>(`${environment.apiUrl}/api/orders?email=${encodeURIComponent(email)}`).subscribe({
+    const token = this.authService.getToken();
+    this.http.get<any[]>(`${environment.apiUrl}/api/orders?email=${encodeURIComponent(email)}&token=${encodeURIComponent(token)}`).subscribe({
       next: (orders) => this.pastOrders.set(
         (orders || []).filter(o => o.status !== 'cancelled').slice(0, 20)
       ),

@@ -5,6 +5,7 @@ from pydantic import BaseModel, EmailStr
 from typing import Optional
 import uuid
 import base64 as _base64
+import html as _html
 import math
 import os
 import secrets
@@ -1512,6 +1513,8 @@ class SubscriptionRequest(BaseModel):
     customer_phone: Optional[str] = None
     plan: str                          # weekly | biweekly | monthly
     address: str
+    latitude: Optional[float] = None   # optional until the signup form has a location picker —
+    longitude: Optional[float] = None  # without it, a merchant's delivery-radius cap can't be enforced for Bloom Plan orders
     items: list[dict] = []             # selected products (florist choice = empty)
     instructions: Optional[str] = None
     daily_total: Optional[float] = None
@@ -3052,9 +3055,13 @@ def merchant_analytics(token: str, days: int = 30):
              .eq("merchant_id", m["id"]).gte("created_at", since).execute().data or [])
     active = [p for p in parts if p.get("status") != "cancelled"]
 
+    # Bucketed in IST, not raw UTC — this used to disagree with admin's own
+    # analytics (which already used IST) by up to 5.5 hours, e.g. a 2am IST
+    # order (8:30pm UTC the prior day) landed under the wrong calendar day
+    # here.
     daily: dict = {}
     for p in active:
-        day = (p.get("created_at") or "")[:10]
+        day = _ist_day(p.get("created_at"))
         if not day:
             continue
         row = daily.setdefault(day, {"date": day, "orders": 0, "revenue": 0.0, "commission": 0.0})
@@ -3069,13 +3076,13 @@ def merchant_analytics(token: str, days: int = 30):
     def totals_between(start: str, end: str):
         o, r = 0, 0.0
         for p in active:
-            day = (p.get("created_at") or "")[:10]
+            day = _ist_day(p.get("created_at"))
             if day and start <= day <= end:
                 o += 1
                 r += float(p.get("payout", 0) or 0)
         return o, round(r, 2)
 
-    today = datetime.now(timezone.utc).date()
+    today = datetime.now(IST).date()
     this_orders, this_revenue = totals_between((today - timedelta(days=6)).isoformat(), today.isoformat())
     prev_orders, prev_revenue = totals_between((today - timedelta(days=13)).isoformat(), (today - timedelta(days=7)).isoformat())
 
@@ -3232,9 +3239,14 @@ def admin_mark_payout_paid(part_id: str, req: PayoutMarkPaidRequest):
         raise HTTPException(status_code=400, detail="Only delivered orders can be settled.")
     if existing[0].get("payout_status") == "paid":
         raise HTTPException(status_code=400, detail="Already paid.")
-    supabase.table("order_merchant_parts").update({
+    # Conditional on payout_status still being "unpaid" — closes a race
+    # where two concurrent "mark paid" calls on the same part could both
+    # pass the check above before either write landed.
+    updated = (supabase.table("order_merchant_parts").update({
         "payout_status": "paid", "paid_at": datetime.now(timezone.utc).isoformat(), "payout_note": req.note or "",
-    }).eq("id", part_id).execute()
+    }).eq("id", part_id).eq("payout_status", "unpaid").execute())
+    if not updated.data:
+        raise HTTPException(status_code=400, detail="Already paid.")
     create_user_notice(
         _merchant_email(existing[0].get("merchant_id")), "💰 Payout settled",
         f"₹{existing[0].get('payout')} for order #{existing[0].get('order_id')} has been paid to you.",
@@ -3254,18 +3266,26 @@ def admin_pay_all_for_merchant(merchant_id: str, req: PayoutMarkPaidRequest):
     if not due:
         return {"status": "ok", "paid_count": 0, "paid_amount": 0}
     ids = [d["id"] for d in due]
-    total = round(sum(float(d.get("payout", 0) or 0) for d in due), 2)
-    supabase.table("order_merchant_parts").update({
+    # Re-assert payout_status="unpaid" in the update's own filter (not just
+    # the read above) — closes a race where a part in `ids` gets paid by a
+    # concurrent request between this read and the write below; only rows
+    # still genuinely unpaid at write time are affected, and paid_count/
+    # paid_amount reflect what actually happened rather than the pre-race read.
+    updated = (supabase.table("order_merchant_parts").update({
         "payout_status": "paid", "paid_at": datetime.now(timezone.utc).isoformat(), "payout_note": req.note or "",
-    }).in_("id", ids).execute()
+    }).in_("id", ids).eq("payout_status", "unpaid").execute())
+    paid_rows = updated.data or []
+    if not paid_rows:
+        return {"status": "ok", "paid_count": 0, "paid_amount": 0}
+    total = round(sum(float(d.get("payout", 0) or 0) for d in paid_rows), 2)
     create_user_notice(
         _merchant_email(merchant_id), "💰 Payout settled",
-        f"{len(ids)} order(s) totalling ₹{total} have been paid to you.",
+        f"{len(paid_rows)} order(s) totalling ₹{total} have been paid to you.",
         "merchant_payout", merchant_id,
     )
     _log_admin_action(admin_email, "payout_pay_all", "merchant", merchant_id,
-                       f"{len(ids)} order(s) — ₹{total}" + (f" — {req.note}" if req.note else ""))
-    return {"status": "ok", "paid_count": len(ids), "paid_amount": total}
+                       f"{len(paid_rows)} order(s) — ₹{total}" + (f" — {req.note}" if req.note else ""))
+    return {"status": "ok", "paid_count": len(paid_rows), "paid_amount": total}
 
 
 def _sync_user_role(user_id, status):
@@ -3903,6 +3923,14 @@ def _send_contact_notification(name: str, email: str, phone: str, subject: str, 
         "delivery": "Delivery Question", "feedback": "Feedback", "other": "Other"
     }
     subject_label = subject_labels.get(subject, subject.title() if subject else "General Inquiry")
+    # These land unescaped in a raw HTML email otherwise — a submission with
+    # e.g. name = "<img src=x onerror=...>" would land verbatim in the
+    # admin's inbox.
+    name = _html.escape(name or "")
+    email = _html.escape(email or "")
+    phone = _html.escape(phone or "")
+    message = _html.escape(message or "")
+    subject_label = _html.escape(subject_label)
     owner_html = f"""
     <!DOCTYPE html><html><body style="margin:0;padding:0;background:#fdf0f5;font-family:'Segoe UI',Arial,sans-serif;">
       <table width="100%" cellpadding="0" cellspacing="0">
@@ -4306,7 +4334,18 @@ def claim_reward(req: RewardClaimRequest):
     balance = acct[0]["points_balance"] if acct else 0
     if balance < reward["points_cost"]:
         raise HTTPException(status_code=400, detail=f"You need {reward['points_cost']} points for this reward — you have {balance}.")
-    award_points(email, -reward["points_cost"], "redeemed_reward", f"Claimed: {reward['title']}")
+    # Conditional on the balance still being exactly what we just read —
+    # closes a race where two near-simultaneous claims (double-click, a
+    # scripted retry) could both pass the check above before either write
+    # landed, claiming two rewards for the cost of one.
+    deducted = (supabase.table("loyalty_accounts").update({"points_balance": balance - reward["points_cost"]})
+                .eq("user_email", email).eq("points_balance", balance).execute())
+    if not deducted.data:
+        raise HTTPException(status_code=409, detail="Your points balance just changed — please try again.")
+    supabase.table("loyalty_transactions").insert({
+        "user_email": email, "type": "redeemed_reward", "points": -reward["points_cost"],
+        "description": f"Claimed: {reward['title']}", "order_id": None,
+    }).execute()
     code = "PETAL" + str(uuid.uuid4())[:8].upper()
     claim_id = "CLM" + str(uuid.uuid4())[:8].upper()
     supabase.table("reward_claims").insert({
@@ -4319,7 +4358,12 @@ def claim_reward(req: RewardClaimRequest):
 
 
 @app.get("/api/rewards/my-claims")
-def get_my_claims(email: str):
+def get_my_claims(email: str, token: str):
+    # Previously took a bare email with no auth — anyone could enumerate
+    # another user's claimed voucher codes and discount values.
+    token_email = resolve_token(token)
+    if not token_email or token_email != email:
+        raise HTTPException(status_code=401, detail="Not authenticated")
     if not _has_table("reward_claims"):
         return []
     return supabase.table("reward_claims").select("*").eq("user_email", email).order("claimed_at", desc=True).execute().data or []
@@ -4345,24 +4389,31 @@ def get_loyalty(email: str):
 
 # ── Promo Routes ───────────────────────────────────────────────────────────────
 
-@app.post("/api/promo/validate")
-def validate_promo(req: PromoValidateRequest):
-    code = req.code.strip().upper()
+def _resolve_promo_discount(code: str, order_total: float, customer_email: Optional[str]) -> dict:
+    """Core promo-code / reward-voucher lookup + discount computation.
+
+    Shared by /api/promo/validate (a checkout-time preview only) and
+    create_order (the actual enforcement point) — order creation used to
+    never re-run this at all, just back-calculate whatever "discount" a
+    client's self-reported total implied, so a request could claim any
+    discount it liked by picking req.total accordingly. Raises the same
+    HTTPExceptions either caller already surfaces to the user."""
+    code = code.strip().upper()
     result = supabase.table("promo_codes").select("*").eq("code", code).execute()
     if result.data and result.data[0]["active"]:
         promo = result.data[0]
-        if req.order_total < float(promo["min_order"]):
+        if order_total < float(promo["min_order"]):
             raise HTTPException(status_code=400, detail=f"Minimum order ₹{promo['min_order']} required for this code")
         if promo["first_order_only"]:
-            if not req.customer_email:
+            if not customer_email:
                 raise HTTPException(status_code=400, detail="Code valid for first order only")
-            existing_orders = supabase.table("orders").select("id").eq("customer_email", req.customer_email).execute()
+            existing_orders = supabase.table("orders").select("id").eq("customer_email", customer_email).execute()
             if existing_orders.data:
                 raise HTTPException(status_code=400, detail="Code valid for first order only")
         if promo["type"] == "percent":
-            discount_amount = round(req.order_total * float(promo["value"]) / 100, 2)
+            discount_amount = round(order_total * float(promo["value"]) / 100, 2)
         else:
-            discount_amount = min(float(promo["value"]), req.order_total)
+            discount_amount = min(float(promo["value"]), order_total)
         return {
             "valid": True,
             "code": code,
@@ -4375,14 +4426,14 @@ def validate_promo(req: PromoValidateRequest):
     # Not a marketing promo code — check whether it's a claimed Petal Reward
     # voucher instead (its own table, own single-use enforcement — see the
     # note above claim_reward()).
-    if _has_table("reward_claims") and req.customer_email:
+    if _has_table("reward_claims") and customer_email:
         claim_rows = (supabase.table("reward_claims").select("*")
-                      .eq("code", code).eq("user_email", req.customer_email).eq("used", False).execute().data)
+                      .eq("code", code).eq("user_email", customer_email).eq("used", False).execute().data)
         if claim_rows:
             claim = claim_rows[0]
-            if req.order_total < float(claim.get("min_order") or 0):
+            if order_total < float(claim.get("min_order") or 0):
                 raise HTTPException(status_code=400, detail=f"Minimum order ₹{claim['min_order']} required for this reward")
-            discount_amount = min(float(claim["discount_value"]), req.order_total)
+            discount_amount = min(float(claim["discount_value"]), order_total)
             return {
                 "valid": True,
                 "code": code,
@@ -4394,6 +4445,11 @@ def validate_promo(req: PromoValidateRequest):
             }
 
     raise HTTPException(status_code=404, detail="Invalid promo code")
+
+
+@app.post("/api/promo/validate")
+def validate_promo(req: PromoValidateRequest):
+    return _resolve_promo_discount(req.code, req.order_total, req.customer_email)
 
 _DEFAULT_DEAL_EMOJI = "🎟️"
 
@@ -4508,7 +4564,7 @@ def clear_cart(user_id: str):
 # ── Orders Route ───────────────────────────────────────────────────────────────
 
 @app.get("/api/orders")
-def get_user_orders(email: str, token: str = None):
+def get_user_orders(email: str, token: Optional[str] = None):
     # Corporate (Petal Studio) bookings are deliberately excluded here — the
     # customer already sees full booking context (theme, branding, status)
     # in My Studio; surfacing the bare linked order too would look like an
@@ -4518,30 +4574,40 @@ def get_user_orders(email: str, token: str = None):
     #
     exclude_corporate = _has_column("orders", "source")
 
+    # token was previously optional and only used opportunistically for the
+    # user_id-based lookup below — omitting it (or sending an expired one)
+    # fell straight through to an entirely unauthenticated email-based
+    # lookup, returning any customer's full order history (name, phone,
+    # exact address) to anyone who knew or guessed their email.
+    token_email = resolve_token(token) if token else None
+    if not token_email:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    if token_email != email:
+        caller = get_user_by_email(token_email)
+        if not (caller and caller.get("is_admin")):
+            raise HTTPException(status_code=403, detail="You don't have access to this order history")
+
     # Prefer user_id lookup (survives email changes); fall back to email for old orders
-    if token:
-        token_email = resolve_token(token)
-        if token_email:
-            u = supabase.table("users").select("id").eq("email", token_email).execute()
-            if u.data:
-                uid = u.data[0]["id"]
-                query = supabase.table("orders").select("*").eq("user_id", uid)
-                if exclude_corporate:
-                    query = query.neq("source", "corporate")
-                orders_result = query.order("created_at", desc=True).execute()
-                if orders_result.data:
-                    orders = orders_result.data
-                    order_ids = [o["id"] for o in orders]
-                    items_result = supabase.table("order_items").select("*").in_("order_id", order_ids).execute()
-                    items_by_order: dict = {}
-                    for item in items_result.data:
-                        product = next((p for p in PRODUCTS if p["id"] == item["product_id"]), None)
-                        item["image"] = product["image"] if product else ""
-                        items_by_order.setdefault(item["order_id"], []).append(item)
-                    for o in orders:
-                        o["items"] = items_by_order.get(o["id"], [])
-                        o["notifications"] = []
-                    return orders
+    u = supabase.table("users").select("id").eq("email", email).execute()
+    if u.data:
+        uid = u.data[0]["id"]
+        query = supabase.table("orders").select("*").eq("user_id", uid)
+        if exclude_corporate:
+            query = query.neq("source", "corporate")
+        orders_result = query.order("created_at", desc=True).execute()
+        if orders_result.data:
+            orders = orders_result.data
+            order_ids = [o["id"] for o in orders]
+            items_result = supabase.table("order_items").select("*").in_("order_id", order_ids).execute()
+            items_by_order: dict = {}
+            for item in items_result.data:
+                product = next((p for p in PRODUCTS if p["id"] == item["product_id"]), None)
+                item["image"] = product["image"] if product else ""
+                items_by_order.setdefault(item["order_id"], []).append(item)
+            for o in orders:
+                o["items"] = items_by_order.get(o["id"], [])
+                o["notifications"] = []
+            return orders
     query = supabase.table("orders").select("*").eq("customer_email", email)
     if exclude_corporate:
         query = query.neq("source", "corporate")
@@ -5086,6 +5152,27 @@ def update_tax_config(req: TaxConfigUpdate):
 # in-stock assigned merchant instead of just the first one. Merchant lat/lng
 # is already stored (see merchants.latitude/longitude) for exactly this.
 
+def _real_item_prices(items: list) -> dict:
+    """product_id -> the server's own final_price for every line in a cart.
+
+    item.price/item.quantity from the client were previously trusted
+    outright for all order money math (subtotal, tax, merchant commission,
+    order_items rows) — a client could submit any price it liked and the
+    only server-computed numbers (shipping, merchant payout) would end up
+    inconsistent with it rather than catching the mismatch. Every caller
+    that turns a cart into money should price against this, not item.price.
+    A product no longer found (deleted/unlisted since it was added to the
+    cart) prices at 0 rather than trusting whatever the client still has
+    cached for it.
+    """
+    products_by_id = {p["id"]: p for p in PRODUCTS}
+    prices = {}
+    for item in items:
+        p = products_by_id.get(item.productId)
+        prices[item.productId] = float(p["final_price"]) if p else 0.0
+    return prices
+
+
 def _resolve_order_merchants(items: list, customer_lat: Optional[float] = None, customer_lng: Optional[float] = None) -> dict:
     """Map each cart line's product id -> (merchant_id, merchant_price),
     consolidating catalog (shared) items onto whichever merchant the order
@@ -5198,12 +5285,18 @@ def _place_order_items(order_id: str, items: list, delivery_datetime: Optional[s
     if not items:
         return
     product_meta = _resolve_order_merchants(items, customer_lat, customer_lng)
+    # Priced from the server's own catalog, never from item.price — see
+    # _real_item_prices' docstring. This is what actually lands in
+    # order_items and drives merchant subtotal/commission below, so a
+    # mismatched client-sent price can no longer produce a commission that
+    # doesn't match what was really charged.
+    real_prices = _real_item_prices(items)
     supabase.table("order_items").insert([
         {
             "order_id": order_id,
             "product_id": item.productId,
             "name": item.name,
-            "price": item.price,
+            "price": real_prices.get(item.productId, 0.0),
             "quantity": item.quantity,
             "merchant_id": product_meta.get(item.productId, (HOUSE_MERCHANT_ID, 0))[0],
         }
@@ -5213,9 +5306,10 @@ def _place_order_items(order_id: str, items: list, delivery_datetime: Optional[s
     delivery_day = (delivery_datetime or "")[:10] or None
     agg = {}
     for item in items:
-        mid, mprice = product_meta.get(item.productId, (HOUSE_MERCHANT_ID, float(item.price)))
+        real_price = real_prices.get(item.productId, 0.0)
+        mid, mprice = product_meta.get(item.productId, (HOUSE_MERCHANT_ID, real_price))
         a = agg.setdefault(mid, {"subtotal": 0.0, "payout": 0.0, "qty": 0})
-        a["subtotal"] += float(item.price) * int(item.quantity)
+        a["subtotal"] += real_price * int(item.quantity)
         a["payout"] += mprice * int(item.quantity)
         a["qty"] += int(item.quantity)
     if not agg:
@@ -5291,6 +5385,9 @@ def create_order(req: OrderRequest):
         if balance < points_redeemed_requested:
             raise HTTPException(status_code=400, detail=f"You only have {balance} points available to redeem.")
 
+    if any(int(item.quantity) <= 0 for item in (req.items or [])):
+        raise HTTPException(status_code=422, detail="Item quantities must be at least 1")
+
     next_recurrence_date = None
     if req.is_recurring and req.recurrence_type == "annual" and req.delivery_datetime:
         try:
@@ -5309,7 +5406,11 @@ def create_order(req: OrderRequest):
             if u.data:
                 user_id = u.data[0]["id"]
 
-    items_subtotal = sum(float(item.price) * int(item.quantity) for item in (req.items or []))
+    # Priced from the server's own catalog — see _real_item_prices — never
+    # from item.price, which a client fully controls and previously drove
+    # the entire order total unchecked.
+    real_prices = _real_item_prices(req.items)
+    items_subtotal = sum(real_prices.get(item.productId, 0.0) * int(item.quantity) for item in (req.items or []))
     customer_lat = req.customer.get("latitude")
     customer_lng = req.customer.get("longitude")
     resolved_merchants = _resolve_order_merchants(req.items)
@@ -5319,7 +5420,37 @@ def create_order(req: OrderRequest):
     tax_config = _get_tax_config()
     tax_rate = tax_config["rate"] if tax_config["enabled"] else 0.0
     tax_amount = round(items_subtotal * tax_rate / 100, 2) if tax_rate > 0 else 0.0
-    discount_amount = round(max(0.0, items_subtotal + shipping_fee + tax_amount - req.total), 2)
+
+    # Points discount and promo discount are each recomputed here from
+    # server-known inputs (the admin's redemption rate; the real promo/
+    # reward-voucher rules) — discount_amount used to just be whatever gap
+    # was left between the components above and the client's self-reported
+    # req.total, so a request could claim any discount it liked by picking
+    # req.total accordingly, and req.total itself was trusted as the actual
+    # charged amount with no independent check at all.
+    loyalty_cfg = _get_loyalty_config()
+    points_discount = round(points_redeemed_requested / loyalty_cfg["redemption_rate"], 2) if points_redeemed_requested > 0 else 0.0
+
+    promo_code_clean = (req.promo_code or "").strip().upper() or None
+    promo_discount = 0.0
+    if promo_code_clean:
+        # Matches checkout.ts's applyPromo(): promo is evaluated against
+        # subtotal + shipping with the points discount already subtracted
+        # (tax is not part of this base) — same ordering the customer's
+        # own screen already used to preview the discount.
+        pre_discount_total = max(0.0, round(items_subtotal + shipping_fee - points_discount, 2))
+        promo_result = _resolve_promo_discount(promo_code_clean, pre_discount_total, customer_email)
+        promo_discount = promo_result["discount_amount"]
+
+    discount_amount = round(points_discount + promo_discount, 2)
+    expected_total = round(max(0.0, items_subtotal + shipping_fee + tax_amount - discount_amount), 2)
+    # Small float-rounding tolerance only — anything beyond that means the
+    # client's cart/discount state has drifted from what the server just
+    # independently computed (a stale price, a promo that changed, a bug),
+    # and the previous behavior of silently trusting req.total either way
+    # is exactly the hole this whole block closes.
+    if abs(expected_total - req.total) > 1.0:
+        raise HTTPException(status_code=400, detail="Your order total doesn't match what we calculated — please refresh your cart and try again.")
 
     order_row = {
         "id": order_id,
@@ -5335,7 +5466,7 @@ def create_order(req: OrderRequest):
         ])),
         "latitude": customer_lat,
         "longitude": customer_lng,
-        "total": req.total,
+        "total": expected_total,
         "status": "confirmed",
         "delivery_type": req.delivery_type,
         "delivery_datetime": req.delivery_datetime,
@@ -5345,7 +5476,7 @@ def create_order(req: OrderRequest):
         "payment_method": req.payment_method,
         "shipping_fee": shipping_fee,
         "discount_amount": discount_amount,
-        "promo_code": (req.promo_code or "").strip().upper() or None,
+        "promo_code": promo_code_clean,
         "points_redeemed": req.points_redeemed or 0,
     }
     if _has_column("orders", "source"):
@@ -5356,6 +5487,13 @@ def create_order(req: OrderRequest):
         order_row["tax_amount"] = tax_amount
     if _has_column("orders", "tax_rate"):
         order_row["tax_rate"] = tax_rate
+    if _has_column("orders", "points_discount_amount"):
+        # The redemption rate is admin-editable and can change after this
+        # order is placed — storing the actual ₹ value computed at order
+        # time (rather than making every future page recompute it from
+        # points_redeemed ÷ whatever the rate happens to be later) is what
+        # keeps an old order's displayed breakdown accurate forever.
+        order_row["points_discount_amount"] = points_discount
     try:
         supabase.table("orders").insert(order_row).execute()
     except Exception as e:
@@ -5378,7 +5516,7 @@ def create_order(req: OrderRequest):
     # RESEND_API_KEY is configured) — no in-app notice at all.
     create_user_notice(
         customer_email, "🌸 Order placed!",
-        f"Your order #{order_id} for ₹{req.total:.2f} is confirmed. We'll keep you posted every step of the way.",
+        f"Your order #{order_id} for ₹{expected_total:.2f} is confirmed. We'll keep you posted every step of the way.",
         "order", order_id,
     )
 
@@ -5396,7 +5534,7 @@ def create_order(req: OrderRequest):
                 award_points(customer_email, -points_redeemed, "redeemed", f"Points redeemed at checkout for order {order_id}", order_id)
 
         # Points are EARNED only on delivery — report what's pending, don't credit yet.
-        points_pending = int(req.total)
+        points_pending = int(expected_total * loyalty_cfg["points_per_rupee"])
 
         try:
             updated = supabase.table("loyalty_accounts").select("points_balance").eq("user_email", customer_email).execute()
@@ -5416,13 +5554,13 @@ def create_order(req: OrderRequest):
             req.customer.get("state", ""),
             req.customer.get("zip", ""),
         ])),
-        "total": req.total,
+        "total": expected_total,
         "delivery_type": req.delivery_type,
         "delivery_datetime": req.delivery_datetime,
         "payment_method": req.payment_method,
     }
     items_list = [
-        {"name": item.name, "price": item.price, "quantity": item.quantity}
+        {"name": item.name, "price": real_prices.get(item.productId, 0.0), "quantity": item.quantity}
         for item in (req.items or [])
     ]
     send_order_confirmation_email(order_record, items_list)
@@ -5544,7 +5682,12 @@ def _generate_one_subscription_order(sub: dict) -> str:
         print(f"[Bloom Plan] order insert failed for {sub_id}: {e}", flush=True)
         return "errors"
 
-    _place_order_items(order_id, order_items, delivery_date, source="subscription")
+    # sub.latitude/longitude are only present once the signup form captures
+    # a location (not yet wired into the frontend) — until then this stays
+    # None and a merchant's delivery-radius cap silently isn't enforced for
+    # Bloom Plan orders, same as before.
+    _place_order_items(order_id, order_items, delivery_date, source="subscription",
+                        customer_lat=sub.get("latitude"), customer_lng=sub.get("longitude"))
 
     # Only advance to the next cycle once this one is safely generated.
     new_next = advance_delivery_date(sub.get("plan"), delivery_date)
@@ -5698,7 +5841,7 @@ def create_subscription(req: SubscriptionRequest):
     sub_id = "SUB" + str(uuid.uuid4())[:8].upper()
     # "florist" = let us pick (no items); otherwise a custom hand-picked set
     first = req.items[0] if req.items else None
-    supabase.table("subscriptions").insert({
+    sub_row = {
         "id": sub_id,
         "customer_email": req.customer_email,
         "customer_name": req.customer_name,
@@ -5716,7 +5859,12 @@ def create_subscription(req: SubscriptionRequest):
         "next_delivery": next_delivery_date(req.plan),
         "address": req.address,
         "skipped_count": 0,
-    }).execute()
+    }
+    if req.latitude is not None and _has_column("subscriptions", "latitude"):
+        sub_row["latitude"] = req.latitude
+    if req.longitude is not None and _has_column("subscriptions", "longitude"):
+        sub_row["longitude"] = req.longitude
+    supabase.table("subscriptions").insert(sub_row).execute()
     return {"id": sub_id, "status": "active", "next_delivery": next_delivery_date(req.plan)}
 
 class SubscriptionActionRequest(BaseModel):
@@ -6060,6 +6208,8 @@ class CorporateOrderRequest(BaseModel):
     branding_logo_url: Optional[str] = None
     branding_message: Optional[str] = None
     delivery_address: str
+    latitude: Optional[float] = None    # optional until the booking form has a location picker —
+    longitude: Optional[float] = None   # without it, a merchant's delivery-radius cap can't be enforced for corporate bookings
     delivery_date: Optional[str] = None
 
 def corp_discount(qty: int) -> int:
@@ -6179,7 +6329,12 @@ def _create_linked_corporate_order(booking: dict) -> Optional[str]:
         print(f"[Corporate] linked order creation failed: {e}", flush=True)
         return None
 
-    _place_order_items(order_id, order_items, booking.get("delivery_date"), source="corporate")
+    # booking.latitude/longitude are only present once the booking form
+    # captures a location (not yet wired into the frontend) — until then
+    # this stays None and a merchant's delivery-radius cap silently isn't
+    # enforced for corporate orders, same as before.
+    _place_order_items(order_id, order_items, booking.get("delivery_date"), source="corporate",
+                        customer_lat=booking.get("latitude"), customer_lng=booking.get("longitude"))
     return order_id
 
 
@@ -6246,7 +6401,7 @@ def create_corporate_order(req: CorporateOrderRequest):
     if len(items) > 1:
         summary_name += f" + {len(items) - 1} more"
 
-    supabase.table("corporate_orders").insert({
+    corp_row = {
         "id": order_id,
         "company_name": req.company_name,
         "event_type": req.event_type,
@@ -6268,7 +6423,12 @@ def create_corporate_order(req: CorporateOrderRequest):
         "is_recurring": False,
         "next_delivery": None,
         "status": "pending",
-    }).execute()
+    }
+    if req.latitude is not None and _has_column("corporate_orders", "latitude"):
+        corp_row["latitude"] = req.latitude
+    if req.longitude is not None and _has_column("corporate_orders", "longitude"):
+        corp_row["longitude"] = req.longitude
+    supabase.table("corporate_orders").insert(corp_row).execute()
     return {"id": order_id, "final_amount": final_amount, "next_delivery": None}
 
 def _require_corporate_order_owner_or_admin(token: Optional[str], order: dict) -> str:

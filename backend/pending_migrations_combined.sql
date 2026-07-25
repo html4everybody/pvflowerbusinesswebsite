@@ -1,58 +1,30 @@
 -- ============================================================================
 -- VivaPetals — combined pending migrations
 -- Run this once in the Supabase SQL editor. All statements are idempotent
--- (IF NOT EXISTS / ADD COLUMN IF NOT EXISTS / CREATE TABLE IF NOT EXISTS),
--- so it's safe to re-run if you're ever unsure what's already applied.
+-- (IF NOT EXISTS / ADD COLUMN IF NOT EXISTS), so it's safe to re-run if
+-- you're ever unsure what's already applied.
+--
+-- (Petal Rewards tables and delivery_pricing.base_price from the previous
+-- batch are already applied — this file now only has what's new.)
 -- ============================================================================
 
--- ── Petal Rewards: admin-configurable earn/redemption rates + a claimable
--- reward catalog. Defaults below match the values that were previously
--- hardcoded in main.py, so running this changes NOTHING until an admin
--- edits a rate or adds a reward.
-CREATE TABLE IF NOT EXISTS loyalty_config (
-  id INTEGER PRIMARY KEY DEFAULT 1,
-  points_per_rupee NUMERIC NOT NULL DEFAULT 1,
-  welcome_bonus INTEGER NOT NULL DEFAULT 100,
-  referral_signup_bonus INTEGER NOT NULL DEFAULT 200,
-  referral_purchase_bonus INTEGER NOT NULL DEFAULT 150,
-  redemption_rate NUMERIC NOT NULL DEFAULT 10,
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_by TEXT
-);
+-- ── Historically-accurate points-discount display ───────────────────────────
+-- The redemption rate is admin-editable and can change after an order is
+-- placed — storing the actual ₹ value computed at order time (instead of
+-- every page recomputing it from points_redeemed ÷ whatever the rate
+-- happens to be later) is what keeps an old order's displayed breakdown
+-- accurate forever. Defaults to 0 and is only populated for new orders.
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS points_discount_amount NUMERIC DEFAULT 0;
 
-CREATE TABLE IF NOT EXISTS reward_catalog (
-  id TEXT PRIMARY KEY,
-  title TEXT NOT NULL,
-  description TEXT,
-  points_cost INTEGER NOT NULL,
-  discount_value NUMERIC NOT NULL,
-  min_order NUMERIC NOT NULL DEFAULT 0,
-  active BOOLEAN NOT NULL DEFAULT TRUE,
-  sort_order INTEGER NOT NULL DEFAULT 0,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
+-- ── Optional delivery coordinates for Bloom Plan subscriptions and Petal
+-- Studio corporate bookings ─────────────────────────────────────────────────
+-- Without these, a merchant's delivery-radius cap silently can't be
+-- enforced for these two order types (it already works for retail
+-- checkout, which has always captured coordinates). Columns are
+-- nullable/unused until the respective frontend forms add a location
+-- picker; the backend already reads them if present.
+ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS latitude NUMERIC;
+ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS longitude NUMERIC;
 
--- Each claim is a firm commitment at the value/cost the customer actually
--- paid points for, even if the catalog entry changes or is removed later —
--- title/discount_value/min_order are snapshotted, not looked up live.
-CREATE TABLE IF NOT EXISTS reward_claims (
-  id TEXT PRIMARY KEY,
-  user_email TEXT NOT NULL,
-  reward_id TEXT NOT NULL,
-  code TEXT NOT NULL UNIQUE,
-  title TEXT NOT NULL,
-  discount_value NUMERIC NOT NULL,
-  min_order NUMERIC NOT NULL DEFAULT 0,
-  points_spent INTEGER NOT NULL,
-  used BOOLEAN NOT NULL DEFAULT FALSE,
-  used_order_id TEXT,
-  claimed_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-
-CREATE INDEX IF NOT EXISTS idx_reward_claims_email ON reward_claims(user_email);
-
--- ── Delivery fee base price (flat amount added before the per-km charge) ───
--- Defaults to 0, so nothing changes for existing checkouts until an admin
--- sets a value in Admin → Delivery Zones → Delivery Fee.
-ALTER TABLE delivery_pricing ADD COLUMN IF NOT EXISTS base_price NUMERIC NOT NULL DEFAULT 0;
+ALTER TABLE corporate_orders ADD COLUMN IF NOT EXISTS latitude NUMERIC;
+ALTER TABLE corporate_orders ADD COLUMN IF NOT EXISTS longitude NUMERIC;

@@ -229,10 +229,17 @@ export class Checkout {
   deliveryFeeBreakdown = signal<{ shop_name: string; distance_km: number; fee: number }[]>([]);
   freeDeliveryApplied = signal(false);
   loadingDeliveryFee = signal(false);
+  // Rapidly switching saved addresses (or editing the pin then immediately
+  // picking a saved address) fired overlapping requests with no
+  // cancellation — if an earlier request resolved after a later one, the
+  // displayed fee/breakdown reverted to match an address the customer was
+  // no longer using. Only the response matching the latest call is applied.
+  private deliveryFeeRequestId = 0;
 
   refreshDeliveryFee(): void {
     if (this.formData.latitude == null || this.formData.longitude == null) return;
     this.loadingDeliveryFee.set(true);
+    const requestId = ++this.deliveryFeeRequestId;
     const body = {
       items: this.cartService.getCartItems().map(item => ({
         productId: item.product.id, quantity: item.quantity, price: item.product.final_price ?? item.product.price,
@@ -242,6 +249,7 @@ export class Checkout {
     };
     this.http.post<{ delivery_fee: number; per_km_rate: number | null; breakdown: any[]; free_delivery: boolean }>(`${environment.apiUrl}/api/checkout/delivery-estimate`, body).subscribe({
       next: (res) => {
+        if (requestId !== this.deliveryFeeRequestId) return;
         this.deliveryFee.set(res.delivery_fee);
         this.deliveryFeeBreakdown.set(res.breakdown || []);
         this.freeDeliveryApplied.set(res.free_delivery);
@@ -249,6 +257,7 @@ export class Checkout {
         this.errorMessage.set('');
       },
       error: (err) => {
+        if (requestId !== this.deliveryFeeRequestId) return;
         this.loadingDeliveryFee.set(false);
         if (err?.status === 409) {
           this.errorMessage.set(err?.error?.detail ?? 'One or more items in your cart are no longer available for delivery. Please remove them from your cart.');
@@ -384,7 +393,7 @@ export class Checkout {
   }
 
   getTotal(): number {
-    return this.cartService.cartTotal() + this.getShipping() + this.getTax() - this.pointsDiscountAmount() - this.promoDiscountAmount();
+    return Math.max(0, this.cartService.cartTotal() + this.getShipping() + this.getTax() - this.pointsDiscountAmount() - this.promoDiscountAmount());
   }
 
   applyPromo(): void {
@@ -414,11 +423,28 @@ export class Checkout {
   }
 
   get maxRedeemable(): number {
-    return this.loyaltyBalance();
+    // Previously just the raw balance — a customer could redeem far more
+    // points than a cheap order was even worth, driving getTotal() negative.
+    // Cap it to however many points cover the order (after promo, before
+    // points) and no further.
+    const orderValueBeforePoints = Math.max(0, this.cartService.cartTotal() + this.getShipping() + this.getTax() - this.promoDiscountAmount());
+    const maxPointsForOrderValue = Math.floor(orderValueBeforePoints * this.redemptionRate());
+    return Math.min(this.loyaltyBalance(), maxPointsForOrderValue);
+  }
+
+  // A percent-type promo's discount is computed against (subtotal + shipping
+  // − points discount) at the moment it's applied — if points redemption
+  // changes afterward, that stored discount_amount went stale relative to
+  // the new pre-discount total unless re-validated.
+  private reapplyPromoIfApplied(): void {
+    if (this.promoResult() && this.promoCode().trim()) {
+      this.applyPromo();
+    }
   }
 
   clampAndSetPoints(value: number): void {
     this.pointsToRedeem.set(Math.min(this.maxRedeemable, Math.max(0, value)));
+    this.reapplyPromoIfApplied();
   }
 
   togglePoints(): void {
@@ -428,6 +454,7 @@ export class Checkout {
     } else {
       this.pointsToRedeem.set(this.maxRedeemable);
     }
+    this.reapplyPromoIfApplied();
   }
 
   @ViewChild('checkoutForm') checkoutForm?: NgForm;

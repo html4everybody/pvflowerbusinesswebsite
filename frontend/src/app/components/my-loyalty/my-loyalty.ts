@@ -27,12 +27,17 @@ export class MyLoyalty implements OnInit {
   myClaims = signal<RewardClaim[]>([]);
   claimingId = signal<string | null>(null);
 
-  // Floral tiers themed for "Petal Rewards"
+  // Floral tiers themed for "Petal Rewards" — recognition milestones for
+  // lifetime points earned. These previously claimed bonus-point
+  // multipliers, free delivery, and priority support at each tier, none of
+  // which exist anywhere in the backend (earn rate is a single flat
+  // platform-wide setting, see config() below) — customers who "reached"
+  // a tier were being told they'd unlocked perks they never actually got.
   readonly TIERS: Tier[] = [
-    { key: 'Sprout',      icon: 'bi-flower3', min: 0,    perk: 'Earn 1 point for every ₹1 you spend',    accent: '#84cc16' },
-    { key: 'Bloom',       icon: 'bi-flower1', min: 500,  perk: '+5% bonus points on every order',        accent: '#ec4899' },
-    { key: 'Blossom',     icon: 'bi-flower2', min: 1500, perk: 'Free delivery + 10% bonus points',       accent: '#a855f7' },
-    { key: 'Petal Elite', icon: 'bi-gem',     min: 5000, perk: 'Priority support + 15% bonus points',    accent: '#f59e0b' },
+    { key: 'Sprout',      icon: 'bi-flower3', min: 0,    perk: 'Welcome to Petal Rewards — every order earns points',        accent: '#84cc16' },
+    { key: 'Bloom',       icon: 'bi-flower1', min: 500,  perk: 'A regular — thank you for coming back to us',                accent: '#ec4899' },
+    { key: 'Blossom',     icon: 'bi-flower2', min: 1500, perk: 'A cherished customer — we appreciate your loyalty',          accent: '#a855f7' },
+    { key: 'Petal Elite', icon: 'bi-gem',     min: 5000, perk: 'Our top tier — thank you for being one of our best',         accent: '#f59e0b' },
   ];
 
   constructor(
@@ -65,7 +70,9 @@ export class MyLoyalty implements OnInit {
   }
 
   loadMyClaims(email: string): void {
-    this.loyaltyService.getMyClaims(email).subscribe({
+    const token = this.authService.getToken();
+    if (!token) return;
+    this.loyaltyService.getMyClaims(email, token).subscribe({
       next: claims => this.myClaims.set(claims),
       error: () => {},
     });

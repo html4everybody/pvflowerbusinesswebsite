@@ -81,7 +81,7 @@ export class LoyaltyService {
     return this.http.post<RewardClaim>(`${this.apiUrl}/api/rewards/claim`, { token, reward_id: rewardId });
   }
 
-  getMyClaims(email: string): Observable<RewardClaim[]> {
-    return this.http.get<RewardClaim[]>(`${this.apiUrl}/api/rewards/my-claims?email=${encodeURIComponent(email)}`);
+  getMyClaims(email: string, token: string): Observable<RewardClaim[]> {
+    return this.http.get<RewardClaim[]>(`${this.apiUrl}/api/rewards/my-claims?email=${encodeURIComponent(email)}&token=${encodeURIComponent(token)}`);
   }
 }

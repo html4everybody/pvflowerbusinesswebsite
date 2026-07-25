@@ -214,10 +214,19 @@ export class ProductDetail implements OnInit {
   }
 
   // ── Review methods ───────────────────────────────────────────────────────────
+  // Clicking through "Related Products" fires a new loadReviews() before the
+  // prior product's request necessarily resolves — with no cancellation, an
+  // older response landing after a newer one left the page showing the
+  // wrong product's reviews. Only the response matching the latest call for
+  // the CURRENTLY displayed product is applied.
+  private reviewsRequestId = 0;
+
   loadReviews(productId: string): void {
     this.loadingReviews.set(true);
+    const requestId = ++this.reviewsRequestId;
     this.http.get<any[]>(`${environment.apiUrl}/api/reviews?product_id=${productId}`).subscribe({
       next: (data) => {
+        if (requestId !== this.reviewsRequestId) return;
         this.reviews = (data || []).map(r => ({
           id: r.id,
           author: r.author_name,
@@ -231,6 +240,7 @@ export class ProductDetail implements OnInit {
         this.loadingReviews.set(false);
       },
       error: () => {
+        if (requestId !== this.reviewsRequestId) return;
         this.reviews = [];
         this.loadingReviews.set(false);
       }
@@ -240,8 +250,9 @@ export class ProductDetail implements OnInit {
   loadCanReview(productId: string): void {
     const email = this.authService.user()?.email;
     if (!email) return;
+    const requestId = this.reviewsRequestId;
     this.http.get<any>(`${environment.apiUrl}/api/reviews/can-review?product_id=${productId}&email=${encodeURIComponent(email)}`).subscribe({
-      next: (s) => this.canReviewStatus.set(s),
+      next: (s) => { if (requestId === this.reviewsRequestId) this.canReviewStatus.set(s); },
       error: () => {}
     });
   }

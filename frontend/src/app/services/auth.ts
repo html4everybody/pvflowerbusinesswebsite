@@ -95,12 +95,13 @@ export class AuthService {
   }
 
   register(data: { firstName: string; lastName: string; email: string; password: string; referral_code?: string }): Observable<any> {
+    // Previously duplicated setSession()'s localStorage-write logic here
+    // instead of calling it — always persistent regardless of what login()
+    // would do for the same choice, and two copies of "write the session"
+    // that could silently drift apart. Signup has no remember-me control of
+    // its own, so this keeps the existing default (persistent) behavior.
     return this.http.post<any>(`${this.apiUrl}/api/auth/register`, data).pipe(
-      tap(res => {
-        localStorage.setItem('viva_token', res.token);
-        localStorage.setItem('viva_user', JSON.stringify(res.user));
-        this.user.set(res.user);
-      })
+      tap(res => this.setSession(res.token, res.user, true))
     );
   }
 
