@@ -1,13 +1,48 @@
-$blue:        #2f5fb0;
-$blue-dark:   #254d96;
-$text-head:   #1d2433;
-$text-body:   #5a5a6e;
-$text-label:  #44403a;
-$field-bg:    #f6f8fb;
-$field-bdr:   #e4e7ec;
-$placeholder: #a8a294;
-$divider-ln:  #e5e1d8;
-$divider-tx:  #9c968a;
+// This page keeps its own bespoke boutique palette (warm cream + serif
+// heading) rather than the app's generic blue chrome — that's a deliberate
+// identity choice for the auth experience, not a hardcode oversight. What
+// WAS missing is dark-mode support: these were plain SCSS $constants
+// (compile-time, can't respond to the [data-theme] toggle), so the page
+// looked untouched-and-broken whenever the rest of the site went dark.
+// Turning them into CSS custom properties with a dark override fixes that
+// while keeping the light-mode look pixel-identical.
+.vp-page {
+  --vp-bg:          #f4f1ea;
+  --vp-card-bg:     #fff;
+  --vp-panel-bg:    #f0ebe2;
+  --vp-text-head:   #1d2433;
+  --vp-text-body:   #5a5a6e;
+  --vp-text-label:  #44403a;
+  --vp-text-muted:  #6f6a5e;
+  --vp-field-bg:    #f6f8fb;
+  --vp-field-bdr:   #e4e7ec;
+  --vp-placeholder: #a8a294;
+  --vp-divider-ln:  #e5e1d8;
+  --vp-divider-tx:  #9c968a;
+  --vp-input-text:  #2c2a25;
+  --vp-icon-muted:  #b0aaa0;
+  --vp-blue:        #2f5fb0;
+  --vp-blue-dark:   #254d96;
+}
+
+:host-context([data-theme="dark"]) .vp-page {
+  --vp-bg:          var(--bg);
+  --vp-card-bg:     var(--bg-card);
+  --vp-panel-bg:    var(--bg-raised);
+  --vp-text-head:   var(--text);
+  --vp-text-body:   var(--text-muted);
+  --vp-text-label:  var(--text-muted);
+  --vp-text-muted:  var(--text-muted);
+  --vp-field-bg:    var(--bg-raised);
+  --vp-field-bdr:   var(--border);
+  --vp-placeholder: var(--text-subtle);
+  --vp-divider-ln:  var(--border);
+  --vp-divider-tx:  var(--text-subtle);
+  --vp-input-text:  var(--text);
+  --vp-icon-muted:  var(--text-subtle);
+  --vp-blue:        var(--accent);
+  --vp-blue-dark:   var(--accent-dark);
+}
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 .vp-page {
@@ -18,7 +53,7 @@ $divider-tx:  #9c968a;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #f4f1ea;
+  background: var(--vp-bg);
   font-family: 'Inter', -apple-system, sans-serif;
   padding: 0.85rem 1rem;
   box-sizing: border-box;
@@ -33,7 +68,7 @@ $divider-tx:  #9c968a;
   max-height: min(100%, 760px);
   border-radius: 22px;
   overflow: hidden;
-  background: #fff;
+  background: var(--vp-card-bg);
   box-shadow:
     0 4px 6px rgba(0,0,0,0.04),
     0 24px 70px rgba(0,0,0,0.16);
@@ -50,21 +85,27 @@ $divider-tx:  #9c968a;
   position: relative;
   width: 36%;
   flex-shrink: 0;
-  background: #f0ebe2;
+  background: var(--vp-panel-bg);
   overflow: hidden;
 
   @media (max-width: 900px) { width: 32%; }
   @media (max-width: 700px) { display: none; }
-}
 
-.vp-card-img {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: center;
-  animation: vpKenBurns 24s ease-in-out infinite alternate;
+  // The hero photo is only ever visible at 701px+ — scoping the
+  // background-image inside this same media query (rather than loading it
+  // via an <img> hidden with display:none) means phones never fetch it at
+  // all instead of paying for a multi-MB download nobody sees.
+  @media (min-width: 701px) {
+    &::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image: url('/signin-flowers.png');
+      background-size: cover;
+      background-position: center;
+      animation: vpKenBurns 24s ease-in-out infinite alternate;
+    }
+  }
 }
 
 @keyframes vpKenBurns {
@@ -84,6 +125,9 @@ $divider-tx:  #9c968a;
   text-align: right;
   z-index: 2;
 
+  // Sits over the hero photo, not the card surface — stays a fixed warm
+  // dark tone (with a light text-shadow for contrast against the photo)
+  // regardless of site theme, same as the photo itself doesn't reflow.
   p {
     font-family: 'Fraunces', Georgia, serif;
     font-size: 1rem;
@@ -105,7 +149,7 @@ $divider-tx:  #9c968a;
   display: block;
   width: 28px;
   height: 2px;
-  background: $blue;
+  background: var(--vp-blue);
   border-radius: 2px;
 }
 
@@ -113,7 +157,7 @@ $divider-tx:  #9c968a;
 .vp-card-right {
   flex: 1;
   min-width: 0;
-  background: #fff;
+  background: var(--vp-card-bg);
   display: flex;
   flex-direction: column;
   overflow-y: auto;
@@ -121,7 +165,7 @@ $divider-tx:  #9c968a;
   // thin custom scrollbar inside the card
   &::-webkit-scrollbar { width: 4px; }
   &::-webkit-scrollbar-track { background: transparent; }
-  &::-webkit-scrollbar-thumb { background: #e4e7ec; border-radius: 4px; }
+  &::-webkit-scrollbar-thumb { background: var(--vp-field-bdr); border-radius: 4px; }
 }
 
 .vp-referral-banner {
@@ -160,7 +204,7 @@ $divider-tx:  #9c968a;
   font-weight: 700;
   letter-spacing: 2.5px;
   text-transform: uppercase;
-  color: $blue;
+  color: var(--vp-blue);
 }
 
 .vp-heading h1 {
@@ -169,14 +213,14 @@ $divider-tx:  #9c968a;
   font-size: clamp(1.9rem, 3vw, 2.4rem);
   line-height: 1.08;
   letter-spacing: -0.3px;
-  color: $text-head;
+  color: var(--vp-text-head);
   margin: 0 0 0.4rem;
 }
 
 .vp-subtitle {
   font-size: 14px;
   line-height: 1.5;
-  color: $text-body;
+  color: var(--vp-text-body);
   margin: 0;
 }
 
@@ -196,7 +240,7 @@ $divider-tx:  #9c968a;
     display: block;
     font-size: 12.5px;
     font-weight: 600;
-    color: $text-label;
+    color: var(--vp-text-label);
     letter-spacing: 0.2px;
     margin-bottom: 5px;
   }
@@ -207,14 +251,14 @@ $divider-tx:  #9c968a;
   align-items: center;
   gap: 10px;
   height: 46px;
-  background: $field-bg;
-  border: 1.5px solid $field-bdr;
+  background: var(--vp-field-bg);
+  border: 1.5px solid var(--vp-field-bdr);
   border-radius: 12px;
   padding: 0 14px;
   transition: border-color 0.18s, box-shadow 0.18s;
 
   &:focus-within {
-    border-color: $blue;
+    border-color: var(--vp-blue);
     box-shadow: 0 0 0 3px rgba(47, 95, 176, 0.09);
   }
 
@@ -225,10 +269,10 @@ $divider-tx:  #9c968a;
     border: none;
     outline: none;
     font-size: 15px;
-    color: #2c2a25;
+    color: var(--vp-input-text);
     font-family: inherit;
 
-    &::placeholder { color: $placeholder; }
+    &::placeholder { color: var(--vp-placeholder); }
 
     // Kill the browser autofill's white/pale box — paint the field bg over it
     // and keep our own text colour. Covers Chromium (-webkit) and the standard
@@ -240,35 +284,18 @@ $divider-tx:  #9c968a;
     &:autofill,
     &:autofill:hover,
     &:autofill:focus {
-      -webkit-text-fill-color: #2c2a25 !important;
-      -webkit-box-shadow: 0 0 0 1000px $field-bg inset !important;
-      box-shadow: 0 0 0 1000px $field-bg inset !important;
+      -webkit-text-fill-color: var(--vp-input-text) !important;
+      -webkit-box-shadow: 0 0 0 1000px var(--vp-field-bg) inset !important;
+      box-shadow: 0 0 0 1000px var(--vp-field-bg) inset !important;
       background-clip: content-box !important;
-      caret-color: #2c2a25;
+      caret-color: var(--vp-input-text);
       transition: background-color 9999s ease-in-out 0s;
     }
   }
 }
 
-// In dark mode the field is dark (#1e293b), so autofill must paint the dark
-// bg — otherwise selecting a suggested email flashes a white box.
-:host-context([data-theme="dark"]) .vp-field input {
-  &:-webkit-autofill,
-  &:-webkit-autofill:hover,
-  &:-webkit-autofill:focus,
-  &:-webkit-autofill:active,
-  &:autofill,
-  &:autofill:hover,
-  &:autofill:focus {
-    -webkit-text-fill-color: #f1f5f9 !important;
-    -webkit-box-shadow: 0 0 0 1000px #1e293b inset !important;
-    box-shadow: 0 0 0 1000px #1e293b inset !important;
-    caret-color: #f1f5f9;
-  }
-}
-
-.vp-field-icon { color: #b0aaa0; flex-shrink: 0; transition: color 0.18s ease; }
-.vp-field:focus-within .vp-field-icon { color: $blue; }
+.vp-field-icon { color: var(--vp-icon-muted); flex-shrink: 0; transition: color 0.18s ease; }
+.vp-field:focus-within .vp-field-icon { color: var(--vp-blue); }
 
 .vp-eye {
   background: none;
@@ -277,14 +304,14 @@ $divider-tx:  #9c968a;
   display: flex;
   align-items: center;
   cursor: pointer;
-  color: #a8a294;
+  color: var(--vp-placeholder);
   flex-shrink: 0;
   transition: color 0.15s;
 
-  &:hover { color: #6f6a5e; }
+  &:hover { color: var(--vp-text-muted); }
 }
 
-.vp-field-error { font-size: 11px; color: #e53e3e; margin-top: 3px; }
+.vp-field-error { font-size: 11px; color: var(--error); margin-top: 3px; }
 
 // ── Options ───────────────────────────────────────────────────────────────────
 .vp-options {
@@ -299,16 +326,16 @@ $divider-tx:  #9c968a;
   align-items: center;
   gap: 0.35rem;
   font-size: 13px;
-  color: #6f6a5e;
+  color: var(--vp-text-muted);
   cursor: pointer;
 
-  input[type="checkbox"] { width: 14px; height: 14px; accent-color: $blue; cursor: pointer; }
+  input[type="checkbox"] { width: 14px; height: 14px; accent-color: var(--vp-blue); cursor: pointer; }
 }
 
 .vp-forgot {
   font-size: 14px;
   font-weight: 600;
-  color: $blue;
+  color: var(--vp-blue);
   text-decoration: none;
 
   &:hover { text-decoration: underline; }
@@ -320,7 +347,7 @@ $divider-tx:  #9c968a;
   align-items: center;
   gap: 0.35rem;
   font-size: 12px;
-  color: #16a34a;
+  color: var(--success);
   background: rgba(22,163,74,0.07);
   border: 1px solid rgba(22,163,74,0.2);
   border-radius: 9px;
@@ -330,7 +357,7 @@ $divider-tx:  #9c968a;
 
 .vp-error {
   font-size: 12px;
-  color: #c0392b;
+  color: var(--error);
   background: rgba(192,57,43,0.06);
   border: 1px solid rgba(192,57,43,0.18);
   border-radius: 9px;
@@ -340,18 +367,18 @@ $divider-tx:  #9c968a;
 
 .vp-resend { margin-top: 0.2rem; }
 .vp-resend-btn {
-  background: none; border: none; color: $blue;
+  background: none; border: none; color: var(--vp-blue);
   font-size: 11.5px; font-weight: 500; cursor: pointer;
   padding: 0; text-decoration: underline; font-family: inherit;
 }
-.vp-resend-done { font-size: 11.5px; color: #16a34a; }
+.vp-resend-done { font-size: 11.5px; color: var(--success); }
 
 // ── Submit ────────────────────────────────────────────────────────────────────
 .vp-submit {
   width: 100%;
   height: 48px;
   border-radius: 12px;
-  background: $blue;
+  background: var(--vp-blue);
   color: #fff;
   border: none;
   font-size: 15px;
@@ -368,7 +395,7 @@ $divider-tx:  #9c968a;
   transition: background 0.18s, box-shadow 0.18s, transform 0.12s;
 
   &:hover:not(:disabled) {
-    background: $blue-dark;
+    background: var(--vp-blue-dark);
     box-shadow: 0 8px 20px -4px rgba(47,95,176,0.45);
     transform: translateY(-1px);
   }
@@ -382,10 +409,10 @@ $divider-tx:  #9c968a;
   align-items: center;
   gap: 0.6rem;
   font-size: 11.5px;
-  color: $divider-tx;
+  color: var(--vp-divider-tx);
   margin-bottom: 0.6rem;
 
-  &::before, &::after { content: ''; flex: 1; height: 1px; background: $divider-ln; }
+  &::before, &::after { content: ''; flex: 1; height: 1px; background: var(--vp-divider-ln); }
 }
 
 // ── Social ────────────────────────────────────────────────────────────────────
@@ -402,29 +429,29 @@ $divider-tx:  #9c968a;
   justify-content: center;
   gap: 0.5rem;
   height: 44px;
-  border: 1.5px solid $field-bdr;
+  border: 1.5px solid var(--vp-field-bdr);
   border-radius: 11px;
-  background: #fff;
+  background: var(--vp-card-bg);
   font-size: 13.5px;
   font-weight: 500;
-  color: #3c3933;
+  color: var(--vp-text-label);
   font-family: inherit;
   cursor: pointer;
   transition: border-color 0.15s, background 0.15s;
 
-  &:hover:not(:disabled) { border-color: #b9c2d4; background: $field-bg; }
+  &:hover:not(:disabled) { border-color: #b9c2d4; background: var(--vp-field-bg); }
   &:disabled { opacity: 0.5; cursor: not-allowed; }
 }
 
 // ── Switch ────────────────────────────────────────────────────────────────────
 .vp-switch {
   font-size: 14.5px;
-  color: #6f6a5e;
+  color: var(--vp-text-muted);
   text-align: center;
   margin: 0;
 
   button {
-    background: none; border: none; color: $blue;
+    background: none; border: none; color: var(--vp-blue);
     font-weight: 700; font-size: inherit; font-family: inherit;
     cursor: pointer; padding: 0;
 
@@ -437,23 +464,23 @@ $divider-tx:  #9c968a;
 
 .vp-pw-req {
   display: flex; align-items: center; gap: 0.28rem;
-  font-size: 10.5px; color: #a0998e; transition: color 0.2s;
+  font-size: 10.5px; color: var(--vp-placeholder); transition: color 0.2s;
 
-  &.met { color: #16a34a; .vp-pw-dot { background: #16a34a; } }
+  &.met { color: var(--success); .vp-pw-dot { background: var(--success); } }
 }
 
 .vp-pw-dot {
   width: 4px; height: 4px; border-radius: 50%;
-  background: #d4cfc8; flex-shrink: 0; transition: background 0.2s;
+  background: var(--vp-field-bdr); flex-shrink: 0; transition: background 0.2s;
 }
 
 // ── Terms ─────────────────────────────────────────────────────────────────────
 .vp-terms {
   display: flex; align-items: flex-start; gap: 0.38rem;
-  font-size: 12px; color: #6f6a5e; margin-bottom: 0.75rem; cursor: pointer;
+  font-size: 12px; color: var(--vp-text-muted); margin-bottom: 0.75rem; cursor: pointer;
 
-  input[type="checkbox"] { width: 13px; height: 13px; margin-top: 2px; accent-color: $blue; flex-shrink: 0; }
-  a { color: $blue; text-decoration: none; &:hover { text-decoration: underline; } }
+  input[type="checkbox"] { width: 13px; height: 13px; margin-top: 2px; accent-color: var(--vp-blue); flex-shrink: 0; }
+  a { color: var(--vp-blue); text-decoration: none; &:hover { text-decoration: underline; } }
 }
 
 // ── Spinner ───────────────────────────────────────────────────────────────────
@@ -483,7 +510,7 @@ $divider-tx:  #9c968a;
     flex-direction: column;
     align-items: stretch;
     padding: 0;
-    background: #f5f0e8;
+    background: var(--vp-bg);
     height: auto;
     overflow: visible;
   }

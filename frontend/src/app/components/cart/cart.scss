@@ -7,6 +7,10 @@
     max-width: 1200px;
     margin: 0 auto;
     padding: 0 2rem;
+
+    @media (max-width: 600px) {
+      padding: 0 1rem;
+    }
   }
 
   h1 {
@@ -51,8 +55,19 @@
       box-shadow: 0 2px 12px rgba(0,0,0,0.05);
     }
 
+    // A plain flex-wrap left every child (image, details, qty, total, remove)
+    // free to reflow wherever it fit, which read as a messy stack on a
+    // narrow phone. Grid with explicit areas gives a clean, predictable
+    // 2-row card instead: image+details on top, qty/total/remove below.
     @media (max-width: 600px) {
-      flex-wrap: wrap;
+      display: grid;
+      grid-template-columns: 64px 1fr auto;
+      grid-template-areas:
+        "image details details"
+        "qty    total   remove";
+      align-items: center;
+      column-gap: 0.75rem;
+      row-gap: 0.6rem;
       padding: 1rem;
     }
 
@@ -62,11 +77,22 @@
       object-fit: cover;
       border-radius: 10px;
       border: 1px solid var(--border);
+
+      @media (max-width: 600px) {
+        grid-area: image;
+        width: 64px;
+        height: 64px;
+      }
     }
 
     .item-details {
       flex: 1;
       min-width: 120px;
+
+      @media (max-width: 600px) {
+        grid-area: details;
+        min-width: 0;
+      }
 
       h3 {
         margin: 0 0 0.2rem;
@@ -96,6 +122,10 @@
       border-radius: 10px;
       overflow: hidden;
 
+      @media (max-width: 600px) {
+        grid-area: qty;
+      }
+
       button {
         width: 32px;
         height: 32px;
@@ -113,6 +143,12 @@
           opacity: 0.5;
           cursor: not-allowed;
         }
+
+        @media (max-width: 600px) {
+          width: 40px;
+          height: 40px;
+          font-size: 1.1rem;
+        }
       }
 
       span {
@@ -127,6 +163,12 @@
     .item-total {
       text-align: right;
       min-width: 80px;
+
+      @media (max-width: 600px) {
+        grid-area: total;
+        text-align: left;
+        min-width: 0;
+      }
 
       .total-label {
         display: block;
@@ -150,6 +192,15 @@
       border-radius: 8px;
       transition: color 0.15s ease, background 0.15s ease;
       opacity: 0.5;
+
+      @media (max-width: 600px) {
+        grid-area: remove;
+        justify-self: end;
+        align-self: center;
+        width: 40px;
+        height: 40px;
+        opacity: 1;
+      }
 
       &:hover {
         color: #ef4444;

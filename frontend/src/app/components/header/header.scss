@@ -116,6 +116,7 @@
       top: calc(100% + 8px);
       left: 0;
       width: 270px;
+      max-width: 92vw;
       background: var(--bg-card);
       backdrop-filter: blur(20px);
       -webkit-backdrop-filter: blur(20px);
