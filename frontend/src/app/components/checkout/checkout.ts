@@ -11,13 +11,19 @@ import { PromoService, PromoResult, SeasonalOffer } from '../../services/promo';
 import { environment } from '../../../environments/environment';
 import { CommonModule } from '@angular/common';
 import { DatePicker } from '../date-picker/date-picker';
-import { LocationPicker, PickedLocation } from '../location-picker/location-picker';
 import { GeocodeService } from '../../services/geocode';
 import { AddressesService, SavedAddress } from '../../services/addresses';
 
+declare var google: any;
+
+interface AddressSuggestion {
+  display_name: string;
+  placePrediction: any;
+}
+
 @Component({
   selector: 'app-checkout',
-  imports: [RouterLink, FormsModule, CommonModule, DatePicker, LocationPicker],
+  imports: [RouterLink, FormsModule, CommonModule, DatePicker],
   templateUrl: './checkout.html',
   styleUrl: './checkout.scss'
 })
@@ -168,35 +174,76 @@ export class Checkout {
     }
     this.zipLookupLoading.set(true);
     this.zipLookupError.set('');
-    const res = await this.geocodeService.search(zip + ' India');
-    this.zipLookupLoading.set(false);
-    const match = res.find(r => r.pincode === zip) || res[0];
-    if (match) {
-      this.formData.city = match.city;
-      this.formData.state = match.state;
-      // Typing a PIN code is the far more common path than dragging the map
-      // pin, so this needs to feed the same delivery-fee calculation — a
-      // PIN's centroid is coarser than an exact pin, but still gets a real
-      // distance-based fee instead of silently falling back to a flat rate.
-      if (match.latitude != null && match.longitude != null) {
-        this.formData.latitude = match.latitude;
-        this.formData.longitude = match.longitude;
+    try {
+      const { Geocoder } = await google.maps.importLibrary('geocoding');
+      const geocoder = new Geocoder();
+      const result = await geocoder.geocode({ address: zip + ', India' });
+      this.zipLookupLoading.set(false);
+      if (result.results?.length) {
+        const r = result.results[0];
+        const get = (type: string) =>
+          r.address_components.find((c: any) => c.types.includes(type))?.long_name || '';
+        const city = get('locality') || get('administrative_area_level_2');
+        const state = get('administrative_area_level_1');
+        if (city) this.formData.city = city;
+        if (state) this.formData.state = state;
+        const lat = r.geometry.location.lat();
+        const lng = r.geometry.location.lng();
+        this.formData.latitude = lat;
+        this.formData.longitude = lng;
         this.refreshDeliveryFee();
+      } else {
+        this.zipLookupError.set('Pincode not found');
       }
-    } else {
+    } catch {
+      this.zipLookupLoading.set(false);
       this.zipLookupError.set('Pincode not found');
     }
   }
 
-  onDeliveryLocationPicked(loc: PickedLocation): void {
-    this.formData.latitude = loc.latitude;
-    this.formData.longitude = loc.longitude;
-    if (loc.address) this.formData.address = loc.address;
-    if (loc.city) this.formData.city = loc.city;
-    if (loc.state) this.formData.state = loc.state;
-    if (loc.pincode) this.formData.zip = loc.pincode;
-    this.selectedSavedAddressId.set(null); // manual pin overrides any quick-selected address
-    this.refreshDeliveryFee();
+  onAddressInput(): void {
+    const q = this.formData.address.trim();
+    if (this.addressDebounce) clearTimeout(this.addressDebounce);
+    if (q.length < 3) { this.addressSuggestions.set([]); this.showAddressSuggestions.set(false); return; }
+    this.addressDebounce = setTimeout(async () => {
+      this.addressSearching.set(true);
+      try {
+        const { AutocompleteSuggestion } = await google.maps.importLibrary('places');
+        const { suggestions } = await AutocompleteSuggestion.fetchAutocompleteSuggestions({
+          input: q, includedRegionCodes: ['in'],
+        });
+        this.addressSuggestions.set(suggestions.map((s: any) => ({
+          display_name: s.placePrediction.text.toString(),
+          placePrediction: s.placePrediction,
+        })));
+        this.showAddressSuggestions.set(suggestions.length > 0);
+      } catch { this.addressSuggestions.set([]); this.showAddressSuggestions.set(false); }
+      finally { this.addressSearching.set(false); }
+    }, 300);
+  }
+
+  async pickAddressSuggestion(s: AddressSuggestion): Promise<void> {
+    this.showAddressSuggestions.set(false);
+    try {
+      const place = s.placePrediction.toPlace();
+      await place.fetchFields({ fields: ['location', 'addressComponents', 'formattedAddress'] });
+      const get = (type: string) =>
+        (place.addressComponents || []).find((c: any) => c.types.includes(type))?.longText || '';
+      // Strip city, state, country (last 3 comma-separated parts) from the suggestion text
+      const parts = s.display_name.split(', ');
+      this.formData.address = parts.length > 3 ? parts.slice(0, -3).join(', ') : s.display_name;
+      this.formData.city = get('locality') || get('administrative_area_level_2');
+      this.formData.state = get('administrative_area_level_1');
+      this.formData.zip = get('postal_code');
+      this.formData.latitude = place.location.lat();
+      this.formData.longitude = place.location.lng();
+      this.selectedSavedAddressId.set(null);
+      this.refreshDeliveryFee();
+    } catch (e) { console.error('Place details error:', e); }
+  }
+
+  hideAddressSuggestions(): void {
+    setTimeout(() => this.showAddressSuggestions.set(false), 150);
   }
 
   // ── Saved addresses (quick-select instead of retyping every order) ──────
@@ -266,12 +313,18 @@ export class Checkout {
     });
   }
 
+  addressSuggestions = signal<AddressSuggestion[]>([]);
+  showAddressSuggestions = signal(false);
+  addressSearching = signal(false);
+  private addressDebounce: ReturnType<typeof setTimeout> | null = null;
+
   formData = {
     firstName: '',
     lastName: '',
     email: '',
     phone: '',
     address: '',
+    apt: '',
     city: '',
     state: '',
     zip: '',
@@ -492,7 +545,9 @@ export class Checkout {
         name: `${this.formData.firstName} ${this.formData.lastName}`.trim(),
         email: customerEmail,
         phone: this.formData.phone,
-        address: this.formData.address,
+        address: this.formData.apt
+          ? `${this.formData.address}, ${this.formData.apt}`
+          : this.formData.address,
         city: this.formData.city,
         state: this.formData.state,
         zip: this.formData.zip,

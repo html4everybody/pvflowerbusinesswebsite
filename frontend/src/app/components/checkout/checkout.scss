@@ -1213,6 +1213,52 @@
 }
 
 /* ── City Autocomplete ───────────────────────────────────── */
+.address-autocomplete-wrap {
+  position: relative;
+
+  input { padding-right: 2.5rem; }
+}
+
+.address-spinner {
+  position: absolute;
+  right: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.address-suggestions {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 200;
+  background: var(--bg-card);
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+  margin: 0;
+  padding: 0.3rem 0;
+  list-style: none;
+  max-height: 240px;
+  overflow-y: auto;
+
+  li {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.6rem;
+    padding: 0.65rem 1rem;
+    cursor: pointer;
+    font-size: 0.88rem;
+    color: var(--text);
+    line-height: 1.4;
+    transition: background 0.1s;
+
+    &:hover { background: var(--accent-light); }
+
+    i { color: var(--accent); margin-top: 2px; flex-shrink: 0; }
+  }
+}
+
 .city-autocomplete-wrap {
   position: relative;
 }
