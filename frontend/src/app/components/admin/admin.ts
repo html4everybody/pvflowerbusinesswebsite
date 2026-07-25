@@ -509,7 +509,7 @@ export class Admin implements OnInit {
 
   updateStatus(order: any, newStatus: string): void {
     this.updatingId.set(order.id);
-    this.http.patch<{ status: string }>(`${environment.apiUrl}/api/orders/${order.id}/status`, { status: newStatus }).subscribe({
+    this.http.patch<{ status: string }>(`${environment.apiUrl}/api/orders/${order.id}/status`, { status: newStatus, token: this.token }).subscribe({
       next: (res) => {
         this.orders.update(list => list.map(o => o.id === order.id ? { ...o, status: res.status } : o));
         this.updatingId.set(null);

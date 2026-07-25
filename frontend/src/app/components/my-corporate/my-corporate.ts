@@ -74,7 +74,7 @@ export class MyCorporate implements OnInit {
     const id = this.confirmCancelId();
     if (!id) return;
     this.actionId.set(id + '-cancel');
-    this.corporateService.cancel(id).subscribe({
+    this.corporateService.cancel(id, this.authService.getToken()).subscribe({
       next: () => {
         this.orders.update(list => list.map(o => o.id === id ? { ...o, status: 'cancelled' } : o));
         this.actionId.set('');
@@ -91,7 +91,7 @@ export class MyCorporate implements OnInit {
 
   skip(order: CorporateOrder): void {
     this.actionId.set(order.id + '-skip');
-    this.corporateService.skip(order.id).subscribe({
+    this.corporateService.skip(order.id, this.authService.getToken()).subscribe({
       next: (res) => {
         this.orders.update(list => list.map(o => o.id === order.id ? { ...o, next_delivery: res.next_delivery } : o));
         this.actionId.set('');

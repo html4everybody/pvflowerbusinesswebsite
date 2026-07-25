@@ -158,7 +158,7 @@ export class OrderDetail implements OnInit {
     });
     if (!confirmed) return;
     this.cancelling.set(true);
-    this.http.patch(`${environment.apiUrl}/api/orders/${o.id}/cancel`, {}).subscribe({
+    this.http.patch(`${environment.apiUrl}/api/orders/${o.id}/cancel?token=${encodeURIComponent(this.authService.getToken())}`, {}).subscribe({
       next: () => {
         this.order.update(prev => ({ ...prev, status: 'cancelled' }));
         this.cancelling.set(false);
@@ -217,7 +217,8 @@ export class OrderDetail implements OnInit {
     this.deliverySaveError.set('');
     this.http.patch(`${environment.apiUrl}/api/orders/${o.id}/delivery`, {
       delivery_type: edit.type,
-      delivery_datetime: deliveryDatetime
+      delivery_datetime: deliveryDatetime,
+      token: this.authService.getToken(),
     }).subscribe({
       next: () => {
         this.order.update(prev => ({ ...prev, delivery_type: edit.type, delivery_datetime: deliveryDatetime }));
@@ -247,7 +248,7 @@ export class OrderDetail implements OnInit {
 
   adminUpdateStatus(order: any, newStatus: string): void {
     this.updatingStatus.set(true);
-    this.http.patch<{ status: string }>(`${environment.apiUrl}/api/orders/${order.id}/status`, { status: newStatus }).subscribe({
+    this.http.patch<{ status: string }>(`${environment.apiUrl}/api/orders/${order.id}/status`, { status: newStatus, token: this.authService.getToken() }).subscribe({
       next: (res) => {
         this.order.update(prev => ({ ...prev, status: res.status }));
         this.updatingStatus.set(false);

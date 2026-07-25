@@ -67,11 +67,11 @@ export class CorporateService {
     return this.http.post<any>(`${this.base}/api/corporate-orders`, req);
   }
 
-  cancel(id: string): Observable<any> {
-    return this.http.patch(`${this.base}/api/corporate-orders/${id}/cancel`, {});
+  cancel(id: string, token: string): Observable<any> {
+    return this.http.patch(`${this.base}/api/corporate-orders/${id}/cancel?token=${encodeURIComponent(token)}`, {});
   }
 
-  skip(id: string): Observable<{ next_delivery: string }> {
-    return this.http.patch<any>(`${this.base}/api/corporate-orders/${id}/skip`, {});
+  skip(id: string, token: string): Observable<{ next_delivery: string }> {
+    return this.http.patch<any>(`${this.base}/api/corporate-orders/${id}/skip?token=${encodeURIComponent(token)}`, {});
   }
 }

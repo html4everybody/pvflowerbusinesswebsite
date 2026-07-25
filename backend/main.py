@@ -1349,9 +1349,11 @@ class OrderRequest(BaseModel):
 class UpdateDeliveryRequest(BaseModel):
     delivery_type: str
     delivery_datetime: Optional[str] = None
+    token: Optional[str] = None
 
 class StatusUpdateRequest(BaseModel):
     status: str
+    token: str
 
 class PromoCodeCreate(BaseModel):
     code: str
@@ -4090,6 +4092,24 @@ def get_user_orders(email: str, token: str = None):
         order["notifications"] = notifs_by_order.get(order["id"], [])
     return orders
 
+def _require_order_owner_or_admin(token: Optional[str], order: dict) -> str:
+    """Returns the caller's email. Raises 401/403 unless the caller is the
+    order's own customer or an admin — mutation endpoints below previously
+    trusted the order_id in the URL alone with no verification at all,
+    letting anyone who merely knew/saw an order ID (a screenshot, a shared
+    link, browser history) cancel, reschedule, or transition ANY customer's
+    order."""
+    email = resolve_token(token) if token else None
+    if not email:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    if email == order.get("customer_email"):
+        return email
+    caller = get_user_by_email(email)
+    if caller and caller.get("is_admin"):
+        return email
+    raise HTTPException(status_code=403, detail="You don't have access to this order")
+
+
 @app.get("/api/orders/{order_id}")
 def get_order(order_id: str, token: Optional[str] = None):
     result = supabase.table("orders").select("*").eq("id", order_id).execute()
@@ -4138,9 +4158,10 @@ def get_order(order_id: str, token: Optional[str] = None):
 
 @app.patch("/api/orders/{order_id}/delivery")
 def update_delivery(order_id: str, req: UpdateDeliveryRequest):
-    result = supabase.table("orders").select("status").eq("id", order_id).execute()
+    result = supabase.table("orders").select("status, customer_email").eq("id", order_id).execute()
     if not result.data:
         raise HTTPException(status_code=404, detail="Order not found")
+    _require_order_owner_or_admin(req.token, result.data[0])
     if result.data[0]["status"] == "cancelled":
         raise HTTPException(status_code=400, detail="Cannot update delivery for a cancelled order")
     supabase.table("orders").update({
@@ -4179,11 +4200,12 @@ def _cascade_status_to_parts(order_id: str, status: str):
 
 
 @app.patch("/api/orders/{order_id}/cancel")
-def cancel_order(order_id: str):
+def cancel_order(order_id: str, token: str):
     result = supabase.table("orders").select("*").eq("id", order_id).execute()
     if not result.data:
         raise HTTPException(status_code=404, detail="Order not found")
     order = result.data[0]
+    _require_order_owner_or_admin(token, order)
     # Customers can only cancel before we start packing; admins cancel via status update.
     if order["status"] != "confirmed":
         raise HTTPException(status_code=400, detail="This order is already being prepared. Please contact us to cancel.")
@@ -4196,6 +4218,7 @@ def cancel_order(order_id: str):
 
 @app.patch("/api/orders/{order_id}/status")
 def update_order_status(order_id: str, req: StatusUpdateRequest):
+    require_admin(req.token)  # admin-only: can jump to any next status (incl. 'delivered', which pays out points/merchant payouts) — customers use /cancel instead
     result = supabase.table("orders").select("*").eq("id", order_id).execute()
     if not result.data:
         raise HTTPException(status_code=404, detail="Order not found")
@@ -5586,11 +5609,24 @@ def create_corporate_order(req: CorporateOrderRequest):
     }).execute()
     return {"id": order_id, "final_amount": final_amount, "next_delivery": None}
 
+def _require_corporate_order_owner_or_admin(token: Optional[str], order: dict) -> str:
+    email = resolve_token(token) if token else None
+    if not email:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    if email == order.get("contact_email"):
+        return email
+    caller = get_user_by_email(email)
+    if caller and caller.get("is_admin"):
+        return email
+    raise HTTPException(status_code=403, detail="You don't have access to this booking")
+
+
 @app.patch("/api/corporate-orders/{order_id}/cancel")
-def cancel_corporate_order(order_id: str):
-    result = supabase.table("corporate_orders").select("id, status").eq("id", order_id).execute()
+def cancel_corporate_order(order_id: str, token: str):
+    result = supabase.table("corporate_orders").select("id, status, contact_email").eq("id", order_id).execute()
     if not result.data:
         raise HTTPException(status_code=404, detail="Corporate order not found")
+    _require_corporate_order_owner_or_admin(token, result.data[0])
     # Customers can only cancel while still pending; once we've confirmed/started, admin only.
     if result.data[0]["status"] != "pending":
         raise HTTPException(status_code=400, detail="This booking is already being prepared. Please contact us to cancel.")
@@ -5598,11 +5634,12 @@ def cancel_corporate_order(order_id: str):
     return {"status": "cancelled"}
 
 @app.patch("/api/corporate-orders/{order_id}/skip")
-def skip_corporate_order(order_id: str):
+def skip_corporate_order(order_id: str, token: str):
     result = supabase.table("corporate_orders").select("*").eq("id", order_id).execute()
     if not result.data:
         raise HTTPException(status_code=404, detail="Corporate order not found")
     order = result.data[0]
+    _require_corporate_order_owner_or_admin(token, order)
     if not order.get("is_recurring"):
         raise HTTPException(status_code=400, detail="Only recurring orders can be skipped")
     new_date = advance_corp_delivery(order.get("recurring_frequency", "weekly"), order.get("next_delivery") or "")
