@@ -248,6 +248,10 @@
   gap: 0.75rem;
 
   @media (max-width: 560px) { grid-template-columns: repeat(2, 1fr); }
+  // Reward cards carry more content than the old fixed-tier cards (title,
+  // optional description/min-order, a full-width Claim button) — 2 columns
+  // gets cramped below ~420px, so drop to a single column there.
+  @media (max-width: 420px) { grid-template-columns: 1fr; }
 }
 
 .redeem-card {
@@ -261,6 +265,9 @@
 
   .rc-value { font-size: 1.4rem; font-weight: 800; color: var(--text); line-height: 1; }
   .rc-off { font-size: 0.8rem; font-weight: 600; color: var(--text-muted); }
+  .rc-title { font-size: 0.82rem; font-weight: 700; color: var(--text); margin-top: 0.4rem; }
+  .rc-desc { font-size: 0.72rem; color: var(--text-muted); margin: 0.25rem 0 0; line-height: 1.4; }
+  .rc-minorder { display: block; font-size: 0.68rem; color: var(--text-subtle); margin-top: 0.3rem; }
   .rc-points { font-size: 0.78rem; color: var(--text-muted); margin: 0.35rem 0 0.6rem; }
 
   .rc-badge {
@@ -275,6 +282,26 @@
     &.is-unlocked { background: rgba(22, 163, 74, 0.15); color: #16a34a; }
   }
 
+  .btn-claim {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    width: 100%;
+    padding: 0.5rem 0.6rem;
+    border: none;
+    border-radius: 999px;
+    background: linear-gradient(135deg, var(--accent-mid) 0%, var(--accent) 50%, var(--accent-dark) 100%);
+    color: #fff;
+    font-weight: 700;
+    font-size: 0.78rem;
+    cursor: pointer;
+    transition: filter 0.15s ease, transform 0.15s ease;
+
+    &:hover:not(:disabled) { filter: brightness(1.06); transform: translateY(-1px); }
+    &:disabled { opacity: 0.6; cursor: not-allowed; }
+  }
+
   &.unlocked {
     opacity: 1;
     border-style: solid;
@@ -285,6 +312,71 @@
 }
 
 .redeem-hint { font-size: 0.78rem; color: var(--text-muted); text-align: center; margin: 1rem 0 0; }
+
+// ── My Vouchers ───────────────────────────────────────────────────────────────
+.voucher-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.voucher-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--bg-card);
+
+  &.used { opacity: 0.55; }
+}
+
+.voucher-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.voucher-title { font-size: 0.85rem; font-weight: 700; color: var(--text); }
+.voucher-code {
+  font-family: 'SF Mono', 'Roboto Mono', monospace;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--accent);
+  letter-spacing: 0.03em;
+}
+
+.voucher-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.btn-copy-voucher {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.45rem 0.85rem;
+  border: 1.5px solid var(--accent-mid);
+  border-radius: 999px;
+  background: var(--accent-light);
+  color: var(--accent-dark);
+  font-weight: 600;
+  font-size: 0.78rem;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.15s ease;
+
+  &:hover { filter: brightness(0.98); }
+}
 
 // ── Referral ────────────────────────────────────────────────────────────────
 .referral-panel {

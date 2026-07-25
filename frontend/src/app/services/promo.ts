@@ -10,6 +10,7 @@ export interface PromoResult {
   discount_value: number;
   discount_amount: number;
   description: string;
+  is_reward?: boolean;
 }
 
 export interface SeasonalOffer {

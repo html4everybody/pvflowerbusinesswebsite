@@ -1,14 +1,9 @@
--- ============================================================================
--- VivaPetals — combined pending migrations
--- Run this once in the Supabase SQL editor. All statements are idempotent
--- (IF NOT EXISTS / ADD COLUMN IF NOT EXISTS / CREATE TABLE IF NOT EXISTS),
--- so it's safe to re-run if you're ever unsure what's already applied.
--- ============================================================================
+-- Petal Rewards: admin-configurable earn/redemption rates + a claimable
+-- reward catalog, on top of the existing loyalty_accounts/loyalty_transactions
+-- tables. Defaults below match the values that were previously hardcoded in
+-- main.py, so running this migration changes NOTHING until an admin edits a
+-- rate or adds a reward.
 
--- ── Petal Rewards: admin-configurable earn/redemption rates + a claimable
--- reward catalog. Defaults below match the values that were previously
--- hardcoded in main.py, so running this changes NOTHING until an admin
--- edits a rate or adds a reward.
 CREATE TABLE IF NOT EXISTS loyalty_config (
   id INTEGER PRIMARY KEY DEFAULT 1,
   points_per_rupee NUMERIC NOT NULL DEFAULT 1,
@@ -51,8 +46,3 @@ CREATE TABLE IF NOT EXISTS reward_claims (
 );
 
 CREATE INDEX IF NOT EXISTS idx_reward_claims_email ON reward_claims(user_email);
-
--- ── Delivery fee base price (flat amount added before the per-km charge) ───
--- Defaults to 0, so nothing changes for existing checkouts until an admin
--- sets a value in Admin → Delivery Zones → Delivery Fee.
-ALTER TABLE delivery_pricing ADD COLUMN IF NOT EXISTS base_price NUMERIC NOT NULL DEFAULT 0;

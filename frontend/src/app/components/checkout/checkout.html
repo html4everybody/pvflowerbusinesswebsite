@@ -439,7 +439,7 @@
             <div class="promo-input-row">
               <input
                 type="text"
-                placeholder="Enter promo code"
+                placeholder="Promo code or Petal Rewards voucher"
                 [value]="promoCode()"
                 (input)="promoCode.set($any($event).target.value.toUpperCase())"
                 (keyup.enter)="!promoResult() && applyPromo()"
@@ -495,7 +495,7 @@
                 <span class="points-icon"><i class="bi bi-star-fill"></i></span>
                 <div>
                   <strong>{{ loyaltyBalance() }} Loyalty Points</strong>
-                  <span class="points-subtext">= ₹{{ (loyaltyBalance() / 10).toFixed(2) }} possible discount</span>
+                  <span class="points-subtext">= ₹{{ (loyaltyBalance() / redemptionRate()).toFixed(2) }} possible discount</span>
                 </div>
                 <button class="pts-toggle-btn" [class.on]="loyaltyEnabled()" (click)="togglePoints()">
                   <span class="pts-knob"></span>

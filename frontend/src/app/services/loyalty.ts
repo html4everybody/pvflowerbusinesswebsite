@@ -27,6 +27,38 @@ export interface LoyaltyData extends LoyaltyAccount {
   pending_points?: number;
 }
 
+export interface LoyaltyConfig {
+  points_per_rupee: number;
+  welcome_bonus: number;
+  referral_signup_bonus: number;
+  referral_purchase_bonus: number;
+  redemption_rate: number;
+}
+
+export interface Reward {
+  id: string;
+  title: string;
+  description?: string;
+  points_cost: number;
+  discount_value: number;
+  min_order: number;
+  active: boolean;
+}
+
+export interface RewardClaim {
+  id: string;
+  user_email: string;
+  reward_id: string;
+  code: string;
+  title: string;
+  discount_value: number;
+  min_order: number;
+  points_spent: number;
+  used: boolean;
+  used_order_id?: string;
+  claimed_at: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class LoyaltyService {
   private apiUrl = environment.apiUrl;
@@ -35,5 +67,21 @@ export class LoyaltyService {
 
   getAccount(email: string): Observable<LoyaltyData> {
     return this.http.get<LoyaltyData>(`${this.apiUrl}/api/loyalty?email=${encodeURIComponent(email)}`);
+  }
+
+  getConfig(): Observable<LoyaltyConfig> {
+    return this.http.get<LoyaltyConfig>(`${this.apiUrl}/api/loyalty-config`);
+  }
+
+  getCatalog(): Observable<Reward[]> {
+    return this.http.get<Reward[]>(`${this.apiUrl}/api/rewards/catalog`);
+  }
+
+  claimReward(token: string, rewardId: string): Observable<RewardClaim> {
+    return this.http.post<RewardClaim>(`${this.apiUrl}/api/rewards/claim`, { token, reward_id: rewardId });
+  }
+
+  getMyClaims(email: string): Observable<RewardClaim[]> {
+    return this.http.get<RewardClaim[]>(`${this.apiUrl}/api/rewards/my-claims?email=${encodeURIComponent(email)}`);
   }
 }

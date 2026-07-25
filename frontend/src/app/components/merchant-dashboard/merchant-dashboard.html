@@ -63,7 +63,7 @@
             } @else {
               <div class="notif-list">
                 @for (n of noticeService.notices().slice(0, 8); track n.id) {
-                  <div class="notif-item" [class.unread]="!n.read" (click)="noticeService.markOneRead(n.id)">
+                  <div class="notif-item" [class.unread]="!n.read" (click)="onNotifClick(n)">
                     <div class="notif-item-top">
                       <span class="notif-item-title">
                         @if (!n.read) { <span class="unread-dot"></span> }
@@ -126,6 +126,35 @@
               </button>
             }
           </div>
+
+          @if (priorityOrders().length > 0) {
+            <div class="priority-panel">
+              <div class="priority-head">
+                <h2><i class="bi bi-lightning-charge-fill"></i> Needs Action</h2>
+                @if ((s.pending_count || 0) > priorityOrders().length) {
+                  <button class="priority-seeall" (click)="go('orders')">See all {{ s.pending_count }} <i class="bi bi-arrow-right"></i></button>
+                }
+              </div>
+              @for (o of priorityOrders(); track o.order_id) {
+                <div class="priority-row">
+                  <div class="pr-info">
+                    <span class="pr-num">#{{ o.order_id }}</span>
+                    <span class="oc-badge" [class]="o.status">{{ STATUS_LABELS[o.status] || o.status }}</span>
+                    <span class="pr-cust">{{ o.customer_name || '—' }}</span>
+                  </div>
+                  @if (o.next_statuses?.length) {
+                    <div class="pr-actions">
+                      @for (ns of o.next_statuses; track ns) {
+                        <button class="btn-status" [disabled]="updatingOrder() === o.order_id" (click)="setOrderStatus(o, ns)">
+                          Mark {{ STATUS_LABELS[ns] || ns }}
+                        </button>
+                      }
+                    </div>
+                  }
+                </div>
+              }
+            </div>
+          }
         } @else if (loadingStats()) {
           <div class="loading"><i class="bi bi-arrow-repeat vp-spin"></i> Loading…</div>
         } @else if (statsError()) {
@@ -195,7 +224,27 @@
     <!-- ── Orders ───────────────────────────────────────────────────────── -->
     @if (activeSection() === 'orders') {
       <div class="sec">
-        <div class="sec-head"><h1>Orders</h1><span class="sec-meta">{{ orders().length }} total</span></div>
+        <div class="sec-head">
+          <h1>Orders</h1>
+          <div class="sec-head-right">
+            <span class="sec-meta">{{ orders().length }} total</span>
+            <button class="btn-refresh-sm" (click)="loadOrders()" [disabled]="loadingOrders()" title="Refresh orders">
+              <i class="bi bi-arrow-repeat" [class.vp-spin]="loadingOrders()"></i>
+            </button>
+          </div>
+        </div>
+
+        @if (selectedOrderIds().size > 0) {
+          <div class="bulk-bar">
+            <span>{{ selectedOrderIds().size }} selected</span>
+            <div class="bulk-bar-actions">
+              @for (s of BULK_STATUSES; track s) {
+                <button [disabled]="bulkUpdatingOrders()" (click)="bulkUpdateOrderStatus(s)">Mark {{ STATUS_LABELS[s] }}</button>
+              }
+            </div>
+            <button class="bulk-bar-clear" (click)="clearOrderSelection()"><i class="bi bi-x-lg"></i> Clear</button>
+          </div>
+        }
 
         @if (loadingOrders()) {
           <div class="loading"><i class="bi bi-arrow-repeat vp-spin"></i> Loading…</div>
@@ -207,6 +256,7 @@
               <div class="order-card">
                 <div class="oc-top">
                   <div class="oc-id">
+                    <input type="checkbox" class="order-check" [checked]="isOrderSelected(o.order_id)" (change)="toggleOrderSelection(o.order_id)">
                     <span class="oc-num">#{{ o.order_id }}</span>
                     <span class="oc-badge" [class]="o.status">{{ STATUS_LABELS[o.status] || o.status }}</span>
                   </div>
@@ -227,7 +277,7 @@
 
                 <div class="oc-cust">
                   <span><i class="bi bi-person"></i> {{ o.customer_name || '—' }}</span>
-                  @if (o.customer_phone) { <span><i class="bi bi-telephone"></i> {{ o.customer_phone }}</span> }
+                  @if (o.customer_phone) { <a [href]="'tel:' + o.customer_phone" class="oc-tel"><i class="bi bi-telephone"></i> {{ o.customer_phone }}</a> }
                   @if (o.customer_address) { <span><i class="bi bi-geo-alt"></i> {{ o.customer_address }}</span> }
                 </div>
 

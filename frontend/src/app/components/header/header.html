@@ -293,6 +293,9 @@
         <span></span>
         <span></span>
         <span></span>
+        @if (authService.user() && noticeService.unread() > 0) {
+          <span class="hamburger-badge" aria-hidden="true"></span>
+        }
       </button>
     </div>
   </div>

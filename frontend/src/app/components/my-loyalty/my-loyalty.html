@@ -32,7 +32,7 @@
         <div class="mc-balance">
           <span class="mc-label">Points Balance</span>
           <span class="mc-points">{{ balance | number }}</span>
-          <span class="mc-worth">worth ₹{{ (balance / 10) | number:'1.0-0' }} off your next order</span>
+          <span class="mc-worth">worth ₹{{ (balance / config().redemption_rate) | number:'1.0-0' }} off your next order</span>
           @if (pending > 0) {
             <span class="mc-pending"><i class="bi bi-truck"></i> {{ pending | number }} pts on the way — credited once delivered</span>
           }
@@ -53,7 +53,7 @@
           <span class="chip-lbl">All-time points</span>
         </div>
         <div class="chip">
-          <span class="chip-val">₹{{ (balance / 10) | number:'1.0-0' }}</span>
+          <span class="chip-val">₹{{ (balance / config().redemption_rate) | number:'1.0-0' }}</span>
           <span class="chip-lbl">Redeemable now</span>
         </div>
         <div class="chip">
@@ -94,23 +94,60 @@
       <section class="panel">
         <div class="panel-head">
           <h2>Redeem Your Points</h2>
-          <span class="panel-sub">1 point = ₹0.10 off</span>
+          <span class="panel-sub">At checkout: {{ config().redemption_rate }} pts = ₹1 off</span>
         </div>
-        <div class="redeem-grid">
-          @for (r of REDEEM; track r.points) {
-            <div class="redeem-card" [class.unlocked]="isRedeemable(r.points)">
-              <div class="rc-value">₹{{ r.value }}<span class="rc-off"> off</span></div>
-              <div class="rc-points">{{ r.points | number }} pts</div>
-              @if (isRedeemable(r.points)) {
-                <span class="rc-badge is-unlocked"><i class="bi bi-check-circle-fill"></i> Available</span>
-              } @else {
-                <span class="rc-badge">{{ (r.points - balance) | number }} pts to go</span>
-              }
-            </div>
-          }
-        </div>
-        <p class="redeem-hint">Your points apply automatically as a discount at checkout.</p>
+        @if (catalog().length === 0) {
+          <p class="redeem-hint">No rewards available to claim right now — check back soon.</p>
+        } @else {
+          <div class="redeem-grid">
+            @for (r of catalog(); track r.id) {
+              <div class="redeem-card" [class.unlocked]="canClaim(r)">
+                <div class="rc-value">₹{{ r.discount_value }}<span class="rc-off"> off</span></div>
+                <div class="rc-title">{{ r.title }}</div>
+                @if (r.description) { <p class="rc-desc">{{ r.description }}</p> }
+                @if (r.min_order > 0) { <span class="rc-minorder">Min. order ₹{{ r.min_order }}</span> }
+                <div class="rc-points">{{ r.points_cost | number }} pts</div>
+                @if (canClaim(r)) {
+                  <button class="btn-claim" [disabled]="claimingId() === r.id" (click)="claimReward(r)">
+                    @if (claimingId() === r.id) {
+                      <i class="bi bi-arrow-repeat vp-spin"></i> Claiming…
+                    } @else {
+                      <i class="bi bi-gift"></i> Claim
+                    }
+                  </button>
+                } @else {
+                  <span class="rc-badge">{{ (r.points_cost - balance) | number }} pts to go</span>
+                }
+              </div>
+            }
+          </div>
+        }
       </section>
+
+      <!-- ── My Vouchers ─────────────────────────────────── -->
+      @if (myClaims().length > 0) {
+        <section class="panel">
+          <div class="panel-head"><h2>My Vouchers</h2></div>
+          <div class="voucher-list">
+            @for (c of myClaims(); track c.id) {
+              <div class="voucher-row" [class.used]="c.used">
+                <div class="voucher-info">
+                  <span class="voucher-title">{{ c.title }}</span>
+                  <span class="voucher-code">{{ c.code }}</span>
+                </div>
+                @if (c.used) {
+                  <span class="voucher-status"><i class="bi bi-check-circle-fill"></i> Used</span>
+                } @else {
+                  <button class="btn-copy-voucher" (click)="copyVoucherCode(c.code)">
+                    <i class="bi bi-clipboard"></i> Copy code
+                  </button>
+                }
+              </div>
+            }
+          </div>
+          <p class="redeem-hint">Enter a voucher code in the promo code box at checkout to apply it.</p>
+        </section>
+      }
 
       <!-- ── Referral ────────────────────────────────────── -->
       <section class="panel referral-panel">
@@ -118,7 +155,7 @@
           <span class="referral-emoji"><i class="bi bi-people-fill"></i></span>
           <div>
             <h2>Refer Friends, Grow Together</h2>
-            <p>Earn <strong>200 pts</strong> when a friend signs up, plus <strong>150 pts</strong> on their first order.</p>
+            <p>Earn <strong>{{ config().referral_signup_bonus }} pts</strong> when a friend signs up, plus <strong>{{ config().referral_purchase_bonus }} pts</strong> on their first order.</p>
           </div>
         </div>
         <div class="referral-link-row">
@@ -137,17 +174,17 @@
           <div class="earn-card">
             <span class="earn-icon"><i class="bi bi-bag-heart-fill"></i></span>
             <h3>Shop &amp; Earn</h3>
-            <p>1 point for every <strong>₹1</strong> spent — credited when your order is <strong>delivered</strong>.</p>
+            <p>{{ config().points_per_rupee }} point{{ config().points_per_rupee === 1 ? '' : 's' }} for every <strong>₹1</strong> spent — credited when your order is <strong>delivered</strong>.</p>
           </div>
           <div class="earn-card">
             <span class="earn-icon"><i class="bi bi-people-fill"></i></span>
             <h3>Refer a Friend</h3>
-            <p><strong>200 pts</strong> when someone joins with your link.</p>
+            <p><strong>{{ config().referral_signup_bonus }} pts</strong> when someone joins with your link.</p>
           </div>
           <div class="earn-card">
             <span class="earn-icon"><i class="bi bi-gift-fill"></i></span>
             <h3>Friend's First Order</h3>
-            <p><strong>150 pts</strong> when they place their first order.</p>
+            <p><strong>{{ config().referral_purchase_bonus }} pts</strong> when they place their first order.</p>
           </div>
         </div>
       </section>

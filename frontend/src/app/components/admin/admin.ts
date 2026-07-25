@@ -13,7 +13,7 @@ import { environment } from '../../../environments/environment';
 import { DatePicker } from '../date-picker/date-picker';
 import { LocationPicker, PickedLocation } from '../location-picker/location-picker';
 
-export type AdminSection = 'overview' | 'orders' | 'products' | 'categories' | 'inventory' | 'customers' | 'analytics' | 'zones' | 'deals' | 'bundles' | 'plans' | 'subscriptions' | 'studio' | 'occasions' | 'merchants' | 'payouts' | 'audit' | 'content';
+export type AdminSection = 'overview' | 'orders' | 'products' | 'categories' | 'inventory' | 'customers' | 'analytics' | 'zones' | 'deals' | 'bundles' | 'plans' | 'subscriptions' | 'studio' | 'occasions' | 'merchants' | 'payouts' | 'audit' | 'content' | 'rewards';
 
 @Component({
   selector: 'app-admin',
@@ -69,7 +69,8 @@ export class Admin implements OnInit {
     if (q) list = list.filter(o =>
       (o.id || '').toLowerCase().includes(q) ||
       (o.customer_name || '').toLowerCase().includes(q) ||
-      (o.customer_email || '').toLowerCase().includes(q)
+      (o.customer_email || '').toLowerCase().includes(q) ||
+      (o.merchants || []).some((m: any) => (m.shop_name || '').toLowerCase().includes(q))
     );
     if (date) list = list.filter(o => (o.created_at || '').startsWith(date));
     return list;
@@ -98,7 +99,9 @@ export class Admin implements OnInit {
   productSearch = signal('');
   filteredProducts = computed(() => {
     const q = this.productSearch().toLowerCase();
-    return q ? this.products().filter(p => p.name.toLowerCase().includes(q) || p.category.toLowerCase().includes(q)) : this.products();
+    return q ? this.products().filter(p =>
+      p.name.toLowerCase().includes(q) || p.category.toLowerCase().includes(q) || (p.shop_name || '').toLowerCase().includes(q)
+    ) : this.products();
   });
   // ── Categories ─────────────────────────────────────────────────────────────
   categories = signal<string[]>([]);
@@ -161,6 +164,18 @@ export class Admin implements OnInit {
   merchants = signal<any[]>([]);
   loadingMerchants = signal(true);
   updatingMerchant = signal<string | null>(null);
+  merchantSearch = signal('');
+
+  filteredMerchants = computed(() => {
+    const q = this.merchantSearch().toLowerCase();
+    if (!q) return this.merchants();
+    return this.merchants().filter(m =>
+      (m.shop_name || '').toLowerCase().includes(q) ||
+      (m.email || '').toLowerCase().includes(q) ||
+      (m.merchant_code || '').toLowerCase().includes(q) ||
+      (m.city || '').toLowerCase().includes(q)
+    );
+  });
 
   customers = signal<any[]>([]);
   loadingCustomers = signal(true);
@@ -221,6 +236,18 @@ export class Admin implements OnInit {
   bundleForm = { name: '', description: '', emoji: '', product_ids: '' as string, promo_code: '', savings_pct: 15 };
   savingBundle = signal(false);
 
+  // ── Petal Rewards ────────────────────────────────────────────────────────
+  loyaltyConfigForm = { points_per_rupee: 1, welcome_bonus: 100, referral_signup_bonus: 200, referral_purchase_bonus: 150, redemption_rate: 10 };
+  loadingLoyaltyConfig = signal(false);
+  savingLoyaltyConfig = signal(false);
+
+  rewardCatalog = signal<any[]>([]);
+  loadingRewards = signal(true);
+  showRewardForm = signal(false);
+  editingReward = signal<any | null>(null);
+  rewardForm = { title: '', description: '', points_cost: 100, discount_value: 50, min_order: 0, active: true };
+  savingReward = signal(false);
+
   notifOpen = signal(false);
 
   constructor(
@@ -270,6 +297,7 @@ export class Admin implements OnInit {
     if (section === 'payouts') this.loadPayouts();
     if (section === 'audit' && !this.auditLog().length) this.loadAuditLog();
     if (section === 'content') this.loadSiteContent();
+    if (section === 'rewards') { this.loadLoyaltyConfig(); this.loadRewards(); }
   }
 
   get token(): string { return this.authService.getToken(); }
@@ -293,6 +321,7 @@ export class Admin implements OnInit {
     if (section === 'payouts') this.loadPayouts();
     if (section === 'audit') this.loadAuditLog();
     if (section === 'content') this.loadSiteContent();
+    if (section === 'rewards') { this.loadLoyaltyConfig(); this.loadRewards(); }
   }
 
   // ── Merchants (marketplace sellers) ───────────────────────────────────────
@@ -548,6 +577,44 @@ export class Admin implements OnInit {
     });
   }
 
+  // ── Bulk order-status update ────────────────────────────────────────────────
+  selectedOrderIds = signal<Set<string>>(new Set());
+  bulkUpdatingOrders = signal(false);
+
+  isOrderSelected(id: string): boolean { return this.selectedOrderIds().has(id); }
+
+  toggleOrderSelection(id: string): void {
+    const next = new Set(this.selectedOrderIds());
+    next.has(id) ? next.delete(id) : next.add(id);
+    this.selectedOrderIds.set(next);
+  }
+
+  clearOrderSelection(): void { this.selectedOrderIds.set(new Set()); }
+
+  async bulkUpdateOrderStatus(status: string): Promise<void> {
+    const ids = Array.from(this.selectedOrderIds());
+    if (!ids.length) return;
+    const ok = await this.confirmService.ask({
+      title: `Move ${ids.length} order(s) to "${this.STATUS_LABELS[status] || status}"?`,
+      message: 'Orders that can\'t make this transition (e.g. already delivered/cancelled) will be skipped.',
+      confirmText: 'Update all',
+    });
+    if (!ok) return;
+    this.bulkUpdatingOrders.set(true);
+    this.http.post<any>(`${environment.apiUrl}/api/admin/orders/bulk-status`, { token: this.token, order_ids: ids, status }).subscribe({
+      next: (res) => {
+        this.bulkUpdatingOrders.set(false);
+        this.clearOrderSelection();
+        this.loadOrders();
+        const msg = res.failed_ids?.length
+          ? `${res.updated_count} updated — ${res.failed_ids.length} skipped (invalid transition)`
+          : `${res.updated_count} order(s) updated`;
+        this.toastService.show(msg, res.failed_ids?.length ? 'error' : 'success');
+      },
+      error: (err) => { this.bulkUpdatingOrders.set(false); this.toastService.show(err.error?.detail || 'Bulk update failed', 'error'); },
+    });
+  }
+
   // ── Categories ─────────────────────────────────────────────────────────────
   loadCategories(): void {
     this.http.get<string[]>(`${environment.apiUrl}/api/admin/categories?token=${this.token}`)
@@ -598,6 +665,26 @@ export class Admin implements OnInit {
 
   pendingProducts = computed(() => this.products().filter(p => p.status === 'pending'));
 
+  // products/merchants/payouts already all load unconditionally on init (see
+  // ngOnInit) — each was previously only visible by navigating into its own
+  // tab, with nothing on Overview pointing admin toward them.
+  needsAttention = computed(() => {
+    const items: { section: AdminSection; icon: string; countLabel: string; label: string }[] = [];
+    const pendingMerchants = this.merchants().filter(m => m.status === 'pending').length;
+    if (pendingMerchants > 0) {
+      items.push({ section: 'merchants', icon: 'bi-shop', countLabel: `${pendingMerchants}`, label: `merchant application${pendingMerchants !== 1 ? 's' : ''} to review` });
+    }
+    const pendingProds = this.pendingProducts().length;
+    if (pendingProds > 0) {
+      items.push({ section: 'products', icon: 'bi-box-seam', countLabel: `${pendingProds}`, label: `product${pendingProds !== 1 ? 's' : ''} awaiting approval` });
+    }
+    const pendingPayout = this.payoutsSummary()?.total_pending || 0;
+    if (pendingPayout > 0) {
+      items.push({ section: 'payouts', icon: 'bi-cash-coin', countLabel: `₹${pendingPayout.toFixed(0)}`, label: 'in unsettled merchant payouts' });
+    }
+    return items;
+  });
+
   openProductForm(product: any = null): void {
     this.editingProduct.set(product);
     if (product?.catalog_id) {
@@ -628,6 +715,49 @@ export class Admin implements OnInit {
   }
 
   // ── Product approvals (merchant submissions) ──────────────────────────────
+  selectedPendingIds = signal<Set<string>>(new Set());
+  bulkApproving = signal(false);
+
+  isPendingSelected(id: string): boolean { return this.selectedPendingIds().has(id); }
+
+  togglePendingSelection(id: string): void {
+    const next = new Set(this.selectedPendingIds());
+    next.has(id) ? next.delete(id) : next.add(id);
+    this.selectedPendingIds.set(next);
+  }
+
+  toggleSelectAllPending(): void {
+    const all = this.pendingProducts().map(p => p.id);
+    this.selectedPendingIds.set(this.selectedPendingIds().size === all.length ? new Set() : new Set(all));
+  }
+
+  async bulkApproveSelected(): Promise<void> {
+    const ids = this.selectedPendingIds();
+    const items = this.pendingProducts()
+      .filter(p => ids.has(p.id))
+      .map(p => ({ id: p.id, price: Number(p.price) || 0, discount_percent: Number(p.discount_percent) || 0 }));
+    if (!items.length) return;
+    const ok = await this.confirmService.ask({
+      title: `Approve ${items.length} product(s)?`,
+      message: 'Each will go live at the selling price currently shown in its row.',
+      confirmText: 'Approve all',
+    });
+    if (!ok) return;
+    this.bulkApproving.set(true);
+    this.http.post<any>(`${environment.apiUrl}/api/admin/products/bulk-approve`, { token: this.token, items }).subscribe({
+      next: (res) => {
+        this.bulkApproving.set(false);
+        this.selectedPendingIds.set(new Set());
+        this.loadProducts();
+        const msg = res.skipped_ids?.length
+          ? `${res.approved_count} approved — ${res.skipped_ids.length} skipped (no price set)`
+          : `${res.approved_count} product(s) approved`;
+        this.toastService.show(msg, res.skipped_ids?.length ? 'error' : 'success');
+      },
+      error: (err) => { this.bulkApproving.set(false); this.toastService.show(err.error?.detail || 'Bulk approve failed', 'error'); },
+    });
+  }
+
   approveProduct(p: any): void {
     if (p.price == null || Number(p.price) <= 0) { this.toastService.show('Set a selling price first', 'error'); return; }
     this.http.patch(`${environment.apiUrl}/api/admin/products/${p.id}/approve`,
@@ -1207,6 +1337,30 @@ export class Admin implements OnInit {
     });
   }
 
+  // Orders search already matches customer_email — reuse it as the drill-down
+  // instead of building a separate customer-order-history view.
+  viewCustomerOrders(customer: any): void {
+    this.activeTab.set('all');
+    this.selectedDate.set('');
+    this.searchQuery.set(customer.email);
+    this.navigateTo('orders');
+  }
+
+  // Same idea for a merchant — orders/products search now also matches
+  // shop_name (see visibleOrders/filteredProducts above), so drilling in is
+  // just steering the existing search box rather than a separate view.
+  viewMerchantOrders(merchant: any): void {
+    this.activeTab.set('all');
+    this.selectedDate.set('');
+    this.searchQuery.set(merchant.shop_name);
+    this.navigateTo('orders');
+  }
+
+  viewMerchantProducts(merchant: any): void {
+    this.productSearch.set(merchant.shop_name);
+    this.navigateTo('products');
+  }
+
   // ── Analytics ────────────────────────────────────────────────────────────
   loadAnalytics(): void {
     this.loadingAnalytics.set(true);
@@ -1306,6 +1460,7 @@ export class Admin implements OnInit {
   loadingDeliveryPricing = signal(false);
   savingDeliveryPricing = signal(false);
   perKmRateInput = signal<number | null>(null);
+  basePriceInput = signal<number>(0);
   freeDeliveryMinInput = signal<number>(0);
 
   loadDeliveryPricing(): void {
@@ -1314,6 +1469,7 @@ export class Admin implements OnInit {
       next: (data) => {
         this.deliveryPricing.set(data);
         this.perKmRateInput.set(data.per_km_rate);
+        this.basePriceInput.set(data.base_price || 0);
         this.freeDeliveryMinInput.set(data.free_delivery_min_order || 0);
         this.loadingDeliveryPricing.set(false);
       },
@@ -1327,16 +1483,21 @@ export class Admin implements OnInit {
       this.toastService.show('Enter a rate greater than 0', 'error');
       return;
     }
+    const basePrice = this.basePriceInput() || 0;
+    if (basePrice < 0) {
+      this.toastService.show('Base price can\'t be negative', 'error');
+      return;
+    }
     const freeMin = this.freeDeliveryMinInput() || 0;
     if (freeMin < 0) {
       this.toastService.show('Free-delivery minimum can\'t be negative', 'error');
       return;
     }
     this.savingDeliveryPricing.set(true);
-    this.http.put<any>(`${environment.apiUrl}/api/admin/delivery-pricing`, { token: this.token, per_km_rate: rate, free_delivery_min_order: freeMin }).subscribe({
+    this.http.put<any>(`${environment.apiUrl}/api/admin/delivery-pricing`, { token: this.token, base_price: basePrice, per_km_rate: rate, free_delivery_min_order: freeMin }).subscribe({
       next: () => {
         this.savingDeliveryPricing.set(false);
-        this.toastService.show(`Delivery rate set to ₹${rate}/km` + (freeMin > 0 ? `, free over ₹${freeMin}` : ''));
+        this.toastService.show(`Delivery fee set to ₹${basePrice} + ₹${rate}/km` + (freeMin > 0 ? `, free over ₹${freeMin}` : ''));
         this.loadDeliveryPricing();
       },
       error: (err) => { this.savingDeliveryPricing.set(false); this.toastService.show(err.error?.detail || 'Failed to update rate', 'error'); },
@@ -1563,6 +1724,85 @@ export class Admin implements OnInit {
     });
   }
 
+  // ── Petal Rewards: earn/redemption rates ──────────────────────────────────
+  loadLoyaltyConfig(): void {
+    this.loadingLoyaltyConfig.set(true);
+    this.http.get<any>(`${environment.apiUrl}/api/loyalty-config`).subscribe({
+      next: (cfg) => {
+        this.loyaltyConfigForm = { ...cfg };
+        this.loadingLoyaltyConfig.set(false);
+      },
+      error: () => this.loadingLoyaltyConfig.set(false),
+    });
+  }
+
+  saveLoyaltyConfig(): void {
+    const f = this.loyaltyConfigForm;
+    if (f.points_per_rupee < 0 || f.welcome_bonus < 0 || f.referral_signup_bonus < 0 || f.referral_purchase_bonus < 0) {
+      this.toastService.show('Rates can\'t be negative', 'error');
+      return;
+    }
+    if (f.redemption_rate <= 0) {
+      this.toastService.show('Redemption rate must be greater than 0', 'error');
+      return;
+    }
+    this.savingLoyaltyConfig.set(true);
+    this.http.put<any>(`${environment.apiUrl}/api/admin/loyalty-config`, { token: this.token, ...f }).subscribe({
+      next: () => { this.savingLoyaltyConfig.set(false); this.toastService.show('Petal Rewards rates updated'); },
+      error: (err) => { this.savingLoyaltyConfig.set(false); this.toastService.show(err.error?.detail || 'Failed to update rates', 'error'); },
+    });
+  }
+
+  // ── Petal Rewards: claimable catalog ────────────────────────────────────────
+  loadRewards(): void {
+    this.loadingRewards.set(true);
+    this.http.get<any[]>(`${environment.apiUrl}/api/admin/rewards?token=${this.token}`).subscribe({
+      next: (data) => { this.rewardCatalog.set(data || []); this.loadingRewards.set(false); },
+      error: () => this.loadingRewards.set(false),
+    });
+  }
+
+  openRewardForm(reward: any = null): void {
+    this.editingReward.set(reward);
+    this.rewardForm = reward
+      ? { title: reward.title, description: reward.description || '', points_cost: reward.points_cost, discount_value: reward.discount_value, min_order: reward.min_order || 0, active: reward.active }
+      : { title: '', description: '', points_cost: 100, discount_value: 50, min_order: 0, active: true };
+    this.showRewardForm.set(true);
+  }
+
+  closeRewardForm(): void { this.showRewardForm.set(false); this.editingReward.set(null); }
+
+  saveReward(): void {
+    if (!this.rewardForm.title.trim() || this.rewardForm.points_cost <= 0 || this.rewardForm.discount_value <= 0) {
+      this.toastService.show('Title, points cost, and discount value are required', 'error');
+      return;
+    }
+    this.savingReward.set(true);
+    const editing = this.editingReward();
+    const url = editing
+      ? `${environment.apiUrl}/api/admin/rewards/${editing.id}?token=${this.token}`
+      : `${environment.apiUrl}/api/admin/rewards?token=${this.token}`;
+    const req$ = editing ? this.http.patch(url, this.rewardForm) : this.http.post(url, this.rewardForm);
+    req$.subscribe({
+      next: () => { this.savingReward.set(false); this.closeRewardForm(); this.loadRewards(); this.toastService.show(editing ? 'Reward updated' : 'Reward created'); },
+      error: (err) => { this.savingReward.set(false); this.toastService.show(err.error?.detail || 'Failed to save reward', 'error'); },
+    });
+  }
+
+  async deleteReward(reward: any): Promise<void> {
+    const ok = await this.confirmService.ask({
+      title: 'Delete reward?',
+      message: `"${reward.title}" will no longer be claimable. Already-claimed vouchers stay valid.`,
+      confirmText: 'Delete',
+      danger: true,
+    });
+    if (!ok) return;
+    this.http.delete(`${environment.apiUrl}/api/admin/rewards/${reward.id}?token=${this.token}`).subscribe({
+      next: () => { this.rewardCatalog.update(list => list.filter(r => r.id !== reward.id)); this.toastService.show('Reward deleted'); },
+      error: () => this.toastService.show('Failed to delete reward', 'error'),
+    });
+  }
+
   // ── CSV export (client-side — every list here is already fully loaded,
   // not paginated, so there's no need for a dedicated export endpoint) ──────
   private exportCsv(filename: string, rows: Record<string, any>[]): void {
@@ -1639,4 +1879,13 @@ export class Admin implements OnInit {
   clearDate(): void { this.selectedDate.set(''); }
 
   itemCount(order: any): number { return (order.items || []).length; }
+
+  // The order card is itself a routerLink — a nested <a href="tel:"> would be
+  // invalid HTML with unpredictable click behavior, so this stops the card's
+  // own navigation and dials out instead.
+  callNumber(event: Event, phone: string): void {
+    event.preventDefault();
+    event.stopPropagation();
+    window.location.href = `tel:${phone}`;
+  }
 }

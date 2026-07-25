@@ -1117,6 +1117,7 @@
 
   // ── Hamburger ─────────────────────────────────────────────────────────────
   .hamburger {
+    position: relative;
     display: none;
     flex-direction: column;
     justify-content: center;
@@ -1131,6 +1132,20 @@
     transition: background 0.15s ease;
 
     &:hover { background: var(--accent-light); }
+
+    // The notif bell/dropdown is hidden on mobile (see .notif-wrapper below)
+    // to keep the top bar from overcrowding — this dot is the at-a-glance
+    // replacement so unread notifications aren't invisible until someone
+    // thinks to open the menu, matching the always-visible cart/wishlist badges.
+    .hamburger-badge {
+      position: absolute;
+      top: 4px;
+      right: 4px;
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: var(--accent);
+    }
 
     span {
       display: block;

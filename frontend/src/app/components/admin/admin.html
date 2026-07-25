@@ -66,6 +66,10 @@
         <i class="bi bi-easel" style="font-size:16px"></i>
         Homepage Content
       </button>
+      <button class="nav-item" [class.active]="activeSection() === 'rewards'" (click)="navigateTo('rewards')">
+        <i class="bi bi-flower1" style="font-size:16px"></i>
+        Petal Rewards
+      </button>
       <button class="nav-item" [class.active]="activeSection() === 'analytics'" (click)="navigateTo('analytics')">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/>
@@ -225,6 +229,24 @@
           <div class="loading-state"><div class="spinner"></div><p>Loading stats...</p></div>
         }
 
+        @if (needsAttention().length > 0) {
+          <div class="attention-panel">
+            <h2><i class="bi bi-exclamation-circle"></i> Needs Your Attention</h2>
+            <div class="attention-grid">
+              @for (a of needsAttention(); track a.section) {
+                <button class="attention-card" (click)="navigateTo(a.section)">
+                  <span class="attention-icon"><i class="bi" [class]="a.icon"></i></span>
+                  <span class="attention-body">
+                    <span class="attention-count">{{ a.countLabel }}</span>
+                    <span class="attention-label">{{ a.label }}</span>
+                  </span>
+                  <i class="bi bi-arrow-right attention-arrow"></i>
+                </button>
+              }
+            </div>
+          </div>
+        }
+
         <div class="quick-actions">
           <h2>Quick Actions</h2>
           <div class="quick-grid">
@@ -266,6 +288,11 @@
             <span class="section-meta">{{ merchants().length }} shops</span>
             <button class="btn-primary" (click)="openMerchantForm()"><i class="bi bi-plus-lg"></i> Create Merchant</button>
           </div>
+        </div>
+
+        <div class="search-bar-simple">
+          <i class="bi bi-search"></i>
+          <input type="text" placeholder="Search by shop name, email, code, or city..." [value]="merchantSearch()" (input)="merchantSearch.set($any($event.target).value)">
         </div>
 
         @if (showMerchantForm()) {
@@ -330,11 +357,11 @@
 
         @if (loadingMerchants()) {
           <div class="loading-state"><div class="spinner"></div><p>Loading merchants...</p></div>
-        } @else if (merchants().length === 0) {
-          <div class="empty-state"><p>No merchant applications yet.</p></div>
+        } @else if (filteredMerchants().length === 0) {
+          <div class="empty-state"><p>{{ merchants().length === 0 ? 'No merchant applications yet.' : 'No merchants match your search.' }}</p></div>
         } @else {
           <div class="merchant-list">
-            @for (m of merchants(); track m.id) {
+            @for (m of filteredMerchants(); track m.id) {
               <div class="merchant-card">
                 <div class="mc-main">
                   <div class="mc-logo"><i class="bi bi-shop"></i></div>
@@ -345,13 +372,16 @@
                       @if (m.merchant_code) { <span class="mc-code">{{ m.merchant_code }}</span> }
                     </span>
                     <span class="mc-sub"><i class="bi bi-envelope"></i> {{ m.email || '—' }}</span>
-                    @if (m.phone) { <span class="mc-sub"><i class="bi bi-telephone"></i> {{ m.phone }}</span> }
+                    @if (m.phone) { <a [href]="'tel:' + m.phone" class="mc-sub mc-tel"><i class="bi bi-telephone"></i> {{ m.phone }}</a> }
                     @if (m.city) { <span class="mc-sub"><i class="bi bi-geo-alt"></i> {{ m.city }}{{ m.state ? ', ' + m.state : '' }}</span> }
-                    <span class="mc-sub"><i class="bi bi-box-seam"></i> {{ m.product_count }} products</span>
+                    <button type="button" class="mc-sub mc-drilldown" (click)="viewMerchantProducts(m)"><i class="bi bi-box-seam"></i> {{ m.product_count }} products</button>
                     @if (m.description) { <p class="mc-desc">{{ m.description }}</p> }
                   </div>
                 </div>
                 <div class="mc-actions">
+                  <button class="btn-view-orders" (click)="viewMerchantOrders(m)">
+                    <i class="bi bi-receipt"></i> Orders
+                  </button>
                   <label class="mc-comm">
                     Commission
                     <span class="mc-comm-input">
@@ -622,6 +652,129 @@
       </div>
     }
 
+    <!-- ── Petal Rewards ─────────────────────────────────────────────────── -->
+    @if (activeSection() === 'rewards') {
+      <div class="section-wrap">
+        <div class="section-header">
+          <h1>Petal Rewards</h1>
+        </div>
+
+        @if (loadingLoyaltyConfig()) {
+          <div class="loading-state"><div class="spinner"></div><p>Loading...</p></div>
+        } @else {
+          <div class="pricing-card">
+            <div class="pricing-card-head">
+              <span class="pricing-card-title"><i class="bi bi-stars"></i> Earn &amp; Redemption Rates</span>
+            </div>
+            <p class="modal-hint" style="margin-bottom:1rem;">
+              <i class="bi bi-info-circle"></i> Controls how many points customers earn and what they're worth. Changes apply immediately, going forward only — past transactions aren't recalculated.
+            </p>
+            <div class="form-row">
+              <label class="form-label">Points per ₹1 spent
+                <input type="number" class="form-input" [(ngModel)]="loyaltyConfigForm.points_per_rupee" min="0" step="0.5">
+              </label>
+              <label class="form-label">Redemption rate (pts per ₹1 off)
+                <input type="number" class="form-input" [(ngModel)]="loyaltyConfigForm.redemption_rate" min="0.1" step="0.5">
+              </label>
+            </div>
+            <div class="form-row">
+              <label class="form-label">Welcome bonus (pts)
+                <input type="number" class="form-input" [(ngModel)]="loyaltyConfigForm.welcome_bonus" min="0" step="10">
+              </label>
+              <label class="form-label">Referral signup bonus (pts)
+                <input type="number" class="form-input" [(ngModel)]="loyaltyConfigForm.referral_signup_bonus" min="0" step="10">
+              </label>
+            </div>
+            <label class="form-label">Referral first-purchase bonus (pts)
+              <input type="number" class="form-input" [(ngModel)]="loyaltyConfigForm.referral_purchase_bonus" min="0" step="10">
+            </label>
+            <button class="btn-primary" style="margin-top:1rem;" [disabled]="savingLoyaltyConfig()" (click)="saveLoyaltyConfig()">
+              @if (savingLoyaltyConfig()) { <i class="bi bi-arrow-repeat vp-spin"></i> Saving… }
+              @else { <i class="bi bi-check-lg"></i> Save rates }
+            </button>
+          </div>
+        }
+
+        <div class="section-header" style="margin-top:2rem;">
+          <h2 style="margin:0;">Reward Catalog</h2>
+          <button class="btn-primary" (click)="openRewardForm()">
+            <i class="bi bi-plus-lg"></i>
+            Add Reward
+          </button>
+        </div>
+
+        @if (loadingRewards()) {
+          <div class="loading-state"><div class="spinner"></div><p>Loading rewards...</p></div>
+        } @else if (rewardCatalog().length === 0) {
+          <div class="empty-state"><p>No rewards yet — add one so customers have something to claim.</p></div>
+        } @else {
+          <div class="deals-list">
+            @for (r of rewardCatalog(); track r.id) {
+              <div class="deal-card" [class.inactive]="!r.active">
+                <div class="deal-main">
+                  <span class="deal-emoji"><i class="bi bi-gift"></i></span>
+                  <div class="deal-info">
+                    <span class="deal-title">{{ r.title }} @if (!r.active) { <span class="deal-tag subtle">Inactive</span> }</span>
+                    @if (r.description) { <span class="deal-desc">{{ r.description }}</span> }
+                    <div class="deal-meta">
+                      <span class="deal-tag">{{ r.points_cost | number }} pts</span>
+                      <span class="deal-tag subtle">₹{{ r.discount_value }} off</span>
+                      @if (r.min_order > 0) { <span class="deal-tag subtle">Min order ₹{{ r.min_order }}</span> }
+                    </div>
+                  </div>
+                </div>
+                <div class="zone-actions">
+                  <button class="btn-edit-small" (click)="openRewardForm(r)">Edit</button>
+                  <button class="btn-delete-small" (click)="deleteReward(r)">Delete</button>
+                </div>
+              </div>
+            }
+          </div>
+        }
+      </div>
+
+      <!-- Reward Form Modal -->
+      @if (showRewardForm()) {
+        <div class="modal-overlay" (click)="closeRewardForm()">
+          <div class="modal-box" (click)="$event.stopPropagation()">
+            <div class="modal-header">
+              <h2>{{ editingReward() ? 'Edit Reward' : 'Add Reward' }}</h2>
+              <button class="modal-close" (click)="closeRewardForm()"><i class="bi bi-x-lg"></i></button>
+            </div>
+            <div class="modal-body">
+              <label class="form-label">Title
+                <input type="text" class="form-input" [(ngModel)]="rewardForm.title" placeholder="e.g. ₹100 off your next order">
+              </label>
+              <label class="form-label">Description (optional)
+                <input type="text" class="form-input" [(ngModel)]="rewardForm.description" placeholder="Shown to customers on the reward card">
+              </label>
+              <div class="form-row">
+                <label class="form-label">Points cost
+                  <input type="number" class="form-input" [(ngModel)]="rewardForm.points_cost" min="1" step="10">
+                </label>
+                <label class="form-label">Discount value (₹)
+                  <input type="number" class="form-input" [(ngModel)]="rewardForm.discount_value" min="1" step="10">
+                </label>
+              </div>
+              <label class="form-label">Minimum order (₹, optional)
+                <input type="number" class="form-input" [(ngModel)]="rewardForm.min_order" min="0" step="50">
+              </label>
+              <label class="toggle-label" style="margin-top:0.5rem;">
+                <input type="checkbox" [(ngModel)]="rewardForm.active">
+                Active — visible for customers to claim
+              </label>
+            </div>
+            <div class="modal-footer">
+              <button class="btn-cancel" (click)="closeRewardForm()">Cancel</button>
+              <button class="btn-primary" [disabled]="savingReward() || !rewardForm.title.trim()" (click)="saveReward()">
+                @if (savingReward()) { Saving... } @else { {{ editingReward() ? 'Save Changes' : 'Create Reward' }} }
+              </button>
+            </div>
+          </div>
+        </div>
+      }
+    }
+
     @if (activeSection() === 'orders') {
       <div class="section-wrap">
         <div class="section-header">
@@ -668,6 +821,20 @@
           </div>
         </div>
 
+        @if (selectedOrderIds().size > 0) {
+          <div class="bulk-bar">
+            <span>{{ selectedOrderIds().size }} selected</span>
+            <div class="bulk-bar-actions">
+              @for (tab of tabs; track tab.key) {
+                @if (tab.key !== 'all') {
+                  <button [disabled]="bulkUpdatingOrders()" (click)="bulkUpdateOrderStatus(tab.key)">{{ tab.label }}</button>
+                }
+              }
+            </div>
+            <button class="bulk-bar-clear" (click)="clearOrderSelection()"><i class="bi bi-x-lg"></i> Clear</button>
+          </div>
+        }
+
         @if (loadingOrders()) {
           <div class="loading-state"><div class="spinner"></div><p>Loading orders...</p></div>
         } @else if (loadError()) {
@@ -678,6 +845,8 @@
           <div class="orders-list">
             @for (order of visibleOrders(); track order.id) {
               <a class="order-card" [class.cancelled]="order.status === 'cancelled'" [routerLink]="['/orders', order.id]">
+                <input type="checkbox" class="order-check" [checked]="isOrderSelected(order.id)"
+                       (click)="$event.preventDefault(); $event.stopPropagation(); toggleOrderSelection(order.id)">
                 <div class="order-imgs">
                   @for (item of (order.items || []).slice(0, 3); track item.product_id) {
                     <img [src]="item.image" [alt]="item.name" class="order-thumb">
@@ -687,6 +856,9 @@
                   <span class="order-id">{{ order.id }}</span>
                   <span class="order-date">{{ formatDate(order.created_at) }} · {{ formatTime(order.created_at) }}</span>
                   <span class="order-customer">{{ order.customer_name }} · {{ order.customer_email }}</span>
+                  @if (order.customer_phone) {
+                    <span class="order-tel" (click)="callNumber($event, order.customer_phone)"><i class="bi bi-telephone"></i> {{ order.customer_phone }}</span>
+                  }
                   <span class="order-amount">₹{{ order.total?.toFixed(2) }} · {{ itemCount(order) }} item{{ itemCount(order) !== 1 ? 's' : '' }}</span>
                   @if (order.merchants?.length) {
                     <div class="order-sellers">
@@ -735,9 +907,22 @@
         <!-- Approval queue: merchant submissions awaiting a selling price -->
         @if (pendingProducts().length) {
           <div class="approvals">
-            <div class="approvals-head"><i class="bi bi-hourglass-split"></i> {{ pendingProducts().length }} product(s) awaiting your approval</div>
+            <div class="approvals-head">
+              <span><i class="bi bi-hourglass-split"></i> {{ pendingProducts().length }} product(s) awaiting your approval</span>
+              @if (selectedPendingIds().size > 0) {
+                <button class="btn-approve btn-bulk-approve" [disabled]="bulkApproving()" (click)="bulkApproveSelected()">
+                  @if (bulkApproving()) { <i class="bi bi-arrow-repeat vp-spin"></i> Approving… }
+                  @else { <i class="bi bi-check-lg"></i> Approve {{ selectedPendingIds().size }} selected }
+                </button>
+              }
+            </div>
+            <label class="approvals-select-all">
+              <input type="checkbox" [checked]="selectedPendingIds().size === pendingProducts().length" (change)="toggleSelectAllPending()">
+              Select all
+            </label>
             @for (p of pendingProducts(); track p.id) {
               <div class="approval-row">
+                <input type="checkbox" class="ap-check" [checked]="isPendingSelected(p.id)" (change)="togglePendingSelection(p.id)">
                 <img [src]="p.image" [alt]="p.name" class="ap-thumb" loading="lazy">
                 <div class="ap-info">
                   <span class="ap-name">{{ p.name }}</span>
@@ -1081,6 +1266,9 @@
                 @if (!c.is_verified) {
                   <span class="unverified-badge">Unverified</span>
                 }
+                <button class="cust-orders" title="View this customer's orders" (click)="viewCustomerOrders(c)">
+                  <i class="bi bi-receipt"></i> View orders
+                </button>
                 @if (c.segment === 'at_risk' || c.segment === 'lapsed') {
                   <button class="cust-winback" [disabled]="sendingWinback() === c.email" (click)="sendWinback(c)" title="Send a win-back message">
                     @if (sendingWinback() === c.email) { <i class="bi bi-arrow-repeat vp-spin"></i> } @else { <i class="bi bi-envelope-heart"></i> Win back }
@@ -1459,29 +1647,33 @@
 
         <div class="pricing-card">
           <div class="pricing-card-head">
-            <span class="pricing-card-title"><i class="bi bi-speedometer2"></i> Per-km Delivery Rate</span>
+            <span class="pricing-card-title"><i class="bi bi-speedometer2"></i> Delivery Fee</span>
             @if (deliveryPricing()?.updated_at) {
               <span class="pricing-card-meta">Updated {{ formatDate(deliveryPricing().updated_at) }} · {{ formatTime(deliveryPricing().updated_at) }}</span>
             }
           </div>
           <p class="modal-hint" style="margin-bottom:1rem;">
-            <i class="bi bi-info-circle"></i> Every order's delivery fee is (distance from the fulfilling shop to the
-            customer) × this rate. Change it anytime — e.g. raise it during peak hours or bad weather — new orders
-            use the new rate immediately. Orders at or above the free-delivery minimum skip the fee entirely.
+            <i class="bi bi-info-circle"></i> Every order's delivery fee is a base price plus (distance from the
+            fulfilling shop to the customer) × the per-km rate — e.g. base ₹30 + 5 km × ₹10/km = ₹80. A multi-shop
+            order is charged this way per shop, since each one needs its own trip. Change either number anytime —
+            new orders use it immediately. Orders at or above the free-delivery minimum skip the fee entirely.
           </p>
           @if (!deliveryPricing()?.configured && !loadingDeliveryPricing()) {
             <p class="pricing-not-configured"><i class="bi bi-exclamation-triangle"></i> Not set up yet — orders are using a flat ₹49 fallback fee until you set a rate.</p>
           }
           <div class="pricing-card-form">
             <label class="pricing-rate-input">
-              ₹<input type="number" min="0.01" step="0.5" [ngModel]="perKmRateInput()" (ngModelChange)="perKmRateInput.set($event)"> / km
+              Base ₹<input type="number" min="0" step="5" [ngModel]="basePriceInput()" (ngModelChange)="basePriceInput.set($event)">
+            </label>
+            <label class="pricing-rate-input">
+              + ₹<input type="number" min="0.01" step="0.5" [ngModel]="perKmRateInput()" (ngModelChange)="perKmRateInput.set($event)"> / km
             </label>
             <label class="pricing-rate-input">
               Free delivery over ₹<input type="number" min="0" step="50" [ngModel]="freeDeliveryMinInput()" (ngModelChange)="freeDeliveryMinInput.set($event)">
             </label>
             <button class="btn-primary" [disabled]="savingDeliveryPricing()" (click)="saveDeliveryPricing()">
               @if (savingDeliveryPricing()) { <i class="bi bi-arrow-repeat vp-spin"></i> Saving… }
-              @else { <i class="bi bi-check-lg"></i> Update rate }
+              @else { <i class="bi bi-check-lg"></i> Update pricing }
             </button>
           </div>
         </div>
@@ -1654,7 +1846,7 @@
                   <div class="sfc-block">
                     <span class="sfc-label">Deliver to</span>
                     <span class="sfc-val">{{ sub.address || '—' }}</span>
-                    @if (sub.customer_phone) { <span class="sfc-sub"><i class="bi bi-telephone"></i> {{ sub.customer_phone }}</span> }
+                    @if (sub.customer_phone) { <a [href]="'tel:' + sub.customer_phone" class="sfc-sub sfc-tel"><i class="bi bi-telephone"></i> {{ sub.customer_phone }}</a> }
                     <span class="sfc-sub"><i class="bi bi-envelope"></i> {{ sub.customer_email }}</span>
                   </div>
                   <div class="sfc-block">

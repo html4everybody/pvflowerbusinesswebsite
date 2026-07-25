@@ -1,4 +1,4 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit, signal, computed } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
@@ -102,6 +102,16 @@ export class MerchantDashboard implements OnInit {
     if (next) this.noticeService.load();
   }
 
+  onNotifClick(n: { id: string; ref_type?: string; read: boolean }): void {
+    this.noticeService.markOneRead(n.id);
+    const section: Partial<Record<string, MerchantSection>> = {
+      merchant_order: 'orders', merchant_payout: 'analytics',
+      merchant_product: 'products', merchant_status: 'settings',
+    };
+    const target = n.ref_type ? section[n.ref_type] : undefined;
+    if (target) { this.go(target); this.notifOpen.set(false); }
+  }
+
   private get token(): string { return this.auth.getToken(); }
   private get api(): string { return environment.apiUrl; }
 
@@ -112,7 +122,15 @@ export class MerchantDashboard implements OnInit {
     this.loadProducts();
     this.loadCategories();
     this.loadShop(); // also seeds shopIsOpen for the always-visible sidebar toggle
+    // Also loaded on init (not just when the Orders tab is opened) so
+    // Overview can show real priority orders, not just a count.
+    this.loadOrders();
   }
+
+  // Not-yet-delivered orders, for a compact "act now" list on Overview —
+  // avoids a full nav to the Orders tab for the common case of clearing a
+  // handful of pending ones first thing.
+  priorityOrders = computed(() => this.orders().filter(o => o.status !== 'delivered' && o.status !== 'cancelled').slice(0, 5));
 
   toggleAvailability(): void {
     const next = !this.shopIsOpen();
@@ -138,7 +156,10 @@ export class MerchantDashboard implements OnInit {
 
   go(section: MerchantSection): void {
     this.activeSection.set(section);
-    if (section === 'orders' && !this.orders().length) this.loadOrders();
+    // Always refetch on open — new orders can arrive any time, and only
+    // loading once (when the list was still empty) meant re-clicking the
+    // Orders tab did nothing once it had anything in it.
+    if (section === 'orders') this.loadOrders();
     if (section === 'settings') this.loadShop();
     if (section === 'analytics') this.loadAnalytics();
   }
@@ -348,6 +369,46 @@ export class MerchantDashboard implements OnInit {
     this.http.patch(`${this.api}/api/merchant/orders/${o.order_id}/status`, { token: this.token, status: o.status, delivery_date: date }).subscribe({
       next: () => { o.delivery_date = date; this.toast.show('Delivery date updated', 'success'); },
       error: (err) => this.toast.show(err?.error?.detail || 'Update failed', 'error'),
+    });
+  }
+
+  // ── Bulk order-status update ────────────────────────────────────────────────
+  readonly BULK_STATUSES = ['preparing', 'out_for_delivery', 'delivered', 'cancelled'];
+  selectedOrderIds = signal<Set<string>>(new Set());
+  bulkUpdatingOrders = signal(false);
+
+  isOrderSelected(id: string): boolean { return this.selectedOrderIds().has(id); }
+
+  toggleOrderSelection(id: string): void {
+    const next = new Set(this.selectedOrderIds());
+    next.has(id) ? next.delete(id) : next.add(id);
+    this.selectedOrderIds.set(next);
+  }
+
+  clearOrderSelection(): void { this.selectedOrderIds.set(new Set()); }
+
+  async bulkUpdateOrderStatus(status: string): Promise<void> {
+    const ids = Array.from(this.selectedOrderIds());
+    if (!ids.length) return;
+    const ok = await this.confirm.ask({
+      title: `Move ${ids.length} order(s) to "${this.STATUS_LABELS[status] || status}"?`,
+      message: 'Orders that can\'t make this transition will be skipped.',
+      confirmText: 'Update all',
+    });
+    if (!ok) return;
+    this.bulkUpdatingOrders.set(true);
+    this.http.post<any>(`${this.api}/api/merchant/orders/bulk-status`, { token: this.token, order_ids: ids, status }).subscribe({
+      next: (res) => {
+        this.bulkUpdatingOrders.set(false);
+        this.clearOrderSelection();
+        this.loadOrders();
+        this.loadStats();
+        const msg = res.failed_ids?.length
+          ? `${res.updated_count} updated — ${res.failed_ids.length} skipped (invalid transition)`
+          : `${res.updated_count} order(s) updated`;
+        this.toast.show(msg, res.failed_ids?.length ? 'error' : 'success');
+      },
+      error: (err) => { this.bulkUpdatingOrders.set(false); this.toast.show(err?.error?.detail || 'Bulk update failed', 'error'); },
     });
   }
 

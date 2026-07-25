@@ -315,13 +315,17 @@ def create_loyalty_account(email: str, referred_by_code: str = None) -> str:
     except Exception as e:
         print(f"[Loyalty] Failed to create account for {email}: {e}", flush=True)
 
-    # Welcome bonus
-    award_points(email, 100, "earned_welcome", "Welcome bonus for joining VivaPetals")
+    cfg = _get_loyalty_config()
 
-    # Referral signup bonus: 200 pts to referrer
+    # Welcome bonus
+    award_points(email, cfg["welcome_bonus"], "earned_welcome", "Welcome bonus for joining VivaPetals")
+    create_user_notice(email, "🎁 Welcome bonus!", f"You earned {cfg['welcome_bonus']} loyalty points for joining VivaPetals.", "loyalty", email)
+
+    # Referral signup bonus to referrer
     if referrer_email:
-        print(f"[Loyalty] Awarding 200 referral pts to {referrer_email} for referring {email}", flush=True)
-        award_points(referrer_email, 200, "earned_referral_signup", f"Referral signup bonus — {email} joined")
+        print(f"[Loyalty] Awarding {cfg['referral_signup_bonus']} referral pts to {referrer_email} for referring {email}", flush=True)
+        award_points(referrer_email, cfg["referral_signup_bonus"], "earned_referral_signup", f"Referral signup bonus — {email} joined")
+        create_user_notice(referrer_email, "🎉 Referral bonus!", f"You earned {cfg['referral_signup_bonus']} points because {email} joined using your referral link.", "loyalty", referrer_email)
 
     return ref_code
 
@@ -1729,6 +1733,48 @@ def approve_product(product_id: str, req: ProductApproveRequest):
     return p or {"status": "approved"}
 
 
+class BulkApproveItem(BaseModel):
+    id: str
+    price: float
+    discount_percent: float = 0
+
+
+class BulkApproveRequest(BaseModel):
+    token: str
+    items: list[BulkApproveItem]
+
+
+@app.post("/api/admin/products/bulk-approve")
+def bulk_approve_products(req: BulkApproveRequest):
+    """Same rules as approve_product, one call per row server-side — the
+    approval queue can easily have a dozen+ pending submissions at once and
+    one-click-per-row doesn't scale for a busy admin."""
+    admin_email = require_admin(req.token)
+    approved, skipped = [], []
+    for item in req.items:
+        if item.price <= 0:
+            skipped.append(item.id)
+            continue
+        supabase.table("products").update({
+            "price": float(item.price),
+            "discount_percent": max(0.0, min(100.0, float(item.discount_percent or 0))),
+            "status": "approved",
+            "reject_reason": None,
+        }).eq("id", item.id).execute()
+        approved.append(item.id)
+    load_products()
+    for pid in approved:
+        p = next((p for p in PRODUCTS if p["id"] == pid), None)
+        if p and p.get("merchant_id") and p.get("merchant_id") != HOUSE_MERCHANT_ID:
+            create_user_notice(
+                _merchant_email(p["merchant_id"]), "✅ Product approved",
+                f"\"{p['name']}\" is now live on VivaPetals at ₹{p['price']}.",
+                "merchant_product", str(pid),
+            )
+    _log_admin_action(admin_email, "products_bulk_approved", "product", ",".join(approved), f"{len(approved)} products")
+    return {"status": "ok", "approved_count": len(approved), "skipped_ids": skipped}
+
+
 @app.patch("/api/admin/products/{product_id}/reject")
 def reject_product(product_id: str, req: ProductRejectRequest):
     admin_email = require_admin(req.token)
@@ -2894,15 +2940,14 @@ class MerchantOrderStatusUpdate(BaseModel):
     delivery_date: Optional[str] = None
 
 
-@app.patch("/api/merchant/orders/{order_id}/status")
-def merchant_update_order_status(order_id: str, req: MerchantOrderStatusUpdate):
-    m = require_merchant(req.token)
-    if req.status not in ("confirmed", "preparing", "out_for_delivery", "delivered", "cancelled"):
-        raise HTTPException(status_code=400, detail="Invalid status")
+def _merchant_update_order_status_core(merchant_id: str, order_id: str, status: str, delivery_date: Optional[str] = None) -> dict:
+    """Shared by the single-order and bulk endpoints below."""
+    if status not in ("confirmed", "preparing", "out_for_delivery", "delivered", "cancelled"):
+        return {"ok": False, "not_found": False, "error": "Invalid status"}
     existing = (supabase.table("order_merchant_parts").select("status")
-                .eq("order_id", order_id).eq("merchant_id", m["id"]).execute().data)
+                .eq("order_id", order_id).eq("merchant_id", merchant_id).execute().data)
     if not existing:
-        raise HTTPException(status_code=404, detail="Order part not found")
+        return {"ok": False, "not_found": True, "error": "Order part not found"}
     current = existing[0]["status"]
     # MERCHANT_STATUS_FLOW was only ever used to build the UI's suggested
     # next-step buttons — nothing enforced it server-side, so a direct API
@@ -2915,17 +2960,45 @@ def merchant_update_order_status(order_id: str, req: MerchantOrderStatusUpdate):
     # reason the admin/customer VALID_STATUS_TRANSITIONS treats it as
     # reachable from every non-terminal status), so it needs its own check
     # rather than being folded into the flow-graph lookup below.
-    if req.status == "cancelled":
+    if status == "cancelled":
         if current in ("delivered", "cancelled"):
-            raise HTTPException(status_code=400, detail=f"Cannot cancel — this part is already '{current}'")
-    elif req.status != current and req.status not in MERCHANT_STATUS_FLOW.get(current, []):
-        raise HTTPException(status_code=400, detail=f"Cannot move from '{current}' to '{req.status}'")
-    data = {"status": req.status, "updated_at": datetime.now(timezone.utc).isoformat()}
-    if req.delivery_date is not None:
-        data["delivery_date"] = req.delivery_date
-    supabase.table("order_merchant_parts").update(data).eq("order_id", order_id).eq("merchant_id", m["id"]).execute()
+            return {"ok": False, "not_found": False, "error": f"Cannot cancel — this part is already '{current}'"}
+    elif status != current and status not in MERCHANT_STATUS_FLOW.get(current, []):
+        return {"ok": False, "not_found": False, "error": f"Cannot move from '{current}' to '{status}'"}
+    data = {"status": status, "updated_at": datetime.now(timezone.utc).isoformat()}
+    if delivery_date is not None:
+        data["delivery_date"] = delivery_date
+    supabase.table("order_merchant_parts").update(data).eq("order_id", order_id).eq("merchant_id", merchant_id).execute()
     _recompute_order_status_from_parts(order_id)
+    return {"ok": True}
+
+
+@app.patch("/api/merchant/orders/{order_id}/status")
+def merchant_update_order_status(order_id: str, req: MerchantOrderStatusUpdate):
+    m = require_merchant(req.token)
+    result = _merchant_update_order_status_core(m["id"], order_id, req.status, req.delivery_date)
+    if not result["ok"]:
+        raise HTTPException(status_code=404 if result["not_found"] else 400, detail=result["error"])
     return {"status": req.status}
+
+
+class MerchantBulkOrderStatusUpdate(BaseModel):
+    token: str
+    order_ids: list[str]
+    status: str
+
+
+@app.post("/api/merchant/orders/bulk-status")
+def merchant_bulk_update_order_status(req: MerchantBulkOrderStatusUpdate):
+    """Same rules/side-effects as merchant_update_order_status, one call per
+    order — a merchant moving a batch of orders to 'preparing' at once was
+    previously strictly one-at-a-time."""
+    m = require_merchant(req.token)
+    updated, failed = [], []
+    for oid in req.order_ids:
+        result = _merchant_update_order_status_core(m["id"], oid, req.status)
+        (updated if result["ok"] else failed).append(oid)
+    return {"status": "ok", "updated_count": len(updated), "failed_ids": failed}
 
 
 @app.get("/api/merchant/stats")
@@ -3911,6 +3984,14 @@ def submit_contact(req: ContactRequest):
         "message": req.message
     }).execute()
     _send_contact_notification(req.name, req.email, req.phone, req.subject, req.message)
+    # The email notification above is a no-op until RESEND_API_KEY is
+    # configured, which currently leaves admins with zero signal that a
+    # contact message came in — this in-app notice doesn't depend on that.
+    _notify_all_admins(
+        "💬 New contact message",
+        f"{req.name} ({req.email}): {(req.message or '')[:140]}",
+        "contact", req.email,
+    )
     return {"message": "Message received successfully"}
 
 # ── Loyalty: earn on delivery, refund on cancel ─────────────────────────────────
@@ -3924,9 +4005,11 @@ def award_delivery_points(order: dict):
     already = supabase.table("loyalty_transactions").select("id").eq("order_id", oid).eq("type", "earned_purchase").execute().data
     if already:
         return
-    pts = int(order.get("total", 0) or 0)
+    cfg = _get_loyalty_config()
+    pts = int((order.get("total", 0) or 0) * cfg["points_per_rupee"])
     if pts > 0:
         award_points(email, pts, "earned_purchase", f"Points earned for delivered order {oid}", oid)
+        create_user_notice(email, "✨ Points earned!", f"You earned {pts} loyalty points for order #{oid}.", "loyalty", email)
     # First delivered order → referral bonus for the referrer
     try:
         acct = supabase.table("loyalty_accounts").select("referred_by_code").eq("user_email", email).execute()
@@ -3936,8 +4019,10 @@ def award_delivery_points(order: dict):
             if len(prior.data or []) == 1:
                 ref = supabase.table("loyalty_accounts").select("user_email").eq("referral_code", code).execute()
                 if ref.data:
-                    award_points(ref.data[0]["user_email"], 150, "earned_referral_purchase",
+                    referrer_email = ref.data[0]["user_email"]
+                    award_points(referrer_email, cfg["referral_purchase_bonus"], "earned_referral_purchase",
                                  f"Referral first-purchase bonus — {email}'s first delivered order")
+                    create_user_notice(referrer_email, "🎉 Referral bonus!", f"You earned {cfg['referral_purchase_bonus']} points — {email} just completed their first order.", "loyalty", referrer_email)
     except Exception:
         pass
 
@@ -4036,6 +4121,210 @@ def delete_address(address_id: str, token: str):
     supabase.table("saved_addresses").delete().eq("id", address_id).execute()
     return {"status": "ok"}
 
+# ── Petal Rewards: admin-configurable earn/redemption rates ─────────────────
+# These were previously hardcoded (100/200/150/10, 1 pt per ₹1) scattered
+# across the award_points call sites below. Defaults here match those exact
+# values, so running the migration changes nothing until an admin edits a rate.
+_LOYALTY_CONFIG_DEFAULTS = {
+    "points_per_rupee": 1.0,
+    "welcome_bonus": 100,
+    "referral_signup_bonus": 200,
+    "referral_purchase_bonus": 150,
+    "redemption_rate": 10.0,
+}
+
+def _get_loyalty_config() -> dict:
+    if not _has_table("loyalty_config"):
+        return dict(_LOYALTY_CONFIG_DEFAULTS)
+    row = supabase.table("loyalty_config").select("*").eq("id", 1).execute().data
+    if not row:
+        return dict(_LOYALTY_CONFIG_DEFAULTS)
+    r = row[0]
+    return {
+        "points_per_rupee": float(r.get("points_per_rupee") or _LOYALTY_CONFIG_DEFAULTS["points_per_rupee"]),
+        "welcome_bonus": int(r.get("welcome_bonus") or _LOYALTY_CONFIG_DEFAULTS["welcome_bonus"]),
+        "referral_signup_bonus": int(r.get("referral_signup_bonus") or _LOYALTY_CONFIG_DEFAULTS["referral_signup_bonus"]),
+        "referral_purchase_bonus": int(r.get("referral_purchase_bonus") or _LOYALTY_CONFIG_DEFAULTS["referral_purchase_bonus"]),
+        "redemption_rate": float(r.get("redemption_rate") or _LOYALTY_CONFIG_DEFAULTS["redemption_rate"]),
+    }
+
+
+@app.get("/api/loyalty-config")
+def get_loyalty_config():
+    """Public — the checkout page needs the real redemption rate to preview
+    the discount from redeemed points the same way the server treats it."""
+    return _get_loyalty_config()
+
+
+class LoyaltyConfigUpdate(BaseModel):
+    token: str
+    points_per_rupee: float
+    welcome_bonus: int
+    referral_signup_bonus: int
+    referral_purchase_bonus: int
+    redemption_rate: float
+
+
+@app.put("/api/admin/loyalty-config")
+def update_loyalty_config(req: LoyaltyConfigUpdate):
+    admin_email = require_admin(req.token)
+    if not _has_table("loyalty_config"):
+        raise HTTPException(status_code=503, detail="Petal Rewards settings aren't set up yet — please contact support.")
+    for field, val in [
+        ("points_per_rupee", req.points_per_rupee), ("welcome_bonus", req.welcome_bonus),
+        ("referral_signup_bonus", req.referral_signup_bonus), ("referral_purchase_bonus", req.referral_purchase_bonus),
+        ("redemption_rate", req.redemption_rate),
+    ]:
+        if val < 0:
+            raise HTTPException(status_code=422, detail=f"{field.replace('_', ' ')} can't be negative")
+    if req.redemption_rate <= 0:
+        raise HTTPException(status_code=422, detail="Redemption rate must be greater than 0")
+    supabase.table("loyalty_config").upsert({
+        "id": 1,
+        "points_per_rupee": req.points_per_rupee,
+        "welcome_bonus": req.welcome_bonus,
+        "referral_signup_bonus": req.referral_signup_bonus,
+        "referral_purchase_bonus": req.referral_purchase_bonus,
+        "redemption_rate": req.redemption_rate,
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+        "updated_by": admin_email,
+    }).execute()
+    _log_admin_action(admin_email, "loyalty_config_change", "loyalty_config", "1",
+                       f"{req.points_per_rupee} pt/₹, welcome {req.welcome_bonus}, referral {req.referral_signup_bonus}/{req.referral_purchase_bonus}, redeem {req.redemption_rate} pt/₹")
+    return _get_loyalty_config()
+
+
+# ── Petal Rewards: claimable reward catalog ──────────────────────────────────
+
+class RewardCatalogCreate(BaseModel):
+    title: str
+    description: Optional[str] = ""
+    points_cost: int
+    discount_value: float
+    min_order: float = 0
+    active: bool = True
+
+
+@app.get("/api/rewards/catalog")
+def get_reward_catalog():
+    """Public — active rewards only, for the customer-facing Petal Rewards page."""
+    if not _has_table("reward_catalog"):
+        return []
+    return supabase.table("reward_catalog").select("*").eq("active", True).order("sort_order").order("points_cost").execute().data or []
+
+
+@app.get("/api/admin/rewards")
+def admin_list_rewards(token: str):
+    require_admin(token)
+    if not _has_table("reward_catalog"):
+        return []
+    return supabase.table("reward_catalog").select("*").order("sort_order").order("points_cost").execute().data or []
+
+
+def _validate_reward_fields(req: RewardCatalogCreate):
+    if not req.title.strip():
+        raise HTTPException(status_code=422, detail="Title is required")
+    if req.points_cost <= 0:
+        raise HTTPException(status_code=422, detail="Points cost must be greater than 0")
+    if req.discount_value <= 0:
+        raise HTTPException(status_code=422, detail="Discount value must be greater than 0")
+    if req.min_order < 0:
+        raise HTTPException(status_code=422, detail="Minimum order can't be negative")
+
+
+@app.post("/api/admin/rewards")
+def admin_create_reward(req: RewardCatalogCreate, token: str):
+    admin_email = require_admin(token)
+    if not _has_table("reward_catalog"):
+        raise HTTPException(status_code=503, detail="Petal Rewards catalog isn't set up yet — please contact support.")
+    _validate_reward_fields(req)
+    new_id = "RWD" + str(uuid.uuid4())[:8].upper()
+    row = {
+        "id": new_id, "title": req.title.strip(), "description": (req.description or "").strip(),
+        "points_cost": req.points_cost, "discount_value": req.discount_value,
+        "min_order": req.min_order, "active": req.active,
+    }
+    result = supabase.table("reward_catalog").insert(row).execute()
+    _log_admin_action(admin_email, "reward_created", "reward_catalog", new_id, f"{req.title} — {req.points_cost} pts for ₹{req.discount_value} off")
+    return result.data[0]
+
+
+@app.patch("/api/admin/rewards/{reward_id}")
+def admin_update_reward(reward_id: str, req: RewardCatalogCreate, token: str):
+    admin_email = require_admin(token)
+    if not _has_table("reward_catalog"):
+        raise HTTPException(status_code=503, detail="Petal Rewards catalog isn't set up yet — please contact support.")
+    _validate_reward_fields(req)
+    result = supabase.table("reward_catalog").update({
+        "title": req.title.strip(), "description": (req.description or "").strip(),
+        "points_cost": req.points_cost, "discount_value": req.discount_value,
+        "min_order": req.min_order, "active": req.active,
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+    }).eq("id", reward_id).execute()
+    if not result.data:
+        raise HTTPException(status_code=404, detail="Reward not found")
+    _log_admin_action(admin_email, "reward_updated", "reward_catalog", reward_id, f"{req.title} — {req.points_cost} pts for ₹{req.discount_value} off")
+    return result.data[0]
+
+
+@app.delete("/api/admin/rewards/{reward_id}")
+def admin_delete_reward(reward_id: str, token: str):
+    admin_email = require_admin(token)
+    if not _has_table("reward_catalog"):
+        raise HTTPException(status_code=503, detail="Petal Rewards catalog isn't set up yet — please contact support.")
+    result = supabase.table("reward_catalog").delete().eq("id", reward_id).execute()
+    if not result.data:
+        raise HTTPException(status_code=404, detail="Reward not found")
+    _log_admin_action(admin_email, "reward_deleted", "reward_catalog", reward_id, "")
+    return {"status": "ok"}
+
+
+# ── Petal Rewards: claiming ───────────────────────────────────────────────────
+# A claim is NOT a promo_codes row — promo_codes has no usage-limit tracking
+# at all (any number of people could reuse a leaked code indefinitely), which
+# is fine for a marketing code but not for something a customer just spent
+# real points on. reward_claims owns its own code + used flag end-to-end, and
+# create_order() below marks it used itself instead of trusting the client.
+
+class RewardClaimRequest(BaseModel):
+    token: str
+    reward_id: str
+
+
+@app.post("/api/rewards/claim")
+def claim_reward(req: RewardClaimRequest):
+    email = resolve_token(req.token)
+    if not email:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    if not _has_table("reward_catalog") or not _has_table("reward_claims"):
+        raise HTTPException(status_code=503, detail="Petal Rewards isn't set up yet — please contact support.")
+    reward_rows = supabase.table("reward_catalog").select("*").eq("id", req.reward_id).eq("active", True).execute().data
+    if not reward_rows:
+        raise HTTPException(status_code=404, detail="This reward is no longer available")
+    reward = reward_rows[0]
+    acct = supabase.table("loyalty_accounts").select("points_balance").eq("user_email", email).execute().data
+    balance = acct[0]["points_balance"] if acct else 0
+    if balance < reward["points_cost"]:
+        raise HTTPException(status_code=400, detail=f"You need {reward['points_cost']} points for this reward — you have {balance}.")
+    award_points(email, -reward["points_cost"], "redeemed_reward", f"Claimed: {reward['title']}")
+    code = "PETAL" + str(uuid.uuid4())[:8].upper()
+    claim_id = "CLM" + str(uuid.uuid4())[:8].upper()
+    supabase.table("reward_claims").insert({
+        "id": claim_id, "user_email": email, "reward_id": reward["id"], "code": code,
+        "title": reward["title"], "discount_value": float(reward["discount_value"]),
+        "min_order": float(reward.get("min_order") or 0), "points_spent": reward["points_cost"], "used": False,
+    }).execute()
+    create_user_notice(email, "🎁 Reward claimed!", f"\"{reward['title']}\" is ready — use code {code} at checkout.", "loyalty", claim_id)
+    return {"status": "ok", "id": claim_id, "code": code, "title": reward["title"], "discount_value": reward["discount_value"], "min_order": reward.get("min_order") or 0}
+
+
+@app.get("/api/rewards/my-claims")
+def get_my_claims(email: str):
+    if not _has_table("reward_claims"):
+        return []
+    return supabase.table("reward_claims").select("*").eq("user_email", email).order("claimed_at", desc=True).execute().data or []
+
+
 # ── Loyalty Routes ─────────────────────────────────────────────────────────────
 
 @app.get("/api/loyalty")
@@ -4060,29 +4349,51 @@ def get_loyalty(email: str):
 def validate_promo(req: PromoValidateRequest):
     code = req.code.strip().upper()
     result = supabase.table("promo_codes").select("*").eq("code", code).execute()
-    if not result.data or not result.data[0]["active"]:
-        raise HTTPException(status_code=404, detail="Invalid promo code")
-    promo = result.data[0]
-    if req.order_total < float(promo["min_order"]):
-        raise HTTPException(status_code=400, detail=f"Minimum order ₹{promo['min_order']} required for this code")
-    if promo["first_order_only"]:
-        if not req.customer_email:
-            raise HTTPException(status_code=400, detail="Code valid for first order only")
-        existing_orders = supabase.table("orders").select("id").eq("customer_email", req.customer_email).execute()
-        if existing_orders.data:
-            raise HTTPException(status_code=400, detail="Code valid for first order only")
-    if promo["type"] == "percent":
-        discount_amount = round(req.order_total * float(promo["value"]) / 100, 2)
-    else:
-        discount_amount = min(float(promo["value"]), req.order_total)
-    return {
-        "valid": True,
-        "code": code,
-        "discount_type": promo["type"],
-        "discount_value": promo["value"],
-        "discount_amount": discount_amount,
-        "description": promo["description"]
-    }
+    if result.data and result.data[0]["active"]:
+        promo = result.data[0]
+        if req.order_total < float(promo["min_order"]):
+            raise HTTPException(status_code=400, detail=f"Minimum order ₹{promo['min_order']} required for this code")
+        if promo["first_order_only"]:
+            if not req.customer_email:
+                raise HTTPException(status_code=400, detail="Code valid for first order only")
+            existing_orders = supabase.table("orders").select("id").eq("customer_email", req.customer_email).execute()
+            if existing_orders.data:
+                raise HTTPException(status_code=400, detail="Code valid for first order only")
+        if promo["type"] == "percent":
+            discount_amount = round(req.order_total * float(promo["value"]) / 100, 2)
+        else:
+            discount_amount = min(float(promo["value"]), req.order_total)
+        return {
+            "valid": True,
+            "code": code,
+            "discount_type": promo["type"],
+            "discount_value": promo["value"],
+            "discount_amount": discount_amount,
+            "description": promo["description"]
+        }
+
+    # Not a marketing promo code — check whether it's a claimed Petal Reward
+    # voucher instead (its own table, own single-use enforcement — see the
+    # note above claim_reward()).
+    if _has_table("reward_claims") and req.customer_email:
+        claim_rows = (supabase.table("reward_claims").select("*")
+                      .eq("code", code).eq("user_email", req.customer_email).eq("used", False).execute().data)
+        if claim_rows:
+            claim = claim_rows[0]
+            if req.order_total < float(claim.get("min_order") or 0):
+                raise HTTPException(status_code=400, detail=f"Minimum order ₹{claim['min_order']} required for this reward")
+            discount_amount = min(float(claim["discount_value"]), req.order_total)
+            return {
+                "valid": True,
+                "code": code,
+                "discount_type": "flat",
+                "discount_value": claim["discount_value"],
+                "discount_amount": discount_amount,
+                "description": claim["title"],
+                "is_reward": True,
+            }
+
+    raise HTTPException(status_code=404, detail="Invalid promo code")
 
 _DEFAULT_DEAL_EMOJI = "🎟️"
 
@@ -4381,31 +4692,63 @@ def cancel_order(order_id: str, token: str):
     refund_redeemed_points(order)
     send_notifications(order_id, "cancelled", order.get("customer_phone") or "")
     send_order_cancellation_email(order)
+    create_user_notice(
+        order.get("customer_email"), "Order cancelled",
+        f"Your order #{order_id} has been cancelled. Any redeemed points were refunded to your balance.",
+        "order", order_id,
+    )
     return {"status": "cancelled"}
+
+def _update_order_status_core(order_id: str, status: str) -> dict:
+    """Shared by the single-order and bulk endpoints below — same side-effect
+    chain (parts cascade, points, SMS, in-app notice) either way."""
+    result = supabase.table("orders").select("*").eq("id", order_id).execute()
+    if not result.data:
+        return {"ok": False, "not_found": True, "error": "Order not found"}
+    order = result.data[0]
+    allowed = VALID_STATUS_TRANSITIONS.get(order["status"], [])
+    if status not in allowed:
+        return {"ok": False, "not_found": False, "error": f"Cannot transition from '{order['status']}' to '{status}'"}
+    supabase.table("orders").update({"status": status}).eq("id", order_id).execute()
+    _cascade_status_to_parts(order_id, status)
+    # Points: earn on delivery, refund redeemed on cancellation
+    if status == "delivered":
+        award_delivery_points(order)
+    elif status == "cancelled":
+        refund_redeemed_points(order)
+    send_notifications(order_id, status, order.get("customer_phone") or "")
+    if status in ORDER_STATUS_NOTICE:
+        title, phrase = ORDER_STATUS_NOTICE[status]
+        create_user_notice(order.get("customer_email"), title,
+                            _end_sentence(f"Your order #{order_id} {phrase}"), "order", order_id)
+    return {"ok": True}
+
 
 @app.patch("/api/orders/{order_id}/status")
 def update_order_status(order_id: str, req: StatusUpdateRequest):
     require_admin(req.token)  # admin-only: can jump to any next status (incl. 'delivered', which pays out points/merchant payouts) — customers use /cancel instead
-    result = supabase.table("orders").select("*").eq("id", order_id).execute()
-    if not result.data:
-        raise HTTPException(status_code=404, detail="Order not found")
-    order = result.data[0]
-    allowed = VALID_STATUS_TRANSITIONS.get(order["status"], [])
-    if req.status not in allowed:
-        raise HTTPException(status_code=400, detail=f"Cannot transition from '{order['status']}' to '{req.status}'")
-    supabase.table("orders").update({"status": req.status}).eq("id", order_id).execute()
-    _cascade_status_to_parts(order_id, req.status)
-    # Points: earn on delivery, refund redeemed on cancellation
-    if req.status == "delivered":
-        award_delivery_points(order)
-    elif req.status == "cancelled":
-        refund_redeemed_points(order)
-    send_notifications(order_id, req.status, order.get("customer_phone") or "")
-    if req.status in ORDER_STATUS_NOTICE:
-        title, phrase = ORDER_STATUS_NOTICE[req.status]
-        create_user_notice(order.get("customer_email"), title,
-                            _end_sentence(f"Your order #{order_id} {phrase}"), "order", order_id)
+    result = _update_order_status_core(order_id, req.status)
+    if not result["ok"]:
+        raise HTTPException(status_code=404 if result["not_found"] else 400, detail=result["error"])
     return {"status": req.status}
+
+
+class BulkOrderStatusRequest(BaseModel):
+    token: str
+    order_ids: list[str]
+    status: str
+
+
+@app.post("/api/admin/orders/bulk-status")
+def bulk_update_order_status(req: BulkOrderStatusRequest):
+    """Same rules/side-effects as update_order_status, one call per order —
+    admin's order-status transitions were previously strictly one-at-a-time."""
+    require_admin(req.token)
+    updated, failed = [], []
+    for oid in req.order_ids:
+        result = _update_order_status_core(oid, req.status)
+        (updated if result["ok"] else failed).append(oid)
+    return {"status": "ok", "updated_count": len(updated), "failed_ids": failed}
 
 # ── User notices (messages the customer sees in their account) ──────────────────
 
@@ -4422,8 +4765,10 @@ def create_user_notice(email: Optional[str], title: str, message: str, ref_type:
             "ref_id": ref_id,
             "read": False,
         }).execute()
-    except Exception:
-        pass
+    except Exception as e:
+        # Previously silent — a schema drift or bad row here meant a customer
+        # or merchant just never got notified with zero trace in the logs.
+        print(f"[Notice] failed for {email} ({ref_type}/{ref_id}): {e}", flush=True)
 
 def order_items_summary(order_id: str) -> str:
     """'Red Rose Bouquet x2, Sunflower x1' for an order."""
@@ -4559,6 +4904,7 @@ def _get_delivery_pricing_config() -> Optional[dict]:
         return None
     try:
         return {
+            "base_price": float(row[0].get("base_price") or 0),
             "per_km_rate": float(row[0]["per_km_rate"]),
             "free_delivery_min_order": float(row[0].get("free_delivery_min_order") or 0),
             "updated_at": row[0].get("updated_at"),
@@ -4568,14 +4914,17 @@ def _get_delivery_pricing_config() -> Optional[dict]:
 
 
 def _calculate_delivery_fee(customer_lat, customer_lng, merchant_ids: set, order_subtotal: float = 0.0) -> dict:
-    """Sums (distance × per-km rate) across every distinct shop assigned to
-    the order — each one genuinely needs its own trip to the customer.
-    Free once order_subtotal clears the admin's free-delivery threshold.
-    Falls back to a flat fee if the rate isn't configured yet, or if we're
-    missing coordinates for the customer or every assigned shop (e.g. a
-    merchant who hasn't set their shop location on the map yet)."""
+    """Sums (base price + distance × per-km rate) across every distinct shop
+    assigned to the order — each one genuinely needs its own trip to the
+    customer, so the base (dispatch/pickup) cost is charged per trip, same
+    as the distance leg. Free once order_subtotal clears the admin's
+    free-delivery threshold. Falls back to a flat fee if the rate isn't
+    configured yet, or if we're missing coordinates for the customer or
+    every assigned shop (e.g. a merchant who hasn't set their shop location
+    on the map yet)."""
     config = _get_delivery_pricing_config()
     rate = config["per_km_rate"] if config else None
+    base = config["base_price"] if config else 0.0
     free_threshold = config["free_delivery_min_order"] if config else 0
 
     if free_threshold > 0 and order_subtotal >= free_threshold:
@@ -4592,7 +4941,7 @@ def _calculate_delivery_fee(customer_lat, customer_lng, merchant_ids: set, order
         if m.get("latitude") is None or m.get("longitude") is None:
             continue
         dist = _haversine_km(float(customer_lat), float(customer_lng), float(m["latitude"]), float(m["longitude"]))
-        leg_fee = round(dist * rate, 2)
+        leg_fee = round(base + dist * rate, 2)
         breakdown.append({"merchant_id": m["id"], "shop_name": m.get("shop_name", ""), "distance_km": round(dist, 1), "fee": leg_fee})
         total += leg_fee
 
@@ -4603,6 +4952,7 @@ def _calculate_delivery_fee(customer_lat, customer_lng, merchant_ids: set, order
 
 class DeliveryPricingUpdate(BaseModel):
     token: str
+    base_price: float = 0
     per_km_rate: float
     free_delivery_min_order: float = 0
 
@@ -4612,7 +4962,7 @@ def admin_get_delivery_pricing(token: str):
     require_admin(token)
     config = _get_delivery_pricing_config()
     if not config:
-        return {"per_km_rate": None, "free_delivery_min_order": 0, "updated_at": None, "configured": False}
+        return {"base_price": 0, "per_km_rate": None, "free_delivery_min_order": 0, "updated_at": None, "configured": False}
     return {**config, "configured": True}
 
 
@@ -4623,15 +4973,26 @@ def admin_set_delivery_pricing(req: DeliveryPricingUpdate):
         raise HTTPException(status_code=503, detail="Delivery pricing isn't set up yet — please contact support.")
     if req.per_km_rate <= 0:
         raise HTTPException(status_code=422, detail="Per-km rate must be greater than 0")
+    if req.base_price < 0:
+        raise HTTPException(status_code=422, detail="Base price can't be negative")
     if req.free_delivery_min_order < 0:
         raise HTTPException(status_code=422, detail="Free-delivery minimum can't be negative")
-    before = supabase.table("delivery_pricing").select("per_km_rate, free_delivery_min_order").eq("id", 1).execute().data
+    has_base_price = _has_column("delivery_pricing", "base_price")
+    select_cols = "per_km_rate, free_delivery_min_order" + (", base_price" if has_base_price else "")
+    before = supabase.table("delivery_pricing").select(select_cols).eq("id", 1).execute().data
     old = before[0] if before else None
-    supabase.table("delivery_pricing").upsert({
+    row = {
         "id": 1, "per_km_rate": req.per_km_rate, "free_delivery_min_order": req.free_delivery_min_order,
         "updated_at": datetime.now(timezone.utc).isoformat(), "updated_by": admin_email,
-    }).execute()
+    }
+    if has_base_price:
+        row["base_price"] = req.base_price
+    supabase.table("delivery_pricing").upsert(row).execute()
     detail = f"₹{old['per_km_rate']}/km → ₹{req.per_km_rate}/km" if old else f"Set to ₹{req.per_km_rate}/km"
+    if has_base_price:
+        detail += f", base ₹{req.base_price}"
+    elif req.base_price > 0:
+        detail += " (base price requested but migration not yet run — ignored)"
     if req.free_delivery_min_order > 0:
         detail += f"; free delivery over ₹{req.free_delivery_min_order}"
     _log_admin_action(admin_email, "delivery_rate_change", "delivery_pricing", "1", detail)
@@ -5000,6 +5361,26 @@ def create_order(req: OrderRequest):
     except Exception as e:
         print(f"Order insert error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+    # If the applied code is a claimed Petal Reward voucher (not a marketing
+    # promo code), mark it used server-side now — this is the actual
+    # single-use enforcement point; /api/promo/validate only ever previews it.
+    if order_row.get("promo_code") and customer_email and _has_table("reward_claims"):
+        try:
+            supabase.table("reward_claims").update({
+                "used": True, "used_order_id": order_id,
+            }).eq("code", order_row["promo_code"]).eq("user_email", customer_email).eq("used", False).execute()
+        except Exception as e:
+            print(f"[RewardClaim] failed to mark {order_row['promo_code']} used: {e}", flush=True)
+
+    # Placing an order is the single most important action in the app, and
+    # previously the ONLY signal a customer got was an email (a no-op until
+    # RESEND_API_KEY is configured) — no in-app notice at all.
+    create_user_notice(
+        customer_email, "🌸 Order placed!",
+        f"Your order #{order_id} for ₹{req.total:.2f} is confirmed. We'll keep you posted every step of the way.",
+        "order", order_id,
+    )
 
     _place_order_items(order_id, req.items, req.delivery_datetime, source="retail", customer_lat=customer_lat, customer_lng=customer_lng)
 

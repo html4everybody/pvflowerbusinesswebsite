@@ -32,8 +32,9 @@ export class Checkout {
   loyaltyBalance = signal(0);
   loyaltyEnabled = signal(false);
   pointsToRedeem = signal(0);
+  redemptionRate = signal(10);
   pointsDiscountAmount = computed(() =>
-    this.loyaltyEnabled() ? +(this.pointsToRedeem() / 10).toFixed(2) : 0
+    this.loyaltyEnabled() ? +(this.pointsToRedeem() / this.redemptionRate()).toFixed(2) : 0
   );
   pointsEarned = signal(0);
   newLoyaltyBalance = signal(0);
@@ -310,6 +311,10 @@ export class Checkout {
       this.loyaltyService.getAccount(user.email).subscribe({
         next: data => this.loyaltyBalance.set(data.points_balance),
         error: () => {}
+      });
+      this.loyaltyService.getConfig().subscribe({
+        next: cfg => this.redemptionRate.set(cfg.redemption_rate),
+        error: () => {},
       });
 
       this.addressesService.list().subscribe({

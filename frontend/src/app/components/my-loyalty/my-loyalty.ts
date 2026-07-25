@@ -2,7 +2,9 @@ import { Component, signal, OnInit } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { DecimalPipe } from '@angular/common';
 import { AuthService } from '../../services/auth';
-import { LoyaltyService, LoyaltyData } from '../../services/loyalty';
+import { LoyaltyService, LoyaltyData, LoyaltyConfig, Reward, RewardClaim } from '../../services/loyalty';
+import { ToastService } from '../../services/toast';
+import { ConfirmService } from '../../services/confirm';
 
 interface Tier { key: string; icon: string; min: number; perk: string; accent: string; }
 
@@ -17,6 +19,14 @@ export class MyLoyalty implements OnInit {
   loading = signal(true);
   copySuccess = signal(false);
 
+  config = signal<LoyaltyConfig>({
+    points_per_rupee: 1, welcome_bonus: 100, referral_signup_bonus: 200,
+    referral_purchase_bonus: 150, redemption_rate: 10,
+  });
+  catalog = signal<Reward[]>([]);
+  myClaims = signal<RewardClaim[]>([]);
+  claimingId = signal<string | null>(null);
+
   // Floral tiers themed for "Petal Rewards"
   readonly TIERS: Tier[] = [
     { key: 'Sprout',      icon: 'bi-flower3', min: 0,    perk: 'Earn 1 point for every ₹1 you spend',    accent: '#84cc16' },
@@ -25,17 +35,12 @@ export class MyLoyalty implements OnInit {
     { key: 'Petal Elite', icon: 'bi-gem',     min: 5000, perk: 'Priority support + 15% bonus points',    accent: '#f59e0b' },
   ];
 
-  readonly REDEEM = [
-    { points: 500,  value: 50 },
-    { points: 1000, value: 100 },
-    { points: 2500, value: 250 },
-    { points: 5000, value: 550 },
-  ];
-
   constructor(
     public authService: AuthService,
     private loyaltyService: LoyaltyService,
-    private router: Router
+    private router: Router,
+    private toast: ToastService,
+    private confirmService: ConfirmService,
   ) {}
 
   ngOnInit(): void {
@@ -48,6 +53,56 @@ export class MyLoyalty implements OnInit {
       next: data => { this.account.set(data); this.loading.set(false); },
       error: () => this.loading.set(false)
     });
+    this.loyaltyService.getConfig().subscribe({
+      next: cfg => this.config.set(cfg),
+      error: () => {},
+    });
+    this.loyaltyService.getCatalog().subscribe({
+      next: rewards => this.catalog.set(rewards),
+      error: () => {},
+    });
+    this.loadMyClaims(user.email);
+  }
+
+  loadMyClaims(email: string): void {
+    this.loyaltyService.getMyClaims(email).subscribe({
+      next: claims => this.myClaims.set(claims),
+      error: () => {},
+    });
+  }
+
+  canClaim(reward: Reward): boolean { return this.balance >= reward.points_cost; }
+
+  async claimReward(reward: Reward): Promise<void> {
+    if (!this.canClaim(reward) || this.claimingId()) return;
+    const ok = await this.confirmService.ask({
+      title: 'Claim this reward?',
+      message: `"${reward.title}" costs ${reward.points_cost} points — they'll be deducted from your balance right away.`,
+      confirmText: 'Claim',
+    });
+    if (!ok) return;
+    const token = this.authService.getToken();
+    if (!token) return;
+    this.claimingId.set(reward.id);
+    this.loyaltyService.claimReward(token, reward.id).subscribe({
+      next: (claim) => {
+        this.claimingId.set(null);
+        this.toast.show(`Claimed! Use code ${claim.code} at checkout.`);
+        const user = this.authService.user();
+        if (user) {
+          this.loadMyClaims(user.email);
+          this.loyaltyService.getAccount(user.email).subscribe({ next: d => this.account.set(d), error: () => {} });
+        }
+      },
+      error: (err) => {
+        this.claimingId.set(null);
+        this.toast.show(err?.error?.detail || 'Could not claim this reward', 'error');
+      },
+    });
+  }
+
+  copyVoucherCode(code: string): void {
+    navigator.clipboard.writeText(code).then(() => this.toast.show('Code copied'));
   }
 
   get earned(): number { return this.account()?.points_earned_total ?? 0; }
@@ -84,8 +139,6 @@ export class MyLoyalty implements OnInit {
   get referralCount(): number {
     return (this.account()?.transactions ?? []).filter(t => (t.type || '').includes('referral')).length;
   }
-
-  isRedeemable(points: number): boolean { return this.balance >= points; }
 
   get shareUrl(): string {
     const code = this.account()?.referral_code ?? '';

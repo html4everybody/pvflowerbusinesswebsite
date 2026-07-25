@@ -26,6 +26,16 @@ export class NoticeService {
       if (this.auth.user()?.email) this.load();
       else this.notices.set([]);
     });
+
+    // The effect above only re-fires when the cached user object actually
+    // changes (AuthService dedupes its 10s session poll to avoid signal
+    // churn), so a notice created while someone just sits on a page — a
+    // merchant waiting for an order, a customer waiting on a status update —
+    // previously never appeared until something else forced a reload. Poll
+    // independently so the bell/badge stay live.
+    setInterval(() => {
+      if (this.auth.user()?.email) this.load();
+    }, 25 * 1000);
   }
 
   load(): void {
@@ -60,9 +70,28 @@ export class NoticeService {
 
   noticeRoute(n: UserNotice): string[] | null {
     if (!n.ref_type) return null;
-    if (n.ref_type === 'order' && n.ref_id) return ['/orders', n.ref_id];
-    if (n.ref_type === 'subscription') return ['/my-subscriptions'];
-    if (n.ref_type === 'booking') return ['/my-studio'];
-    return null;
+    switch (n.ref_type) {
+      case 'order': return n.ref_id ? ['/orders', n.ref_id] : null;
+      case 'subscription':
+      case 'subscription_issue': return ['/my-subscriptions'];
+      case 'booking': return ['/my-studio'];
+      case 'cart_reminder': return ['/cart'];
+      case 'winback':
+      case 'reminder': return ['/products'];
+      case 'loyalty': return ['/my-loyalty'];
+      // Merchant-side events — the merchant dashboard has its own
+      // sub-section state, not a route, so this just gets them into the
+      // dashboard; the merchant's own notification panel there deep-links
+      // into the right section.
+      case 'merchant_product':
+      case 'merchant_payout':
+      case 'merchant_status':
+      case 'merchant_order': return ['/merchant'];
+      // Admin-only events
+      case 'merchant_application':
+      case 'corporate_multi_merchant':
+      case 'contact': return ['/admin'];
+      default: return null;
+    }
   }
 }

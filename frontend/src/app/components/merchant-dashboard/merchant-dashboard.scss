@@ -126,6 +126,19 @@
   .sec-meta { color: var(--text-muted); font-size: 0.9rem; }
 }
 
+.sec-head-right { display: flex; align-items: center; gap: 0.75rem; }
+
+.btn-refresh-sm {
+  display: flex; align-items: center; justify-content: center;
+  width: 34px; height: 34px;
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  background: var(--bg-card); color: var(--text-muted); cursor: pointer;
+  font-size: 1rem; transition: background 0.15s ease, color 0.15s ease;
+
+  &:hover:not(:disabled) { background: var(--accent-light); color: var(--accent); }
+  &:disabled { opacity: 0.6; cursor: not-allowed; }
+}
+
 .loading, .empty {
   text-align: center;
   color: var(--text-muted);
@@ -186,6 +199,45 @@
   .st-label { font-size: 0.78rem; color: var(--text-muted); }
 }
 
+// ── Overview: priority orders ("act now" without a full nav to Orders) ─────
+.priority-panel {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  padding: 1.1rem 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.priority-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 0.75rem;
+  margin-bottom: 0.75rem;
+  h2 {
+    font-size: 0.95rem; font-weight: 700; color: var(--text); margin: 0;
+    display: flex; align-items: center; gap: 0.45rem;
+    .bi { color: #d97706; }
+  }
+}
+
+.priority-seeall {
+  font-family: inherit; font-size: 0.78rem; font-weight: 600; color: var(--accent);
+  background: none; border: none; cursor: pointer;
+  display: inline-flex; align-items: center; gap: 0.3rem;
+  &:hover { text-decoration: underline; }
+}
+
+.priority-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 0.9rem; flex-wrap: wrap;
+  padding: 0.65rem 0;
+  border-top: 1px solid var(--border);
+  &:first-of-type { border-top: none; }
+}
+
+.pr-info { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; min-width: 0; }
+.pr-num { font-weight: 700; color: var(--text); font-size: 0.9rem; }
+.pr-cust { font-size: 0.82rem; color: var(--text-muted); }
+.pr-actions { display: flex; flex-wrap: wrap; gap: 0.4rem; flex-shrink: 0; }
+
 // ── Product grid ─────────────────────────────────────────────────────────
 .prod-grid {
   display: grid;
@@ -235,6 +287,41 @@
 }
 
 // ── Orders ───────────────────────────────────────────────────────────────
+.bulk-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  padding: 0.7rem 1rem;
+  margin-bottom: 1rem;
+  background: var(--accent-light);
+  border: 1px solid var(--border-focus);
+  border-radius: 10px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--accent);
+
+  .bulk-bar-actions {
+    display: flex; flex-wrap: wrap; gap: 0.4rem;
+    button {
+      font-family: inherit; font-size: 0.8rem; font-weight: 600;
+      padding: 0.4rem 0.8rem; border-radius: 999px;
+      border: 1px solid var(--accent-mid); background: var(--bg-card); color: var(--accent);
+      cursor: pointer; transition: background 0.15s ease;
+      &:hover:not(:disabled) { background: var(--accent-light); }
+      &:disabled { opacity: 0.55; cursor: not-allowed; }
+    }
+  }
+
+  .bulk-bar-clear {
+    margin-left: auto;
+    display: inline-flex; align-items: center; gap: 0.3rem;
+    font-family: inherit; font-size: 0.8rem; font-weight: 600;
+    background: none; border: none; color: var(--text-muted); cursor: pointer;
+    &:hover { color: var(--text); }
+  }
+}
+
 .order-list { display: grid; gap: 1rem; }
 .order-card {
   background: var(--bg-card);
@@ -247,6 +334,7 @@
 
   .oc-top { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
   .oc-id { display: flex; align-items: center; gap: 0.6rem; }
+  .order-check { width: 17px; height: 17px; cursor: pointer; flex-shrink: 0; }
   .oc-num { font-weight: 700; color: var(--text); }
   .oc-payout { font-weight: 800; color: var(--success); span { font-weight: 500; font-size: 0.75rem; color: var(--text-muted); } }
 
@@ -254,7 +342,8 @@
   .oc-item { font-size: 0.82rem; background: var(--bg-raised); color: var(--text); padding: 0.2rem 0.6rem; border-radius: var(--radius-full); }
 
   .oc-cust { display: flex; flex-wrap: wrap; gap: 0.9rem; font-size: 0.82rem; color: var(--text-muted);
-    span { display: inline-flex; align-items: center; gap: 0.35rem; } .bi { color: var(--text-subtle); } }
+    span, .oc-tel { display: inline-flex; align-items: center; gap: 0.35rem; } .bi { color: var(--text-subtle); }
+    .oc-tel { color: var(--accent); text-decoration: none; font-weight: 600; &:hover { text-decoration: underline; } } }
 
   .oc-gift {
     display: flex; align-items: flex-start; gap: 0.5rem;
