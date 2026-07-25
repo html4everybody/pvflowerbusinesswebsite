@@ -1,4 +1,4 @@
-import { Component, signal, computed, effect, ViewChild } from '@angular/core';
+import { Component, signal, computed, effect, ViewChild, ElementRef } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { ViewportScroller } from '@angular/common';
 import { FormsModule, NgForm } from '@angular/forms';
@@ -11,13 +11,19 @@ import { PromoService, PromoResult, SeasonalOffer } from '../../services/promo';
 import { environment } from '../../../environments/environment';
 import { CommonModule } from '@angular/common';
 import { DatePicker } from '../date-picker/date-picker';
-import { LocationPicker, PickedLocation } from '../location-picker/location-picker';
 import { GeocodeService } from '../../services/geocode';
 import { AddressesService, SavedAddress } from '../../services/addresses';
 
+declare var google: any;
+
+interface AddressSuggestion {
+  display_name: string;
+  placePrediction: any;
+}
+
 @Component({
   selector: 'app-checkout',
-  imports: [RouterLink, FormsModule, CommonModule, DatePicker, LocationPicker],
+  imports: [RouterLink, FormsModule, CommonModule, DatePicker],
   templateUrl: './checkout.html',
   styleUrl: './checkout.scss'
 })
@@ -168,35 +174,215 @@ export class Checkout {
     }
     this.zipLookupLoading.set(true);
     this.zipLookupError.set('');
-    const res = await this.geocodeService.search(zip + ' India');
-    this.zipLookupLoading.set(false);
-    const match = res.find(r => r.pincode === zip) || res[0];
-    if (match) {
-      this.formData.city = match.city;
-      this.formData.state = match.state;
-      // Typing a PIN code is the far more common path than dragging the map
-      // pin, so this needs to feed the same delivery-fee calculation — a
-      // PIN's centroid is coarser than an exact pin, but still gets a real
-      // distance-based fee instead of silently falling back to a flat rate.
-      if (match.latitude != null && match.longitude != null) {
-        this.formData.latitude = match.latitude;
-        this.formData.longitude = match.longitude;
-        this.refreshDeliveryFee();
+    try {
+      // First check if we deliver to this pincode
+      const coverage = await this.http.get<{ covered: boolean; zone_name?: string }>(
+        `${environment.apiUrl}/api/delivery-zones/check`, { params: { query: zip } }
+      ).toPromise();
+
+      if (!coverage?.covered) {
+        this.zipLookupLoading.set(false);
+        this.zipLookupError.set('Sorry, we don\'t deliver to this pincode yet. We currently deliver within Hyderabad.');
+        return;
       }
-    } else {
+
+      // Pincode is serviceable — autofill city/state via Google
+      const { Geocoder } = await google.maps.importLibrary('geocoding');
+      const result = await new Geocoder().geocode({ address: zip + ', India' });
+      this.zipLookupLoading.set(false);
+      if (result.results?.length) {
+        const r = result.results[0];
+        const get = (type: string) =>
+          r.address_components.find((c: any) => c.types.includes(type))?.long_name || '';
+        const city = get('locality') || get('administrative_area_level_2');
+        const state = get('administrative_area_level_1');
+        if (city) this.formData.city = city;
+        if (state) this.formData.state = state;
+        this.formData.latitude = r.geometry.location.lat();
+        this.formData.longitude = r.geometry.location.lng();
+        this.refreshDeliveryFee();
+      } else {
+        this.zipLookupError.set('Pincode not found');
+      }
+    } catch {
+      this.zipLookupLoading.set(false);
       this.zipLookupError.set('Pincode not found');
     }
   }
 
-  onDeliveryLocationPicked(loc: PickedLocation): void {
-    this.formData.latitude = loc.latitude;
-    this.formData.longitude = loc.longitude;
-    if (loc.address) this.formData.address = loc.address;
-    if (loc.city) this.formData.city = loc.city;
-    if (loc.state) this.formData.state = loc.state;
-    if (loc.pincode) this.formData.zip = loc.pincode;
-    this.selectedSavedAddressId.set(null); // manual pin overrides any quick-selected address
-    this.refreshDeliveryFee();
+  onAddressInput(): void {
+    const q = this.formData.address.trim();
+    if (this.addressDebounce) clearTimeout(this.addressDebounce);
+    if (q.length < 3) { this.addressSuggestions.set([]); this.showAddressSuggestions.set(false); return; }
+    this.addressDebounce = setTimeout(async () => {
+      this.addressSearching.set(true);
+      try {
+        const { AutocompleteSuggestion } = await google.maps.importLibrary('places');
+        const { suggestions } = await AutocompleteSuggestion.fetchAutocompleteSuggestions({
+          input: q, includedRegionCodes: ['in'],
+        });
+        this.addressSuggestions.set(suggestions.map((s: any) => ({
+          display_name: s.placePrediction.text.toString(),
+          placePrediction: s.placePrediction,
+        })));
+        this.showAddressSuggestions.set(suggestions.length > 0);
+      } catch { this.addressSuggestions.set([]); this.showAddressSuggestions.set(false); }
+      finally { this.addressSearching.set(false); }
+    }, 300);
+  }
+
+  async pickAddressSuggestion(s: AddressSuggestion): Promise<void> {
+    this.showAddressSuggestions.set(false);
+    try {
+      const place = s.placePrediction.toPlace();
+      await place.fetchFields({ fields: ['location', 'addressComponents', 'formattedAddress'] });
+      const get = (type: string) =>
+        (place.addressComponents || []).find((c: any) => c.types.includes(type))?.longText || '';
+      // Strip city, state, country (last 3 comma-separated parts) from the suggestion text
+      const parts = s.display_name.split(', ');
+      this.formData.address = parts.length > 3 ? parts.slice(0, -3).join(', ') : s.display_name;
+      this.formData.city = get('locality') || get('administrative_area_level_2');
+      this.formData.state = get('administrative_area_level_1');
+      this.formData.zip = get('postal_code');
+      this.formData.latitude = place.location.lat();
+      this.formData.longitude = place.location.lng();
+      this.selectedSavedAddressId.set(null);
+      this.refreshDeliveryFee();
+    } catch (e) { console.error('Place details error:', e); }
+  }
+
+  hideAddressSuggestions(): void {
+    setTimeout(() => this.showAddressSuggestions.set(false), 150);
+  }
+
+  useCurrentLocation(): void {
+    if (!navigator.geolocation) {
+      this.locatingError.set('Location not supported by your browser.');
+      return;
+    }
+    this.locatingAddress.set(true);
+    this.locatingError.set('');
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        try {
+          await this.applyLatLng(pos.coords.latitude, pos.coords.longitude);
+        } finally {
+          this.locatingAddress.set(false);
+        }
+      },
+      () => {
+        this.locatingAddress.set(false);
+        this.locatingError.set('Could not get your location. Please allow location access.');
+      },
+      { enableHighAccuracy: true, timeout: 10000 },
+    );
+  }
+
+  async openMapModal(): Promise<void> {
+    this.showMapModal.set(true);
+    this.mapPinAddress.set('');
+    await new Promise(r => setTimeout(r, 50)); // let Angular render the modal DOM
+
+    // Move overlay to <body> so position:fixed works regardless of parent transforms
+    const overlay = document.querySelector('.map-modal-overlay') as HTMLElement;
+    if (overlay) {
+      document.body.appendChild(overlay);
+      document.body.style.overflow = 'hidden';
+    }
+
+    const center = this.formData.latitude && this.formData.longitude
+      ? { lat: this.formData.latitude, lng: this.formData.longitude }
+      : { lat: 17.385, lng: 78.4867 }; // Hyderabad fallback
+
+    const { Map } = await google.maps.importLibrary('maps');
+    this.modalMap = new Map(this.modalMapEl.nativeElement, {
+      center,
+      zoom: this.formData.latitude ? 16 : 12,
+      mapTypeControl: false,
+      streetViewControl: false,
+      fullscreenControl: false,
+    });
+
+    this.modalMarker = new google.maps.Marker({
+      map: this.modalMap,
+      position: center,
+      draggable: true,
+      visible: !!(this.formData.latitude && this.formData.longitude),
+    });
+
+    if (this.formData.latitude && this.formData.longitude) {
+      this.resolveMapPin(center.lat, center.lng);
+    }
+
+    this.modalMarker.addListener('dragend', () => {
+      const p = this.modalMarker.getPosition();
+      this.resolveMapPin(p.lat(), p.lng());
+    });
+
+    this.modalMap.addListener('click', (e: any) => {
+      this.modalMarker.setPosition(e.latLng);
+      this.modalMarker.setVisible(true);
+      this.resolveMapPin(e.latLng.lat(), e.latLng.lng());
+    });
+  }
+
+  closeMapModal(): void {
+    document.body.style.overflow = '';
+    this.showMapModal.set(false);
+    this.modalMap = null;
+    this.modalMarker = null;
+    this.mapPinAddress.set('');
+  }
+
+  private _pendingPinLat: number | null = null;
+  private _pendingPinLng: number | null = null;
+
+  private async resolveMapPin(lat: number, lng: number): Promise<void> {
+    this._pendingPinLat = lat;
+    this._pendingPinLng = lng;
+    this.mapPinResolving.set(true);
+    this.mapPinAddress.set('');
+    try {
+      const { Geocoder } = await google.maps.importLibrary('geocoding');
+      const result = await new Geocoder().geocode({ location: { lat, lng } });
+      if (lat !== this._pendingPinLat || lng !== this._pendingPinLng) return;
+      if (result.results?.length) {
+        const r = result.results[0];
+        const parts = r.formatted_address.split(', ');
+        this.mapPinAddress.set(parts.length > 3 ? parts.slice(0, -3).join(', ') : r.formatted_address);
+      }
+    } finally {
+      if (lat === this._pendingPinLat && lng === this._pendingPinLng) {
+        this.mapPinResolving.set(false);
+      }
+    }
+  }
+
+  async confirmMapPin(): Promise<void> {
+    if (this._pendingPinLat == null || this._pendingPinLng == null) return;
+    await this.applyLatLng(this._pendingPinLat, this._pendingPinLng);
+    this.closeMapModal();
+  }
+
+  private async applyLatLng(lat: number, lng: number): Promise<void> {
+    try {
+      const { Geocoder } = await google.maps.importLibrary('geocoding');
+      const result = await new Geocoder().geocode({ location: { lat, lng } });
+      if (result.results?.length) {
+        const r = result.results[0];
+        const get = (type: string) =>
+          r.address_components.find((c: any) => c.types.includes(type))?.long_name || '';
+        const parts = r.formatted_address.split(', ');
+        this.formData.address = parts.length > 3 ? parts.slice(0, -3).join(', ') : r.formatted_address;
+        this.formData.city = get('locality') || get('administrative_area_level_2');
+        this.formData.state = get('administrative_area_level_1');
+        this.formData.zip = get('postal_code');
+        this.formData.latitude = lat;
+        this.formData.longitude = lng;
+        this.selectedSavedAddressId.set(null);
+        this.refreshDeliveryFee();
+      }
+    } catch (e) { console.error('Reverse geocode error:', e); }
   }
 
   // ── Saved addresses (quick-select instead of retyping every order) ──────
@@ -266,12 +452,30 @@ export class Checkout {
     });
   }
 
+  addressSuggestions = signal<AddressSuggestion[]>([]);
+  showAddressSuggestions = signal(false);
+  addressSearching = signal(false);
+  private addressDebounce: ReturnType<typeof setTimeout> | null = null;
+
+  // ── "Use my location" ───────────────────────────────────────────────────
+  locatingAddress = signal(false);
+  locatingError = signal('');
+
+  // ── "Pin on map" modal ──────────────────────────────────────────────────
+  showMapModal = signal(false);
+  mapPinAddress = signal('');
+  mapPinResolving = signal(false);
+  @ViewChild('modalMapEl') modalMapEl!: ElementRef<HTMLDivElement>;
+  private modalMap: any = null;
+  private modalMarker: any = null;
+
   formData = {
     firstName: '',
     lastName: '',
     email: '',
     phone: '',
     address: '',
+    apt: '',
     city: '',
     state: '',
     zip: '',
@@ -492,7 +696,9 @@ export class Checkout {
         name: `${this.formData.firstName} ${this.formData.lastName}`.trim(),
         email: customerEmail,
         phone: this.formData.phone,
-        address: this.formData.address,
+        address: this.formData.apt
+          ? `${this.formData.address}, ${this.formData.apt}`
+          : this.formData.address,
         city: this.formData.city,
         state: this.formData.state,
         zip: this.formData.zip,

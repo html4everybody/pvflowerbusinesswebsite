@@ -17,7 +17,7 @@
       }
       @if (showResults() && suggestions().length > 0) {
         <ul class="lp-results">
-          @for (s of suggestions(); track s.placeId) {
+          @for (s of suggestions(); track s.display_name) {
             <li (mousedown)="pickSuggestion(s)">
               <i class="bi bi-geo-alt"></i>
               <span>{{ s.display_name }}</span>

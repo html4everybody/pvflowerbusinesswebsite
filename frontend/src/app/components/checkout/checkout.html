@@ -81,17 +81,49 @@
                   <i class="bi bi-arrow-left"></i> Choose from saved addresses
                 </button>
               }
-              <div class="form-group full-width">
-                <label>Delivery location <span class="opt-label">(search, pin on map, or use my location)</span></label>
-                <app-location-picker height="240px" (locationPicked)="onDeliveryLocationPicked($event)"></app-location-picker>
-              </div>
-
-              <div class="form-group full-width">
+              <div class="form-group full-width address-autocomplete-wrap">
                 <label for="address">Street Address <span class="required-star">*</span></label>
-                <input type="text" id="address" #addressField="ngModel" [(ngModel)]="formData.address" name="address" placeholder="123 Main Street, Apt 4B" required>
+                <input type="text" id="address" #addressField="ngModel" [(ngModel)]="formData.address" name="address"
+                  placeholder="Start typing your street address…" required autocomplete="off"
+                  (input)="onAddressInput()" (blur)="hideAddressSuggestions()">
+                @if (addressSearching()) {
+                  <span class="zip-spinner address-spinner"></span>
+                }
+                @if (showAddressSuggestions() && addressSuggestions().length > 0) {
+                  <ul class="address-suggestions">
+                    @for (s of addressSuggestions(); track s.display_name) {
+                      <li (mousedown)="pickAddressSuggestion(s)">
+                        <i class="bi bi-geo-alt"></i>
+                        <span>{{ s.display_name }}</span>
+                      </li>
+                    }
+                  </ul>
+                }
                 @if (addressField.invalid && addressField.touched) {
                   <div class="field-error">Address is required</div>
                 }
+                <div class="address-quick-actions">
+                  <button type="button" class="aq-btn" (click)="useCurrentLocation()" [disabled]="locatingAddress()">
+                    @if (locatingAddress()) {
+                      <span class="aq-spinner"></span>
+                    } @else {
+                      <i class="bi bi-crosshair"></i>
+                    }
+                    Use my location
+                  </button>
+                  <button type="button" class="aq-btn" (click)="openMapModal()">
+                    <i class="bi bi-map"></i>
+                    Pin on map
+                  </button>
+                </div>
+                @if (locatingError()) {
+                  <div class="field-error">{{ locatingError() }}</div>
+                }
+              </div>
+
+              <div class="form-group full-width">
+                <label for="apt">Apt No / House No <span class="opt-label">(optional)</span></label>
+                <input type="text" id="apt" [(ngModel)]="formData.apt" name="apt" placeholder="e.g. 12-345, Flat 3B, 2nd Floor">
               </div>
             }
 
@@ -461,64 +493,32 @@
               <p class="promo-msg promo-msg-success">{{ promoResult()!.description }}</p>
             }
 
-            @if (!promoResult() && availableOffers().length) {
-              <div class="promo-offers">
-                <span class="promo-offers-label">Available offers — tap to apply</span>
-                <div class="promo-offers-list">
-                  @for (o of availableOffers(); track o.id) {
-                    <button type="button" class="promo-offer"
-                            [class.locked]="!offerEligible(o)"
-                            [disabled]="!offerEligible(o) || promoLoading()"
-                            (click)="selectOffer(o)">
-                      <span class="po-emoji">{{ o.emoji }}</span>
-                      <span class="po-main">
-                        <span class="po-discount">{{ offerDiscountLabel(o) }}</span>
-                        <span class="po-code">{{ o.code }}</span>
-                      </span>
-                      <span class="po-cond">
-                        @if (offerEligible(o)) {
-                          {{ offerCondition(o) }}
-                        } @else {
-                          Add ₹{{ amountToUnlock(o) | number:'1.0-0' }} more
-                        }
-                      </span>
-                    </button>
-                  }
-                </div>
-              </div>
-            }
           </div>
 
-          @if (authService.user() && loyaltyBalance() > 0) {
-            <div class="points-panel">
-              <div class="points-panel-header">
-                <span class="points-icon"><i class="bi bi-star-fill"></i></span>
-                <div>
-                  <strong>{{ loyaltyBalance() }} Loyalty Points</strong>
-                  <span class="points-subtext">= ₹{{ (loyaltyBalance() / redemptionRate()).toFixed(2) }} possible discount</span>
-                </div>
-                <button class="pts-toggle-btn" [class.on]="loyaltyEnabled()" (click)="togglePoints()">
-                  <span class="pts-knob"></span>
-                </button>
-              </div>
-              @if (loyaltyEnabled()) {
-                <div class="points-input-row">
-                  <label>Points to use:</label>
-                  <input type="number" [min]="0" [max]="maxRedeemable"
-                         [value]="pointsToRedeem()"
-                         (input)="clampAndSetPoints(+$any($event).target.value)">
-                  <span class="pts-value">= ₹{{ pointsDiscountAmount().toFixed(2) }} off</span>
-                </div>
-                <p class="pts-cap-note">Max {{ maxRedeemable }} pts available</p>
-              }
-            </div>
-          }
 
           <div class="summary-details">
             <div class="summary-row">
               <span>Subtotal</span>
               <span>₹{{ cartService.cartTotal().toFixed(2) }}</span>
             </div>
+            @if (loyaltyEnabled() && pointsDiscountAmount() > 0) {
+              <div class="summary-row points-discount-row">
+                <span><i class="bi bi-star-fill"></i> Points Discount</span>
+                <span>− ₹{{ pointsDiscountAmount().toFixed(2) }}</span>
+              </div>
+            }
+            @if (promoResult()) {
+              <div class="summary-row promo-discount-row">
+                <span><i class="bi bi-tag"></i> {{ promoResult()!.code }}</span>
+                <span>− ₹{{ promoDiscountAmount().toFixed(2) }}</span>
+              </div>
+            }
+            @if (getTax() > 0) {
+              <div class="summary-row">
+                <span>GST ({{ taxConfig().rate }}%)</span>
+                <span>₹{{ getTax().toFixed(2) }}</span>
+              </div>
+            }
             <div class="summary-row">
               <span>Delivery</span>
               @if (loadingDeliveryFee()) {
@@ -538,24 +538,6 @@
             } @else if (!loadingDeliveryFee() && !formData.latitude) {
               <p class="delivery-hint"><i class="bi bi-info-circle"></i> Pin your delivery location above for an exact delivery fee.</p>
             }
-            @if (loyaltyEnabled() && pointsDiscountAmount() > 0) {
-              <div class="summary-row points-discount-row">
-                <span><i class="bi bi-star-fill"></i> Points Discount</span>
-                <span>− ₹{{ pointsDiscountAmount().toFixed(2) }}</span>
-              </div>
-            }
-            @if (promoResult()) {
-              <div class="summary-row promo-discount-row">
-                <span><i class="bi bi-tag"></i> {{ promoResult()!.code }}</span>
-                <span>− ₹{{ promoDiscountAmount().toFixed(2) }}</span>
-              </div>
-            }
-            @if (getTax() > 0) {
-              <div class="summary-row">
-                <span>GST ({{ taxConfig().rate }}%)</span>
-                <span>₹{{ getTax().toFixed(2) }}</span>
-              </div>
-            }
             <div class="summary-row total">
               <span>Total</span>
               <span>₹{{ getTotal().toFixed(2) }}</span>
@@ -570,6 +552,30 @@
 
         <!-- Place Order — lives outside <form> but submits it via form="checkout-form" -->
         <div class="checkout-actions">
+          @if (authService.user() && loyaltyBalance() > 0) {
+            <div class="points-panel">
+              <div class="points-panel-header">
+                <span class="points-icon"><i class="bi bi-star-fill"></i></span>
+                <div>
+                  <strong>{{ loyaltyBalance() }} Loyalty Points</strong>
+                  <span class="points-subtext">= ₹{{ (loyaltyBalance() / redemptionRate()).toFixed(2) }} possible discount</span>
+                </div>
+                <button type="button" class="pts-toggle-btn" [class.on]="loyaltyEnabled()" (click)="togglePoints()">
+                  <span class="pts-knob"></span>
+                </button>
+              </div>
+              @if (loyaltyEnabled()) {
+                <div class="points-input-row">
+                  <label>Points to use:</label>
+                  <input type="number" [min]="0" [max]="maxRedeemable"
+                         [value]="pointsToRedeem()"
+                         (input)="clampAndSetPoints(+$any($event).target.value)">
+                  <span class="pts-value">= ₹{{ pointsDiscountAmount().toFixed(2) }} off</span>
+                </div>
+                <p class="pts-cap-note">Max {{ maxRedeemable }} pts available</p>
+              }
+            </div>
+          }
           @if (errorMessage()) {
             <div class="error-msg">{{ errorMessage() }}</div>
           }
@@ -627,3 +633,30 @@
     }
   </div>
 </main>
+
+<!-- Pin on map modal -->
+@if (showMapModal()) {
+  <div class="map-modal-overlay" (click)="closeMapModal()">
+    <div class="map-modal" (click)="$event.stopPropagation()">
+      <div class="map-modal-header">
+        <h3><i class="bi bi-map"></i> Pin your delivery location</h3>
+        <button type="button" class="map-modal-close" (click)="closeMapModal()">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+      <div #modalMapEl class="map-modal-map"></div>
+      <div class="map-modal-footer">
+        @if (mapPinResolving()) {
+          <span class="map-pin-preview resolving"><span class="aq-spinner"></span> Resolving address…</span>
+        } @else if (mapPinAddress()) {
+          <span class="map-pin-preview"><i class="bi bi-geo-alt-fill"></i> {{ mapPinAddress() }}</span>
+        } @else {
+          <span class="map-pin-hint"><i class="bi bi-info-circle"></i> Tap or click anywhere on the map to drop a pin</span>
+        }
+        <button type="button" class="btn-confirm-pin" [disabled]="!mapPinAddress() || mapPinResolving()" (click)="confirmMapPin()">
+          Confirm location
+        </button>
+      </div>
+    </div>
+  </div>
+}
