@@ -7069,17 +7069,25 @@ def validate_upi(vpa: str):
     if not re.match(r'^[\w.\-]+@[\w.\-]+$', vpa):
         raise HTTPException(status_code=400, detail="Invalid UPI ID format. Use format: name@bankname")
 
-    # VPA validation only works in live mode — skip API call in test mode
-    if RAZORPAY_KEY_ID.startswith("rzp_test_"):
-        return {"valid": True, "name": ""}
-
-    if not _rzp:
-        raise HTTPException(status_code=503, detail="Payment gateway not configured.")
     try:
-        result = _rzp.payment.validateVpa({"vpa": vpa})
-        return {"valid": True, "name": result.get("customer_name", "")}
-    except Exception:
-        raise HTTPException(status_code=400, detail="Invalid UPI ID. Please check and try again.")
+        import requests as _requests
+        resp = _requests.post(
+            "https://api.razorpay.com/v1/payments/validate/vpa",
+            json={"vpa": vpa},
+            auth=(RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET),
+        )
+        print(f"[Razorpay VPA] status={resp.status_code} body={resp.text}")
+        if resp.status_code == 200:
+            data = resp.json()
+            return {"valid": True, "name": data.get("customer_name", "")}
+        else:
+            err = resp.json().get("error", {}).get("description", "Invalid UPI ID.")
+            raise HTTPException(status_code=400, detail=err)
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"[Razorpay VPA error] {e}")
+        raise HTTPException(status_code=400, detail="Could not validate UPI ID. Try again.")
 
 
 @app.post("/api/payments/create-order")

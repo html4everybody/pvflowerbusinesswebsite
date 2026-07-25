@@ -372,22 +372,8 @@
                     <input type="text" id="upiId" #upiIdField="ngModel" [(ngModel)]="formData.upiId"
                       name="upiId" placeholder="yourname&#64;upi"
                       pattern="^[\w.\-]+@[\w.\-]+$"
-                      [required]="paymentMethod() === 'upi'"
-                      (ngModelChange)="onUpiInput()">
-                    @if (upiVerifying()) {
-                      <i class="bi bi-arrow-repeat upi-spin upi-status-icon"></i>
-                    } @else if (upiVerified()) {
-                      <i class="bi bi-check-circle-fill upi-status-icon upi-ok"></i>
-                    } @else if (upiError()) {
-                      <i class="bi bi-x-circle-fill upi-status-icon upi-fail"></i>
-                    }
+                      [required]="paymentMethod() === 'upi'">
                   </div>
-                  @if (upiVerified()) {
-                    <div class="upi-verified-msg"><i class="bi bi-check-circle-fill"></i> {{ upiVerifiedName() || 'UPI ID verified' }}</div>
-                  }
-                  @if (upiError()) {
-                    <div class="field-error"><i class="bi bi-x-circle"></i> {{ upiError() }}</div>
-                  }
                   @if (upiIdField.invalid && upiIdField.touched) {
                     <div class="field-error">Enter a valid UPI ID (e.g. name&#64;upi)</div>
                   }
