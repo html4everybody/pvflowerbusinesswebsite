@@ -111,7 +111,7 @@ export class Checkout {
     this.isRecurring.set(false);
   }
 
-  paymentMethod = signal<'card' | 'cod' | 'upi'>('card');
+  paymentMethod = signal<'card' | 'cod' | 'upi'>('cod');
 
   zipLookupLoading = signal(false);
   zipLookupError = signal('');
