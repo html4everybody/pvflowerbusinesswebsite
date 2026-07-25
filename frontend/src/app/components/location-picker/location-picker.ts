@@ -4,7 +4,8 @@ import {
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import * as L from 'leaflet';
-import { GeocodeService, GeocodeResult } from '../../services/geocode';
+import { GeocodeService } from '../../services/geocode';
+import { environment } from '../../../environments/environment';
 
 export interface PickedLocation {
   latitude: number;
@@ -15,9 +16,31 @@ export interface PickedLocation {
   pincode: string;
 }
 
-const DEFAULT_CENTER: [number, number] = [20.5937, 78.9629]; // India
+interface PlaceSuggestion {
+  display_name: string;
+  placeId: string;
+}
+
+declare var google: any;
+
+const DEFAULT_CENTER: [number, number] = [20.5937, 78.9629];
 const DEFAULT_ZOOM = 5;
 const PIN_ZOOM = 16;
+
+let _gmapsPromise: Promise<void> | null = null;
+
+function ensureGoogleMaps(apiKey: string): Promise<void> {
+  if (_gmapsPromise) return _gmapsPromise;
+  _gmapsPromise = new Promise((resolve) => {
+    if (typeof google !== 'undefined' && google.maps?.places) { resolve(); return; }
+    (window as any).__gmCb = () => resolve();
+    const s = document.createElement('script');
+    s.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places&callback=__gmCb`;
+    s.async = true;
+    document.head.appendChild(s);
+  });
+  return _gmapsPromise;
+}
 
 function pinIcon(): L.DivIcon {
   return L.divIcon({
@@ -31,11 +54,6 @@ function pinIcon(): L.DivIcon {
   });
 }
 
-/**
- * Free, card-free location picker: Leaflet + OpenStreetMap tiles + our own
- * Nominatim proxy for search/reverse-geocode, plus the browser's native
- * Geolocation API for "use my current location". No API key needed.
- */
 @Component({
   selector: 'app-location-picker',
   standalone: true,
@@ -52,7 +70,7 @@ export class LocationPicker implements AfterViewInit, OnDestroy {
   @ViewChild('mapEl', { static: true }) mapEl!: ElementRef<HTMLDivElement>;
 
   searchQuery = signal('');
-  results = signal<GeocodeResult[]>([]);
+  suggestions = signal<PlaceSuggestion[]>([]);
   searching = signal(false);
   locating = signal(false);
   showResults = signal(false);
@@ -62,6 +80,8 @@ export class LocationPicker implements AfterViewInit, OnDestroy {
   private map!: L.Map;
   private marker!: L.Marker;
   private searchDebounce: ReturnType<typeof setTimeout> | null = null;
+  private autocompleteService: any = null;
+  private placesService: any = null;
 
   constructor(private geocode: GeocodeService) {}
 
@@ -94,9 +114,17 @@ export class LocationPicker implements AfterViewInit, OnDestroy {
 
     if (hasInitial) {
       this.geocode.reverse(this.initialLat!, this.initialLng!).then(r => {
-        if (r) this.applyResult(r);
+        if (r) this.applyPicked({
+          latitude: this.initialLat!, longitude: this.initialLng!,
+          address: r.address, city: r.city, state: r.state, pincode: r.pincode,
+        });
       });
     }
+
+    ensureGoogleMaps(environment.googleMapsApiKey).then(() => {
+      this.autocompleteService = new google.maps.places.AutocompleteService();
+      this.placesService = new google.maps.places.PlacesService(this.mapEl.nativeElement);
+    });
   }
 
   ngOnDestroy(): void {
@@ -107,28 +135,58 @@ export class LocationPicker implements AfterViewInit, OnDestroy {
   onSearchInput(): void {
     const q = this.searchQuery();
     if (this.searchDebounce) clearTimeout(this.searchDebounce);
-    if (q.trim().length < 3) {
-      this.results.set([]);
+    if (q.trim().length < 2) {
+      this.suggestions.set([]);
       this.showResults.set(false);
       return;
     }
-    this.searchDebounce = setTimeout(async () => {
+    this.searchDebounce = setTimeout(() => {
+      if (!this.autocompleteService) return;
       this.searching.set(true);
-      const r = await this.geocode.search(q);
-      this.results.set(r);
-      this.showResults.set(true);
-      this.searching.set(false);
-    }, 400);
+      this.autocompleteService.getPlacePredictions(
+        { input: q, componentRestrictions: { country: 'in' } },
+        (predictions: any[], status: string) => {
+          this.searching.set(false);
+          if (status !== 'OK' || !predictions?.length) {
+            this.suggestions.set([]);
+            this.showResults.set(false);
+            return;
+          }
+          this.suggestions.set(predictions.map(p => ({
+            display_name: p.description,
+            placeId: p.place_id,
+          })));
+          this.showResults.set(true);
+        },
+      );
+    }, 300);
   }
 
-  pickResult(r: GeocodeResult): void {
+  pickSuggestion(s: PlaceSuggestion): void {
     this.showResults.set(false);
-    this.searchQuery.set(r.display_name);
-    if (r.latitude == null || r.longitude == null) return;
-    this.applyResult(r);
-    this.map.setView([r.latitude, r.longitude], PIN_ZOOM);
-    this.marker.setLatLng([r.latitude, r.longitude]);
-    this.marker.setOpacity(1);
+    this.searchQuery.set(s.display_name);
+    if (!this.placesService) return;
+    this.placesService.getDetails(
+      { placeId: s.placeId, fields: ['geometry', 'address_components', 'formatted_address'] },
+      (place: any, status: string) => {
+        if (status !== 'OK' || !place?.geometry) return;
+        const lat = place.geometry.location.lat();
+        const lng = place.geometry.location.lng();
+        const get = (type: string) =>
+          (place.address_components || []).find((c: any) => c.types.includes(type))?.long_name || '';
+        const picked: PickedLocation = {
+          latitude: lat, longitude: lng,
+          address: place.formatted_address || s.display_name,
+          city: get('locality') || get('administrative_area_level_2'),
+          state: get('administrative_area_level_1'),
+          pincode: get('postal_code'),
+        };
+        this.applyPicked(picked);
+        this.map.setView([lat, lng], PIN_ZOOM);
+        this.marker.setLatLng([lat, lng]);
+        this.marker.setOpacity(1);
+      },
+    );
   }
 
   useMyLocation(): void {
@@ -151,33 +209,27 @@ export class LocationPicker implements AfterViewInit, OnDestroy {
         this.locating.set(false);
         this.errorMsg.set('Could not get your location. Please allow location access, or search/click on the map instead.');
       },
-      { enableHighAccuracy: true, timeout: 10000 }
+      { enableHighAccuracy: true, timeout: 10000 },
     );
-  }
-
-  private async resolveLocation(lat: number, lng: number): Promise<void> {
-    this.errorMsg.set('');
-    const r = await this.geocode.reverse(lat, lng);
-    if (r) {
-      this.applyResult({ ...r, latitude: lat, longitude: lng });
-      this.searchQuery.set(r.display_name);
-    } else {
-      const picked: PickedLocation = { latitude: lat, longitude: lng, address: '', city: '', state: '', pincode: '' };
-      this.selected.set(picked);
-      this.locationPicked.emit(picked);
-    }
   }
 
   locationSubtitle(loc: PickedLocation): string {
     return [loc.city, loc.state, loc.pincode].filter(v => v).join(', ');
   }
 
-  private applyResult(r: GeocodeResult): void {
-    const picked: PickedLocation = {
-      latitude: r.latitude!, longitude: r.longitude!,
-      address: r.address, city: r.city, state: r.state, pincode: r.pincode,
-    };
-    this.selected.set(picked);
-    this.locationPicked.emit(picked);
+  private async resolveLocation(lat: number, lng: number): Promise<void> {
+    this.errorMsg.set('');
+    const r = await this.geocode.reverse(lat, lng);
+    if (r) {
+      this.applyPicked({ latitude: lat, longitude: lng, address: r.address, city: r.city, state: r.state, pincode: r.pincode });
+      this.searchQuery.set(r.display_name);
+    } else {
+      this.applyPicked({ latitude: lat, longitude: lng, address: '', city: '', state: '', pincode: '' });
+    }
+  }
+
+  private applyPicked(loc: PickedLocation): void {
+    this.selected.set(loc);
+    this.locationPicked.emit(loc);
   }
 }
