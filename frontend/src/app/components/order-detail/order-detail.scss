@@ -577,6 +577,17 @@
       font-weight: 500;
       color: var(--text);
     }
+
+    &.gift-message-item {
+      .detail-label { color: var(--accent); .bi { margin-right: 0.25rem; } }
+      .gift-message-text {
+        font-style: italic;
+        background: var(--accent-light);
+        border-radius: 8px;
+        padding: 0.6rem 0.85rem;
+        line-height: 1.5;
+      }
+    }
   }
 
   // Order items

@@ -95,6 +95,7 @@ export class Products implements OnInit {
   }
 
   addToCart(product: Product): void {
+    if (product.deliverable === false) return;
     this.cartQuantities[product.id] = 1;
     this.cartService.addToCart(product);
     this.feedbackService.addToCartFeedback();

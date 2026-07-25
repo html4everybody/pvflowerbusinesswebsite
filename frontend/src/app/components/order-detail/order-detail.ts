@@ -279,6 +279,10 @@ export class OrderDetail implements OnInit {
     return Math.max(0, +((total - this.pointsDiscountAmount(o)).toFixed(2)));
   }
 
+  taxAmount(o: any): number {
+    return o.tax_amount || 0;
+  }
+
   formatDelivery(o: any): { label: string; detail: string } {
     if (!o.delivery_type || o.delivery_type === 'immediate') {
       return { label: 'Immediate Delivery', detail: 'As soon as possible' };

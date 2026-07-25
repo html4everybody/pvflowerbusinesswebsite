@@ -13,7 +13,7 @@ import { environment } from '../../../environments/environment';
 import { DatePicker } from '../date-picker/date-picker';
 import { LocationPicker, PickedLocation } from '../location-picker/location-picker';
 
-export type AdminSection = 'overview' | 'orders' | 'products' | 'categories' | 'inventory' | 'customers' | 'analytics' | 'zones' | 'deals' | 'bundles' | 'plans' | 'subscriptions' | 'studio' | 'occasions' | 'merchants' | 'payouts' | 'audit';
+export type AdminSection = 'overview' | 'orders' | 'products' | 'categories' | 'inventory' | 'customers' | 'analytics' | 'zones' | 'deals' | 'bundles' | 'plans' | 'subscriptions' | 'studio' | 'occasions' | 'merchants' | 'payouts' | 'audit' | 'content';
 
 @Component({
   selector: 'app-admin',
@@ -269,6 +269,7 @@ export class Admin implements OnInit {
     if (section === 'occasions' && !this.occasions().length) this.loadOccasions();
     if (section === 'payouts') this.loadPayouts();
     if (section === 'audit' && !this.auditLog().length) this.loadAuditLog();
+    if (section === 'content') this.loadSiteContent();
   }
 
   get token(): string { return this.authService.getToken(); }
@@ -291,6 +292,7 @@ export class Admin implements OnInit {
     if (section === 'merchants') this.loadMerchants();
     if (section === 'payouts') this.loadPayouts();
     if (section === 'audit') this.loadAuditLog();
+    if (section === 'content') this.loadSiteContent();
   }
 
   // ── Merchants (marketplace sellers) ───────────────────────────────────────
@@ -422,6 +424,33 @@ export class Admin implements OnInit {
         this.loadAbandonedCarts();
       },
       error: (err) => { this.runningCartCheck.set(false); this.toastService.show(err.error?.detail || 'Failed to run cart check', 'error'); },
+    });
+  }
+
+  // ── Homepage content (hero overlay + announcement banner) ──────────────────
+  siteContentForm = { hero_headline: '', hero_subheadline: '', announcement_text: '', announcement_active: false };
+  loadingSiteContent = signal(false);
+  savingSiteContent = signal(false);
+
+  loadSiteContent(): void {
+    this.loadingSiteContent.set(true);
+    this.http.get<any>(`${environment.apiUrl}/api/site-content`).subscribe({
+      next: (d) => {
+        this.siteContentForm = {
+          hero_headline: d.hero_headline || '', hero_subheadline: d.hero_subheadline || '',
+          announcement_text: d.announcement_text || '', announcement_active: !!d.announcement_active,
+        };
+        this.loadingSiteContent.set(false);
+      },
+      error: () => this.loadingSiteContent.set(false),
+    });
+  }
+
+  saveSiteContent(): void {
+    this.savingSiteContent.set(true);
+    this.http.put(`${environment.apiUrl}/api/admin/site-content`, { token: this.token, ...this.siteContentForm }).subscribe({
+      next: () => { this.savingSiteContent.set(false); this.toastService.show('Homepage content updated'); },
+      error: (err) => { this.savingSiteContent.set(false); this.toastService.show(err.error?.detail || 'Failed to save', 'error'); },
     });
   }
 
@@ -1235,6 +1264,41 @@ export class Admin implements OnInit {
       error: () => this.loadingZones.set(false)
     });
     this.loadDeliveryPricing();
+    this.loadTaxConfig();
+  }
+
+  // ── GST / tax settings (off by default — explicit admin opt-in) ────────────
+  loadingTaxConfig = signal(false);
+  savingTaxConfig = signal(false);
+  gstEnabledInput = signal(false);
+  gstRateInput = signal<number>(0);
+
+  loadTaxConfig(): void {
+    this.loadingTaxConfig.set(true);
+    this.http.get<any>(`${environment.apiUrl}/api/tax-config`).subscribe({
+      next: (data) => {
+        this.gstEnabledInput.set(!!data.enabled);
+        this.gstRateInput.set(data.rate || 0);
+        this.loadingTaxConfig.set(false);
+      },
+      error: () => this.loadingTaxConfig.set(false),
+    });
+  }
+
+  saveTaxConfig(): void {
+    const rate = this.gstRateInput();
+    if (rate < 0 || rate > 100) {
+      this.toastService.show('GST rate must be between 0 and 100', 'error');
+      return;
+    }
+    this.savingTaxConfig.set(true);
+    this.http.put<any>(`${environment.apiUrl}/api/admin/tax-config`, { token: this.token, gst_enabled: this.gstEnabledInput(), gst_rate: rate }).subscribe({
+      next: () => {
+        this.savingTaxConfig.set(false);
+        this.toastService.show(this.gstEnabledInput() ? `GST enabled at ${rate}%` : 'GST disabled');
+      },
+      error: (err) => { this.savingTaxConfig.set(false); this.toastService.show(err.error?.detail || 'Failed to update GST settings', 'error'); },
+    });
   }
 
   // ── Distance-based delivery pricing (per-km rate, editable anytime) ────────
@@ -1497,6 +1561,59 @@ export class Admin implements OnInit {
       next: () => { this.bundleDeals.update(list => list.filter(b => b.id !== bundle.id)); this.toastService.show('Bundle deleted'); },
       error: () => this.toastService.show('Failed to delete bundle', 'error')
     });
+  }
+
+  // ── CSV export (client-side — every list here is already fully loaded,
+  // not paginated, so there's no need for a dedicated export endpoint) ──────
+  private exportCsv(filename: string, rows: Record<string, any>[]): void {
+    if (!rows.length) { this.toastService.show('Nothing to export', 'error'); return; }
+    const headers = Object.keys(rows[0]);
+    const escape = (val: any): string => {
+      const s = val == null ? '' : String(val);
+      return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+    };
+    const csv = [headers.join(','), ...rows.map(r => headers.map(h => escape(r[h])).join(','))].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    this.toastService.show(`Exported ${rows.length} row(s)`);
+  }
+
+  private todayStamp(): string {
+    return new Date().toISOString().slice(0, 10);
+  }
+
+  exportOrdersCsv(): void {
+    const rows = this.orders().map(o => ({
+      order_id: o.id, customer_name: o.customer_name, customer_email: o.customer_email,
+      status: o.status, total: o.total, payment_method: o.payment_method,
+      delivery_type: o.delivery_type, created_at: o.created_at,
+    }));
+    this.exportCsv(`vivapetals-orders-${this.todayStamp()}.csv`, rows);
+  }
+
+  exportCustomersCsv(): void {
+    const rows = this.customers().map(c => ({
+      name: `${c.first_name || ''} ${c.last_name || ''}`.trim(), email: c.email,
+      joined: c.created_at, order_count: c.order_count, total_spent: c.total_spent,
+      segment: c.segment, verified: c.is_verified,
+    }));
+    this.exportCsv(`vivapetals-customers-${this.todayStamp()}.csv`, rows);
+  }
+
+  exportProductsCsv(): void {
+    const rows = this.products().map(p => ({
+      id: p.id, name: p.name, category: p.category, price: p.price,
+      merchant_price: p.merchant_price, status: p.status, in_stock: p.inStock,
+    }));
+    this.exportCsv(`vivapetals-products-${this.todayStamp()}.csv`, rows);
   }
 
   // ── Utilities ────────────────────────────────────────────────────────────

@@ -11,6 +11,13 @@ import { environment } from '../../environments/environment';
 export class CartService {
   private cartItems = signal<CartItem[]>([]);
   cartBounce = signal(false);
+  // False until the initial fetch (or a re-fetch after login/logout) has
+  // resolved — cartCount() is legitimately 0 while this is still false,
+  // which callers that redirect on "cart is empty" must not mistake for
+  // an actually-empty cart (checkout.ts used to race this on a fresh page
+  // load / refresh and bounce a logged-in user with real items back to
+  // /cart before their server cart had even loaded).
+  loaded = signal(false);
 
   items = this.cartItems.asReadonly();
 
@@ -34,6 +41,7 @@ export class CartService {
     effect(() => {
       this.authService.user(); // track signal
       this.cartItems.set([]);
+      this.loaded.set(false);
       this.fetchCart();
     });
   }
@@ -65,12 +73,14 @@ export class CartService {
               });
             }
           }
+          this.loaded.set(true);
         },
-        error: () => this.cartItems.set([])
+        error: () => { this.cartItems.set([]); this.loaded.set(true); }
       });
     } else {
-      // Guest: load cart from localStorage
+      // Guest: load cart from localStorage (synchronous — already "loaded")
       this.cartItems.set(this.loadFromLocalStorage());
+      this.loaded.set(true);
     }
   }
 

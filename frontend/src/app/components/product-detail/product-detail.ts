@@ -155,7 +155,7 @@ export class ProductDetail implements OnInit {
   }
 
   addToCart(): void {
-    if (this.product) {
+    if (this.product && this.product.deliverable !== false) {
       this.cartService.addToCart(this.product, this.quantity);
       this.feedbackService.addToCartFeedback();
       this.toastService.show(`${this.product.name} added to cart!`);

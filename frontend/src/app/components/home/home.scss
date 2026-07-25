@@ -1756,6 +1756,21 @@ html[data-theme="dark"] {
   100% { left: 130%; }
 }
 
+// ── Admin-editable announcement banner (Admin > Homepage Content) ────────────
+.announcement-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  text-align: center;
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 0.6rem 1rem;
+  letter-spacing: 0.01em;
+}
+
 // ── Bloom Plan "arriving today" home banner ──────────────────────────────────
 .bloom-today-banner {
   display: block;

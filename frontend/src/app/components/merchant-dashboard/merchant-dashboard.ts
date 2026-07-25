@@ -50,10 +50,17 @@ export class MerchantDashboard implements OnInit {
   shop = {
     shop_name: '', description: '', phone: '', logo: '', address: '', city: '', state: '', pincode: '',
     latitude: null as number | null, longitude: null as number | null,
+    max_delivery_km: null as number | null,
   };
   savingShop = signal(false);
   loadingShop = signal(false);
   shopLoaded = signal(false);
+
+  // Shop availability — a quick on/off switch, always visible in the
+  // sidebar (not tucked away in Settings), since the whole point is to
+  // stop new orders from routing in while a merchant is genuinely away.
+  shopIsOpen = signal(true);
+  togglingAvailability = signal(false);
 
   // payout details
   payout = {
@@ -104,6 +111,20 @@ export class MerchantDashboard implements OnInit {
     this.loadStats();
     this.loadProducts();
     this.loadCategories();
+    this.loadShop(); // also seeds shopIsOpen for the always-visible sidebar toggle
+  }
+
+  toggleAvailability(): void {
+    const next = !this.shopIsOpen();
+    this.togglingAvailability.set(true);
+    this.http.put<any>(`${this.api}/api/merchant/availability`, { token: this.token, is_open: next }).subscribe({
+      next: () => {
+        this.shopIsOpen.set(next);
+        this.togglingAvailability.set(false);
+        this.toast.show(next ? "You're open — new orders can reach you again" : "You're marked closed — new orders will skip your shop");
+      },
+      error: (err) => { this.togglingAvailability.set(false); this.toast.show(err?.error?.detail || 'Could not update availability', 'error'); },
+    });
   }
 
   // Storefront categories (live products) merged with a sensible base list,
@@ -188,6 +209,7 @@ export class MerchantDashboard implements OnInit {
             shop_name: m.shop_name || '', description: m.description || '', phone: m.phone || '', logo: m.logo || '',
             address: m.address || '', city: m.city || '', state: m.state || '', pincode: m.pincode || '',
             latitude: m.latitude ?? null, longitude: m.longitude ?? null,
+            max_delivery_km: m.max_delivery_km ?? null,
           };
           this.payout = {
             payout_method: m.payout_method || 'upi',
@@ -195,6 +217,7 @@ export class MerchantDashboard implements OnInit {
             bank_account_number: m.payout_bank_account_number || '', bank_ifsc: m.payout_bank_ifsc || '',
           };
           this.payoutVerified.set(!!m.payout_verified);
+          this.shopIsOpen.set(m.is_open !== false);
         }
         this.loadingShop.set(false);
         this.shopLoaded.set(true);

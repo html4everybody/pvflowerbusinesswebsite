@@ -78,10 +78,18 @@ export class Home implements OnInit, AfterViewInit {
   subDeliveryToday = signal(false);
   occasions = signal<StoreOccasion[]>([]);
 
+  // Admin-editable hero overlay + top announcement banner — defaults to
+  // nothing shown, so the page looks exactly as it always did until an
+  // admin actually sets something in Admin > Homepage Content.
+  siteContent = signal<{ hero_headline: string | null; hero_subheadline: string | null; announcement_text: string | null; announcement_active: boolean } | null>(null);
+
   ngOnInit(): void {
     this.productService.loadProducts().then(() => {
       this.products.set(this.productService.getProducts());
       this.categories.set(this.productService.getCategories());
+    });
+    this.http.get<any>(`${environment.apiUrl}/api/site-content`).subscribe({
+      next: d => this.siteContent.set(d), error: () => {},
     });
     this.promoService.getOffers(this.authService.user()?.email).subscribe({ next: d => this.offers.set(d), error: () => {} });
     this.occasionService.getAll().subscribe({ next: d => this.occasions.set(d), error: () => {} });

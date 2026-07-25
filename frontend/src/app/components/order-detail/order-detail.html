@@ -97,6 +97,12 @@
                       <span>−₹{{ promoDiscountAmount(o).toFixed(2) }}</span>
                     </div>
                   }
+                  @if (taxAmount(o) > 0) {
+                    <div class="breakdown-row">
+                      <span>GST{{ o.tax_rate ? ' (' + o.tax_rate + '%)' : '' }}</span>
+                      <span>₹{{ taxAmount(o).toFixed(2) }}</span>
+                    </div>
+                  }
                   <div class="breakdown-row breakdown-total">
                     <span>Total</span>
                     <span>₹{{ o.total.toFixed(2) }}</span>
@@ -131,6 +137,12 @@
                 <div class="customer-detail-item full-width">
                   <span class="detail-label">Delivery Address</span>
                   <span class="detail-value">{{ o.customer_address }}</span>
+                </div>
+              }
+              @if (o.gift_message) {
+                <div class="customer-detail-item full-width gift-message-item">
+                  <span class="detail-label"><i class="bi bi-gift"></i> Gift Message</span>
+                  <span class="detail-value gift-message-text">"{{ o.gift_message }}"</span>
                 </div>
               }
             </div>
@@ -231,6 +243,12 @@
                       <div class="breakdown-row breakdown-discount">
                         <span>{{ o.promo_code ? 'Promo (' + o.promo_code + ')' : 'Promo discount' }}</span>
                         <span>−₹{{ promoDiscountAmount(o).toFixed(2) }}</span>
+                      </div>
+                    }
+                    @if (taxAmount(o) > 0) {
+                      <div class="breakdown-row">
+                        <span>GST{{ o.tax_rate ? ' (' + o.tax_rate + '%)' : '' }}</span>
+                        <span>₹{{ taxAmount(o).toFixed(2) }}</span>
                       </div>
                     }
                     <div class="breakdown-row breakdown-total">

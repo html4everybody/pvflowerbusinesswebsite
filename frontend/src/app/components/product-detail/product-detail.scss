@@ -198,6 +198,20 @@
       }
     }
 
+    .delivery-unavailable-notice {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      font-weight: 500;
+      padding: 0.65rem 0.9rem;
+      border-radius: var(--radius-sm);
+      margin-bottom: 0.75rem;
+    }
+
     .add-to-cart-section {
       display: flex;
       flex-direction: column;
@@ -280,6 +294,14 @@
 
         &:hover { background: var(--accent-light); box-shadow: 0 4px 12px rgba(37,99,235,0.25); }
         &:active { transform: scale(0.97); }
+
+        &:disabled {
+          background: var(--bg-card);
+          color: var(--text-muted);
+          border-color: var(--border);
+          box-shadow: none;
+          cursor: not-allowed;
+        }
       }
 
       .btn-wishlist {

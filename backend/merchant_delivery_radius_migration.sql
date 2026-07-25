@@ -1,0 +1,1 @@
+ALTER TABLE merchants ADD COLUMN IF NOT EXISTS max_delivery_km NUMERIC;

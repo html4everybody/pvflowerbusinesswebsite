@@ -54,6 +54,12 @@
             </p>
           }
 
+          @if (product.deliverable === false) {
+            <div class="delivery-unavailable-notice">
+              <i class="bi bi-truck"></i> This shop isn't taking orders right now — delivery isn't possible at the moment.
+            </div>
+          }
+
           <div class="add-to-cart-section">
             <div class="quantity-row">
               <div class="quantity-selector">
@@ -70,10 +76,16 @@
             </div>
 
             <div class="cart-action-row">
-              <button class="btn-add-to-cart" (click)="addToCart()">
-                <i class="bi bi-bag"></i>
-                Add
-              </button>
+              @if (product.deliverable === false) {
+                <button class="btn-add-to-cart" disabled title="This shop isn't taking orders right now">
+                  Unavailable
+                </button>
+              } @else {
+                <button class="btn-add-to-cart" (click)="addToCart()">
+                  <i class="bi bi-bag"></i>
+                  Add
+                </button>
+              }
 
               <button class="btn-wishlist"
                       [class.active]="wishlistService.has(product.id)"

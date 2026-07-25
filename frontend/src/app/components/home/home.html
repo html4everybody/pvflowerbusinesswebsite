@@ -1,5 +1,11 @@
 <main class="home">
 
+  @if (siteContent()?.announcement_active && siteContent()?.announcement_text) {
+    <div class="announcement-banner">
+      <i class="bi bi-megaphone"></i> {{ siteContent()!.announcement_text }}
+    </div>
+  }
+
   @if (subDeliveryToday()) {
     <a routerLink="/my-subscriptions" class="bloom-today-banner">
       <i class="bi bi-flower1"></i> Your Bloom Plan delivery arrives <strong>today</strong>! Tap to view details <i class="bi bi-arrow-right"></i>
@@ -13,6 +19,12 @@
     </video>
     <div class="hero-overlay"></div>
     <div class="hero-content">
+      @if (siteContent()?.hero_headline) {
+        <h1 class="hero-headline">{{ siteContent()!.hero_headline }}</h1>
+      }
+      @if (siteContent()?.hero_subheadline) {
+        <p class="hero-subheadline">{{ siteContent()!.hero_subheadline }}</p>
+      }
       <div class="hero-actions">
         <button class="btn-shop-now" (click)="scrollToCollection()">Shop Now</button>
         <a routerLink="/occasions" class="btn-hero-outline">Explore Occasions</a>

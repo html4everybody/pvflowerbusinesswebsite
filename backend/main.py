@@ -43,6 +43,54 @@ app = FastAPI(title="VivaPetals API")
 def ping():
     return {"status": "ok"}
 
+# ── Homepage content (admin-editable hero/announcement, no redeploy needed) ──
+
+_SITE_CONTENT_DEFAULTS = {
+    "hero_headline": None, "hero_subheadline": None,
+    "announcement_text": None, "announcement_active": False,
+}
+
+
+@app.get("/api/site-content")
+def get_site_content():
+    """Public — powers the homepage hero overlay and top announcement
+    banner. Defaults to 'nothing shown' before the migration is run or
+    before an admin has set anything, so the page looks exactly as it
+    always did until someone opts in."""
+    if not _has_table("site_content"):
+        return dict(_SITE_CONTENT_DEFAULTS)
+    row = supabase.table("site_content").select("*").eq("id", 1).execute().data
+    if not row:
+        return dict(_SITE_CONTENT_DEFAULTS)
+    return {**_SITE_CONTENT_DEFAULTS, **{k: row[0].get(k) for k in _SITE_CONTENT_DEFAULTS}}
+
+
+class SiteContentUpdate(BaseModel):
+    token: str
+    hero_headline: Optional[str] = None
+    hero_subheadline: Optional[str] = None
+    announcement_text: Optional[str] = None
+    announcement_active: bool = False
+
+
+@app.put("/api/admin/site-content")
+def update_site_content(req: SiteContentUpdate):
+    admin_email = require_admin(req.token)
+    if not _has_table("site_content"):
+        raise HTTPException(status_code=503, detail="Homepage content editing isn't set up yet — please contact support.")
+    supabase.table("site_content").upsert({
+        "id": 1,
+        "hero_headline": (req.hero_headline or "").strip() or None,
+        "hero_subheadline": (req.hero_subheadline or "").strip() or None,
+        "announcement_text": (req.announcement_text or "").strip() or None,
+        "announcement_active": req.announcement_active,
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+        "updated_by": admin_email,
+    }).execute()
+    _log_admin_action(admin_email, "site_content_change", "site_content", "1",
+                       f"announcement {'on' if req.announcement_active else 'off'}" + (f": {req.announcement_text}" if req.announcement_active and req.announcement_text else ""))
+    return {"status": "ok"}
+
 # ── Geocoding (OpenStreetMap Nominatim — free, no API key/card required) ─────
 # Proxied through our own backend rather than called directly from the
 # browser: lets us set a proper identifying User-Agent (Nominatim's usage
@@ -613,6 +661,54 @@ def send_winback_email(to_email: str, first_name: str, message: str) -> bool:
         return resp.status_code in (200, 201)
     except Exception as e:
         print(f"[Email] Failed to send winback email: {e}", flush=True)
+        return False
+
+
+def build_merchant_new_order_email_html(shop_name: str, order_id: str, noun: str, qty: int, payout: float) -> str:
+    return f"""<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"></head>
+<body style="margin:0;padding:0;background:#f4f4f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
+  <div style="max-width:560px;margin:2rem auto;border-radius:12px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
+    <div style="background:#1a1a1a;padding:1.5rem 2rem;display:flex;align-items:center;gap:0.75rem;">
+      <span style="font-size:1.4rem;">🌸</span>
+      <span style="color:white;font-size:1.05rem;font-weight:700;letter-spacing:0.01em;">VivaPetals</span>
+      <span style="color:#888;margin-left:0.5rem;font-size:0.85rem;">/ Merchant</span>
+    </div>
+    <div style="background:white;padding:2rem;">
+      <h1 style="font-size:1.3rem;font-weight:700;color:#111;margin:0 0 0.5rem;">Hi {shop_name}, you've got a new {noun.lower()} 🌸</h1>
+      <p style="color:#666;font-size:0.95rem;line-height:1.6;margin:0 0 1.5rem;">
+        {noun} #{order_id} needs {qty} item(s) prepared. Log in to your merchant dashboard to see the full details and update its status.
+      </p>
+      <div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:10px;padding:1.25rem;margin-bottom:1.5rem;">
+        <div style="font-size:0.78rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#888;margin-bottom:0.5rem;">You'll earn</div>
+        <div style="font-size:1.3rem;font-weight:800;color:#111;">₹{payout:.2f}</div>
+      </div>
+      <a href="{APP_URL}/merchant" style="display:inline-block;background:#2563eb;color:white;text-decoration:none;padding:0.75rem 1.5rem;border-radius:8px;font-weight:700;font-size:0.9rem;">
+        Open Merchant Dashboard
+      </a>
+      <p style="color:#aaa;font-size:0.78rem;margin:1.5rem 0 0;">Thank you for selling on VivaPetals 🌸</p>
+    </div>
+  </div>
+</body>
+</html>"""
+
+
+def send_merchant_new_order_email(to_email: str, shop_name: str, order_id: str, noun: str, qty: int, payout: float) -> bool:
+    if not RESEND_API_KEY or not to_email:
+        return False
+    try:
+        with _httpx.Client() as client:
+            resp = client.post(
+                "https://api.resend.com/emails",
+                headers={"Authorization": f"Bearer {RESEND_API_KEY}", "Content-Type": "application/json"},
+                json={"from": "VivaPetals <orderhere@vivapetals.com>", "to": [to_email], "subject": f"🌸 New {noun.lower()} #{order_id} — {qty} item(s) to prepare", "html": build_merchant_new_order_email_html(shop_name, order_id, noun, qty, payout)},
+                timeout=10
+            )
+        print(f"[Email] Merchant new-order email response {resp.status_code}: {resp.text}", flush=True)
+        return resp.status_code in (200, 201)
+    except Exception as e:
+        print(f"[Email] Failed to send merchant new-order email: {e}", flush=True)
         return False
 
 
@@ -1345,6 +1441,7 @@ class OrderRequest(BaseModel):
     recurrence_type: Optional[str] = None   # 'annual'
     payment_method: Optional[str] = "cod"   # cod | credit_card | debit_card | phonepe | google_pay
     token: Optional[str] = None
+    gift_message: Optional[str] = None
 
 class UpdateDeliveryRequest(BaseModel):
     delivery_type: str
@@ -1423,12 +1520,34 @@ def _is_live(p: dict) -> bool:
     """Public storefront only shows admin-approved products."""
     return p.get("status", "approved") == "approved"
 
-def _dedupe_catalog(products: list) -> list:
+def _merchant_availability() -> tuple:
+    """Two very different kinds of "not available" for a merchant:
+    - suspended (or still pending): an admin action, or the merchant was
+      never approved — their products must not be discoverable anywhere,
+      full stop.
+    - closed (is_open=False): the merchant's own "not taking orders right
+      now" toggle — temporary, so their products should stay browsable
+      (marked undeliverable) rather than vanish, unless a catalog sibling
+      from another, open merchant can stand in for them.
+    Returns (suspended_merchant_ids, closed_merchant_ids)."""
+    suspended_ids = {
+        m["id"] for m in supabase.table("merchants").select("id, status").execute().data or []
+        if m.get("status") != "approved"
+    }
+    closed_ids: set = set()
+    if _has_column("merchants", "is_open"):
+        closed_ids = {m["id"] for m in supabase.table("merchants").select("id").eq("is_open", False).execute().data or []}
+    return suspended_ids, closed_ids
+
+def _dedupe_catalog(products: list, closed_merchants: set = frozenset()) -> list:
     """A catalog product (admin-assigned to several merchants) is the SAME
     row of `products` repeated once per merchant. Customers should see one
-    card, not N duplicates — collapse them here, preferring a row that's in
-    stock. Which merchant actually fulfills the order is resolved later, at
-    checkout (nearest-merchant routing — not implemented yet)."""
+    card, not N duplicates — collapse them here, preferring a row from an
+    open merchant, then one that's in stock. Which merchant actually
+    fulfills the order is resolved later, at checkout (nearest-merchant
+    routing — not implemented yet)."""
+    def _rank(p: dict) -> tuple:
+        return (p.get("merchant_id") not in closed_merchants, bool(p.get("inStock")))
     representative_idx: dict = {}
     out = []
     for p in products:
@@ -1439,7 +1558,7 @@ def _dedupe_catalog(products: list) -> list:
         if cid not in representative_idx:
             representative_idx[cid] = len(out)
             out.append(p)
-        elif p.get("inStock") and not out[representative_idx[cid]].get("inStock"):
+        elif _rank(p) > _rank(out[representative_idx[cid]]):
             out[representative_idx[cid]] = p
     return out
 
@@ -1451,7 +1570,11 @@ def get_products(category: Optional[str] = None):
         PRODUCTS[:] = products  # keep cache in sync
     except Exception:
         products = list(PRODUCTS)  # fallback to cache if Supabase unreachable
-    live = _dedupe_catalog([p for p in products if _is_live(p)])
+    suspended_merchants, closed_merchants = _merchant_availability()
+    eligible = [p for p in products if _is_live(p) and p.get("merchant_id") not in suspended_merchants]
+    live = _dedupe_catalog(eligible, closed_merchants)
+    for p in live:
+        p["deliverable"] = p.get("merchant_id") not in closed_merchants
     if category:
         return [p for p in live if p["category"] == category]
     return live
@@ -1501,6 +1624,11 @@ def get_product(product_id: str):
     product = next((p for p in PRODUCTS if p["id"] == product_id and _is_live(p)), None)
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
+    suspended_merchants, closed_merchants = _merchant_availability()
+    if product.get("merchant_id") in suspended_merchants:
+        raise HTTPException(status_code=404, detail="Product not found")
+    product = dict(product)
+    product["deliverable"] = product.get("merchant_id") not in closed_merchants
     return product
 
 # ── Admin: Products CRUD (Supabase) ──────────────────────────────────────────────
@@ -2408,6 +2536,8 @@ def merchant_me(token: str):
         "address": m.get("address", ""), "city": m.get("city", ""),
         "state": m.get("state", ""), "pincode": m.get("pincode", ""),
         "latitude": m.get("latitude"), "longitude": m.get("longitude"),
+        "is_open": m.get("is_open", True),
+        "max_delivery_km": m.get("max_delivery_km"),
         **payout,
     }}
 
@@ -2426,20 +2556,45 @@ class MerchantShopUpdate(BaseModel):
     pincode: Optional[str] = None
     latitude: Optional[float] = None
     longitude: Optional[float] = None
+    max_delivery_km: Optional[float] = None
 
 
 @app.put("/api/merchant/shop")
 def merchant_update_shop(req: MerchantShopUpdate):
     m = require_merchant(req.token)
     data = {}
-    for field in ("shop_name", "description", "phone", "logo", "address", "city", "state", "pincode", "latitude", "longitude"):
+    for field in ("shop_name", "description", "phone", "logo", "address", "city", "state", "pincode", "latitude", "longitude", "max_delivery_km"):
         val = getattr(req, field)
         if val is not None:
             data[field] = val
+    # 0 isn't a meaningful radius (no merchant delivers exactly nowhere) —
+    # treat it as "remove the cap" since this endpoint otherwise has no way
+    # to clear a field once set (None means "not provided", not "clear it").
+    if data.get("max_delivery_km") == 0:
+        data["max_delivery_km"] = None
     if not data:
         raise HTTPException(status_code=400, detail="No fields to update")
     supabase.table("merchants").update(data).eq("id", m["id"]).execute()
     return {"status": "ok", **data}
+
+
+class MerchantAvailabilityUpdate(BaseModel):
+    token: str
+    is_open: bool
+
+
+@app.put("/api/merchant/availability")
+def merchant_update_availability(req: MerchantAvailabilityUpdate):
+    """A quick on/off switch, separate from the full shop-settings form —
+    closing it hides the merchant's products from the public storefront
+    (see get_products) and excludes them as a shared-catalog-item fallback
+    at checkout (see _resolve_order_merchants), so new orders stop
+    reaching a merchant who's temporarily unavailable."""
+    m = require_merchant(req.token)
+    if not _has_column("merchants", "is_open"):
+        raise HTTPException(status_code=503, detail="Shop availability isn't set up yet — please contact support.")
+    supabase.table("merchants").update({"is_open": req.is_open}).eq("id", m["id"]).execute()
+    return {"status": "ok", "is_open": req.is_open}
 
 
 # ── Merchant: payout details ─────────────────────────────────────────────────
@@ -2511,16 +2666,21 @@ def _merchant_owns_product(product_id: str, merchant_id):
 def merchant_list_products(token: str):
     m = require_merchant(token)
     # Merchant view: hide the admin's selling price / profit — show only their price.
+    my_ids = [p["id"] for p in PRODUCTS if p.get("merchant_id") == m["id"]]
+    stock_rows = supabase.table("product_stock").select("*").in_("product_id", my_ids).execute().data if my_ids else []
+    stock_map = {r["product_id"]: r["stock"] for r in (stock_rows or [])}
     out = []
     for p in PRODUCTS:
         if p.get("merchant_id") != m["id"]:
             continue
+        stock = stock_map.get(p["id"], 50)
         out.append({
             "id": p["id"], "name": p["name"], "description": p["description"],
             "merchant_price": p["merchant_price"], "image": p["image"],
             "category": p["category"], "inStock": p["inStock"],
             "status": p["status"], "reject_reason": p.get("reject_reason"),
             "catalog_id": p.get("catalog_id"),   # set = admin-assigned shared listing (price locked)
+            "stock": stock, "low_stock": p["inStock"] and stock < 10,
         })
     return out
 
@@ -2720,6 +2880,7 @@ def merchant_orders(token: str):
             "customer_phone": o.get("customer_phone", ""),
             "customer_address": o.get("customer_address", ""),
             "delivery_type": o.get("delivery_type"),
+            "gift_message": o.get("gift_message") or "",
             "items": [{"name": it.get("name"), "quantity": it.get("quantity")}
                       for it in items_by_order.get(p["order_id"], [])],
             "next_statuses": MERCHANT_STATUS_FLOW.get(p.get("status", "confirmed"), []),
@@ -2777,6 +2938,11 @@ def merchant_stats(token: str):
     pending_products = sum(1 for p in my_products if p.get("status") == "pending")
     status_counts = Counter(p.get("status", "confirmed") for p in parts)
 
+    my_ids = [p["id"] for p in my_products]
+    stock_rows = supabase.table("product_stock").select("*").in_("product_id", my_ids).execute().data if my_ids else []
+    stock_map = {r["product_id"]: r["stock"] for r in (stock_rows or [])}
+    low_stock_count = sum(1 for p in my_products if p.get("inStock") and stock_map.get(p["id"], 50) < 10)
+
     # Earnings breakdown — mirrors a seller-panel "balance" view:
     #   in_progress: not delivered yet, so nothing is payable yet
     #   pending_payout: delivered, admin hasn't settled it yet (money owed)
@@ -2797,6 +2963,7 @@ def merchant_stats(token: str):
         "pending_payout": pending_payout,
         "in_progress_value": in_progress_value,
         "status_counts": dict(status_counts),
+        "low_stock_count": low_stock_count,
     }
 
 
@@ -4489,11 +4656,58 @@ def checkout_delivery_estimate(req: DeliveryEstimateRequest):
     fee as soon as the shopper picks their location, before placing the
     order. create_order() recomputes this same way server-side; this is a
     preview only and is never trusted as the charged amount."""
-    resolved = _resolve_order_merchants(req.items)
+    resolved = _resolve_order_merchants(req.items, req.latitude, req.longitude)
     merchant_ids = {mid for mid, _ in resolved.values()}
     subtotal = sum(item.price * item.quantity for item in req.items)
     result = _calculate_delivery_fee(req.latitude, req.longitude, merchant_ids, subtotal)
     return {"delivery_fee": result["fee"], "per_km_rate": result["per_km_rate"], "breakdown": result["breakdown"], "free_delivery": result["free_delivery"]}
+
+
+# ── Tax (GST) ─────────────────────────────────────────────────────────────
+# Off by default and stays off until an admin explicitly enables it and sets
+# a rate — this changes what customers are actually charged, so it should
+# never turn on by itself just because the migration ran.
+
+def _get_tax_config() -> dict:
+    if not _has_table("tax_settings"):
+        return {"enabled": False, "rate": 0.0}
+    row = supabase.table("tax_settings").select("*").eq("id", 1).execute().data
+    if not row:
+        return {"enabled": False, "rate": 0.0}
+    return {"enabled": bool(row[0].get("gst_enabled")), "rate": float(row[0].get("gst_rate") or 0)}
+
+
+@app.get("/api/tax-config")
+def get_tax_config():
+    """Public — checkout needs this to preview GST the same way the server
+    will compute it at order creation."""
+    return _get_tax_config()
+
+
+class TaxConfigUpdate(BaseModel):
+    token: str
+    gst_enabled: bool
+    gst_rate: float = 0
+
+
+@app.put("/api/admin/tax-config")
+def update_tax_config(req: TaxConfigUpdate):
+    admin_email = require_admin(req.token)
+    if not _has_table("tax_settings"):
+        raise HTTPException(status_code=503, detail="Tax settings aren't set up yet — please contact support.")
+    if req.gst_rate < 0 or req.gst_rate > 100:
+        raise HTTPException(status_code=422, detail="GST rate must be between 0 and 100")
+    before = supabase.table("tax_settings").select("gst_enabled, gst_rate").eq("id", 1).execute().data
+    supabase.table("tax_settings").upsert({
+        "id": 1, "gst_enabled": req.gst_enabled, "gst_rate": req.gst_rate,
+        "updated_at": datetime.now(timezone.utc).isoformat(), "updated_by": admin_email,
+    }).execute()
+    old = before[0] if before else None
+    detail = f"GST {'enabled' if req.gst_enabled else 'disabled'} at {req.gst_rate}%"
+    if old:
+        detail += f" (was {'enabled' if old.get('gst_enabled') else 'disabled'} at {old.get('gst_rate')}%)"
+    _log_admin_action(admin_email, "tax_config_change", "tax_settings", "1", detail)
+    return {"status": "ok", "gst_enabled": req.gst_enabled, "gst_rate": req.gst_rate}
 
 
 # ── Order → merchant routing (consolidation) ─────────────────────────────────
@@ -4511,16 +4725,48 @@ def checkout_delivery_estimate(req: DeliveryEstimateRequest):
 # in-stock assigned merchant instead of just the first one. Merchant lat/lng
 # is already stored (see merchants.latitude/longitude) for exactly this.
 
-def _resolve_order_merchants(items: list) -> dict:
+def _resolve_order_merchants(items: list, customer_lat: Optional[float] = None, customer_lng: Optional[float] = None) -> dict:
     """Map each cart line's product id -> (merchant_id, merchant_price),
     consolidating catalog (shared) items onto whichever merchant the order
-    is already pinned to via a unique product, where possible."""
+    is already pinned to via a unique product, where possible.
+
+    customer_lat/lng are optional — only retail checkout currently supplies
+    them (subscription/corporate order generation don't thread coordinates
+    through yet), so the radius cap below only applies there for now."""
     products_by_id = {p["id"]: p for p in PRODUCTS}
     catalog_siblings: dict = {}
     for p in PRODUCTS:
         cid = p.get("catalog_id")
         if cid:
             catalog_siblings.setdefault(cid, []).append(p)
+
+    # A suspended (admin action) or closed (merchant's own toggle) merchant
+    # shouldn't be picked as a shared catalog item's fallback seller here —
+    # the storefront listing already hides/flags their products, but a stale
+    # client-side cart could still try to check out with one, so this is the
+    # real backstop. Same idea for a merchant whose own delivery-radius cap
+    # the customer falls outside of.
+    suspended_merchants, closed_merchants = _merchant_availability()
+    unavailable_merchants = suspended_merchants | closed_merchants
+    radius_by_merchant: dict = {}
+    merchant_coords: dict = {}
+    if _has_column("merchants", "max_delivery_km"):
+        rows = supabase.table("merchants").select("id, max_delivery_km, latitude, longitude").execute().data or []
+        for m in rows:
+            if m.get("max_delivery_km"):
+                radius_by_merchant[m["id"]] = float(m["max_delivery_km"])
+                merchant_coords[m["id"]] = (m.get("latitude"), m.get("longitude"))
+
+    def _out_of_radius(merchant_id: str) -> bool:
+        if customer_lat is None or customer_lng is None:
+            return False
+        cap = radius_by_merchant.get(merchant_id)
+        if not cap:
+            return False
+        mlat, mlng = merchant_coords.get(merchant_id, (None, None))
+        if mlat is None or mlng is None:
+            return False
+        return _haversine_km(float(customer_lat), float(customer_lng), float(mlat), float(mlng)) > cap
 
     # Pin the order to whichever merchant(s) own a unique (non-catalog) item
     # in the cart. The merchant with the most pinned quantity becomes the
@@ -4542,16 +4788,29 @@ def _resolve_order_merchants(items: list) -> dict:
 
         cid = p.get("catalog_id")
         if not cid:
-            # Unique product — always fulfilled by its own (only) merchant.
-            resolved[item.productId] = (p.get("merchant_id") or HOUSE_MERCHANT_ID, float(p.get("merchant_price", 0) or 0))
+            # Unique product — always fulfilled by its own (only) merchant,
+            # so there's no fallback seller to fall back to if that merchant
+            # is suspended or closed. Block rather than silently place it.
+            mid = p.get("merchant_id") or HOUSE_MERCHANT_ID
+            if mid in unavailable_merchants:
+                raise HTTPException(status_code=409, detail=f"{p.get('name') or 'An item'} in your cart isn't available for delivery right now — please remove it and try again.")
+            resolved[item.productId] = (mid, float(p.get("merchant_price", 0) or 0))
             continue
 
         live = {s["merchant_id"]: s for s in catalog_siblings.get(cid, [])
-                if s.get("status") == "approved" and s.get("inStock")}
+                if s.get("status") == "approved" and s.get("inStock")
+                and s.get("merchant_id") not in unavailable_merchants
+                and not _out_of_radius(s.get("merchant_id"))}
         if not live:
-            # Nothing currently sellable for this catalog item anywhere —
-            # keep whatever row the customer was shown so checkout can proceed.
-            resolved[item.productId] = (p.get("merchant_id") or HOUSE_MERCHANT_ID, float(p.get("merchant_price", 0) or 0))
+            # Nothing currently sellable for this catalog item anywhere. A
+            # suspended fallback seller is never acceptable — block. Closed
+            # or out-of-stock/out-of-radius fallbacks keep the prior
+            # permissive behavior (keep whichever row the customer was
+            # shown) so checkout can still proceed.
+            fallback_mid = p.get("merchant_id") or HOUSE_MERCHANT_ID
+            if fallback_mid in suspended_merchants:
+                raise HTTPException(status_code=409, detail=f"{p.get('name') or 'An item'} in your cart isn't available for delivery right now — please remove it and try again.")
+            resolved[item.productId] = (fallback_mid, float(p.get("merchant_price", 0) or 0))
             continue
 
         if primary_merchant in live:
@@ -4564,16 +4823,20 @@ def _resolve_order_merchants(items: list) -> dict:
     return resolved
 
 
-def _place_order_items(order_id: str, items: list, delivery_datetime: Optional[str], source: str = "retail") -> None:
+def _place_order_items(order_id: str, items: list, delivery_datetime: Optional[str], source: str = "retail",
+                        customer_lat: Optional[float] = None, customer_lng: Optional[float] = None) -> None:
     """Shared by retail checkout and Petal Studio bookings: resolve each line
     to the merchant who should fulfill it, insert order_items, split into
     order_merchant_parts, and notify the assigned merchant(s). For a
     'corporate' booking that ends up split across more than one merchant,
     also flags admins — large event orders benefit from single-seller
-    coordination more than an everyday retail basket does."""
+    coordination more than an everyday retail basket does.
+
+    customer_lat/lng: only passed by retail checkout today, so a merchant's
+    delivery-radius cap is only enforced there — see _resolve_order_merchants."""
     if not items:
         return
-    product_meta = _resolve_order_merchants(items)
+    product_meta = _resolve_order_merchants(items, customer_lat, customer_lng)
     supabase.table("order_items").insert([
         {
             "order_id": order_id,
@@ -4624,11 +4887,20 @@ def _place_order_items(order_id: str, items: list, delivery_datetime: Optional[s
         for mid, a in agg.items():
             if mid == HOUSE_MERCHANT_ID:
                 continue
+            merchant_row = supabase.table("merchants").select("email, shop_name").eq("id", mid).execute().data
+            m_email = merchant_row[0].get("email") if merchant_row else None
+            m_shop = merchant_row[0].get("shop_name", "there") if merchant_row else "there"
             create_user_notice(
-                _merchant_email(mid), label["notice_title"],
+                m_email, label["notice_title"],
                 f"{label['noun']} #{order_id} — {a['qty']} item(s) to prepare. You'll earn ₹{round(a['payout'], 2)}.",
                 "merchant_order", order_id,
             )
+            # Merchants previously only saw the in-app notice bell, which
+            # they have to think to check — an inactive/away merchant could
+            # silently miss an order. A no-op until RESEND_API_KEY is
+            # configured, same graceful-degradation pattern as every other
+            # email in this app.
+            send_merchant_new_order_email(m_email, m_shop, order_id, label["noun"], a["qty"], round(a["payout"], 2))
         distinct_sellers = [mid for mid in agg if mid != HOUSE_MERCHANT_ID]
         if source == "corporate" and len(distinct_sellers) > 1:
             _notify_all_admins(
@@ -4683,7 +4955,10 @@ def create_order(req: OrderRequest):
     merchant_ids = {mid for mid, _ in resolved_merchants.values()}
     delivery_result = _calculate_delivery_fee(customer_lat, customer_lng, merchant_ids, items_subtotal)
     shipping_fee = delivery_result["fee"]
-    discount_amount = round(max(0.0, items_subtotal + shipping_fee - req.total), 2)
+    tax_config = _get_tax_config()
+    tax_rate = tax_config["rate"] if tax_config["enabled"] else 0.0
+    tax_amount = round(items_subtotal * tax_rate / 100, 2) if tax_rate > 0 else 0.0
+    discount_amount = round(max(0.0, items_subtotal + shipping_fee + tax_amount - req.total), 2)
 
     order_row = {
         "id": order_id,
@@ -4714,13 +4989,19 @@ def create_order(req: OrderRequest):
     }
     if _has_column("orders", "source"):
         order_row["source"] = "retail"
+    if _has_column("orders", "gift_message") and (req.gift_message or "").strip():
+        order_row["gift_message"] = req.gift_message.strip()
+    if _has_column("orders", "tax_amount"):
+        order_row["tax_amount"] = tax_amount
+    if _has_column("orders", "tax_rate"):
+        order_row["tax_rate"] = tax_rate
     try:
         supabase.table("orders").insert(order_row).execute()
     except Exception as e:
         print(f"Order insert error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-    _place_order_items(order_id, req.items, req.delivery_datetime, source="retail")
+    _place_order_items(order_id, req.items, req.delivery_datetime, source="retail", customer_lat=customer_lat, customer_lng=customer_lng)
 
     points_pending = 0
     new_balance = 0
@@ -5649,9 +5930,9 @@ def skip_corporate_order(order_id: str, token: str):
 
 # ── Personalized Recommendations ────────────────────────────────────────────────
 
-def _enrich_products(product_ids: list, counter: Counter = None) -> list:
+def _enrich_products(product_ids: list, counter: Counter = None, pool: list = None) -> list:
     """Return full product dicts for given IDs, sorted by counter frequency if provided."""
-    products = [p for p in PRODUCTS if p["id"] in product_ids]
+    products = [p for p in (pool if pool is not None else PRODUCTS) if p["id"] in product_ids]
     if counter:
         products.sort(key=lambda p: counter.get(p["id"], 0), reverse=True)
     return products
@@ -5663,6 +5944,12 @@ def get_recommendations(email: str = ""):
         "popular_in_city":     {"city": "",   "products": []},
         "trending_this_week":  {"products": []},
     }
+
+    # A suspended merchant's products must never surface here, same as the
+    # main storefront listing; a merely-closed merchant's products can still
+    # be recommended (customer decides), but get flagged undeliverable below.
+    suspended_merchants, closed_merchants = _merchant_availability()
+    pool = [p for p in PRODUCTS if _is_live(p) and p.get("merchant_id") not in suspended_merchants]
 
     # ── Trending this week (always computed) ────────────────────────────────────
     try:
@@ -5676,18 +5963,21 @@ def get_recommendations(email: str = ""):
                      .in_("order_id", ids).execute().data or [])
             counter = Counter(it["product_id"] for it in items)
             top_ids = set(pid for pid, _ in counter.most_common(8))
-            response["trending_this_week"]["products"] = _enrich_products(top_ids, counter)[:6]
+            response["trending_this_week"]["products"] = _enrich_products(top_ids, counter, pool)[:6]
     except Exception as e:
         print(f"[Recommendations] trending error: {e}")
 
     # Fallback: top-rated products if no order data yet
     if not response["trending_this_week"]["products"]:
         response["trending_this_week"]["products"] = sorted(
-            [p for p in PRODUCTS if p.get("inStock")],
+            [p for p in pool if p.get("inStock")],
             key=lambda p: p.get("rating", 0), reverse=True
         )[:6]
 
     if not email:
+        for section in response.values():
+            for p in section["products"]:
+                p["deliverable"] = p.get("merchant_id") not in closed_merchants
         return response
 
     # ── Based on last order + city (requires email) ──────────────────────────────
@@ -5707,12 +5997,12 @@ def get_recommendations(email: str = ""):
 
             # Find categories of what they ordered
             ordered_categories = {
-                p["category"] for p in PRODUCTS if p["id"] in ordered_ids
+                p["category"] for p in pool if p["id"] in ordered_ids
             }
 
             if ordered_categories:
                 similar = [
-                    p for p in PRODUCTS
+                    p for p in pool
                     if p["category"] in ordered_categories
                     and p["id"] not in ordered_ids
                     and p.get("inStock")
@@ -5738,10 +6028,14 @@ def get_recommendations(email: str = ""):
                     city_counter = Counter(it["product_id"] for it in city_items)
                     top_city = set(pid for pid, _ in city_counter.most_common(8))
                     response["popular_in_city"]["city"] = city
-                    response["popular_in_city"]["products"] = _enrich_products(top_city, city_counter)[:6]
+                    response["popular_in_city"]["products"] = _enrich_products(top_city, city_counter, pool)[:6]
 
     except Exception as e:
         print(f"[Recommendations] personalized error: {e}")
+
+    for section in response.values():
+        for p in section["products"]:
+            p["deliverable"] = p.get("merchant_id") not in closed_merchants
 
     return response
 

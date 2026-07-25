@@ -1,4 +1,4 @@
-import { Component, signal, computed, ViewChild } from '@angular/core';
+import { Component, signal, computed, effect, ViewChild } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { ViewportScroller } from '@angular/common';
 import { FormsModule, NgForm } from '@angular/forms';
@@ -13,6 +13,7 @@ import { CommonModule } from '@angular/common';
 import { DatePicker } from '../date-picker/date-picker';
 import { LocationPicker, PickedLocation } from '../location-picker/location-picker';
 import { GeocodeService } from '../../services/geocode';
+import { AddressesService, SavedAddress } from '../../services/addresses';
 
 @Component({
   selector: 'app-checkout',
@@ -193,7 +194,30 @@ export class Checkout {
     if (loc.city) this.formData.city = loc.city;
     if (loc.state) this.formData.state = loc.state;
     if (loc.pincode) this.formData.zip = loc.pincode;
+    this.selectedSavedAddressId.set(null); // manual pin overrides any quick-selected address
     this.refreshDeliveryFee();
+  }
+
+  // ── Saved addresses (quick-select instead of retyping every order) ──────
+  savedAddresses = signal<SavedAddress[]>([]);
+  selectedSavedAddressId = signal<string | null>(null);
+  showManualAddressForm = signal(false);
+
+  selectSavedAddress(a: SavedAddress): void {
+    this.selectedSavedAddressId.set(a.id);
+    this.formData.address = a.address;
+    if (a.city) this.formData.city = a.city;
+    if (a.state) this.formData.state = a.state;
+    if (a.pincode) this.formData.zip = a.pincode;
+    this.formData.latitude = a.latitude;
+    this.formData.longitude = a.longitude;
+    this.showManualAddressForm.set(false);
+    this.refreshDeliveryFee();
+  }
+
+  useNewAddress(): void {
+    this.selectedSavedAddressId.set(null);
+    this.showManualAddressForm.set(true);
   }
 
   // ── Distance-based delivery fee ─────────────────────────────────────────
@@ -221,8 +245,14 @@ export class Checkout {
         this.deliveryFeeBreakdown.set(res.breakdown || []);
         this.freeDeliveryApplied.set(res.free_delivery);
         this.loadingDeliveryFee.set(false);
+        this.errorMessage.set('');
       },
-      error: () => { this.loadingDeliveryFee.set(false); },
+      error: (err) => {
+        this.loadingDeliveryFee.set(false);
+        if (err?.status === 409) {
+          this.errorMessage.set(err?.error?.detail ?? 'One or more items in your cart are no longer available for delivery. Please remove them from your cart.');
+        }
+      },
     });
   }
 
@@ -256,11 +286,19 @@ export class Checkout {
     private scroller: ViewportScroller,
     private confetti: ConfettiService,
     private loyaltyService: LoyaltyService,
-    private promoService: PromoService
+    private promoService: PromoService,
+    private addressesService: AddressesService
   ) {
-    if (this.cartService.cartCount() === 0) {
-      this.router.navigate(['/cart']);
-    }
+    // Only bounce to /cart once the cart has actually finished loading —
+    // cartCount() is legitimately 0 for a moment on a fresh page load
+    // while the server cart is still in flight; checking synchronously
+    // here used to wrongly redirect a logged-in user who really did have
+    // items, on a refresh or a direct link into /checkout.
+    effect(() => {
+      if (this.cartService.loaded() && this.cartService.cartCount() === 0) {
+        this.router.navigate(['/cart']);
+      }
+    });
 
     // Pre-fill name and email from logged-in user
     const user = this.authService.user();
@@ -273,7 +311,21 @@ export class Checkout {
         next: data => this.loyaltyBalance.set(data.points_balance),
         error: () => {}
       });
+
+      this.addressesService.list().subscribe({
+        next: (addrs) => {
+          this.savedAddresses.set(addrs);
+          const def = addrs.find(a => a.is_default) || addrs[0];
+          if (def) this.selectSavedAddress(def);
+        },
+        error: () => {},
+      });
     }
+
+    this.http.get<{ enabled: boolean; rate: number }>(`${environment.apiUrl}/api/tax-config`).subscribe({
+      next: (cfg) => this.taxConfig.set(cfg),
+      error: () => {},
+    });
 
     // Load the live promo codes so the user can pick an eligible one here
     this.promoService.getOffers(user?.email).subscribe({
@@ -319,8 +371,15 @@ export class Checkout {
     return this.deliveryFee();
   }
 
+  taxConfig = signal<{ enabled: boolean; rate: number }>({ enabled: false, rate: 0 });
+
+  getTax(): number {
+    if (!this.taxConfig().enabled || !this.taxConfig().rate) return 0;
+    return +(this.cartService.cartTotal() * this.taxConfig().rate / 100).toFixed(2);
+  }
+
   getTotal(): number {
-    return this.cartService.cartTotal() + this.getShipping() - this.pointsDiscountAmount() - this.promoDiscountAmount();
+    return this.cartService.cartTotal() + this.getShipping() + this.getTax() - this.pointsDiscountAmount() - this.promoDiscountAmount();
   }
 
   applyPromo(): void {
@@ -416,6 +475,7 @@ export class Checkout {
       recurrence_type: this.isRecurring() ? 'annual' : null,
       payment_method: this.paymentMethod(),
       token: this.authService.getToken() || undefined,
+      gift_message: this.formData.giftMessage?.trim() || undefined,
     };
 
     this.http.post<{ orderId: string; status: string; points_pending?: number; new_balance?: number }>(`${environment.apiUrl}/api/orders`, payload).subscribe({

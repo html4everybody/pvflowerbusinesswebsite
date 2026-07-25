@@ -12,6 +12,7 @@ export interface Product {
   image: string;
   category: string;
   inStock: boolean;
+  deliverable?: boolean;         // false when the fulfilling merchant has temporarily closed their shop
   rating: number;
   unit_type?: UnitType;          // how the product is sold
   min_quantity?: number;         // for weight: grams per unit; for others: minimum pieces

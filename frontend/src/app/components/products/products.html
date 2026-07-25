@@ -41,9 +41,12 @@
 
     <div class="product-grid">
       @for (product of filteredProducts; track product.id) {
-        <div class="product-card">
+        <div class="product-card" [class.unavailable]="product.deliverable === false">
           <a [routerLink]="['/products', product.id]" class="product-image">
             <img [src]="product.image" [alt]="product.name">
+            @if (product.deliverable === false) {
+              <span class="unavailable-badge"><i class="bi bi-truck"></i> Delivery unavailable right now</span>
+            }
           </a>
           <div class="product-info">
             <h3>{{ product.name }}</h3>
@@ -55,7 +58,11 @@
               } @else {
                 <span class="price">₹{{ product.price.toFixed(2) }}</span>
               }
-              @if (getQuantity(product.id) === 0) {
+              @if (product.deliverable === false) {
+                <button class="btn-add" disabled title="This shop isn't taking orders right now">
+                  Unavailable
+                </button>
+              } @else if (getQuantity(product.id) === 0) {
                 <button class="btn-add" (click)="addToCart(product)">
                   <i class="bi bi-bag"></i>
                   Add

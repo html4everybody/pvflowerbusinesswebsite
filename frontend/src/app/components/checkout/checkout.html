@@ -59,18 +59,41 @@
               </div>
             </div>
 
-            <div class="form-group full-width">
-              <label>Delivery location <span class="opt-label">(search, pin on map, or use my location)</span></label>
-              <app-location-picker height="240px" (locationPicked)="onDeliveryLocationPicked($event)"></app-location-picker>
-            </div>
-
-            <div class="form-group full-width">
-              <label for="address">Street Address <span class="required-star">*</span></label>
-              <input type="text" id="address" #addressField="ngModel" [(ngModel)]="formData.address" name="address" placeholder="123 Main Street, Apt 4B" required>
-              @if (addressField.invalid && addressField.touched) {
-                <div class="field-error">Address is required</div>
+            @if (savedAddresses().length > 0 && !showManualAddressForm()) {
+              <div class="form-group full-width saved-address-picker">
+                <label>Delivery address</label>
+                <div class="saved-address-list">
+                  @for (a of savedAddresses(); track a.id) {
+                    <button type="button" class="saved-address-card" [class.selected]="selectedSavedAddressId() === a.id" (click)="selectSavedAddress(a)">
+                      <span class="sac-label"><i class="bi bi-geo-alt-fill"></i> {{ a.label }}</span>
+                      <span class="sac-text">{{ a.address }}</span>
+                      @if (a.city || a.pincode) { <span class="sac-sub">{{ [a.city, a.pincode].join(' · ') }}</span> }
+                    </button>
+                  }
+                </div>
+                <button type="button" class="btn-use-new-address" (click)="useNewAddress()">
+                  <i class="bi bi-plus-lg"></i> Use a different address
+                </button>
+              </div>
+            } @else {
+              @if (savedAddresses().length > 0) {
+                <button type="button" class="btn-back-to-saved" (click)="showManualAddressForm.set(false)">
+                  <i class="bi bi-arrow-left"></i> Choose from saved addresses
+                </button>
               }
-            </div>
+              <div class="form-group full-width">
+                <label>Delivery location <span class="opt-label">(search, pin on map, or use my location)</span></label>
+                <app-location-picker height="240px" (locationPicked)="onDeliveryLocationPicked($event)"></app-location-picker>
+              </div>
+
+              <div class="form-group full-width">
+                <label for="address">Street Address <span class="required-star">*</span></label>
+                <input type="text" id="address" #addressField="ngModel" [(ngModel)]="formData.address" name="address" placeholder="123 Main Street, Apt 4B" required>
+                @if (addressField.invalid && addressField.touched) {
+                  <div class="field-error">Address is required</div>
+                }
+              </div>
+            }
 
             <div class="form-row three-col">
               <div class="form-group">
@@ -525,6 +548,12 @@
               <div class="summary-row promo-discount-row">
                 <span><i class="bi bi-tag"></i> {{ promoResult()!.code }}</span>
                 <span>− ₹{{ promoDiscountAmount().toFixed(2) }}</span>
+              </div>
+            }
+            @if (getTax() > 0) {
+              <div class="summary-row">
+                <span>GST ({{ taxConfig().rate }}%)</span>
+                <span>₹{{ getTax().toFixed(2) }}</span>
               </div>
             }
             <div class="summary-row total">

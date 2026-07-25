@@ -36,6 +36,39 @@
   span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 }
 
+// Fixed dark colors to match the sidebar's always-dark treatment (not
+// theme-aware — see .merch-sidebar comment above).
+.availability-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.55rem 0.7rem;
+  margin-bottom: 0.6rem;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 8px;
+  background: rgba(5,150,105,0.14);
+  color: rgba(255,255,255,0.9);
+  font-family: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+
+  &:hover:not(:disabled) { border-color: rgba(255,255,255,0.22); }
+  &:disabled { opacity: 0.7; cursor: default; }
+
+  .avail-dot {
+    width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+    background: #059669; box-shadow: 0 0 0 3px rgba(5,150,105,0.25);
+  }
+
+  &.closed {
+    background: rgba(220,38,38,0.14);
+    .avail-dot { background: #dc2626; box-shadow: 0 0 0 3px rgba(220,38,38,0.25); }
+  }
+}
+
 .merch-id-badge {
   font-size: 0.65rem; font-weight: 700; letter-spacing: 0.05em;
   padding: 0.15rem 0.5rem; border-radius: 999px;
@@ -129,6 +162,15 @@
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-sm);
 
+  &.stat-tile-link {
+    width: 100%;
+    text-align: left;
+    font-family: inherit;
+    cursor: pointer;
+    transition: border-color 0.15s ease;
+    &:hover { border-color: #d97706; }
+  }
+
   .st-icon {
     width: 46px; height: 46px; flex-shrink: 0;
     display: flex; align-items: center; justify-content: center;
@@ -176,6 +218,13 @@
     font-size: 0.68rem; font-weight: 700;
     padding: 0.2rem 0.5rem; border-radius: var(--radius-full);
   }
+  .pc-lowstock {
+    position: absolute; bottom: 0.5rem; left: 0.5rem;
+    display: inline-flex; align-items: center; gap: 0.3rem;
+    background: rgba(217,119,6,0.92); color: #fff;
+    font-size: 0.68rem; font-weight: 700;
+    padding: 0.2rem 0.55rem; border-radius: var(--radius-full);
+  }
   .pc-body { padding: 0.9rem; display: flex; flex-direction: column; gap: 0.25rem; }
   .pc-name { font-weight: 700; color: var(--text); }
   .pc-cat { font-size: 0.78rem; color: var(--text-subtle); }
@@ -206,6 +255,13 @@
 
   .oc-cust { display: flex; flex-wrap: wrap; gap: 0.9rem; font-size: 0.82rem; color: var(--text-muted);
     span { display: inline-flex; align-items: center; gap: 0.35rem; } .bi { color: var(--text-subtle); } }
+
+  .oc-gift {
+    display: flex; align-items: flex-start; gap: 0.5rem;
+    font-size: 0.82rem; font-style: italic; color: var(--text);
+    background: var(--accent-light); border-radius: 8px; padding: 0.55rem 0.8rem;
+    .bi { color: var(--accent); flex-shrink: 0; margin-top: 0.1rem; }
+  }
 
   .oc-controls { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 1rem; border-top: 1px solid var(--border); padding-top: 0.8rem; }
   .oc-date { display: flex; flex-direction: column; gap: 0.3rem; font-size: 0.78rem; font-weight: 600; color: var(--text-muted); min-width: 200px; .bi { color: var(--accent); } }

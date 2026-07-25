@@ -8,6 +8,15 @@
         <span class="merch-id-badge">{{ auth.merchant()?.merchant_code }}</span>
       }
     </div>
+
+    <button type="button" class="availability-toggle" [class.closed]="!shopIsOpen()" [disabled]="togglingAvailability()" (click)="toggleAvailability()" title="New orders stop routing to you while closed">
+      <span class="avail-dot"></span>
+      @if (togglingAvailability()) {
+        <span>Updating…</span>
+      } @else {
+        <span>{{ shopIsOpen() ? 'Open for orders' : 'Closed — not taking orders' }}</span>
+      }
+    </button>
     <nav class="merch-nav">
       <button class="nav-item" [class.active]="activeSection() === 'overview'" (click)="go('overview')">
         <i class="bi bi-speedometer2"></i> Overview
@@ -110,6 +119,12 @@
             <div class="stat-tile"><span class="st-icon blue"><i class="bi bi-box-seam"></i></span><div><span class="st-val">{{ s.product_count }}</span><span class="st-label">Products</span></div></div>
             <div class="stat-tile"><span class="st-icon green"><i class="bi bi-check-circle"></i></span><div><span class="st-val">{{ s.live_products }}</span><span class="st-label">Live</span></div></div>
             <div class="stat-tile"><span class="st-icon amber"><i class="bi bi-hourglass-split"></i></span><div><span class="st-val">{{ s.pending_products }}</span><span class="st-label">Awaiting approval</span></div></div>
+            @if (s.low_stock_count > 0) {
+              <button type="button" class="stat-tile stat-tile-link" (click)="go('products')">
+                <span class="st-icon amber"><i class="bi bi-exclamation-triangle-fill"></i></span>
+                <div><span class="st-val">{{ s.low_stock_count }}</span><span class="st-label">Low on stock</span></div>
+              </button>
+            }
           </div>
         } @else if (loadingStats()) {
           <div class="loading"><i class="bi bi-arrow-repeat vp-spin"></i> Loading…</div>
@@ -138,6 +153,7 @@
                 <div class="pc-img" [style.background-image]="'url(' + p.image + ')'">
                   <span class="pc-status" [class]="STATUS_INFO[p.status]?.cls">{{ STATUS_INFO[p.status]?.label || p.status }}</span>
                   @if (!p.inStock) { <span class="pc-oos">Out of stock</span> }
+                  @else if (p.low_stock) { <span class="pc-lowstock"><i class="bi bi-exclamation-triangle-fill"></i> Only {{ p.stock }} left</span> }
                 </div>
                 <div class="pc-body">
                   <span class="pc-name">
@@ -214,6 +230,12 @@
                   @if (o.customer_phone) { <span><i class="bi bi-telephone"></i> {{ o.customer_phone }}</span> }
                   @if (o.customer_address) { <span><i class="bi bi-geo-alt"></i> {{ o.customer_address }}</span> }
                 </div>
+
+                @if (o.gift_message) {
+                  <div class="oc-gift">
+                    <i class="bi bi-gift"></i> <span>"{{ o.gift_message }}"</span>
+                  </div>
+                }
 
                 <div class="oc-controls">
                   <label class="oc-date">
@@ -346,6 +368,11 @@
           <div class="field">
             <label>Pincode</label>
             <input type="text" [(ngModel)]="shop.pincode" name="pincode" maxlength="10">
+          </div>
+          <div class="field">
+            <label>Max delivery distance (km) <span class="opt">(optional)</span></label>
+            <input type="number" min="0" step="0.5" [(ngModel)]="shop.max_delivery_km" name="maxDeliveryKm" placeholder="No limit">
+            <span class="field-hint"><i class="bi bi-info-circle"></i> Orders farther than this won't be routed to you. Leave blank for no limit.</span>
           </div>
           <p class="field-hint"><i class="bi bi-geo-alt"></i> Used later to route customer orders to your shop when it's the closest match.</p>
           <button type="submit" class="btn-primary" [disabled]="savingShop()">

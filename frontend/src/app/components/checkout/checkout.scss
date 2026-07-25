@@ -288,6 +288,74 @@
   }
 }
 
+/* ── Saved address quick-select ─────────────────────────────── */
+.saved-address-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 0.65rem;
+  margin-bottom: 0.75rem;
+}
+
+.saved-address-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  text-align: left;
+  padding: 0.85rem 1rem;
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg);
+  color: var(--text);
+  font-family: inherit;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+
+  &:hover { border-color: var(--text-muted); }
+
+  &.selected {
+    border-color: var(--accent, #2563eb);
+    background: var(--bg-card);
+    box-shadow: 0 0 0 1px var(--accent, #2563eb);
+  }
+
+  .sac-label {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-weight: 700;
+    font-size: 0.85rem;
+    .bi { color: var(--accent, #2563eb); }
+  }
+  .sac-text {
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .sac-sub {
+    font-size: 0.76rem;
+    color: var(--text-subtle);
+  }
+}
+
+.btn-use-new-address, .btn-back-to-saved {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: none;
+  border: none;
+  color: var(--accent, #2563eb);
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+  margin-bottom: 0.85rem;
+
+  &:hover { text-decoration: underline; }
+}
+
 /* ── Delivery Options ────────────────────────────────────── */
 .delivery-options {
   display: grid;
