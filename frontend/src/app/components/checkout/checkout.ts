@@ -1,4 +1,4 @@
-import { Component, signal, computed, effect, ViewChild } from '@angular/core';
+import { Component, signal, computed, effect, ViewChild, ElementRef } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { ViewportScroller } from '@angular/common';
 import { FormsModule, NgForm } from '@angular/forms';
@@ -246,6 +246,136 @@ export class Checkout {
     setTimeout(() => this.showAddressSuggestions.set(false), 150);
   }
 
+  useCurrentLocation(): void {
+    if (!navigator.geolocation) {
+      this.locatingError.set('Location not supported by your browser.');
+      return;
+    }
+    this.locatingAddress.set(true);
+    this.locatingError.set('');
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        try {
+          await this.applyLatLng(pos.coords.latitude, pos.coords.longitude);
+        } finally {
+          this.locatingAddress.set(false);
+        }
+      },
+      () => {
+        this.locatingAddress.set(false);
+        this.locatingError.set('Could not get your location. Please allow location access.');
+      },
+      { enableHighAccuracy: true, timeout: 10000 },
+    );
+  }
+
+  async openMapModal(): Promise<void> {
+    this.showMapModal.set(true);
+    this.mapPinAddress.set('');
+    await new Promise(r => setTimeout(r, 50)); // let Angular render the modal DOM
+
+    // Move overlay to <body> so position:fixed works regardless of parent transforms
+    const overlay = document.querySelector('.map-modal-overlay') as HTMLElement;
+    if (overlay) {
+      document.body.appendChild(overlay);
+      document.body.style.overflow = 'hidden';
+    }
+
+    const center = this.formData.latitude && this.formData.longitude
+      ? { lat: this.formData.latitude, lng: this.formData.longitude }
+      : { lat: 17.385, lng: 78.4867 }; // Hyderabad fallback
+
+    const { Map } = await google.maps.importLibrary('maps');
+    this.modalMap = new Map(this.modalMapEl.nativeElement, {
+      center,
+      zoom: this.formData.latitude ? 16 : 12,
+      mapTypeControl: false,
+      streetViewControl: false,
+      fullscreenControl: false,
+    });
+
+    this.modalMarker = new google.maps.Marker({
+      map: this.modalMap,
+      position: center,
+      draggable: true,
+      visible: !!(this.formData.latitude && this.formData.longitude),
+    });
+
+    if (this.formData.latitude && this.formData.longitude) {
+      this.resolveMapPin(center.lat, center.lng);
+    }
+
+    this.modalMarker.addListener('dragend', () => {
+      const p = this.modalMarker.getPosition();
+      this.resolveMapPin(p.lat(), p.lng());
+    });
+
+    this.modalMap.addListener('click', (e: any) => {
+      this.modalMarker.setPosition(e.latLng);
+      this.modalMarker.setVisible(true);
+      this.resolveMapPin(e.latLng.lat(), e.latLng.lng());
+    });
+  }
+
+  closeMapModal(): void {
+    document.body.style.overflow = '';
+    this.showMapModal.set(false);
+    this.modalMap = null;
+    this.modalMarker = null;
+    this.mapPinAddress.set('');
+  }
+
+  private _pendingPinLat: number | null = null;
+  private _pendingPinLng: number | null = null;
+
+  private async resolveMapPin(lat: number, lng: number): Promise<void> {
+    this._pendingPinLat = lat;
+    this._pendingPinLng = lng;
+    this.mapPinResolving.set(true);
+    this.mapPinAddress.set('');
+    try {
+      const { Geocoder } = await google.maps.importLibrary('geocoding');
+      const result = await new Geocoder().geocode({ location: { lat, lng } });
+      if (lat !== this._pendingPinLat || lng !== this._pendingPinLng) return;
+      if (result.results?.length) {
+        const r = result.results[0];
+        const parts = r.formatted_address.split(', ');
+        this.mapPinAddress.set(parts.length > 3 ? parts.slice(0, -3).join(', ') : r.formatted_address);
+      }
+    } finally {
+      if (lat === this._pendingPinLat && lng === this._pendingPinLng) {
+        this.mapPinResolving.set(false);
+      }
+    }
+  }
+
+  async confirmMapPin(): Promise<void> {
+    if (this._pendingPinLat == null || this._pendingPinLng == null) return;
+    await this.applyLatLng(this._pendingPinLat, this._pendingPinLng);
+    this.closeMapModal();
+  }
+
+  private async applyLatLng(lat: number, lng: number): Promise<void> {
+    try {
+      const { Geocoder } = await google.maps.importLibrary('geocoding');
+      const result = await new Geocoder().geocode({ location: { lat, lng } });
+      if (result.results?.length) {
+        const r = result.results[0];
+        const get = (type: string) =>
+          r.address_components.find((c: any) => c.types.includes(type))?.long_name || '';
+        const parts = r.formatted_address.split(', ');
+        this.formData.address = parts.length > 3 ? parts.slice(0, -3).join(', ') : r.formatted_address;
+        this.formData.city = get('locality') || get('administrative_area_level_2');
+        this.formData.state = get('administrative_area_level_1');
+        this.formData.zip = get('postal_code');
+        this.formData.latitude = lat;
+        this.formData.longitude = lng;
+        this.selectedSavedAddressId.set(null);
+        this.refreshDeliveryFee();
+      }
+    } catch (e) { console.error('Reverse geocode error:', e); }
+  }
+
   // ── Saved addresses (quick-select instead of retyping every order) ──────
   savedAddresses = signal<SavedAddress[]>([]);
   selectedSavedAddressId = signal<string | null>(null);
@@ -317,6 +447,18 @@ export class Checkout {
   showAddressSuggestions = signal(false);
   addressSearching = signal(false);
   private addressDebounce: ReturnType<typeof setTimeout> | null = null;
+
+  // ── "Use my location" ───────────────────────────────────────────────────
+  locatingAddress = signal(false);
+  locatingError = signal('');
+
+  // ── "Pin on map" modal ──────────────────────────────────────────────────
+  showMapModal = signal(false);
+  mapPinAddress = signal('');
+  mapPinResolving = signal(false);
+  @ViewChild('modalMapEl') modalMapEl!: ElementRef<HTMLDivElement>;
+  private modalMap: any = null;
+  private modalMarker: any = null;
 
   formData = {
     firstName: '',

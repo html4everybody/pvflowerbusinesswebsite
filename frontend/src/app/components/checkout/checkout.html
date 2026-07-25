@@ -102,6 +102,23 @@
                 @if (addressField.invalid && addressField.touched) {
                   <div class="field-error">Address is required</div>
                 }
+                <div class="address-quick-actions">
+                  <button type="button" class="aq-btn" (click)="useCurrentLocation()" [disabled]="locatingAddress()">
+                    @if (locatingAddress()) {
+                      <span class="aq-spinner"></span>
+                    } @else {
+                      <i class="bi bi-crosshair"></i>
+                    }
+                    Use my location
+                  </button>
+                  <button type="button" class="aq-btn" (click)="openMapModal()">
+                    <i class="bi bi-map"></i>
+                    Pin on map
+                  </button>
+                </div>
+                @if (locatingError()) {
+                  <div class="field-error">{{ locatingError() }}</div>
+                }
               </div>
 
               <div class="form-group full-width">
@@ -642,3 +659,30 @@
     }
   </div>
 </main>
+
+<!-- Pin on map modal -->
+@if (showMapModal()) {
+  <div class="map-modal-overlay" (click)="closeMapModal()">
+    <div class="map-modal" (click)="$event.stopPropagation()">
+      <div class="map-modal-header">
+        <h3><i class="bi bi-map"></i> Pin your delivery location</h3>
+        <button type="button" class="map-modal-close" (click)="closeMapModal()">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+      <div #modalMapEl class="map-modal-map"></div>
+      <div class="map-modal-footer">
+        @if (mapPinResolving()) {
+          <span class="map-pin-preview resolving"><span class="aq-spinner"></span> Resolving address…</span>
+        } @else if (mapPinAddress()) {
+          <span class="map-pin-preview"><i class="bi bi-geo-alt-fill"></i> {{ mapPinAddress() }}</span>
+        } @else {
+          <span class="map-pin-hint"><i class="bi bi-info-circle"></i> Tap or click anywhere on the map to drop a pin</span>
+        }
+        <button type="button" class="btn-confirm-pin" [disabled]="!mapPinAddress() || mapPinResolving()" (click)="confirmMapPin()">
+          Confirm location
+        </button>
+      </div>
+    </div>
+  </div>
+}
