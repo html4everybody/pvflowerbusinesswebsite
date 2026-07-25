@@ -19,6 +19,7 @@ from supabase import create_client, Client
 import bcrypt
 import threading
 import time
+import razorpay
 from twilio.rest import Client as TwilioClient
 from apscheduler.schedulers.background import BackgroundScheduler
 
@@ -187,6 +188,10 @@ app.add_middleware(
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+
+RAZORPAY_KEY_ID     = os.getenv("RAZORPAY_KEY_ID", "")
+RAZORPAY_KEY_SECRET = os.getenv("RAZORPAY_KEY_SECRET", "")
+_rzp = razorpay.Client(auth=(RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET)) if RAZORPAY_KEY_ID else None
 
 # ── Email config (Resend API) ──────────────────────────────────────────────────
 RESEND_API_KEY = os.getenv("RESEND_API_KEY", "")
@@ -1536,6 +1541,16 @@ class UpdateDeliveryRequest(BaseModel):
 class StatusUpdateRequest(BaseModel):
     status: str
     token: str
+
+class RazorpayOrderRequest(BaseModel):
+    amount: float  # in INR
+    currency: str = "INR"
+
+class RazorpayVerifyRequest(BaseModel):
+    razorpay_order_id: str
+    razorpay_payment_id: str
+    razorpay_signature: str
+    order_data: dict  # full OrderRequest payload to save after verification
 
 class PromoCodeCreate(BaseModel):
     code: str
@@ -7044,6 +7059,75 @@ def _run_abandoned_cart_job():
         print(f"[scheduler] abandoned cart check sent {count} reminder(s)")
     except Exception as e:
         print(f"[scheduler] abandoned cart check error: {e}")
+
+
+# ── Razorpay Payment Endpoints ───────────────────────────────────────────────
+
+@app.get("/api/payments/validate-upi")
+def validate_upi(vpa: str):
+    import re
+    if not re.match(r'^[\w.\-]+@[\w.\-]+$', vpa):
+        raise HTTPException(status_code=400, detail="Invalid UPI ID format. Use format: name@bankname")
+
+    try:
+        import requests as _requests
+        resp = _requests.post(
+            "https://api.razorpay.com/v1/payments/validate/vpa",
+            json={"vpa": vpa},
+            auth=(RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET),
+        )
+        print(f"[Razorpay VPA] status={resp.status_code} body={resp.text}")
+        if resp.status_code == 200:
+            data = resp.json()
+            return {"valid": True, "name": data.get("customer_name", "")}
+        else:
+            err = resp.json().get("error", {}).get("description", "Invalid UPI ID.")
+            raise HTTPException(status_code=400, detail=err)
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"[Razorpay VPA error] {e}")
+        raise HTTPException(status_code=400, detail="Could not validate UPI ID. Try again.")
+
+
+@app.post("/api/payments/create-order")
+def create_razorpay_order(req: RazorpayOrderRequest):
+    if not _rzp:
+        raise HTTPException(status_code=503, detail="Payment gateway not configured.")
+    amount_paise = int(req.amount * 100)
+    rzp_order = _rzp.order.create({
+        "amount": amount_paise,
+        "currency": req.currency,
+        "payment_capture": 1,
+    })
+    return {"order_id": rzp_order["id"], "amount": amount_paise, "currency": req.currency, "key": RAZORPAY_KEY_ID}
+
+
+@app.post("/api/payments/verify")
+def verify_razorpay_payment(req: RazorpayVerifyRequest):
+    if not _rzp:
+        raise HTTPException(status_code=503, detail="Payment gateway not configured.")
+
+    # Verify signature to ensure payment is genuine
+    try:
+        _rzp.utility.verify_payment_signature({
+            "razorpay_order_id":   req.razorpay_order_id,
+            "razorpay_payment_id": req.razorpay_payment_id,
+            "razorpay_signature":  req.razorpay_signature,
+        })
+    except Exception:
+        raise HTTPException(status_code=400, detail="Payment verification failed. Please contact support.")
+
+    # Payment is verified — now save the order
+    order_req = OrderRequest(**req.order_data)
+    order_req.payment_method = "upi"
+
+    # Re-use the existing create_order logic by calling it directly
+    # We attach the razorpay payment id to the customer dict for reference
+    if isinstance(order_req.customer, dict):
+        order_req.customer["razorpay_payment_id"] = req.razorpay_payment_id
+
+    return create_order(order_req)
 
 
 @app.on_event("startup")
