@@ -50,8 +50,9 @@ export class CartService {
   private fetchCart(): void {
     const user = this.authService.user();
     if (user) {
+      const token = this.authService.getToken();
       const guestItems = this.loadFromLocalStorage();
-      this.http.get<CartItem[]>(`${environment.apiUrl}/api/cart?user_id=${user.id}`).subscribe({
+      this.http.get<CartItem[]>(`${environment.apiUrl}/api/cart?user_id=${user.id}&token=${encodeURIComponent(token)}`).subscribe({
         next: (dbItems) => {
           this.cartItems.set(dbItems);
           // Merge guest cart into user's DB cart on login
@@ -63,7 +64,8 @@ export class CartService {
               this.http.post(`${environment.apiUrl}/api/cart/item`, {
                 user_id: user.id,
                 product_id: gItem.product.id,
-                quantity: newQty
+                quantity: newQty,
+                token
               }).subscribe();
               this.cartItems.update(current => {
                 const ex = current.find(i => i.product.id === gItem.product.id);
@@ -137,7 +139,8 @@ export class CartService {
 
     const user = this.authService.user();
     if (user) {
-      this.http.delete(`${environment.apiUrl}/api/cart/item/${productId}?user_id=${user.id}`).subscribe({
+      const token = this.authService.getToken();
+      this.http.delete(`${environment.apiUrl}/api/cart/item/${productId}?user_id=${user.id}&token=${encodeURIComponent(token)}`).subscribe({
         error: () => this.toastService.show('Could not update your cart — please refresh and try again.', 'error'),
       });
     } else {
@@ -163,7 +166,8 @@ export class CartService {
 
     const user = this.authService.user();
     if (user) {
-      this.http.delete(`${environment.apiUrl}/api/cart/clear?user_id=${user.id}`).subscribe({
+      const token = this.authService.getToken();
+      this.http.delete(`${environment.apiUrl}/api/cart/clear?user_id=${user.id}&token=${encodeURIComponent(token)}`).subscribe({
         error: () => this.toastService.show('Could not clear your cart — please refresh and try again.', 'error'),
       });
     } else {
@@ -187,7 +191,8 @@ export class CartService {
       this.http.post(`${environment.apiUrl}/api/cart/item`, {
         user_id: user.id,
         product_id: productId,
-        quantity
+        quantity,
+        token: this.authService.getToken(),
       }).subscribe({
         error: () => this.toastService.show('Could not update your cart — please refresh and try again.', 'error'),
       });

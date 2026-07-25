@@ -317,7 +317,7 @@ export class Checkout {
       this.formData.lastName = user.lastName;
       this.formData.email = user.email;
 
-      this.loyaltyService.getAccount(user.email).subscribe({
+      this.loyaltyService.getAccount(user.email, this.authService.getToken()).subscribe({
         next: data => this.loyaltyBalance.set(data.points_balance),
         error: () => {}
       });

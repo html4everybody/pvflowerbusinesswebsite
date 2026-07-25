@@ -57,9 +57,9 @@ export class CorporateService {
 
   constructor(private http: HttpClient) {}
 
-  getAll(email: string): Observable<CorporateOrder[]> {
+  getAll(email: string, token: string): Observable<CorporateOrder[]> {
     return this.http.get<CorporateOrder[]>(
-      `${this.base}/api/corporate-orders?email=${encodeURIComponent(email)}`
+      `${this.base}/api/corporate-orders?email=${encodeURIComponent(email)}&token=${encodeURIComponent(token)}`
     );
   }
 

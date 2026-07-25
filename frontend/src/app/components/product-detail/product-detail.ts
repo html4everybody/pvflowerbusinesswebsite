@@ -308,7 +308,8 @@ export class ProductDetail implements OnInit {
       author_name: `${user.firstName} ${(user.lastName ?? '').charAt(0)}.`.trim(),
       rating: this.reviewForm.rating,
       review_text: this.reviewForm.text,
-      photo_b64_list: this.reviewForm.photos.map(p => p.b64)
+      photo_b64_list: this.reviewForm.photos.map(p => p.b64),
+      token: this.authService.getToken()
     };
     this.http.post<any>(`${environment.apiUrl}/api/reviews`, body).subscribe({
       next: (saved) => {

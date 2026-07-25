@@ -10,10 +10,24 @@ export class AuthService {
 
   user = signal<any>(this.loadUser());
 
+  // Resolves once the *first* validateSession() round-trip has settled (or
+  // immediately for a guest with no token). The cached `user()` on a fresh
+  // load reflects whatever was last written to localStorage — including a
+  // hand-tampered is_admin/merchant.status — so guards must await this
+  // before trusting isAdmin()/isMerchant(), or a tampered value could render
+  // the admin/merchant shell for one tick before the server-verified /me
+  // response corrects it.
+  private resolveSessionReady!: () => void;
+  private sessionReadyPromise = new Promise<void>(resolve => { this.resolveSessionReady = resolve; });
+
   constructor(private http: HttpClient, private router: Router) {
-    this.validateSession();
+    this.validateSession(true);
     // Re-check every 10 seconds so other-device email changes sign out this session immediately
     setInterval(() => this.validateSession(), 10 * 1000);
+  }
+
+  sessionReady(): Promise<void> {
+    return this.sessionReadyPromise;
   }
 
   private readonly PROTECTED_PREFIXES = [
@@ -21,9 +35,12 @@ export class AuthService {
     '/my-studio', '/my-loyalty', '/reminders', '/admin', '/petal-studio/book'
   ];
 
-  private validateSession(): void {
+  private validateSession(isInitial: boolean = false): void {
     const token = this.getToken();
-    if (!token) return;
+    if (!token) {
+      if (isInitial) this.resolveSessionReady();
+      return;
+    }
     this.http.get<any>(`${this.apiUrl}/api/auth/me?token=${token}`).subscribe({
       next: (me) => {
         // Keep the cached user in sync (e.g. role/merchant approval) without
@@ -34,6 +51,7 @@ export class AuthService {
             this.updateStoredUser(merged);
           }
         }
+        if (isInitial) this.resolveSessionReady();
       },
       error: (err) => {
         if (err.status === 401) {
@@ -46,6 +64,7 @@ export class AuthService {
             this.router.navigate(['/signin']);
           }
         }
+        if (isInitial) this.resolveSessionReady();
       }
     });
   }

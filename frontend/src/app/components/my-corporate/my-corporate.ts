@@ -35,7 +35,7 @@ export class MyCorporate implements OnInit {
 
   private load(email: string): void {
     this.loading.set(true);
-    this.corporateService.getAll(email).subscribe({
+    this.corporateService.getAll(email, this.authService.getToken()).subscribe({
       next: (data) => {
         this.orders.set(data);
         this.loading.set(false);

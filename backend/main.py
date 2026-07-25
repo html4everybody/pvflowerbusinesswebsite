@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, File, UploadFile
+from fastapi import FastAPI, HTTPException, File, UploadFile, Request
 
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, EmailStr
@@ -156,7 +156,7 @@ def geocode_reverse(lat: float, lon: float):
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["https://vivapetals.com", "https://www.vivapetals.com", "http://localhost:4200"],
     allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -224,11 +224,33 @@ def verify_password(password: str, hashed: str) -> bool:
     return bcrypt.checkpw(password.encode(), hashed.encode())
 
 # ── Signed token store (survives server restarts) ─────────────────────────────
-_TOKEN_SECRET = os.getenv("TOKEN_SECRET") or secrets.token_hex(32)
+_TOKEN_SECRET = os.getenv("TOKEN_SECRET")
+if not _TOKEN_SECRET:
+    # A random-per-process fallback is fine for a quick local run, but
+    # dangerous to ever rely on for real: every restart silently invalidates
+    # every session, and if this ever runs as more than one process (workers,
+    # a rolling deploy briefly overlapping old+new instances) each one signs
+    # with a DIFFERENT secret, so tokens from one won't validate on another —
+    # random "randomly logged out" bugs with no clear cause. Loud and
+    # impossible to miss on purpose, not a silent fallback.
+    print("=" * 78, flush=True)
+    print("[SECURITY WARNING] TOKEN_SECRET is not set in the environment.", flush=True)
+    print("  Falling back to a random secret for THIS PROCESS ONLY.", flush=True)
+    print("  Every session will be invalidated on the next restart, and if this", flush=True)
+    print("  app ever runs as more than one process, users will be randomly", flush=True)
+    print("  logged out. Set TOKEN_SECRET in your environment before deploying.", flush=True)
+    print("=" * 78, flush=True)
+    _TOKEN_SECRET = secrets.token_hex(32)
+# 30 days — long enough that a real user (no refresh-token flow exists here,
+# so expiry means "log in again") isn't kicked out constantly, short enough
+# to bound how long a leaked/logged token stays usable. Previously tokens
+# never expired at all short of rotating the whole shared secret.
+_TOKEN_TTL_SECONDS = 30 * 24 * 3600
 
 def create_token(email: str) -> str:
-    sig = hmac.new(_TOKEN_SECRET.encode(), email.encode(), hashlib.sha256).hexdigest()
-    payload = _base64.urlsafe_b64encode(email.encode()).decode()
+    body = f"{email}|{int(time.time())}"
+    sig = hmac.new(_TOKEN_SECRET.encode(), body.encode(), hashlib.sha256).hexdigest()
+    payload = _base64.urlsafe_b64encode(body.encode()).decode()
     return f"{payload}.{sig}"
 
 def verify_token(token: str) -> str | None:
@@ -236,9 +258,19 @@ def verify_token(token: str) -> str | None:
         parts = token.split(".", 1)
         if len(parts) != 2:
             return None
-        email = _base64.urlsafe_b64decode(parts[0].encode() + b"==").decode()
-        expected = hmac.new(_TOKEN_SECRET.encode(), email.encode(), hashlib.sha256).hexdigest()
+        body = _base64.urlsafe_b64decode(parts[0].encode() + b"==").decode()
+        expected = hmac.new(_TOKEN_SECRET.encode(), body.encode(), hashlib.sha256).hexdigest()
         if not hmac.compare_digest(parts[1], expected):
+            return None
+        # Tokens issued before expiry existed are just the bare email with
+        # no "|issued_at" suffix — accept them as before (no forced
+        # logout of every already-signed-in user the moment this deployed)
+        # rather than rejecting a valid signature over an unfamiliar shape.
+        # Every token issued from here on gets the real expiry check.
+        if "|" not in body:
+            return body
+        email, issued_at_str = body.rsplit("|", 1)
+        if time.time() - int(issued_at_str) > _TOKEN_TTL_SECONDS:
             return None
         return email
     except Exception:
@@ -249,6 +281,33 @@ tokens: dict = {}
 
 def resolve_token(token: str) -> str | None:
     return verify_token(token) or tokens.get(token)
+
+# ── Lightweight rate limiting (in-memory — fine at this app's scale, no
+# Redis/external dependency needed) ────────────────────────────────────────
+# Login, password-reset-request, and verification-resend were previously
+# unthrottled at the app layer — nothing stopped scripted brute-forcing or
+# credential-stuffing.
+_rate_limit_buckets: dict = {}
+_rate_limit_lock = threading.Lock()
+
+def _client_ip(request: Request) -> str:
+    # Trust X-Forwarded-For's first hop if present (typical behind a proxy/
+    # load balancer); fall back to the direct connection otherwise.
+    fwd = request.headers.get("x-forwarded-for")
+    if fwd:
+        return fwd.split(",")[0].strip()
+    return request.client.host if request.client else "unknown"
+
+def _check_rate_limit(key: str, max_attempts: int, window_seconds: int) -> None:
+    now = time.time()
+    with _rate_limit_lock:
+        bucket = _rate_limit_buckets.setdefault(key, [])
+        cutoff = now - window_seconds
+        while bucket and bucket[0] < cutoff:
+            bucket.pop(0)
+        if len(bucket) >= max_attempts:
+            raise HTTPException(status_code=429, detail="Too many attempts. Please wait a few minutes and try again.")
+        bucket.append(now)
 
 # ── Loyalty helpers ────────────────────────────────────────────────────────────
 
@@ -1506,6 +1565,7 @@ class CartItemRequest(BaseModel):
     user_id: str
     product_id: str
     quantity: int
+    token: Optional[str] = None
 
 class SubscriptionRequest(BaseModel):
     customer_email: str
@@ -2087,7 +2147,8 @@ class ResendVerificationRequest(BaseModel):
     email: EmailStr
 
 @app.post("/api/auth/resend-verification")
-def resend_verification(req: ResendVerificationRequest):
+def resend_verification(req: ResendVerificationRequest, request: Request):
+    _check_rate_limit(f"resend-verification:{_client_ip(request)}", max_attempts=5, window_seconds=3600)
     result = supabase.table("users").select("*").eq("email", req.email).execute()
     if not result.data:
         return { "message": "If that email is registered, a verification link has been sent." }
@@ -2116,7 +2177,8 @@ class ResetPasswordRequest(BaseModel):
     new_password: str
 
 @app.post("/api/auth/forgot-password")
-def forgot_password(req: ForgotPasswordRequest):
+def forgot_password(req: ForgotPasswordRequest, request: Request):
+    _check_rate_limit(f"forgot-password:{_client_ip(request)}", max_attempts=5, window_seconds=3600)
     result = supabase.table("users").select("*").eq("email", req.email).execute()
     if not result.data:
         raise HTTPException(status_code=404, detail="No account found with that email address.")
@@ -2331,7 +2393,8 @@ def reset_password(req: ResetPasswordRequest):
 
 
 @app.post("/api/auth/login")
-def login(req: LoginRequest):
+def login(req: LoginRequest, request: Request):
+    _check_rate_limit(f"login:{_client_ip(request)}", max_attempts=10, window_seconds=300)
     result = supabase.table("users").select("*").eq("email", req.email).execute()
     if not result.data:
         raise HTTPException(status_code=401, detail="Invalid credentials")
@@ -4372,7 +4435,8 @@ def get_my_claims(email: str, token: str):
 # ── Loyalty Routes ─────────────────────────────────────────────────────────────
 
 @app.get("/api/loyalty")
-def get_loyalty(email: str):
+def get_loyalty(email: str, token: Optional[str] = None):
+    _require_self_or_admin(token, email)
     acct_result = supabase.table("loyalty_accounts").select("*").eq("user_email", email).execute()
     if not acct_result.data:
         raise HTTPException(status_code=404, detail="No loyalty account found")
@@ -4533,7 +4597,8 @@ def get_offers(email: Optional[str] = None):
 # ── Cart Routes ─────────────────────────────────────────────────────────────────
 
 @app.get("/api/cart")
-def get_cart(user_id: str):
+def get_cart(user_id: str, token: Optional[str] = None):
+    _require_self_user_id_or_admin(token, user_id)
     result = supabase.table("cart_items").select("*").eq("user_id", user_id).execute()
     cart = []
     for item in result.data:
@@ -4544,6 +4609,7 @@ def get_cart(user_id: str):
 
 @app.post("/api/cart/item")
 def upsert_cart_item(req: CartItemRequest):
+    _require_self_user_id_or_admin(req.token, req.user_id)
     existing = supabase.table("cart_items").select("*").eq("user_id", req.user_id).eq("product_id", req.product_id).execute()
     if existing.data:
         supabase.table("cart_items").update({"quantity": req.quantity}).eq("user_id", req.user_id).eq("product_id", req.product_id).execute()
@@ -4552,12 +4618,14 @@ def upsert_cart_item(req: CartItemRequest):
     return {"status": "ok"}
 
 @app.delete("/api/cart/item/{product_id}")
-def remove_cart_item(product_id: str, user_id: str):
+def remove_cart_item(product_id: str, user_id: str, token: Optional[str] = None):
+    _require_self_user_id_or_admin(token, user_id)
     supabase.table("cart_items").delete().eq("user_id", user_id).eq("product_id", product_id).execute()
     return {"status": "ok"}
 
 @app.delete("/api/cart/clear")
-def clear_cart(user_id: str):
+def clear_cart(user_id: str, token: Optional[str] = None):
+    _require_self_user_id_or_admin(token, user_id)
     supabase.table("cart_items").delete().eq("user_id", user_id).execute()
     return {"status": "ok"}
 
@@ -4652,6 +4720,39 @@ def _require_order_owner_or_admin(token: Optional[str], order: dict) -> str:
     if caller and caller.get("is_admin"):
         return email
     raise HTTPException(status_code=403, detail="You don't have access to this order")
+
+
+def _require_self_or_admin(token: Optional[str], target_email: str) -> str:
+    """Generic sibling of _require_order_owner_or_admin for the many
+    endpoints that take a plain ?email= (loyalty, notices, corporate
+    orders, occasions, reviews, ...) and previously trusted it outright —
+    same class of bug, same fix: the token must resolve to that exact
+    email, or belong to an admin. Returns the caller's own (verified) email."""
+    email = resolve_token(token) if token else None
+    if not email:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    if email == target_email:
+        return email
+    caller = get_user_by_email(email)
+    if caller and caller.get("is_admin"):
+        return email
+    raise HTTPException(status_code=403, detail="You don't have access to this")
+
+
+def _require_self_user_id_or_admin(token: Optional[str], target_user_id: str) -> str:
+    """Same as _require_self_or_admin, but for endpoints keyed by users.id
+    (the cart) rather than email — a user's id is visible in their own
+    login response and on order records, so it's just as guessable as an
+    email and needs the same real check rather than being trusted outright."""
+    email = resolve_token(token) if token else None
+    if not email:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    caller = get_user_by_email(email)
+    if not caller:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    if caller.get("id") == target_user_id or caller.get("is_admin"):
+        return email
+    raise HTTPException(status_code=403, detail="You don't have access to this")
 
 
 @app.get("/api/orders/{order_id}")
@@ -4877,7 +4978,8 @@ BOOKING_STATUS_NOTICE = {
 }
 
 @app.get("/api/notices")
-def get_notices(email: str):
+def get_notices(email: str, token: Optional[str] = None):
+    _require_self_or_admin(token, email)
     try:
         # Retention: drop notices older than 3 months, then return the rest (newest first).
         cutoff = (datetime.utcnow() - timedelta(days=90)).isoformat()
@@ -4891,7 +4993,8 @@ def get_notices(email: str):
         return []
 
 @app.patch("/api/notices/read")
-def mark_notices_read(email: str):
+def mark_notices_read(email: str, token: Optional[str] = None):
+    _require_self_or_admin(token, email)
     try:
         supabase.table("user_notices").update({"read": True}).eq("customer_email", email).eq("read", False).execute()
     except Exception:
@@ -4899,7 +5002,8 @@ def mark_notices_read(email: str):
     return {"status": "ok"}
 
 @app.patch("/api/notices/{notice_id}/read")
-def mark_one_notice_read(notice_id: str, email: str):
+def mark_one_notice_read(notice_id: str, email: str, token: Optional[str] = None):
+    _require_self_or_admin(token, email)
     try:
         supabase.table("user_notices").update({"read": True}).eq("id", notice_id).eq("customer_email", email).execute()
     except Exception:
@@ -4907,7 +5011,8 @@ def mark_one_notice_read(notice_id: str, email: str):
     return {"status": "ok"}
 
 @app.delete("/api/notices/{notice_id}")
-def delete_notice(notice_id: str, email: str):
+def delete_notice(notice_id: str, email: str, token: Optional[str] = None):
+    _require_self_or_admin(token, email)
     supabase.table("user_notices").delete().eq("id", notice_id).eq("customer_email", email).execute()
     return {"status": "ok"}
 
@@ -5380,6 +5485,14 @@ def create_order(req: OrderRequest):
     # untouched. Reject up front instead, before anything is written.
     points_redeemed_requested = req.points_redeemed or 0
     if points_redeemed_requested > 0 and customer_email:
+        # customer_email comes straight from the request body (guest checkout
+        # needs that), so without this check anyone could set it to a
+        # victim's address and spend THEIR points on an order shipped to the
+        # attacker — the balance check below would happily pass using the
+        # victim's real balance. Redemption specifically requires proof (via
+        # token) that the caller owns the account being spent from.
+        if not req.token or resolve_token(req.token) != customer_email:
+            raise HTTPException(status_code=403, detail="You must be signed in to this account to redeem points.")
         acct = supabase.table("loyalty_accounts").select("points_balance").eq("user_email", customer_email).execute()
         balance = acct.data[0]["points_balance"] if acct.data else 0
         if balance < points_redeemed_requested:
@@ -5913,8 +6026,10 @@ def admin_generate_subscription_orders(token: str, force: bool = False):
 
 # ── Reminders Route ─────────────────────────────────────────────────────────────
 
-@app.post("/api/reminders/send")
-def send_reminders(days: str = "3,1"):
+def _send_reminders_core(days: str = "3,1") -> dict:
+    """Also called directly by the daily cron (_run_daily_reminders) with no
+    token — the HTTP route below is the auth-gated wrapper for a manual
+    re-run, not the only caller, so auth can't live inside this function."""
     today = datetime.utcnow().date()
     day_offsets = [int(d.strip()) for d in days.split(",") if d.strip().isdigit()]
     total_sent = 0
@@ -5981,6 +6096,16 @@ def send_reminders(days: str = "3,1"):
     return {"status": "ok", "total_reminders_sent": total_sent, "summary": summary}
 
 
+@app.post("/api/reminders/send")
+def send_reminders(token: str, days: str = "3,1"):
+    # Manual re-run trigger for the daily cron — its sibling admin-run
+    # endpoints (subscriptions/generate, abandoned-carts/run) already
+    # require admin; this one was missed, and unauthenticated meant anyone
+    # could trigger real SMS/WhatsApp/email sends to customers at will.
+    require_admin(token)
+    return _send_reminders_core(days)
+
+
 # ── Smart Occasion Reminders ────────────────────────────────────────────────────
 
 OCCASION_EMOJIS = {
@@ -5989,6 +6114,7 @@ OCCASION_EMOJIS = {
 }
 
 class OccasionCreate(BaseModel):
+    token: Optional[str] = None
     user_email: str
     title: str
     occasion_type: str = "custom"
@@ -6000,6 +6126,7 @@ class OccasionCreate(BaseModel):
     notes: Optional[str] = None
 
 class OccasionUpdate(BaseModel):
+    token: Optional[str] = None
     title: Optional[str] = None
     occasion_type: Optional[str] = None
     frequency: Optional[str] = None
@@ -6009,24 +6136,49 @@ class OccasionUpdate(BaseModel):
     linked_order_id: Optional[str] = None
     notes: Optional[str] = None
 
+def _require_occasion_owner_or_admin(token: Optional[str], occasion: dict) -> str:
+    email = resolve_token(token) if token else None
+    if not email:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    if email == occasion.get("user_email"):
+        return email
+    caller = get_user_by_email(email)
+    if caller and caller.get("is_admin"):
+        return email
+    raise HTTPException(status_code=403, detail="You don't have access to this reminder")
+
 @app.get("/api/occasions")
-def get_occasions(email: str):
+def get_occasions(email: str, token: Optional[str] = None):
+    _require_self_or_admin(token, email)
     result = supabase.table("occasion_reminders").select("*").eq("user_email", email).order("month").order("day").execute()
     return result.data or []
 
 @app.post("/api/occasions")
 def create_occasion(req: OccasionCreate):
-    result = supabase.table("occasion_reminders").insert(req.dict()).execute()
+    # Previously anyone could POST a reminder "as" any user_email with no
+    # auth at all — the token must resolve to that same email (or an admin).
+    _require_self_or_admin(req.token, req.user_email)
+    data = req.dict()
+    data.pop("token", None)
+    result = supabase.table("occasion_reminders").insert(data).execute()
     return result.data[0]
 
 @app.put("/api/occasions/{occasion_id}")
 def update_occasion(occasion_id: str, req: OccasionUpdate):
-    data = {k: v for k, v in req.dict().items() if v is not None}
+    existing = supabase.table("occasion_reminders").select("user_email").eq("id", occasion_id).execute().data
+    if not existing:
+        raise HTTPException(status_code=404, detail="Reminder not found")
+    _require_occasion_owner_or_admin(req.token, existing[0])
+    data = {k: v for k, v in req.dict().items() if v is not None and k != "token"}
     result = supabase.table("occasion_reminders").update(data).eq("id", occasion_id).execute()
     return result.data[0]
 
 @app.delete("/api/occasions/{occasion_id}")
-def delete_occasion(occasion_id: str):
+def delete_occasion(occasion_id: str, token: Optional[str] = None):
+    existing = supabase.table("occasion_reminders").select("user_email").eq("id", occasion_id).execute().data
+    if not existing:
+        raise HTTPException(status_code=404, detail="Reminder not found")
+    _require_occasion_owner_or_admin(token, existing[0])
     supabase.table("occasion_reminders").delete().eq("id", occasion_id).execute()
     return {"status": "deleted"}
 
@@ -6140,8 +6292,10 @@ def occasion_due(occ: dict, target) -> bool:
             return True
     return False
 
-@app.post("/api/occasions/send-reminders")
-def send_occasion_reminders(days: str = "3,1"):
+def _send_occasion_reminders_core(days: str = "3,1") -> dict:
+    """Also called directly by the daily cron (_run_daily_reminders) with no
+    token — the HTTP route below is the auth-gated wrapper for a manual
+    re-run, not the only caller, so auth can't live inside this function."""
     today      = datetime.utcnow().date()
     total_sent = 0
     occasions  = supabase.table("occasion_reminders").select("*").execute().data or []
@@ -6189,6 +6343,14 @@ def send_occasion_reminders(days: str = "3,1"):
                         pass
 
     return {"status": "ok", "occasion_reminders_sent": total_sent}
+
+
+@app.post("/api/occasions/send-reminders")
+def send_occasion_reminders(token: str, days: str = "3,1"):
+    # Manual re-run trigger for the daily cron, same fix/rationale as
+    # /api/reminders/send above.
+    require_admin(token)
+    return _send_occasion_reminders_core(days)
 
 
 # ── Corporate Orders ────────────────────────────────────────────────────────────
@@ -6246,7 +6408,8 @@ def advance_corp_delivery(freq: str, current: str) -> str:
     return (base + timedelta(days=days)).strftime("%Y-%m-%d")
 
 @app.get("/api/corporate-orders")
-def get_corporate_orders(email: str):
+def get_corporate_orders(email: str, token: Optional[str] = None):
+    _require_self_or_admin(token, email)
     result = supabase.table("corporate_orders").select("*").eq("contact_email", email).order("created_at", desc=True).execute()
     return result.data
 
@@ -6590,11 +6753,16 @@ class ReviewCreate(BaseModel):
     rating: int
     review_text: str
     photo_b64_list: list[str] = []
+    token: Optional[str] = None
 
 @app.get("/api/reviews")
 def get_reviews(product_id: str):
     try:
-        reviews = (supabase.table("product_reviews").select("*")
+        # select("*") previously returned user_email too — reviewers' raw
+        # emails leaking to any anonymous visitor, even though the UI only
+        # ever shows author_name.
+        reviews = (supabase.table("product_reviews")
+                   .select("id, product_id, author_name, rating, review_text, photo_urls, verified_purchase, created_at")
                    .eq("product_id", product_id)
                    .order("created_at", desc=True).execute().data or [])
         return reviews
@@ -6632,6 +6800,12 @@ def can_review_check(product_id: str, email: str = ""):
 
 @app.post("/api/reviews")
 def create_review(req: ReviewCreate):
+    # user_email is otherwise pure client input — without this, anyone could
+    # post a review under someone else's email (impersonation, a false
+    # "verified purchase" badge, or blocking the real customer's own future
+    # review via the duplicate-review check below).
+    if not req.token or resolve_token(req.token) != req.user_email:
+        raise HTTPException(status_code=403, detail="You must be signed in to this account to leave a review.")
     if not (1 <= req.rating <= 5):
         raise HTTPException(status_code=422, detail="Rating must be 1–5")
     if not req.review_text.strip():
@@ -6692,7 +6866,7 @@ def create_review(req: ReviewCreate):
 # ── Daily reminder scheduler ──────────────────────────────────────────────────
 def _run_daily_reminders():
     try:
-        send_occasion_reminders()
+        _send_occasion_reminders_core()
     except Exception as e:
         print(f"[scheduler] occasion reminders error: {e}")
     try:
@@ -6704,7 +6878,7 @@ def _run_daily_reminders():
     except Exception as e:
         print(f"[scheduler] Bloom Plan generation error: {e}")
     try:
-        send_reminders()
+        _send_reminders_core()
     except Exception as e:
         print(f"[scheduler] order reminders error: {e}")
 

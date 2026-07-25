@@ -65,8 +65,8 @@ export class LoyaltyService {
 
   constructor(private http: HttpClient) {}
 
-  getAccount(email: string): Observable<LoyaltyData> {
-    return this.http.get<LoyaltyData>(`${this.apiUrl}/api/loyalty?email=${encodeURIComponent(email)}`);
+  getAccount(email: string, token: string): Observable<LoyaltyData> {
+    return this.http.get<LoyaltyData>(`${this.apiUrl}/api/loyalty?email=${encodeURIComponent(email)}&token=${encodeURIComponent(token)}`);
   }
 
   getConfig(): Observable<LoyaltyConfig> {

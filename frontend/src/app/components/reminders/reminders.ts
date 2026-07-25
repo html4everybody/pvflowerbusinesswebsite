@@ -101,7 +101,8 @@ export class Reminders implements OnInit {
   private load(): void {
     this.loading.set(true);
     const email = this.authService.user().email;
-    this.http.get<OccasionReminder[]>(`${environment.apiUrl}/api/occasions?email=${encodeURIComponent(email)}`).subscribe({
+    const token = this.authService.getToken();
+    this.http.get<OccasionReminder[]>(`${environment.apiUrl}/api/occasions?email=${encodeURIComponent(email)}&token=${encodeURIComponent(token)}`).subscribe({
       next: (data) => { this.occasions.set(data); this.loading.set(false); },
       error: ()   => this.loading.set(false)
     });
@@ -240,6 +241,7 @@ export class Reminders implements OnInit {
     const email = this.authService.user().email;
     const f = this.formData.frequency;
     const body = {
+      token: this.authService.getToken(),
       user_email: email,
       title: this.formData.title.trim(),
       occasion_type: this.formData.occasion_type,
@@ -275,7 +277,8 @@ export class Reminders implements OnInit {
   cancelDelete(): void             { this.deleteConfirm.set(null); }
 
   delete(id: string): void {
-    this.http.delete(`${environment.apiUrl}/api/occasions/${id}`).subscribe({
+    const token = this.authService.getToken();
+    this.http.delete(`${environment.apiUrl}/api/occasions/${id}?token=${encodeURIComponent(token)}`).subscribe({
       next: () => {
         this.occasions.update(list => list.filter(o => o.id !== id));
         this.deleteConfirm.set(null);

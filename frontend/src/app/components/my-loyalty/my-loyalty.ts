@@ -54,7 +54,7 @@ export class MyLoyalty implements OnInit {
       this.router.navigate(['/signin']);
       return;
     }
-    this.loyaltyService.getAccount(user.email).subscribe({
+    this.loyaltyService.getAccount(user.email, this.authService.getToken()).subscribe({
       next: data => { this.account.set(data); this.loading.set(false); },
       error: () => this.loading.set(false)
     });
@@ -98,7 +98,7 @@ export class MyLoyalty implements OnInit {
         const user = this.authService.user();
         if (user) {
           this.loadMyClaims(user.email);
-          this.loyaltyService.getAccount(user.email).subscribe({ next: d => this.account.set(d), error: () => {} });
+          this.loyaltyService.getAccount(user.email, token).subscribe({ next: d => this.account.set(d), error: () => {} });
         }
       },
       error: (err) => {

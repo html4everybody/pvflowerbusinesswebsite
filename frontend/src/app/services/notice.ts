@@ -40,8 +40,9 @@ export class NoticeService {
 
   load(): void {
     const email = this.auth.user()?.email;
-    if (!email) return;
-    this.http.get<UserNotice[]>(`${environment.apiUrl}/api/notices?email=${encodeURIComponent(email)}`).subscribe({
+    const token = this.auth.getToken();
+    if (!email || !token) return;
+    this.http.get<UserNotice[]>(`${environment.apiUrl}/api/notices?email=${encodeURIComponent(email)}&token=${encodeURIComponent(token)}`).subscribe({
       next: d => this.notices.set(d || []),
       error: () => {},
     });
@@ -49,23 +50,26 @@ export class NoticeService {
 
   markAllRead(): void {
     const email = this.auth.user()?.email;
-    if (!email || this.unread() === 0) return;
+    const token = this.auth.getToken();
+    if (!email || !token || this.unread() === 0) return;
     this.notices.update(l => l.map(n => ({ ...n, read: true })));
-    this.http.patch(`${environment.apiUrl}/api/notices/read?email=${encodeURIComponent(email)}`, {}).subscribe({ error: () => {} });
+    this.http.patch(`${environment.apiUrl}/api/notices/read?email=${encodeURIComponent(email)}&token=${encodeURIComponent(token)}`, {}).subscribe({ error: () => {} });
   }
 
   markOneRead(id: string): void {
     const email = this.auth.user()?.email;
-    if (!email) return;
+    const token = this.auth.getToken();
+    if (!email || !token) return;
     this.notices.update(l => l.map(n => n.id === id ? { ...n, read: true } : n));
-    this.http.patch(`${environment.apiUrl}/api/notices/${id}/read?email=${encodeURIComponent(email)}`, {}).subscribe({ error: () => {} });
+    this.http.patch(`${environment.apiUrl}/api/notices/${id}/read?email=${encodeURIComponent(email)}&token=${encodeURIComponent(token)}`, {}).subscribe({ error: () => {} });
   }
 
   dismiss(id: string): void {
     const email = this.auth.user()?.email;
-    if (!email) return;
+    const token = this.auth.getToken();
+    if (!email || !token) return;
     this.notices.update(l => l.filter(n => n.id !== id));
-    this.http.delete(`${environment.apiUrl}/api/notices/${id}?email=${encodeURIComponent(email)}`).subscribe({ error: () => {} });
+    this.http.delete(`${environment.apiUrl}/api/notices/${id}?email=${encodeURIComponent(email)}&token=${encodeURIComponent(token)}`).subscribe({ error: () => {} });
   }
 
   noticeRoute(n: UserNotice): string[] | null {
