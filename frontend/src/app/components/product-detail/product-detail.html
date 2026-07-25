@@ -107,7 +107,11 @@
         <div class="tab-pane">
           @if (activeTab() === 'description') {
             <div class="tab-description">
-              <p>{{ product.description }}</p>
+              @if (product.description) {
+                <p>{{ product.description }}</p>
+              } @else {
+                <p class="tab-empty">No description available for this product yet — check the Care Tips tab for handling advice, or reach out and we're happy to answer any questions.</p>
+              }
             </div>
           } @else if (activeTab() === 'care') {
             <div class="care-grid">

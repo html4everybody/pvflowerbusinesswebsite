@@ -392,6 +392,11 @@
       max-width: 700px;
     }
 
+    .tab-empty {
+      font-style: italic;
+      color: var(--text-subtle);
+    }
+
     .keyword-tags {
       display: flex;
       flex-wrap: wrap;
