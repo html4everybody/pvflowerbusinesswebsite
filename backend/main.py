@@ -5940,7 +5940,7 @@ def send_reminders(days: str = "3,1"):
                 oid = order["id"]
                 already = {r["channel"] for r in
                     (supabase.table("reminder_logs").select("channel")
-                     .eq("order_id", oid).eq("reminder_type", reminder_type)
+                     .eq("reminder_id", oid).eq("reminder_type", reminder_type)
                      .execute().data or [])}
 
                 # In-app notification for the upcoming delivery
@@ -5954,14 +5954,14 @@ def send_reminders(days: str = "3,1"):
                         "order", oid,
                     )
                     supabase.table("reminder_logs").insert({
-                        "order_id": oid, "reminder_type": reminder_type, "channel": "app"
+                        "reminder_id": oid, "reminder_type": reminder_type, "channel": "app"
                     }).execute()
                     total_sent += 1
 
                 if "email" not in already:
                     if send_email_reminder(order, n, is_recurrence):
                         supabase.table("reminder_logs").insert({
-                            "order_id": oid, "reminder_type": reminder_type, "channel": "email"
+                            "reminder_id": oid, "reminder_type": reminder_type, "channel": "email"
                         }).execute()
                         total_sent += 1
 
@@ -5969,7 +5969,7 @@ def send_reminders(days: str = "3,1"):
                 for ch in ("sms", "whatsapp"):
                     if ch not in already and res.get(ch):
                         supabase.table("reminder_logs").insert({
-                            "order_id": oid, "reminder_type": reminder_type, "channel": ch
+                            "reminder_id": oid, "reminder_type": reminder_type, "channel": ch
                         }).execute()
                         total_sent += 1
             except Exception:
@@ -6158,7 +6158,7 @@ def send_occasion_reminders(days: str = "3,1"):
             log_key = f"OCC-{occ['id']}-{target.isoformat()}"
             already = {r["channel"] for r in (
                 supabase.table("reminder_logs").select("channel")
-                .eq("order_id", log_key).eq("reminder_type", f"{n}_day")
+                .eq("reminder_id", log_key).eq("reminder_type", f"{n}_day")
                 .execute().data or [])}
             timing = "tomorrow" if n == 1 else f"in {n} days"
 
@@ -6172,7 +6172,7 @@ def send_occasion_reminders(days: str = "3,1"):
                 )
                 try:
                     supabase.table("reminder_logs").insert({
-                        "order_id": log_key, "reminder_type": f"{n}_day", "channel": "app"
+                        "reminder_id": log_key, "reminder_type": f"{n}_day", "channel": "app"
                     }).execute()
                 except Exception:
                     pass
@@ -6183,7 +6183,7 @@ def send_occasion_reminders(days: str = "3,1"):
                 if send_occasion_reminder_email(occ, n):
                     try:
                         supabase.table("reminder_logs").insert({
-                            "order_id": log_key, "reminder_type": f"{n}_day", "channel": "email"
+                            "reminder_id": log_key, "reminder_type": f"{n}_day", "channel": "email"
                         }).execute()
                     except Exception:
                         pass
