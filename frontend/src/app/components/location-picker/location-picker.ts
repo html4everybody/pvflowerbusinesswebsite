@@ -27,6 +27,19 @@ const DEFAULT_CENTER: [number, number] = [20.5937, 78.9629];
 const DEFAULT_ZOOM = 5;
 const PIN_ZOOM = 16;
 
+// Launch city is Hyderabad only — mirrors _HYDERABAD_BOUNDS in backend/main.py.
+// Google's own componentRestrictions only narrows to "India" (there's no
+// India-Places-API concept of a metro-area restriction), so the actual
+// Hyderabad-only enforcement has to happen here on the client, on every
+// path that can produce a PickedLocation (autocomplete pick, pin drag/
+// click, "use my location") — not just the initial suggestion list.
+const HYDERABAD_BOUNDS = { minLat: 17.20, maxLat: 17.65, minLng: 78.20, maxLng: 78.75 };
+function isInHyderabad(lat: number, lng: number): boolean {
+  return lat >= HYDERABAD_BOUNDS.minLat && lat <= HYDERABAD_BOUNDS.maxLat
+      && lng >= HYDERABAD_BOUNDS.minLng && lng <= HYDERABAD_BOUNDS.maxLng;
+}
+const OUTSIDE_HYDERABAD_MSG = 'VivaPetals currently delivers within Hyderabad only — please pick a location inside the city.';
+
 let _gmapsPromise: Promise<void> | null = null;
 
 function ensureGoogleMaps(apiKey: string): Promise<void> {
@@ -143,8 +156,16 @@ export class LocationPicker implements AfterViewInit, OnDestroy {
     this.searchDebounce = setTimeout(() => {
       if (!this.autocompleteService) return;
       this.searching.set(true);
+      const bounds = new google.maps.LatLngBounds(
+        { lat: HYDERABAD_BOUNDS.minLat, lng: HYDERABAD_BOUNDS.minLng },
+        { lat: HYDERABAD_BOUNDS.maxLat, lng: HYDERABAD_BOUNDS.maxLng },
+      );
       this.autocompleteService.getPlacePredictions(
-        { input: q, componentRestrictions: { country: 'in' } },
+        // locationBias narrows suggestions toward Hyderabad — Google Places
+        // has no hard "restrict to this metro area" mode, so this only
+        // biases ranking; pickSuggestion() below still hard-checks the
+        // resolved coordinates before accepting anything.
+        { input: q, componentRestrictions: { country: 'in' }, locationBias: bounds },
         (predictions: any[], status: string) => {
           this.searching.set(false);
           if (status !== 'OK' || !predictions?.length) {
@@ -166,12 +187,18 @@ export class LocationPicker implements AfterViewInit, OnDestroy {
     this.showResults.set(false);
     this.searchQuery.set(s.display_name);
     if (!this.placesService) return;
+    this.errorMsg.set('');
     this.placesService.getDetails(
       { placeId: s.placeId, fields: ['geometry', 'address_components', 'formatted_address'] },
       (place: any, status: string) => {
         if (status !== 'OK' || !place?.geometry) return;
         const lat = place.geometry.location.lat();
         const lng = place.geometry.location.lng();
+        if (!isInHyderabad(lat, lng)) {
+          this.errorMsg.set(OUTSIDE_HYDERABAD_MSG);
+          this.searchQuery.set('');
+          return;
+        }
         const get = (type: string) =>
           (place.address_components || []).find((c: any) => c.types.includes(type))?.long_name || '';
         const picked: PickedLocation = {
@@ -219,6 +246,17 @@ export class LocationPicker implements AfterViewInit, OnDestroy {
 
   private async resolveLocation(lat: number, lng: number): Promise<void> {
     this.errorMsg.set('');
+    // Checked here too, not just in pickSuggestion — a dropped pin/map
+    // click/"use my location" never goes through Google Places at all, so
+    // without this check those paths could silently accept a location
+    // outside Hyderabad (the backend reverse-geocode call below still
+    // rejects it, but GeocodeService.reverse() swallows that as a plain
+    // null, which previously fell through to accepting blank-address
+    // coordinates instead of telling the customer why nothing came back).
+    if (!isInHyderabad(lat, lng)) {
+      this.errorMsg.set(OUTSIDE_HYDERABAD_MSG);
+      return;
+    }
     const r = await this.geocode.reverse(lat, lng);
     if (r) {
       this.applyPicked({ latitude: lat, longitude: lng, address: r.address, city: r.city, state: r.state, pincode: r.pincode });
