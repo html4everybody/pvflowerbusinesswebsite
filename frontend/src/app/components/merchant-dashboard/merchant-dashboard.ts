@@ -1,4 +1,4 @@
-import { Component, OnInit, signal, computed } from '@angular/core';
+import { Component, OnInit, signal, computed, ViewChild, ElementRef } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
@@ -352,9 +352,48 @@ export class MerchantDashboard implements OnInit {
   }
 
   // ── Orders ──────────────────────────────────────────────────────────────
+  @ViewChild('deliveryPhotoInput') deliveryPhotoInputRef?: ElementRef<HTMLInputElement>;
+  pendingDeliveryOrder = signal<any>(null);
+  uploadingDeliveryPhoto = signal(false);
+
   setOrderStatus(o: any, status: string): void {
+    if (status === 'delivered') {
+      // Offer to attach a delivery photo — this is optional (a customer
+      // still gets marked delivered even if the file dialog is cancelled),
+      // so it never blocks the merchant from completing the action.
+      this.pendingDeliveryOrder.set(o);
+      this.deliveryPhotoInputRef?.nativeElement.click();
+      return;
+    }
+    this.applyOrderStatus(o, status);
+  }
+
+  onDeliveryPhotoSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    const o = this.pendingDeliveryOrder();
+    input.value = '';
+    this.pendingDeliveryOrder.set(null);
+    if (!o) return;
+    if (!file) { this.applyOrderStatus(o, 'delivered'); return; }
+    this.uploadingDeliveryPhoto.set(true);
+    const form = new FormData();
+    form.append('file', file);
+    this.http.post<{ url: string }>(`${this.api}/api/merchant/upload?token=${this.token}&category=delivery-proof`, form).subscribe({
+      next: (res) => { this.uploadingDeliveryPhoto.set(false); this.applyOrderStatus(o, 'delivered', res.url); },
+      error: () => {
+        this.uploadingDeliveryPhoto.set(false);
+        this.toast.show('Photo upload failed — marking delivered without it', 'error');
+        this.applyOrderStatus(o, 'delivered');
+      },
+    });
+  }
+
+  private applyOrderStatus(o: any, status: string, deliveryPhotoUrl?: string): void {
     this.updatingOrder.set(o.order_id);
-    this.http.patch(`${this.api}/api/merchant/orders/${o.order_id}/status`, { token: this.token, status }).subscribe({
+    const body: any = { token: this.token, status };
+    if (deliveryPhotoUrl) body.delivery_photo_url = deliveryPhotoUrl;
+    this.http.patch(`${this.api}/api/merchant/orders/${o.order_id}/status`, body).subscribe({
       next: () => {
         this.updatingOrder.set(null);
         this.toast.show(`Order ${o.order_id} → ${this.STATUS_LABELS[status] || status}`, 'success');

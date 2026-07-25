@@ -118,6 +118,27 @@ export class OrderDetail implements OnInit {
 
   goBack(): void { this.location.back(); }
 
+  async shareTrackingLink(orderId: string): Promise<void> {
+    const url = `${window.location.origin}/track?id=${encodeURIComponent(orderId)}`;
+    const shareData = {
+      title: 'Track your VivaPetals delivery',
+      text: 'Here\'s the tracking link for flowers on the way to you 🌸',
+      url,
+    };
+    // navigator.share is the native mobile share sheet (WhatsApp, SMS,
+    // etc.) — where unavailable (most desktop browsers), fall back to a
+    // clipboard copy so sending the link to a gift recipient is still one action.
+    if (navigator.share && navigator.canShare?.(shareData) !== false) {
+      try { await navigator.share(shareData); return; } catch { /* user cancelled — no error toast needed */ return; }
+    }
+    try {
+      await navigator.clipboard.writeText(url);
+      this.toastService.show('Tracking link copied — send it to whoever should follow the delivery!');
+    } catch {
+      this.toastService.show('Could not copy the link — please copy it from the address bar.', 'error');
+    }
+  }
+
   ngOnInit(): void {
     if (!this.authService.isLoggedIn()) {
       this.router.navigate(['/signin']);

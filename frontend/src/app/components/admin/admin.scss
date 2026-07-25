@@ -1665,6 +1665,7 @@
   &.paid     { background: linear-gradient(135deg, #059669, #047857); }
   &.pending  { background: linear-gradient(135deg, #d97706, #b45309); }
   &.progress { background: linear-gradient(135deg, #4f46e5, #4338ca); }
+  &.cod-due  { background: linear-gradient(135deg, #be123c, #9f1239); }
 
   .bc-icon {
     width: 42px; height: 42px; flex-shrink: 0;
@@ -1696,6 +1697,7 @@
   strong { font-weight: 800; }
   &.pending strong { color: var(--warning); }
   &.paid strong { color: var(--success); }
+  &.cod-due strong { color: #be123c; }
 }
 .payout-method-row {
   display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; flex-wrap: wrap;
@@ -1706,7 +1708,8 @@
   .mono { font-family: ui-monospace, monospace; color: var(--text); }
   &.payout-method-missing { color: var(--warning); }
 }
-.payout-actions { display: flex; justify-content: flex-end; padding: 0 1.1rem 1rem; }
+.payout-actions { display: flex; justify-content: flex-end; gap: 0.6rem; flex-wrap: wrap; padding: 0 1.1rem 1rem; }
+.btn-approve.cod-collect { background: #be123c; &:hover:not(:disabled) { filter: brightness(1.07); } }
 .payout-detail { padding: 0 1.1rem 1.1rem; border-top: 1px solid var(--border); padding-top: 1rem; overflow-x: auto; }
 .payout-note { font-size: 0.72rem; color: var(--text-subtle); margin-top: 0.2rem; font-style: italic; }
 

@@ -106,6 +106,18 @@ def update_site_content(req: SiteContentUpdate):
 _NOMINATIM_BASE = "https://nominatim.openstreetmap.org"
 _NOMINATIM_HEADERS = {"User-Agent": "VivaPetals-FlowerDelivery/1.0 (contact via vivapetals.com)"}
 
+# Launch city is Hyderabad only — a generous box covering the full metro
+# (Secunderabad, Gachibowli, Kompally, Shamshabad, LB Nagar, Uppal, …).
+# Widen this (or make it admin-configurable) whenever a second city launches.
+_HYDERABAD_BOUNDS = {"min_lat": 17.20, "max_lat": 17.65, "min_lon": 78.20, "max_lon": 78.75}
+_HYDERABAD_VIEWBOX = f"{_HYDERABAD_BOUNDS['min_lon']},{_HYDERABAD_BOUNDS['max_lat']},{_HYDERABAD_BOUNDS['max_lon']},{_HYDERABAD_BOUNDS['min_lat']}"
+
+def _in_hyderabad(lat: Optional[float], lon: Optional[float]) -> bool:
+    if lat is None or lon is None:
+        return False
+    return (_HYDERABAD_BOUNDS["min_lat"] <= lat <= _HYDERABAD_BOUNDS["max_lat"]
+            and _HYDERABAD_BOUNDS["min_lon"] <= lon <= _HYDERABAD_BOUNDS["max_lon"])
+
 def _parse_nominatim_address(item: dict) -> dict:
     addr = item.get("address", {}) or {}
     line1 = ", ".join(filter(None, [addr.get("house_number"), addr.get("road") or addr.get("pedestrian"), addr.get("suburb")]))
@@ -129,15 +141,24 @@ def geocode_search(q: str):
         with _httpx.Client(timeout=6) as client:
             resp = client.get(f"{_NOMINATIM_BASE}/search", headers=_NOMINATIM_HEADERS, params={
                 "format": "jsonv2", "addressdetails": 1, "limit": 6, "countrycodes": "in", "q": q,
+                # bounded=1 makes Nominatim treat viewbox as a hard filter, not just a
+                # ranking bias — still post-filtered below since Nominatim can fall back
+                # to unbounded results for a query with zero in-box matches.
+                "viewbox": _HYDERABAD_VIEWBOX, "bounded": 1,
             })
         resp.raise_for_status()
-        return [_parse_nominatim_address(item) for item in resp.json()]
+        results = [_parse_nominatim_address(item) for item in resp.json()]
+        return [r for r in results if _in_hyderabad(r["latitude"], r["longitude"])]
+    except HTTPException:
+        raise
     except Exception as e:
         print(f"[Geocode] search failed: {e}", flush=True)
         raise HTTPException(status_code=502, detail="Location search is temporarily unavailable.")
 
 @app.get("/api/geocode/reverse")
 def geocode_reverse(lat: float, lon: float):
+    if not _in_hyderabad(lat, lon):
+        raise HTTPException(status_code=400, detail="VivaPetals currently delivers within Hyderabad only.")
     try:
         with _httpx.Client(timeout=6) as client:
             resp = client.get(f"{_NOMINATIM_BASE}/reverse", headers=_NOMINATIM_HEADERS, params={
@@ -2981,6 +3002,7 @@ def merchant_orders(token: str):
     out = []
     for p in parts:
         o = orders_by_id.get(p["order_id"], {})
+        is_cod = (p.get("collection_type") or "platform_collected") == "merchant_collected"
         out.append({
             "order_id": p["order_id"],
             "status": p.get("status", "confirmed"),
@@ -2996,6 +3018,14 @@ def merchant_orders(token: str):
             "items": [{"name": it.get("name"), "quantity": it.get("quantity")}
                       for it in items_by_order.get(p["order_id"], [])],
             "next_statuses": MERCHANT_STATUS_FLOW.get(p.get("status", "confirmed"), []),
+            # Pay-on-delivery: your own delivery person collects the FULL
+            # customer price at the door (not just your payout share) —
+            # amount_to_collect is what to actually hand back change against;
+            # commission_owed is what you owe VivaPetals back out of that.
+            "is_cod": is_cod,
+            "amount_to_collect": p.get("subtotal", 0) if is_cod else 0,
+            "commission_owed": p.get("commission", 0) if is_cod else 0,
+            "delivery_photo_url": p.get("delivery_photo_url"),
         })
     return out
 
@@ -3004,9 +3034,10 @@ class MerchantOrderStatusUpdate(BaseModel):
     token: str
     status: str
     delivery_date: Optional[str] = None
+    delivery_photo_url: Optional[str] = None
 
 
-def _merchant_update_order_status_core(merchant_id: str, order_id: str, status: str, delivery_date: Optional[str] = None) -> dict:
+def _merchant_update_order_status_core(merchant_id: str, order_id: str, status: str, delivery_date: Optional[str] = None, delivery_photo_url: Optional[str] = None) -> dict:
     """Shared by the single-order and bulk endpoints below."""
     if status not in ("confirmed", "preparing", "out_for_delivery", "delivered", "cancelled"):
         return {"ok": False, "not_found": False, "error": "Invalid status"}
@@ -3034,6 +3065,8 @@ def _merchant_update_order_status_core(merchant_id: str, order_id: str, status: 
     data = {"status": status, "updated_at": datetime.now(timezone.utc).isoformat()}
     if delivery_date is not None:
         data["delivery_date"] = delivery_date
+    if status == "delivered" and delivery_photo_url and _has_column("order_merchant_parts", "delivery_photo_url"):
+        data["delivery_photo_url"] = delivery_photo_url
     supabase.table("order_merchant_parts").update(data).eq("order_id", order_id).eq("merchant_id", merchant_id).execute()
     _recompute_order_status_from_parts(order_id)
     return {"ok": True}
@@ -3042,7 +3075,7 @@ def _merchant_update_order_status_core(merchant_id: str, order_id: str, status: 
 @app.patch("/api/merchant/orders/{order_id}/status")
 def merchant_update_order_status(order_id: str, req: MerchantOrderStatusUpdate):
     m = require_merchant(req.token)
-    result = _merchant_update_order_status_core(m["id"], order_id, req.status, req.delivery_date)
+    result = _merchant_update_order_status_core(m["id"], order_id, req.status, req.delivery_date, req.delivery_photo_url)
     if not result["ok"]:
         raise HTTPException(status_code=404 if result["not_found"] else 400, detail=result["error"])
     return {"status": req.status}
@@ -3082,14 +3115,30 @@ def merchant_stats(token: str):
     stock_map = {r["product_id"]: r["stock"] for r in (stock_rows or [])}
     low_stock_count = sum(1 for p in my_products if p.get("inStock") and stock_map.get(p["id"], 50) < 10)
 
-    # Earnings breakdown — mirrors a seller-panel "balance" view:
-    #   in_progress: not delivered yet, so nothing is payable yet
-    #   pending_payout: delivered, admin hasn't settled it yet (money owed)
-    #   paid_out: delivered AND settled (money already sent)
-    paid_out = round(sum(float(p.get("payout", 0) or 0) for p in active if p.get("payout_status") == "paid"), 2)
-    pending_payout = round(sum(float(p.get("payout", 0) or 0) for p in active
+    # Earnings breakdown — mirrors a seller-panel "balance" view. Split into
+    # two INDEPENDENT balances, never netted (see cod_settlement_migration.sql):
+    #   prepaid orders (UPI/etc — VivaPetals collected the money):
+    #     in_progress: not delivered yet, nothing payable yet
+    #     pending_payout: delivered, VivaPetals hasn't paid you yet (owed TO you)
+    #     paid_out: delivered AND settled (already paid to you)
+    #   COD orders (your own delivery person collected the FULL price at the
+    #   door — you already have your payout AND our commission in hand):
+    #     cod_in_progress: not delivered yet
+    #     commission_due: delivered, you haven't sent our commission back yet (owed BY you)
+    #     commission_settled: delivered AND you've sent it back
+    def _is_cod(p): return (p.get("collection_type") or "platform_collected") == "merchant_collected"
+    prepaid_active = [p for p in active if not _is_cod(p)]
+    cod_active = [p for p in active if _is_cod(p)]
+
+    paid_out = round(sum(float(p.get("payout", 0) or 0) for p in prepaid_active if p.get("payout_status") == "paid"), 2)
+    pending_payout = round(sum(float(p.get("payout", 0) or 0) for p in prepaid_active
                                if p.get("status") == "delivered" and p.get("payout_status") != "paid"), 2)
-    in_progress_value = round(sum(float(p.get("payout", 0) or 0) for p in active if p.get("status") != "delivered"), 2)
+    in_progress_value = round(sum(float(p.get("payout", 0) or 0) for p in prepaid_active if p.get("status") != "delivered"), 2)
+
+    commission_due = round(sum(float(p.get("commission", 0) or 0) for p in cod_active
+                               if p.get("status") == "delivered" and p.get("payout_status") != "paid"), 2)
+    commission_settled = round(sum(float(p.get("commission", 0) or 0) for p in cod_active if p.get("payout_status") == "paid"), 2)
+    cod_in_progress_value = round(sum(float(p.get("commission", 0) or 0) for p in cod_active if p.get("status") != "delivered"), 2)
 
     return {
         "shop_name": m.get("shop_name", ""),
@@ -3101,6 +3150,9 @@ def merchant_stats(token: str):
         "paid_out": paid_out,
         "pending_payout": pending_payout,
         "in_progress_value": in_progress_value,
+        "commission_due": commission_due,
+        "commission_settled": commission_settled,
+        "cod_in_progress_value": cod_in_progress_value,
         "status_counts": dict(status_counts),
         "low_stock_count": low_stock_count,
     }
@@ -3206,10 +3258,23 @@ def _aggregate_payouts(parts: list, shop_by_id: dict, payout_info_by_id: Optiona
     summary: per-merchant pending/paid totals + platform-wide totals.
     Cancelled parts never owe anything. A part only counts toward "pending"
     once its fulfillment status is 'delivered' — see module docstring above
-    admin_payouts_summary for why."""
+    admin_payouts_summary for why.
+
+    Two INDEPENDENT settlement directions, deliberately never netted against
+    each other (see cod_settlement_migration.sql):
+    - pending_amount/paid_amount: VivaPetals collected the money (prepaid,
+      collection_type='platform_collected') — VivaPetals owes the MERCHANT
+      their payout.
+    - commission_due/commission_collected: the merchant's own delivery
+      person collected the money at the door (COD, collection_type=
+      'merchant_collected') — the MERCHANT owes VivaPetals its commission.
+    A merchant with both prepaid and COD deliveries pending has two
+    separate, independently-settled balances, not one net figure — keeping
+    them separate is what "very clear, no ambiguity" bookkeeping requires."""
     payout_info_by_id = payout_info_by_id or {}
     by_merchant: dict = {}
     total_pending = total_paid = total_commission = 0.0
+    total_commission_due = total_commission_collected = 0.0
     for p in parts:
         if p.get("status") == "cancelled":
             continue
@@ -3217,28 +3282,46 @@ def _aggregate_payouts(parts: list, shop_by_id: dict, payout_info_by_id: Optiona
         row = by_merchant.setdefault(mid, {
             "merchant_id": mid, "shop_name": shop_by_id.get(mid, "Unknown"),
             "pending_amount": 0.0, "pending_count": 0, "paid_amount": 0.0, "paid_count": 0,
+            "commission_due": 0.0, "commission_due_count": 0,
+            "commission_collected": 0.0, "commission_collected_count": 0,
             **payout_info_by_id.get(mid, {}),
         })
         payout = float(p.get("payout", 0) or 0)
-        total_commission += float(p.get("commission", 0) or 0)
-        if p.get("payout_status") == "paid":
-            row["paid_amount"] += payout
-            row["paid_count"] += 1
-            total_paid += payout
-        elif p.get("status") == "delivered":
-            row["pending_amount"] += payout
-            row["pending_count"] += 1
-            total_pending += payout
+        commission = float(p.get("commission", 0) or 0)
+        total_commission += commission
+        is_cod = (p.get("collection_type") or "platform_collected") == "merchant_collected"
+        if is_cod:
+            if p.get("payout_status") == "paid":
+                row["commission_collected"] += commission
+                row["commission_collected_count"] += 1
+                total_commission_collected += commission
+            elif p.get("status") == "delivered":
+                row["commission_due"] += commission
+                row["commission_due_count"] += 1
+                total_commission_due += commission
+        else:
+            if p.get("payout_status") == "paid":
+                row["paid_amount"] += payout
+                row["paid_count"] += 1
+                total_paid += payout
+            elif p.get("status") == "delivered":
+                row["pending_amount"] += payout
+                row["pending_count"] += 1
+                total_pending += payout
 
-    merchant_rows = sorted(by_merchant.values(), key=lambda r: r["pending_amount"], reverse=True)
+    merchant_rows = sorted(by_merchant.values(), key=lambda r: r["pending_amount"] + r["commission_due"], reverse=True)
     for r in merchant_rows:
         r["pending_amount"] = round(r["pending_amount"], 2)
         r["paid_amount"] = round(r["paid_amount"], 2)
+        r["commission_due"] = round(r["commission_due"], 2)
+        r["commission_collected"] = round(r["commission_collected"], 2)
 
     return {
         "total_pending": round(total_pending, 2),
         "total_paid": round(total_paid, 2),
         "total_commission": round(total_commission, 2),
+        "total_commission_due": round(total_commission_due, 2),
+        "total_commission_collected": round(total_commission_collected, 2),
         "merchants": merchant_rows,
     }
 
@@ -3290,18 +3373,29 @@ def admin_verify_merchant_payout(merchant_id: str, token: str):
 class PayoutMarkPaidRequest(BaseModel):
     token: str
     note: Optional[str] = ""
+    direction: str = "payout"  # "payout" (VivaPetals -> merchant) | "commission" (merchant -> VivaPetals, COD)
 
 
 @app.patch("/api/admin/payouts/{part_id}/pay")
 def admin_mark_payout_paid(part_id: str, req: PayoutMarkPaidRequest):
     admin_email = require_admin(req.token)
-    existing = supabase.table("order_merchant_parts").select("status, payout_status, merchant_id, payout, order_id").eq("id", part_id).execute().data
+    # select("*") deliberately, not an explicit column list — collection_type
+    # may not exist yet if cod_settlement_migration.sql hasn't been run, and
+    # an explicit reference to a missing column 500s the whole query, unlike
+    # "*" which just omits it from the returned row.
+    existing = supabase.table("order_merchant_parts").select("*").eq("id", part_id).execute().data
     if not existing:
         raise HTTPException(status_code=404, detail="Payout not found")
     if existing[0].get("status") != "delivered":
         raise HTTPException(status_code=400, detail="Only delivered orders can be settled.")
     if existing[0].get("payout_status") == "paid":
-        raise HTTPException(status_code=400, detail="Already paid.")
+        raise HTTPException(status_code=400, detail="Already settled.")
+    # Direction is intrinsic to the part itself (set at order time from the
+    # payment method), not something the caller chooses — a COD part is
+    # ALWAYS "merchant owes us", never "we owe merchant", so this ignores
+    # req.direction entirely and just reads the part's own collection_type.
+    is_cod = (existing[0].get("collection_type") or "platform_collected") == "merchant_collected"
+    amount = existing[0].get("commission") if is_cod else existing[0].get("payout")
     # Conditional on payout_status still being "unpaid" — closes a race
     # where two concurrent "mark paid" calls on the same part could both
     # pass the check above before either write landed.
@@ -3309,23 +3403,39 @@ def admin_mark_payout_paid(part_id: str, req: PayoutMarkPaidRequest):
         "payout_status": "paid", "paid_at": datetime.now(timezone.utc).isoformat(), "payout_note": req.note or "",
     }).eq("id", part_id).eq("payout_status", "unpaid").execute())
     if not updated.data:
-        raise HTTPException(status_code=400, detail="Already paid.")
-    create_user_notice(
-        _merchant_email(existing[0].get("merchant_id")), "💰 Payout settled",
-        f"₹{existing[0].get('payout')} for order #{existing[0].get('order_id')} has been paid to you.",
-        "merchant_payout", part_id,
-    )
-    _log_admin_action(admin_email, "payout_marked_paid", "order_merchant_part", part_id,
-                       f"₹{existing[0].get('payout')} for order #{existing[0].get('order_id')}" + (f" — {req.note}" if req.note else ""))
-    return {"status": "paid"}
+        raise HTTPException(status_code=400, detail="Already settled.")
+    if is_cod:
+        create_user_notice(
+            _merchant_email(existing[0].get("merchant_id")), "✅ COD commission settled",
+            f"Your ₹{amount} commission for order #{existing[0].get('order_id')} (collected at delivery) has been recorded as received.",
+            "merchant_payout", part_id,
+        )
+    else:
+        create_user_notice(
+            _merchant_email(existing[0].get("merchant_id")), "💰 Payout settled",
+            f"₹{amount} for order #{existing[0].get('order_id')} has been paid to you.",
+            "merchant_payout", part_id,
+        )
+    _log_admin_action(admin_email, "commission_collected" if is_cod else "payout_marked_paid", "order_merchant_part", part_id,
+                       f"₹{amount} for order #{existing[0].get('order_id')}" + (f" — {req.note}" if req.note else ""))
+    return {"status": "paid", "direction": "commission" if is_cod else "payout", "amount": amount}
 
 
 @app.post("/api/admin/payouts/{merchant_id}/pay-all")
 def admin_pay_all_for_merchant(merchant_id: str, req: PayoutMarkPaidRequest):
     admin_email = require_admin(req.token)
-    due = (supabase.table("order_merchant_parts").select("id, payout")
-           .eq("merchant_id", merchant_id).eq("status", "delivered").eq("payout_status", "unpaid")
-           .execute().data or [])
+    is_cod = req.direction == "commission"
+    amount_field = "commission" if is_cod else "payout"
+    q = (supabase.table("order_merchant_parts").select(f"id, {amount_field}")
+         .eq("merchant_id", merchant_id).eq("status", "delivered").eq("payout_status", "unpaid"))
+    if _has_column("order_merchant_parts", "collection_type"):
+        q = q.eq("collection_type", "merchant_collected" if is_cod else "platform_collected")
+    elif is_cod:
+        # No collection_type column yet -> every part is implicitly
+        # platform_collected (the only mode that ever existed) -> nothing
+        # to settle in the "commission owed to us" direction.
+        return {"status": "ok", "paid_count": 0, "paid_amount": 0}
+    due = q.execute().data or []
     if not due:
         return {"status": "ok", "paid_count": 0, "paid_amount": 0}
     ids = [d["id"] for d in due]
@@ -3340,11 +3450,18 @@ def admin_pay_all_for_merchant(merchant_id: str, req: PayoutMarkPaidRequest):
     paid_rows = updated.data or []
     if not paid_rows:
         return {"status": "ok", "paid_count": 0, "paid_amount": 0}
-    total = round(sum(float(d.get("payout", 0) or 0) for d in paid_rows), 2)
-    create_user_notice(
-        _merchant_email(merchant_id), "💰 Payout settled",
-        f"{len(paid_rows)} order(s) totalling ₹{total} have been paid to you.",
-        "merchant_payout", merchant_id,
+    total = round(sum(float(d.get(amount_field, 0) or 0) for d in paid_rows), 2)
+    if is_cod:
+        create_user_notice(
+            _merchant_email(merchant_id), "✅ COD commission settled",
+            f"{len(paid_rows)} order(s) totalling ₹{total} in COD commission recorded as received.",
+            "merchant_payout", merchant_id,
+        )
+    else:
+        create_user_notice(
+            _merchant_email(merchant_id), "💰 Payout settled",
+            f"{len(paid_rows)} order(s) totalling ₹{total} have been paid to you.",
+            "merchant_payout", merchant_id,
     )
     _log_admin_action(admin_email, "payout_pay_all", "merchant", merchant_id,
                        f"{len(paid_rows)} order(s) — ₹{total}" + (f" — {req.note}" if req.note else ""))
@@ -4799,6 +4916,14 @@ def get_order(order_id: str, token: Optional[str] = None):
         order.pop("customer_phone", None)
         order.pop("customer_email", None)
         order["limited_view"] = True
+
+    # Delivery photo proof — merchant-attached, shown regardless of
+    # owner/guest view (a plain photo URL carries no PII, same bar as any
+    # other order detail already visible to a guest tracking by ID).
+    order["delivery_photo_url"] = None
+    if _has_column("order_merchant_parts", "delivery_photo_url"):
+        parts = supabase.table("order_merchant_parts").select("delivery_photo_url").eq("order_id", order_id).execute().data or []
+        order["delivery_photo_url"] = next((p.get("delivery_photo_url") for p in parts if p.get("delivery_photo_url")), None)
     return order
 
 @app.patch("/api/orders/{order_id}/delivery")
@@ -5285,7 +5410,8 @@ def _resolve_order_merchants(items: list, customer_lat: Optional[float] = None, 
 
     customer_lat/lng are optional — only retail checkout currently supplies
     them (subscription/corporate order generation don't thread coordinates
-    through yet), so the radius cap below only applies there for now."""
+    through yet), so the radius cap AND nearest-merchant routing below only
+    apply there for now; other order sources fall back to first-available."""
     products_by_id = {p["id"]: p for p in PRODUCTS}
     catalog_siblings: dict = {}
     for p in PRODUCTS:
@@ -5303,12 +5429,16 @@ def _resolve_order_merchants(items: list, customer_lat: Optional[float] = None, 
     unavailable_merchants = suspended_merchants | closed_merchants
     radius_by_merchant: dict = {}
     merchant_coords: dict = {}
-    if _has_column("merchants", "max_delivery_km"):
-        rows = supabase.table("merchants").select("id, max_delivery_km, latitude, longitude").execute().data or []
+    has_radius_col = _has_column("merchants", "max_delivery_km")
+    has_coord_cols = _has_column("merchants", "latitude")
+    if has_radius_col or has_coord_cols:
+        cols = ["id"] + (["max_delivery_km"] if has_radius_col else []) + (["latitude", "longitude"] if has_coord_cols else [])
+        rows = supabase.table("merchants").select(", ".join(cols)).execute().data or []
         for m in rows:
-            if m.get("max_delivery_km"):
-                radius_by_merchant[m["id"]] = float(m["max_delivery_km"])
+            if has_coord_cols:
                 merchant_coords[m["id"]] = (m.get("latitude"), m.get("longitude"))
+            if has_radius_col and m.get("max_delivery_km"):
+                radius_by_merchant[m["id"]] = float(m["max_delivery_km"])
 
     def _out_of_radius(merchant_id: str) -> bool:
         if customer_lat is None or customer_lng is None:
@@ -5370,14 +5500,30 @@ def _resolve_order_merchants(items: list, customer_lat: Optional[float] = None, 
             chosen = live[primary_merchant]
         else:
             other_pin = next((mid for mid in pinned_merchants if mid in live), None)
-            chosen = live[other_pin] if other_pin else next(iter(live.values()))  # TODO: nearest-by-location
+            if other_pin:
+                chosen = live[other_pin]
+            elif customer_lat is not None and customer_lng is not None and merchant_coords:
+                # Real hyperlocal routing: a common item (roses, lilies, …)
+                # carried by several shops should go to whichever live seller
+                # is physically closest to the delivery address, not just
+                # whichever row the query happened to return first.
+                def _dist_km(mid: str) -> float:
+                    mlat, mlng = merchant_coords.get(mid, (None, None))
+                    if mlat is None or mlng is None:
+                        return float("inf")
+                    return _haversine_km(float(customer_lat), float(customer_lng), float(mlat), float(mlng))
+                nearest_mid = min(live.keys(), key=_dist_km)
+                chosen = live[nearest_mid] if _dist_km(nearest_mid) != float("inf") else next(iter(live.values()))
+            else:
+                chosen = next(iter(live.values()))
         resolved[item.productId] = (chosen["merchant_id"], float(chosen.get("merchant_price", 0) or 0))
 
     return resolved
 
 
 def _place_order_items(order_id: str, items: list, delivery_datetime: Optional[str], source: str = "retail",
-                        customer_lat: Optional[float] = None, customer_lng: Optional[float] = None) -> None:
+                        customer_lat: Optional[float] = None, customer_lng: Optional[float] = None,
+                        payment_method: Optional[str] = None) -> None:
     """Shared by retail checkout and Petal Studio bookings: resolve each line
     to the merchant who should fulfill it, insert order_items, split into
     order_merchant_parts, and notify the assigned merchant(s). For a
@@ -5386,7 +5532,12 @@ def _place_order_items(order_id: str, items: list, delivery_datetime: Optional[s
     coordination more than an everyday retail basket does.
 
     customer_lat/lng: only passed by retail checkout today, so a merchant's
-    delivery-radius cap is only enforced there — see _resolve_order_merchants."""
+    delivery-radius cap is only enforced there — see _resolve_order_merchants.
+
+    payment_method drives collection_type on each part (see
+    cod_settlement_migration.sql): 'cod' means the merchant's own delivery
+    person collects the money at the door, so the settlement ledger owes
+    money in the OPPOSITE direction from every other payment method."""
     if not items:
         return
     product_meta = _resolve_order_merchants(items, customer_lat, customer_lng)
@@ -5420,11 +5571,13 @@ def _place_order_items(order_id: str, items: list, delivery_datetime: Optional[s
     if not agg:
         return
 
+    collection_type = "merchant_collected" if payment_method == "cod" else "platform_collected"
+    has_collection_type_col = _has_column("order_merchant_parts", "collection_type")
     parts = []
     for mid, a in agg.items():
         subtotal = round(a["subtotal"], 2)
         payout = round(a["payout"], 2)
-        parts.append({
+        part = {
             "order_id": order_id,
             "merchant_id": mid,
             "subtotal": subtotal,
@@ -5432,7 +5585,10 @@ def _place_order_items(order_id: str, items: list, delivery_datetime: Optional[s
             "payout": payout,                            # merchant earnings
             "status": "confirmed",
             "delivery_date": delivery_day,
-        })
+        }
+        if has_collection_type_col:
+            part["collection_type"] = collection_type
+        parts.append(part)
     SOURCE_LABELS = {
         "corporate":    {"noun": "Booking",       "notice_title": "🎉 New Petal Studio booking"},
         "subscription": {"noun": "Bloom Plan order", "notice_title": "🌸 New Bloom Plan delivery"},
@@ -5633,7 +5789,7 @@ def create_order(req: OrderRequest):
         "order", order_id,
     )
 
-    _place_order_items(order_id, req.items, req.delivery_datetime, source="retail", customer_lat=customer_lat, customer_lng=customer_lng)
+    _place_order_items(order_id, req.items, req.delivery_datetime, source="retail", customer_lat=customer_lat, customer_lng=customer_lng, payment_method=req.payment_method)
 
     points_pending = 0
     new_balance = 0
@@ -5800,7 +5956,7 @@ def _generate_one_subscription_order(sub: dict) -> str:
     # None and a merchant's delivery-radius cap silently isn't enforced for
     # Bloom Plan orders, same as before.
     _place_order_items(order_id, order_items, delivery_date, source="subscription",
-                        customer_lat=sub.get("latitude"), customer_lng=sub.get("longitude"))
+                        customer_lat=sub.get("latitude"), customer_lng=sub.get("longitude"), payment_method="subscription")
 
     # Only advance to the next cycle once this one is safely generated.
     new_next = advance_delivery_date(sub.get("plan"), delivery_date)
@@ -6497,7 +6653,7 @@ def _create_linked_corporate_order(booking: dict) -> Optional[str]:
     # this stays None and a merchant's delivery-radius cap silently isn't
     # enforced for corporate orders, same as before.
     _place_order_items(order_id, order_items, booking.get("delivery_date"), source="corporate",
-                        customer_lat=booking.get("latitude"), customer_lng=booking.get("longitude"))
+                        customer_lat=booking.get("latitude"), customer_lng=booking.get("longitude"), payment_method="corporate_invoice")
     return order_id
 
 

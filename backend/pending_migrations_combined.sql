@@ -28,3 +28,18 @@ ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS longitude NUMERIC;
 
 ALTER TABLE corporate_orders ADD COLUMN IF NOT EXISTS latitude NUMERIC;
 ALTER TABLE corporate_orders ADD COLUMN IF NOT EXISTS longitude NUMERIC;
+
+-- ── COD vs prepaid settlement direction ─────────────────────────────────────
+-- Pay-on-Delivery orders: the merchant's own delivery person collects the
+-- full price at the door, so the merchant owes VivaPetals its commission
+-- back — the OPPOSITE direction from every other payment method, where
+-- VivaPetals collects up front and owes the merchant their payout. Without
+-- this column every order is treated as the "we owe them" direction, which
+-- is wrong for COD. Existing rows default to 'platform_collected' (their
+-- pre-existing, correct behavior).
+ALTER TABLE order_merchant_parts ADD COLUMN IF NOT EXISTS collection_type TEXT DEFAULT 'platform_collected';
+
+-- ── Delivery photo proof ─────────────────────────────────────────────────────
+-- A merchant can attach a photo when marking their part delivered; shown to
+-- the customer on order-detail/track-order as delivery confirmation.
+ALTER TABLE order_merchant_parts ADD COLUMN IF NOT EXISTS delivery_photo_url TEXT;

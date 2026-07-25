@@ -542,9 +542,11 @@
     pointer-events: none;
   }
 
-  &.paid     { background: linear-gradient(135deg, #059669, #047857); }
-  &.pending  { background: linear-gradient(135deg, #d97706, #b45309); }
-  &.progress { background: linear-gradient(135deg, #64748b, #475569); }
+  &.paid       { background: linear-gradient(135deg, #059669, #047857); }
+  &.pending    { background: linear-gradient(135deg, #d97706, #b45309); }
+  &.progress   { background: linear-gradient(135deg, #64748b, #475569); }
+  &.cod-due    { background: linear-gradient(135deg, #be123c, #9f1239); }
+  &.cod-settled{ background: linear-gradient(135deg, #059669, #047857); }
 
   .bc-icon {
     width: 42px; height: 42px; flex-shrink: 0;
@@ -566,7 +568,29 @@
   margin-left: 0.5rem; vertical-align: middle;
   background: rgba(217,119,6,0.14); color: var(--warning);
   &.paid { background: rgba(5,150,105,0.14); color: var(--success); }
+  // COD: this badge means "you owe US", not "we owe you" — a distinct
+  // color from the default (which always means money owed TO the merchant)
+  // stops the two from being visually confused at a glance.
+  &.cod { background: rgba(190,18,60,0.14); color: #be123c; }
+  &.cod.paid { background: rgba(5,150,105,0.14); color: var(--success); }
 }
+
+// Pay-on-delivery: what the merchant physically collects at the door
+.oc-cod-collect {
+  display: inline-flex; align-items: center; gap: 0.3rem;
+  font-size: 0.78rem; font-weight: 700; color: var(--text);
+  background: var(--bg-raised); border: 1px solid var(--border);
+  padding: 0.2rem 0.55rem; border-radius: var(--radius-full);
+}
+
+.cod-balance-note {
+  display: flex; align-items: flex-start; gap: 0.6rem;
+  font-size: 0.82rem; color: var(--text-muted);
+  background: var(--bg-raised); border: 1px solid var(--border); border-radius: var(--radius-md);
+  padding: 0.75rem 1rem; margin: -0.5rem 0 1rem;
+  i { color: #be123c; margin-top: 0.15rem; flex-shrink: 0; }
+}
+.balance-row.cod-row { margin-top: -0.5rem; }
 
 // ── Notification bell (top bar) ─────────────────────────────────────────────
 .merch-topbar { display: flex; justify-content: flex-end; margin-bottom: 1rem; }
@@ -618,4 +642,11 @@
     .notif-item-msg { margin: 0.2rem 0 0; font-size: 0.78rem; color: var(--text-muted); line-height: 1.45; }
     .unread-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--accent); flex-shrink: 0; }
   }
+}
+
+.delivery-photo-uploading {
+  position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 1200;
+  display: flex; align-items: center; gap: 0.5rem;
+  background: var(--bg-card); border: 1px solid var(--border); box-shadow: var(--shadow-md);
+  border-radius: var(--radius-full); padding: 0.6rem 1.1rem; font-size: 0.85rem; color: var(--text);
 }

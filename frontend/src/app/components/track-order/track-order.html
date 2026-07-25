@@ -49,6 +49,9 @@
             <span class="status-label">{{ STATUS_LABELS[o.status] }}</span>
             <span class="status-desc">{{ STATUS_DESC[o.status] }}</span>
           </div>
+          <button class="share-tracking-btn" (click)="shareTrackingLink()" title="Share this tracking link">
+            <i class="bi bi-share"></i> Share
+          </button>
         </div>
 
         <!-- Timeline (not shown for cancelled) -->
@@ -71,6 +74,14 @@
                 </div>
               </div>
             }
+          </div>
+        }
+
+        <!-- Delivery photo proof -->
+        @if (o.status === 'delivered' && o.delivery_photo_url) {
+          <div class="delivery-proof-card">
+            <h3 class="card-title"><i class="bi bi-camera"></i> Delivered</h3>
+            <img [src]="o.delivery_photo_url" alt="Photo of your delivered flowers" class="delivery-proof-img">
           </div>
         }
 

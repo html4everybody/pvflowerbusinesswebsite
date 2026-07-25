@@ -457,6 +457,14 @@
                 <span class="bc-sub">Your margin, all-time</span>
               </div>
             </div>
+            <div class="balance-card cod-due">
+              <span class="bc-icon"><i class="bi bi-arrow-return-left"></i></span>
+              <div class="bc-body">
+                <span class="bc-label">COD commission owed to you</span>
+                <span class="bc-val">₹{{ s.total_commission_due | number:'1.0-0' }}</span>
+                <span class="bc-sub">Merchants collected these at the door — they owe you the difference</span>
+              </div>
+            </div>
           </div>
 
           @if (!s.merchants.length) {
@@ -470,6 +478,9 @@
                     <span class="payout-shop"><i class="bi bi-shop"></i> {{ m.shop_name }}</span>
                     <span class="payout-figure pending"><strong>₹{{ m.pending_amount | number:'1.0-0' }}</strong> pending ({{ m.pending_count }})</span>
                     <span class="payout-figure paid"><strong>₹{{ m.paid_amount | number:'1.0-0' }}</strong> paid ({{ m.paid_count }})</span>
+                    @if (m.commission_due > 0) {
+                      <span class="payout-figure cod-due"><strong>₹{{ m.commission_due | number:'1.0-0' }}</strong> COD commission owed to you ({{ m.commission_due_count }})</span>
+                    }
                   </button>
 
                   @if (m.payout_method) {
@@ -498,6 +509,12 @@
                       @if (payingAll() === m.merchant_id) { <i class="bi bi-arrow-repeat vp-spin"></i> Settling… }
                       @else { <i class="bi bi-check-lg"></i> Pay All ({{ m.pending_count }}) }
                     </button>
+                    @if (m.commission_due_count > 0) {
+                      <button class="btn-approve cod-collect" [disabled]="payingAll() === m.merchant_id" (click)="collectAllCommissionForMerchant(m)">
+                        @if (payingAll() === m.merchant_id) { <i class="bi bi-arrow-repeat vp-spin"></i> Settling… }
+                        @else { <i class="bi bi-arrow-return-left"></i> Mark COD Commission Received ({{ m.commission_due_count }}) }
+                      </button>
+                    }
                   </div>
 
                   @if (expandedMerchantId() === m.merchant_id) {
@@ -509,22 +526,29 @@
                       } @else {
                         <table class="data-table">
                           <thead>
-                            <tr><th>Order</th><th>Status</th><th>Subtotal</th><th>Commission</th><th>Payout</th><th>Settlement</th><th></th></tr>
+                            <tr><th>Order</th><th>Status</th><th>Payment</th><th>Subtotal</th><th>Commission</th><th>Payout</th><th>Settlement</th><th></th></tr>
                           </thead>
                           <tbody>
                             @for (p of payoutDetail(); track p.id) {
                               <tr>
                                 <td class="mono">#{{ p.order_id }}</td>
                                 <td><span class="oc-badge" [class]="p.status">{{ p.status }}</span></td>
+                                <td>
+                                  @if (isCodPart(p)) {
+                                    <span class="mc-badge pending"><i class="bi bi-cash-coin"></i> COD — merchant collects</span>
+                                  } @else {
+                                    <span class="mc-badge approved"><i class="bi bi-qr-code"></i> Prepaid — we collect</span>
+                                  }
+                                </td>
                                 <td class="mono">₹{{ p.subtotal }}</td>
                                 <td class="mono">₹{{ p.commission }}</td>
                                 <td class="mono">₹{{ p.payout }}</td>
                                 <td>
                                   @if (p.payout_status === 'paid') {
-                                    <span class="mc-badge approved"><i class="bi bi-check-circle-fill"></i> Paid</span>
+                                    <span class="mc-badge approved"><i class="bi bi-check-circle-fill"></i> {{ isCodPart(p) ? 'Received' : 'Paid' }}</span>
                                     @if (p.payout_note) { <div class="payout-note">{{ p.payout_note }}</div> }
                                   } @else if (p.status === 'delivered') {
-                                    <span class="mc-badge pending">Due</span>
+                                    <span class="mc-badge pending">{{ isCodPart(p) ? 'Owed to you' : 'Due' }}</span>
                                   } @else {
                                     <span class="mc-badge suspended">Not yet</span>
                                   }
@@ -532,7 +556,7 @@
                                 <td>
                                   @if (p.payout_status !== 'paid' && p.status === 'delivered') {
                                     <button class="btn-edit-small" [disabled]="payingPartId() === p.id" (click)="markPayoutPaid(p)">
-                                      @if (payingPartId() === p.id) { Marking… } @else { Mark Paid }
+                                      @if (payingPartId() === p.id) { Marking… } @else { {{ isCodPart(p) ? 'Mark Received' : 'Mark Paid' }} }
                                     </button>
                                   }
                                 </td>

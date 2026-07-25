@@ -391,24 +391,34 @@ export class Admin implements OnInit {
     });
   }
 
+  // A COD (pay-on-delivery) part means the MERCHANT's own delivery person
+  // collected the full price at the door — the money flow (and so the
+  // settlement action) is the exact opposite direction from a prepaid part.
+  isCodPart(part: any): boolean {
+    return (part?.collection_type || 'platform_collected') === 'merchant_collected';
+  }
+
   async markPayoutPaid(part: any): Promise<void> {
+    const cod = this.isCodPart(part);
     const res = await this.confirmService.askReason({
-      title: 'Mark this payout as paid?',
-      message: `Confirm you've paid ₹${part.payout} for order #${part.order_id}. This records the settlement — it doesn't move any money.`,
-      confirmText: 'Mark Paid',
-      promptLabel: 'Note (optional)', promptPlaceholder: 'e.g. Paid via UPI, ref #12345',
+      title: cod ? "Mark this merchant's COD commission as received?" : 'Mark this payout as paid?',
+      message: cod
+        ? `Confirm the merchant has sent back ₹${part.commission} in commission for order #${part.order_id} (they collected ₹${part.subtotal} in full at the door). This records the settlement — it doesn't move any money.`
+        : `Confirm you've paid ₹${part.payout} for order #${part.order_id}. This records the settlement — it doesn't move any money.`,
+      confirmText: cod ? 'Mark Received' : 'Mark Paid',
+      promptLabel: 'Note (optional)', promptPlaceholder: cod ? 'e.g. Received via UPI, ref #12345' : 'e.g. Paid via UPI, ref #12345',
     });
     if (!res.ok) return;
     this.payingPartId.set(part.id);
     this.http.patch(`${environment.apiUrl}/api/admin/payouts/${part.id}/pay`, { token: this.token, note: res.reason }).subscribe({
       next: () => {
         this.payingPartId.set(null);
-        this.toastService.show('Marked as paid');
+        this.toastService.show(cod ? 'Commission marked as received' : 'Marked as paid');
         const expanded = this.expandedMerchantId();
         if (expanded) this.refreshPayoutDetail(expanded);
         this.loadPayouts();
       },
-      error: (err) => { this.payingPartId.set(null); this.toastService.show(err.error?.detail || 'Failed to mark paid', 'error'); },
+      error: (err) => { this.payingPartId.set(null); this.toastService.show(err.error?.detail || 'Failed to settle', 'error'); },
     });
   }
 
@@ -422,10 +432,31 @@ export class Admin implements OnInit {
     });
     if (!res.ok) return;
     this.payingAll.set(m.merchant_id);
-    this.http.post<any>(`${environment.apiUrl}/api/admin/payouts/${m.merchant_id}/pay-all`, { token: this.token, note: res.reason }).subscribe({
+    this.http.post<any>(`${environment.apiUrl}/api/admin/payouts/${m.merchant_id}/pay-all`, { token: this.token, note: res.reason, direction: 'payout' }).subscribe({
       next: (r) => {
         this.payingAll.set(null);
         this.toastService.show(`Settled ${r.paid_count} order(s) — ₹${r.paid_amount} paid to ${m.shop_name}`);
+        this.loadPayouts();
+        if (this.expandedMerchantId() === m.merchant_id) this.refreshPayoutDetail(m.merchant_id);
+      },
+      error: (err) => { this.payingAll.set(null); this.toastService.show(err.error?.detail || 'Settlement failed', 'error'); },
+    });
+  }
+
+  async collectAllCommissionForMerchant(m: any): Promise<void> {
+    if (!m.commission_due_count) { this.toastService.show('No COD commission due from this merchant', 'error'); return; }
+    const res = await this.confirmService.askReason({
+      title: `Mark all COD commission from ${m.shop_name} as received?`,
+      message: `This marks ${m.commission_due_count} delivered COD order(s) totalling ₹${m.commission_due} in commission as received back from the merchant. Make sure you've actually collected it first — this only records it.`,
+      confirmText: 'Mark All Received', danger: true,
+      promptLabel: 'Note (optional, applied to all)', promptPlaceholder: 'e.g. Weekly COD reconciliation — cash',
+    });
+    if (!res.ok) return;
+    this.payingAll.set(m.merchant_id);
+    this.http.post<any>(`${environment.apiUrl}/api/admin/payouts/${m.merchant_id}/pay-all`, { token: this.token, note: res.reason, direction: 'commission' }).subscribe({
+      next: (r) => {
+        this.payingAll.set(null);
+        this.toastService.show(`Recorded ${r.paid_count} order(s) — ₹${r.paid_amount} commission received from ${m.shop_name}`);
         this.loadPayouts();
         if (this.expandedMerchantId() === m.merchant_id) this.refreshPayoutDetail(m.merchant_id);
       },

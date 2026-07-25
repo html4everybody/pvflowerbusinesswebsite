@@ -340,6 +340,11 @@
               <h2 class="section-title">
                 <i class="bi bi-truck"></i>
                 Order Tracking
+                @if (o.status !== 'cancelled') {
+                  <button class="share-tracking-btn" (click)="shareTrackingLink(o.id)" title="Share tracking link">
+                    <i class="bi bi-share"></i> Share
+                  </button>
+                }
               </h2>
               @if (o.status === 'cancelled') {
                 <div class="cancelled-banner">
@@ -375,6 +380,13 @@
                 </div>
               }
             </div>
+
+            @if (o.status === 'delivered' && o.delivery_photo_url) {
+              <div class="section g-delivery-proof">
+                <h2 class="section-title"><i class="bi bi-camera"></i> Delivered</h2>
+                <img [src]="o.delivery_photo_url" alt="Photo of your delivered flowers" class="delivery-proof-img">
+              </div>
+            }
 
             <div class="section order-summary-card g-summary">
               <h2 class="section-title">

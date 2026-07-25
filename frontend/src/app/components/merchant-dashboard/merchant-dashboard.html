@@ -113,6 +113,43 @@
             </div>
           </div>
 
+          @if (s.commission_due > 0 || s.commission_settled > 0 || s.cod_in_progress_value > 0) {
+            <div class="cod-balance-note">
+              <i class="bi bi-info-circle"></i>
+              <span>
+                <strong>Pay on Delivery orders:</strong> you collect the full amount from the customer yourself
+                when you deliver — VivaPetals never touches that money. You owe VivaPetals back the commission
+                on each one.
+              </span>
+            </div>
+            <div class="balance-row cod-row">
+              <div class="balance-card cod-due">
+                <span class="bc-icon"><i class="bi bi-arrow-up-right"></i></span>
+                <div class="bc-body">
+                  <span class="bc-label">You owe VivaPetals</span>
+                  <span class="bc-val">₹{{ s.commission_due | number:'1.0-0' }}</span>
+                  <span class="bc-sub">COD commission — delivered, not yet sent back</span>
+                </div>
+              </div>
+              <div class="balance-card cod-settled">
+                <span class="bc-icon"><i class="bi bi-check-circle"></i></span>
+                <div class="bc-body">
+                  <span class="bc-label">COD commission settled</span>
+                  <span class="bc-val">₹{{ s.commission_settled | number:'1.0-0' }}</span>
+                  <span class="bc-sub">Already sent back to VivaPetals</span>
+                </div>
+              </div>
+              <div class="balance-card progress">
+                <span class="bc-icon"><i class="bi bi-truck"></i></span>
+                <div class="bc-body">
+                  <span class="bc-label">COD in progress</span>
+                  <span class="bc-val">₹{{ s.cod_in_progress_value | number:'1.0-0' }}</span>
+                  <span class="bc-sub">Not delivered yet</span>
+                </div>
+              </div>
+            </div>
+          }
+
           <div class="stat-grid">
             <div class="stat-tile"><span class="st-icon violet"><i class="bi bi-bag-check"></i></span><div><span class="st-val">{{ s.order_count }}</span><span class="st-label">Orders</span></div></div>
             <div class="stat-tile"><span class="st-icon amber"><i class="bi bi-hourglass-split"></i></span><div><span class="st-val">{{ s.pending_count }}</span><span class="st-label">To fulfil</span></div></div>
@@ -261,11 +298,19 @@
                     <span class="oc-badge" [class]="o.status">{{ STATUS_LABELS[o.status] || o.status }}</span>
                   </div>
                   <div class="oc-payout">
-                    ₹{{ o.payout | number:'1.0-0' }} <span>payout</span>
-                    <span class="oc-payout-badge" [class.paid]="o.payout_status === 'paid'">
-                      <i class="bi" [class.bi-check-circle-fill]="o.payout_status === 'paid'" [class.bi-clock-history]="o.payout_status !== 'paid'"></i>
-                      {{ o.payout_status === 'paid' ? 'Paid' : 'Pending' }}
-                    </span>
+                    @if (o.is_cod) {
+                      <span class="oc-cod-collect"><i class="bi bi-cash-coin"></i> Collect ₹{{ o.amount_to_collect | number:'1.0-0' }} at delivery</span>
+                      <span class="oc-payout-badge cod" [class.paid]="o.payout_status === 'paid'">
+                        <i class="bi" [class.bi-check-circle-fill]="o.payout_status === 'paid'" [class.bi-arrow-return-left]="o.payout_status !== 'paid'"></i>
+                        ₹{{ o.commission_owed | number:'1.0-0' }} {{ o.payout_status === 'paid' ? 'settled' : 'owed to VivaPetals' }}
+                      </span>
+                    } @else {
+                      ₹{{ o.payout | number:'1.0-0' }} <span>payout</span>
+                      <span class="oc-payout-badge" [class.paid]="o.payout_status === 'paid'">
+                        <i class="bi" [class.bi-check-circle-fill]="o.payout_status === 'paid'" [class.bi-clock-history]="o.payout_status !== 'paid'"></i>
+                        {{ o.payout_status === 'paid' ? 'Paid' : 'Pending' }}
+                      </span>
+                    }
                   </div>
                 </div>
 
@@ -519,5 +564,12 @@
         <button class="btn-primary" (click)="saveProduct()"><i class="bi bi-check-lg"></i> {{ editingProduct() ? 'Save' : 'Add product' }}</button>
       </div>
     </div>
+  }
+
+  <!-- Delivery photo proof: triggered by "Mark Delivered" — cancelling the
+       file dialog still marks the order delivered, just without a photo. -->
+  <input #deliveryPhotoInput type="file" accept="image/*" hidden (change)="onDeliveryPhotoSelected($event)">
+  @if (uploadingDeliveryPhoto()) {
+    <div class="delivery-photo-uploading"><i class="bi bi-arrow-repeat vp-spin"></i> Uploading delivery photo…</div>
   }
 </div>

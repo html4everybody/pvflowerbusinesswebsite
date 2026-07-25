@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { TitleCasePipe } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
 import { environment } from '../../../environments/environment';
+import { ToastService } from '../../services/toast';
 
 @Component({
   selector: 'app-track-order',
@@ -43,13 +44,27 @@ export class TrackOrder implements OnInit {
   order = signal<any>(null);
   error = signal('');
 
-  constructor(private http: HttpClient, private route: ActivatedRoute) {}
+  constructor(private http: HttpClient, private route: ActivatedRoute, private toastService: ToastService) {}
 
   ngOnInit(): void {
     const id = this.route.snapshot.queryParamMap.get('id');
     if (id) {
       this.orderId = id;
       this.track();
+    }
+  }
+
+  async shareTrackingLink(): Promise<void> {
+    const url = `${window.location.origin}/track?id=${encodeURIComponent(this.orderId)}`;
+    const shareData = { title: 'Track your VivaPetals delivery', text: 'Here\'s the tracking link for flowers on the way 🌸', url };
+    if (navigator.share && navigator.canShare?.(shareData) !== false) {
+      try { await navigator.share(shareData); return; } catch { return; }
+    }
+    try {
+      await navigator.clipboard.writeText(url);
+      this.toastService.show('Tracking link copied!');
+    } catch {
+      this.toastService.show('Could not copy the link — please copy it from the address bar.', 'error');
     }
   }
 
