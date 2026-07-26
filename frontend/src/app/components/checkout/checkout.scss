@@ -1599,12 +1599,15 @@
   .form-section { padding: 1.25rem; }
   .order-summary .order-items { max-height: 200px; }
 
-  .payment-options { gap: 0.4rem; }
+  .payment-options {
+    grid-template-columns: 1fr;
+    gap: 0.4rem;
+  }
   .payment-tile {
-    padding: 0.7rem 0.6rem;
-    gap: 0.5rem;
-    .pay-tile-label { font-size: 0.8rem; }
-    .pay-tile-sub { font-size: 0.65rem; }
+    padding: 0.8rem 1rem;
+    gap: 0.75rem;
+    .pay-tile-label { font-size: 0.875rem; }
+    .pay-tile-sub { font-size: 0.7rem; }
   }
   .cod-notice { flex-wrap: wrap; .cod-badge { width: 100%; text-align: center; } }
 }
